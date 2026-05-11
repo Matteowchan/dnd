@@ -95,6 +95,15 @@
   #sidepanel { width: 280px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
   .panel-section { padding: 16px; border-bottom: 1px solid var(--border); }
   .panel-section h3 { font-size: 12px; color: var(--gold); margin-bottom: 12px; text-transform: uppercase; }
+  #audio-host-playback { display: flex; gap: 6px; }
+  #audio-host-playback button { flex: 1; padding: 6px 8px; font-size: 12px; }
+  #audio-volume { -webkit-appearance: none; appearance: none; background: var(--bg); height: 4px; border-radius: 2px; outline: none; }
+  #audio-volume::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--gold); cursor: pointer; }
+  #audio-volume::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--gold); cursor: pointer; border: none; }
+  #audio-track-name.playing { color: var(--gold); }
+  #audio-track-name.muted { color: var(--muted); }
+  .audio-pulse { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--success); margin-right: 6px; animation: audio-pulse 1.4s ease-in-out infinite; }
+  @keyframes audio-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; box-shadow: 0 0 6px var(--success); } }
 
   .token-tray { display: flex; flex-wrap: wrap; gap: 8px; }
   .token-thumb { width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--border); background-size: cover; background-position: center; cursor: grab; position: relative; transition: border-color 0.15s; }
@@ -246,39 +255,59 @@
   /* DICE OVERLAY */
   #dice-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 800; pointer-events: none; }
   #dice-overlay.active { display: flex; }
-  .dice-stage { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; align-items: center; max-width: 80vw; perspective: 800px; }
-  .die3d { width: 80px; height: 80px; position: relative; transform-style: preserve-3d; animation: tumble 1.2s cubic-bezier(.4,.1,.3,1) forwards; }
-  @keyframes tumble {
-    0% { transform: translateY(-200px) rotateX(0) rotateY(0) rotateZ(0); }
-    60% { transform: translateY(20px) rotateX(720deg) rotateY(540deg) rotateZ(360deg); }
-    75% { transform: translateY(-20px) rotateX(900deg) rotateY(720deg) rotateZ(420deg); }
-    100% { transform: translateY(0) rotateX(1080deg) rotateY(900deg) rotateZ(450deg); }
-  }
-  .die3d .face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-weight: 700; color: #1a1612; font-size: 28px; background: linear-gradient(135deg, #f4d590 0%, #c89456 60%, #8a6535 100%); border: 2px solid #6b4a25; box-shadow: inset 0 0 15px rgba(0,0,0,0.4); }
-  .die3d.d6 .face.f1 { transform: rotateY(0deg) translateZ(40px); }
-  .die3d.d6 .face.f2 { transform: rotateY(90deg) translateZ(40px); }
-  .die3d.d6 .face.f3 { transform: rotateY(180deg) translateZ(40px); }
-  .die3d.d6 .face.f4 { transform: rotateY(-90deg) translateZ(40px); }
-  .die3d.d6 .face.f5 { transform: rotateX(90deg) translateZ(40px); }
-  .die3d.d6 .face.f6 { transform: rotateX(-90deg) translateZ(40px); }
+  .dice-stage { display: flex; gap: 36px; flex-wrap: wrap; justify-content: center; align-items: center; max-width: 80vw; perspective: 1000px; }
+  .die3d { width: 120px; height: 120px; position: relative; transform-style: preserve-3d; }
+  .die3d .face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-weight: 700; color: #1a1612; font-size: 44px; background: linear-gradient(135deg, #f4d590 0%, #c89456 60%, #8a6535 100%); border: 2px solid #6b4a25; box-shadow: inset 0 0 20px rgba(0,0,0,0.4); }
+  .die3d.d6 .face.f1 { transform: rotateY(0deg) translateZ(60px); }
+  .die3d.d6 .face.f2 { transform: rotateY(90deg) translateZ(60px); }
+  .die3d.d6 .face.f3 { transform: rotateY(180deg) translateZ(60px); }
+  .die3d.d6 .face.f4 { transform: rotateY(-90deg) translateZ(60px); }
+  .die3d.d6 .face.f5 { transform: rotateX(90deg) translateZ(60px); }
+  .die3d.d6 .face.f6 { transform: rotateX(-90deg) translateZ(60px); }
 
-  .die-poly { width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; position: relative; animation: tumble-flat 1.2s cubic-bezier(.4,.1,.3,1) forwards; }
-  @keyframes tumble-flat {
-    0% { transform: translateY(-200px) rotate(0deg) scale(0.5); opacity: 0; }
-    50% { transform: translateY(15px) rotate(540deg) scale(1.15); opacity: 1; }
-    75% { transform: translateY(-15px) rotate(720deg) scale(0.95); }
-    100% { transform: translateY(0) rotate(810deg) scale(1); }
-  }
-  .die-poly svg { width: 100%; height: 100%; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.6)); }
-  .die-poly .val { position: absolute; font-family: 'Cinzel', serif; font-weight: 700; color: #1a1612; font-size: 28px; pointer-events: none; }
+  .die-poly { width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; position: relative; }
+  .die-poly svg { width: 100%; height: 100%; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6)); }
+  .die-poly .val { position: absolute; font-family: 'Cinzel', serif; font-weight: 700; color: #1a1612; font-size: 44px; pointer-events: none; }
 
-  .dice-result-summary { position: absolute; bottom: 18%; left: 50%; transform: translateX(-50%); background: var(--panel); border: 2px solid var(--gold); padding: 14px 28px; border-radius: 4px; font-family: 'Cinzel', serif; color: var(--cream); font-size: 22px; text-align: center; opacity: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+  .dice-result-summary { position: absolute; bottom: 14%; left: 50%; transform: translateX(-50%); background: var(--panel); border: 2px solid var(--gold); padding: 14px 28px; border-radius: 4px; font-family: 'Cinzel', serif; color: var(--cream); font-size: 22px; text-align: center; opacity: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
   .dice-result-summary .total { color: var(--gold); font-size: 32px; font-weight: 700; }
   .dice-result-summary .breakdown { font-size: 13px; color: var(--muted); margin-top: 4px; font-family: 'Crimson Pro', serif; }
   .dice-result-summary .priv-label { font-size: 11px; color: var(--ember); letter-spacing: 0.15em; margin-bottom: 4px; }
+  .dice-result-summary.nat20 { border-color: gold; box-shadow: 0 0 40px gold, 0 10px 30px rgba(0,0,0,0.6); }
+  .dice-result-summary.nat1 { border-color: var(--danger); box-shadow: 0 0 30px rgba(160,72,72,0.5), 0 10px 30px rgba(0,0,0,0.6); }
 
-  .die-poly.settled, .die3d.settled { filter: drop-shadow(0 0 12px rgba(224,140,58,0.7)); }
+  .die-poly.settled, .die3d.settled { filter: drop-shadow(0 0 18px rgba(224,140,58,0.7)); }
   .die-poly.settled .val { color: #1a1612; text-shadow: 0 0 8px rgba(255,200,100,0.5); }
+
+  /* Critical hit (nat 20) celebration */
+  #nat20-fx { position: fixed; inset: 0; pointer-events: none; z-index: 850; display: none; }
+  #nat20-fx.active { display: block; }
+  #nat20-fx .star { position: absolute; left: 50%; top: 50%; font-size: 28px; color: #ffd700; text-shadow: 0 0 18px gold, 0 0 28px gold; opacity: 0; animation: nat20-burst 1.6s cubic-bezier(0.2, 0.7, 0.3, 1) forwards; will-change: transform, opacity; }
+  @keyframes nat20-burst {
+    0% { transform: translate(-50%, -50%) scale(0.2) rotate(0); opacity: 0; }
+    15% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(60deg); }
+    100% { transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))) scale(0.4) rotate(720deg); opacity: 0; }
+  }
+  #nat20-glow { position: fixed; inset: 0; background: radial-gradient(ellipse at center, rgba(255,215,0,0.28) 0%, transparent 70%); pointer-events: none; z-index: 849; opacity: 0; }
+  #nat20-glow.active { animation: nat20-glow-pulse 1.6s ease-out forwards; }
+  @keyframes nat20-glow-pulse { 0% { opacity: 0; } 25% { opacity: 1; } 100% { opacity: 0; } }
+
+  /* Critical fail (nat 1) gloom */
+  #nat1-fx { position: fixed; inset: 0; pointer-events: none; z-index: 850; background: radial-gradient(ellipse at center, transparent 25%, rgba(0,0,0,0.75) 100%); opacity: 0; }
+  #nat1-fx.active { animation: nat1-gloom 1.3s ease-out forwards; }
+  @keyframes nat1-gloom {
+    0% { opacity: 0; }
+    25% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  #app.shake { animation: shake 0.4s ease-in-out; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
 
   /* PLAYERS LIST */
   .player-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 3px; font-size: 13px; }
@@ -460,6 +489,28 @@
       <div class="panel-section" id="hp-tracker-section" style="display:none">
         <h3>HP Tracker</h3>
         <div id="hp-tracker-list"></div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Background Music</h3>
+        <div id="audio-host-controls" style="display:none">
+          <input type="file" id="audio-file-input" accept="audio/*" style="display:none">
+          <button id="audio-upload-btn" style="width:100%; margin-bottom: 8px;">Upload Track</button>
+          <div id="audio-host-loading" style="display:none; color: var(--muted); font-size: 12px; text-align: center; padding: 6px;">Uploading...</div>
+        </div>
+        <div id="audio-info" style="margin-bottom: 8px;">
+          <div id="audio-track-name" style="font-size: 13px; color: var(--cream); margin-bottom: 4px;">No track loaded</div>
+          <div id="audio-status" style="font-size: 11px; color: var(--muted);">—</div>
+        </div>
+        <div id="audio-host-playback" style="display:none; margin-bottom: 10px;">
+          <button id="audio-play-btn" style="flex:1;">▶ Play</button>
+          <button id="audio-stop-btn" style="flex:1;">■ Stop</button>
+        </div>
+        <div id="audio-volume-row">
+          <label style="font-size: 11px; color: var(--muted); display:block; margin-bottom: 4px;">Volume</label>
+          <input type="range" id="audio-volume" min="0" max="100" value="60" style="width:100%;">
+        </div>
+        <audio id="audio-element" preload="auto" loop></audio>
       </div>
 
       <div class="panel-section">
@@ -665,6 +716,10 @@
   <div class="dice-result-summary" id="dice-result"></div>
 </div>
 
+<div id="nat20-glow"></div>
+<div id="nat20-fx"></div>
+<div id="nat1-fx"></div>
+
 <div id="toast"></div>
 
 <script>
@@ -709,6 +764,8 @@
       vtt_maps: 'session_id',
       vtt_tokens: 'id',
       vtt_chat: 'id',
+      vtt_effects: 'id',
+      vtt_audio: 'session_id',
     };
     const handlers = {};
 
@@ -867,6 +924,9 @@
 
     effects: new Map(),     // id -> effect data
     remoteDrags: new Map(), // userId -> { tokenId, startX, startY, x, y, isMeasure, name }
+
+    audio: null,            // { audio_url, audio_name, is_playing } from vtt_audio table
+    audioVolume: 0.6,       // local volume (0..1)
   };
 
   const FX_COLORS = {
@@ -1149,6 +1209,14 @@
       renderEffects();
     }
 
+    // Load background audio state
+    const { data: audioData } = await sb.from('vtt_audio').select('*').eq('session_id', STATE.sessionId).maybeSingle();
+    if (audioData) {
+      STATE.audio = audioData;
+      applyAudioState();
+    }
+    renderAudioUI();
+
     // Load persisted players
     const { data: players } = await sb.from('vtt_players').select('*').eq('session_id', STATE.sessionId);
     if (players) {
@@ -1181,6 +1249,7 @@
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vtt_chat', filter }, handleChatInsert)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_players', filter }, handlePlayerChange)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_effects', filter }, handleEffectChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_audio', filter }, handleAudioChange)
       .on('broadcast', { event: 'drag' }, ({ payload }) => handleRemoteDrag(payload))
       .on('presence', { event: 'sync' }, handlePresenceSync)
       .subscribe(async (status) => {
@@ -2023,6 +2092,123 @@
     renderEffects();
   }
 
+  // ============ BACKGROUND AUDIO ============
+  function handleAudioChange(payload) {
+    if (payload.eventType === 'DELETE') {
+      STATE.audio = null;
+    } else {
+      STATE.audio = payload.new;
+    }
+    applyAudioState();
+    renderAudioUI();
+  }
+
+  function applyAudioState() {
+    const el = document.getElementById('audio-element');
+    if (!el) return;
+    el.volume = STATE.audioVolume;
+    if (!STATE.audio || !STATE.audio.audio_url) {
+      el.pause();
+      el.removeAttribute('src');
+      return;
+    }
+    // Load new source if changed
+    if (el.dataset.currentUrl !== STATE.audio.audio_url) {
+      el.src = STATE.audio.audio_url;
+      el.dataset.currentUrl = STATE.audio.audio_url;
+    }
+    if (STATE.audio.is_playing) {
+      // Some browsers block autoplay; the play() promise may reject.
+      // We catch and rely on the user clicking the play button locally.
+      const playPromise = el.play();
+      if (playPromise && playPromise.catch) playPromise.catch(() => {
+        // Show a hint to player to interact
+        const status = document.getElementById('audio-status');
+        if (status) status.textContent = 'Click Play to enable audio';
+      });
+    } else {
+      el.pause();
+    }
+  }
+
+  function renderAudioUI() {
+    const hostCtl = document.getElementById('audio-host-controls');
+    const playback = document.getElementById('audio-host-playback');
+    const nameEl = document.getElementById('audio-track-name');
+    const statusEl = document.getElementById('audio-status');
+    const playBtn = document.getElementById('audio-play-btn');
+
+    if (!hostCtl) return;
+    hostCtl.style.display = STATE.isHost ? 'block' : 'none';
+    playback.style.display = STATE.isHost && STATE.audio && STATE.audio.audio_url ? 'flex' : 'none';
+
+    if (STATE.audio && STATE.audio.audio_url) {
+      const isPlaying = !!STATE.audio.is_playing;
+      const trackName = STATE.audio.audio_name || 'Untitled track';
+      nameEl.innerHTML = (isPlaying ? '<span class="audio-pulse"></span>' : '') + escapeHtml(trackName);
+      nameEl.className = isPlaying ? 'playing' : '';
+      statusEl.textContent = isPlaying ? 'Playing' : 'Paused';
+      if (playBtn) playBtn.textContent = isPlaying ? '❚❚ Pause' : '▶ Play';
+    } else {
+      nameEl.textContent = 'No track loaded';
+      nameEl.className = 'muted';
+      statusEl.textContent = '—';
+    }
+  }
+
+  async function hostUploadAudio(file) {
+    if (!file) return;
+    const loadingEl = document.getElementById('audio-host-loading');
+    loadingEl.style.display = 'block';
+    try {
+      const path = `${STATE.sessionId}/audio/bg-${Date.now()}.${(file.name.split('.').pop() || 'mp3')}`;
+      const url = await uploadImage(file, path); // same bucket works for any file
+      await sb.from('vtt_audio').upsert({
+        session_id: STATE.sessionId,
+        audio_url: url,
+        audio_name: file.name.replace(/\.[^.]+$/, ''),
+        is_playing: true,
+        updated_at: new Date().toISOString(),
+      });
+      toast('Track uploaded - playing for everyone');
+    } catch (e) {
+      console.error(e);
+      toast('Upload failed', 'error');
+    } finally {
+      loadingEl.style.display = 'none';
+    }
+  }
+
+  async function hostToggleAudioPlay() {
+    if (!STATE.audio || !STATE.audio.audio_url) return;
+    const newPlaying = !STATE.audio.is_playing;
+    await sb.from('vtt_audio').upsert({
+      session_id: STATE.sessionId,
+      audio_url: STATE.audio.audio_url,
+      audio_name: STATE.audio.audio_name,
+      is_playing: newPlaying,
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  async function hostStopAudio() {
+    await sb.from('vtt_audio').upsert({
+      session_id: STATE.sessionId,
+      audio_url: null,
+      audio_name: null,
+      is_playing: false,
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  function setLocalAudioVolume(v) {
+    STATE.audioVolume = Math.max(0, Math.min(1, v));
+    const el = document.getElementById('audio-element');
+    if (el) el.volume = STATE.audioVolume;
+    try { localStorage.setItem('vtt_audio_volume', String(STATE.audioVolume)); } catch (e) {}
+  }
+
+
   // ============ MEASURE TOOL & FX PLACEMENT ============
   // Reuse mapcontainer mousedown to handle these tools
   function getMapCoords(clientX, clientY) {
@@ -2569,65 +2755,103 @@
     if (error) { console.error(error); toast('Roll failed to sync', 'error'); }
   }
 
+  // Track all active dice animation timers so we can cancel previous ones
+  // when a new roll starts before the previous finishes.
+  const DICE_TIMERS = { timeouts: [], intervals: [] };
+  function clearDiceTimers() {
+    DICE_TIMERS.timeouts.forEach(t => clearTimeout(t));
+    DICE_TIMERS.intervals.forEach(i => clearInterval(i));
+    DICE_TIMERS.timeouts = [];
+    DICE_TIMERS.intervals = [];
+  }
+  function scheduleDice(fn, ms) {
+    const t = setTimeout(() => {
+      fn();
+      const idx = DICE_TIMERS.timeouts.indexOf(t);
+      if (idx >= 0) DICE_TIMERS.timeouts.splice(idx, 1);
+    }, ms);
+    DICE_TIMERS.timeouts.push(t);
+    return t;
+  }
+
   function animateDiceRoll(msg) {
+    // Cancel any in-flight animations from previous rolls so they cannot
+    // overwrite the new roll's display
+    clearDiceTimers();
+    document.getElementById('nat20-fx').classList.remove('active');
+    document.getElementById('nat20-glow').classList.remove('active');
+    document.getElementById('nat1-fx').classList.remove('active');
+
     const overlay = document.getElementById('dice-overlay');
     const stage = document.getElementById('dice-stage');
     const result = document.getElementById('dice-result');
     stage.innerHTML = '';
     result.innerHTML = '';
+    result.style.opacity = '0';
+    result.className = 'dice-result-summary';
 
     const ANIM_DURATION = 1400;
-    const STAGGER = 100;
+    const STAGGER = 110;
     const totalSettleTime = ANIM_DURATION + (msg.rolls.length - 1) * STAGGER;
-    const cycleIntervals = [];
 
     msg.rolls.forEach((val, i) => {
       const delay = i * STAGGER;
       let dieEl;
 
       if (msg.sides === 6) {
-        // 3D cube with visible faces
+        // True 3D cube. Animate via a SINGLE CSS transition to the target face
+        // (with extra full rotations layered in) so the cube never jumps.
         dieEl = document.createElement('div');
         dieEl.className = 'die3d d6';
-        dieEl.style.animationDelay = (delay / 1000) + 's';
         for (let f = 1; f <= 6; f++) {
           const face = document.createElement('div');
           face.className = `face f${f}`;
           face.textContent = f;
           dieEl.appendChild(face);
         }
-        const finalRotations = {
-          1: 'rotateX(0deg) rotateY(0deg)',
-          2: 'rotateX(0deg) rotateY(-90deg)',
-          3: 'rotateX(0deg) rotateY(180deg)',
-          4: 'rotateX(0deg) rotateY(90deg)',
-          5: 'rotateX(-90deg) rotateY(0deg)',
-          6: 'rotateX(90deg) rotateY(0deg)',
-        };
-        // Snap to final face after animation completes
-        setTimeout(() => {
-          dieEl.style.animation = 'none';
-          dieEl.style.transform = finalRotations[val];
-          dieEl.style.transition = 'transform 0.3s';
-          // Highlight effect on settle
-          dieEl.classList.add('settled');
-        }, ANIM_DURATION + delay);
+        const targetRot = {
+          1: { x: 0,   y: 0 },
+          2: { x: 0,   y: -90 },
+          3: { x: 0,   y: 180 },
+          4: { x: 0,   y: 90 },
+          5: { x: -90, y: 0 },
+          6: { x: 90,  y: 0 },
+        }[val];
+        // Add randomized number of full rotations so each tumble looks different
+        const extraX = 360 * (2 + Math.floor(Math.random() * 3)); // 2-4 spins
+        const extraY = 360 * (2 + Math.floor(Math.random() * 3));
+        const sign = Math.random() < 0.5 ? -1 : 1;
+        const finalX = targetRot.x + sign * extraX;
+        const finalY = targetRot.y + extraY;
+        // Initial position above and pre-rotation for visual interest
+        dieEl.style.transform = `translateY(-260px) rotateX(${Math.random()*60-30}deg) rotateY(${Math.random()*60-30}deg)`;
+        // Animate after a tiny delay so the initial transform applies
+        scheduleDice(() => {
+          dieEl.style.transition = `transform ${ANIM_DURATION/1000}s cubic-bezier(0.28, 1.05, 0.38, 1)`;
+          dieEl.style.transform = `translateY(0) rotateX(${finalX}deg) rotateY(${finalY}deg)`;
+        }, 20 + delay);
+        scheduleDice(() => { dieEl.classList.add('settled'); }, ANIM_DURATION + delay + 50);
       } else {
+        // Polyhedron-style die for everything else. Cycle random numbers during spin.
         dieEl = document.createElement('div');
         dieEl.className = 'die-poly';
-        dieEl.style.animationDelay = (delay / 1000) + 's';
         dieEl.innerHTML = polyhedronSVG(msg.sides) + `<div class="val">?</div>`;
-
-        // Cycle random numbers during the spin
+        // Apply a JS-driven tumble with randomized params so each roll looks unique
+        dieEl.style.transform = `translateY(-260px) rotate(${Math.random()*120-60}deg) scale(0.5)`;
+        const finalRot = (Math.random() < 0.5 ? -1 : 1) * (540 + Math.floor(Math.random() * 540));
+        scheduleDice(() => {
+          dieEl.style.transition = `transform ${ANIM_DURATION/1000}s cubic-bezier(0.28, 1.05, 0.38, 1)`;
+          dieEl.style.transform = `translateY(0) rotate(${finalRot}deg) scale(1)`;
+        }, 20 + delay);
         const valEl = dieEl.querySelector('.val');
         const interval = setInterval(() => {
           valEl.textContent = Math.floor(Math.random() * msg.sides) + 1;
-        }, 80);
-        cycleIntervals.push(interval);
-
-        // Settle on final value
-        setTimeout(() => {
+        }, 70);
+        DICE_TIMERS.intervals.push(interval);
+        scheduleDice(() => {
           clearInterval(interval);
+          const idx = DICE_TIMERS.intervals.indexOf(interval);
+          if (idx >= 0) DICE_TIMERS.intervals.splice(idx, 1);
           valEl.textContent = val;
           dieEl.classList.add('settled');
         }, ANIM_DURATION + delay);
@@ -2636,26 +2860,76 @@
       stage.appendChild(dieEl);
     });
 
-    // Build but hide the result summary; reveal after all dice settle
+    // Build (but keep hidden) the result summary; reveal after all dice settle
     const mod = msg.modifier || 0;
     const modText = mod !== 0 ? ` ${mod > 0 ? '+' : ''}${mod}` : '';
     const privLabel = msg.is_private ? `<div class="priv-label">PRIVATE ROLL - ${escapeHtml(msg.user_name)}</div>` : '';
     result.innerHTML = `${privLabel}<div>${escapeHtml(msg.user_name)} - ${msg.dice_count}d${msg.sides}${modText}</div><div class="total">${msg.total}</div><div class="breakdown">${msg.rolls.join(' + ')}${modText} = ${msg.total}</div>`;
-    result.style.opacity = '0';
-
     overlay.classList.add('active');
 
-    // Reveal result after dice settle
-    setTimeout(() => {
+    // Critical hit / fail effects for d20 only
+    const isD20Single = msg.sides === 20 && msg.dice_count === 1;
+    const hasNat20 = isD20Single && msg.rolls.includes(20);
+    const hasNat1 = isD20Single && msg.rolls.includes(1);
+    if (hasNat20) result.classList.add('nat20');
+    if (hasNat1) result.classList.add('nat1');
+
+    // Reveal result after dice settle, plus trigger crit effects
+    scheduleDice(() => {
       result.style.transition = 'opacity 0.3s';
       result.style.opacity = '1';
-    }, totalSettleTime + 100);
+      if (hasNat20) triggerNat20();
+      if (hasNat1) triggerNat1();
+    }, totalSettleTime + 150);
 
-    clearTimeout(window._diceTimeout);
-    window._diceTimeout = setTimeout(() => {
-      overlay.classList.remove('active');
-      cycleIntervals.forEach(clearInterval);
-    }, totalSettleTime + 2200);
+    // Hide overlay
+    scheduleDice(() => { overlay.classList.remove('active'); }, totalSettleTime + 2400);
+  }
+
+  function triggerNat20() {
+    const glow = document.getElementById('nat20-glow');
+    const fx = document.getElementById('nat20-fx');
+    glow.classList.remove('active');
+    fx.classList.remove('active');
+    fx.innerHTML = '';
+    // Force reflow
+    void glow.offsetWidth;
+    void fx.offsetWidth;
+    glow.classList.add('active');
+    fx.classList.add('active');
+    // Spawn 24 stars flying outward
+    const symbols = ['★', '✦', '✧', '✺', '✹'];
+    for (let i = 0; i < 24; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.textContent = symbols[i % symbols.length];
+      const angle = (i / 24) * Math.PI * 2 + Math.random() * 0.3;
+      const dist = 160 + Math.random() * 200;
+      star.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+      star.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+      star.style.animationDelay = (Math.random() * 0.2) + 's';
+      fx.appendChild(star);
+    }
+    scheduleDice(() => {
+      glow.classList.remove('active');
+      fx.classList.remove('active');
+      fx.innerHTML = '';
+    }, 1800);
+  }
+
+  function triggerNat1() {
+    const fx = document.getElementById('nat1-fx');
+    const app = document.getElementById('app');
+    fx.classList.remove('active');
+    app.classList.remove('shake');
+    void fx.offsetWidth;
+    void app.offsetWidth;
+    fx.classList.add('active');
+    app.classList.add('shake');
+    scheduleDice(() => {
+      fx.classList.remove('active');
+      app.classList.remove('shake');
+    }, 1400);
   }
 
   function polyhedronSVG(sides) {
@@ -2686,6 +2960,38 @@
     }
     return `<svg viewBox="0 0 100 100">${grad}<rect x="15" y="15" width="70" height="70" rx="6" ${fill}/></svg>`;
   }
+
+  // ============ AUDIO EVENT HANDLERS ============
+  (function setupAudioEvents() {
+    const uploadBtn = document.getElementById('audio-upload-btn');
+    const fileInput = document.getElementById('audio-file-input');
+    const playBtn = document.getElementById('audio-play-btn');
+    const stopBtn = document.getElementById('audio-stop-btn');
+    const volumeInp = document.getElementById('audio-volume');
+
+    if (!uploadBtn) return;
+
+    // Restore local volume preference
+    try {
+      const saved = localStorage.getItem('vtt_audio_volume');
+      if (saved !== null) {
+        STATE.audioVolume = Math.max(0, Math.min(1, parseFloat(saved) || 0.6));
+        if (volumeInp) volumeInp.value = Math.round(STATE.audioVolume * 100);
+      }
+    } catch (e) {}
+
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) hostUploadAudio(file);
+      fileInput.value = '';
+    });
+    playBtn.addEventListener('click', hostToggleAudioPlay);
+    stopBtn.addEventListener('click', hostStopAudio);
+    volumeInp.addEventListener('input', (e) => {
+      setLocalAudioVolume(parseInt(e.target.value, 10) / 100);
+    });
+  })();
 
   // ============ CHAT ============
   document.getElementById('chat-send').addEventListener('click', sendChat);
