@@ -23,18 +23,18 @@
     --ember: #e08c3a;
   }
   /* Class themes override --gold and --gold-soft when applied to <html> */
-  html.theme-barbarian   { --gold: #c25050; --gold-soft: #8a3838; }
-  html.theme-bard        { --gold: #c878d4; --gold-soft: #8a5494; }
-  html.theme-cleric      { --gold: #e8c878; --gold-soft: #b09554; }
-  html.theme-druid       { --gold: #7da848; --gold-soft: #557530; }
-  html.theme-fighter     { --gold: #c0c0d0; --gold-soft: #80808a; }
-  html.theme-monk        { --gold: #e08c5a; --gold-soft: #a8633c; }
-  html.theme-paladin     { --gold: #e8d890; --gold-soft: #b0a060; }
-  html.theme-ranger      { --gold: #5a9048; --gold-soft: #3a6030; }
-  html.theme-rogue       { --gold: #8a6db0; --gold-soft: #5a4080; }
-  html.theme-sorcerer    { --gold: #d4583a; --gold-soft: #983a25; }
-  html.theme-warlock     { --gold: #a868c8; --gold-soft: #74428a; }
-  html.theme-wizard      { --gold: #5a7bc8; --gold-soft: #3a548a; }
+  html.theme-barbarian   { --gold: #D35400; --gold-soft: #8B1E1E; }
+  html.theme-bard        { --gold: #D4AF37; --gold-soft: #6A0DAD; }
+  html.theme-cleric      { --gold: #C9A227; --gold-soft: #6FA8DC; }
+  html.theme-druid       { --gold: #8A9A5B; --gold-soft: #2E6B3F; }
+  html.theme-fighter     { --gold: #A32121; --gold-soft: #5A6473; }
+  html.theme-monk        { --gold: #D9902F; --gold-soft: #4B2E1E; }
+  html.theme-paladin     { --gold: #F5E6B3; --gold-soft: #1D3F72; }
+  html.theme-ranger      { --gold: #C2A878; --gold-soft: #556B2F; }
+  html.theme-rogue       { --gold: #6DBF3A; --gold-soft: #3B1F47; }
+  html.theme-sorcerer    { --gold: #B026FF; --gold-soft: #00AEEF; }
+  html.theme-warlock     { --gold: #39FF14; --gold-soft: #4B0082; }
+  html.theme-wizard      { --gold: #00D4FF; --gold-soft: #0B1F3A; }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; overflow: hidden; font-family: 'Crimson Pro', Georgia, serif; background: var(--bg); color: var(--cream); user-select: none; }
@@ -186,6 +186,44 @@
 
   #zoom-controls { position: absolute; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 4px; z-index: 50; }
   #zoom-controls button { width: 36px; height: 36px; padding: 0; font-size: 18px; }
+
+  /* DM TOOLBAR */
+  #dm-toolbar { position: absolute; top: 16px; right: 16px; background: rgba(26,22,18,0.95); border: 1px solid var(--border); border-radius: 6px; padding: 6px; display: flex; flex-direction: column; gap: 2px; z-index: 100; backdrop-filter: blur(6px); }
+  .tool-section { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .tool-section:last-child { border-bottom: none; }
+  .tool-label { font-family: 'Cinzel', serif; font-size: 9px; color: var(--muted); text-align: center; letter-spacing: 0.15em; margin-bottom: 2px; }
+  .tool-btn, .fx-btn { width: 36px; height: 36px; padding: 6px; background: transparent; border: 1px solid transparent; border-radius: 3px; color: var(--cream); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .tool-btn:hover, .fx-btn:hover { background: var(--panel-light); border-color: var(--border); }
+  .tool-btn.active, .fx-btn.active { background: var(--gold-soft); color: #1a1612; border-color: var(--gold); }
+  .tool-btn.active svg, .fx-btn.active svg { color: #1a1612; }
+
+  /* FX COLOR PICKER */
+  #fx-color-picker { position: absolute; top: 16px; right: 70px; background: rgba(26,22,18,0.95); border: 1px solid var(--border); border-radius: 6px; padding: 10px; z-index: 110; backdrop-filter: blur(6px); }
+  .fx-color-label { font-family: 'Cinzel', serif; font-size: 10px; color: var(--muted); text-align: center; letter-spacing: 0.15em; margin-bottom: 8px; }
+  .fx-color-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .fx-color { width: 28px; height: 28px; border-radius: 50%; background: var(--c); border: 2px solid transparent; cursor: pointer; padding: 0; }
+  .fx-color:hover { transform: scale(1.1); border-color: var(--cream); }
+  .fx-color.active { border-color: var(--cream); box-shadow: 0 0 8px var(--c); }
+
+  /* EFFECTS LAYER */
+  #effectslayer { position: absolute; top: 0; left: 0; width: 4000px; height: 4000px; transform-origin: 0 0; pointer-events: none; overflow: visible; }
+  .fx-shape { opacity: 0.55; filter: drop-shadow(0 0 8px currentColor); }
+  .fx-shape.glow-pulse { animation: fx-pulse 1.5s ease-in-out infinite; }
+  .fx-shape.fx-rocket-burst { animation: rocket-burst 0.6s ease-out forwards; transform-origin: center; transform-box: fill-box; }
+  .fx-shape.fx-rocket-head { animation: rocket-head 0.5s ease-out forwards; }
+  @keyframes fx-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.75; } }
+  @keyframes rocket-burst { 0% { r: 5; opacity: 0.8; } 100% { r: 40; opacity: 0; } }
+  @keyframes rocket-head { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
+
+  /* REMOTE MEASUREMENTS */
+  #remote-measurements { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 150; }
+  .remote-measure line { stroke: var(--gold); stroke-width: 2; stroke-dasharray: 6 4; opacity: 0.8; }
+  .remote-measure text { fill: var(--cream); font-family: 'Cinzel', serif; font-size: 14px; paint-order: stroke; stroke: #000; stroke-width: 3; }
+
+  /* IMAGE GEN POPUP */
+  #imggen-popup { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); width: 480px; max-height: 80vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  #imggen-popup.active { display: flex; }
+  #imggen-popup .char-popup-body { padding: 16px; overflow-y: auto; }
 
   /* CHAT BOX */
   #chatbox { position: absolute; bottom: 20px; left: 300px; width: 340px; height: 340px; background: rgba(26,22,18,0.95); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; z-index: 500; backdrop-filter: blur(6px); }
@@ -433,8 +471,63 @@
     <div id="mapcontainer">
       <div id="grid"></div>
       <div id="maplayer"></div>
+      <svg id="effectslayer"></svg>
       <div id="tokenlayer"></div>
       <svg id="measurement" style="display:none"></svg>
+      <svg id="remote-measurements"></svg>
+
+      <div id="dm-toolbar" style="display:none">
+        <div class="tool-section">
+          <div class="tool-label">Tools</div>
+          <button class="tool-btn active" data-tool="select" title="Select / move tokens">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 2l8 19 2.5-8.5L22 11z"/></svg>
+          </button>
+          <button class="tool-btn" data-tool="measure" title="Measure distance">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l4-4M7 13l4-4M11 9l4-4M15 5l4-4M5 19l-2 2M21 15l-4 4-12-12 4-4z"/></svg>
+          </button>
+          <button class="tool-btn" id="imggen-btn" title="Generate image (AI)">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l1.5 4L11 8.5 6.5 10 5 14l-1.5-4L-1 8.5 3.5 7zM17 12l1 3 3 1-3 1-1 3-1-3-3-1 3-1zM16 3l.7 1.8L18.5 5.5l-1.8.7L16 8l-.7-1.8L13.5 5.5l1.8-.7z"/></svg>
+          </button>
+        </div>
+        <div class="tool-section">
+          <div class="tool-label">FX</div>
+          <button class="fx-btn" data-fx="breath" title="Breath (cone)">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2 L4 20 L20 20 Z"/></svg>
+          </button>
+          <button class="fx-btn" data-fx="beam" title="Beam (line)">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="4"><line x1="3" y1="3" x2="21" y2="21"/></svg>
+          </button>
+          <button class="fx-btn" data-fx="rocket" title="Rocket (projectile)">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2 L18 12 L15 12 L15 22 L9 22 L9 12 L6 12 Z"/></svg>
+          </button>
+          <button class="fx-btn" data-fx="burn" title="Burn (radius)">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+          <button class="fx-btn" data-fx="glow" title="Glow (pulsing)">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
+          </button>
+          <button class="tool-btn" id="clear-effects-btn" title="Clear all effects">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="fx-color-picker" style="display:none">
+        <div class="fx-color-label">Element</div>
+        <div class="fx-color-grid">
+          <button class="fx-color" data-color="fire"  style="--c:#d44a26" title="Fire"></button>
+          <button class="fx-color" data-color="frost" style="--c:#6bb8e0" title="Frost"></button>
+          <button class="fx-color" data-color="acid"  style="--c:#7bb838" title="Acid"></button>
+          <button class="fx-color" data-color="holy"  style="--c:#e8c878" title="Holy"></button>
+          <button class="fx-color" data-color="blood" style="--c:#8b1e1e" title="Blood"></button>
+          <button class="fx-color" data-color="death" style="--c:#1a1a1a" title="Death"></button>
+          <button class="fx-color" data-color="magic" style="--c:#b026ff" title="Magic"></button>
+          <button class="fx-color" data-color="smoke" style="--c:#6a6a6a" title="Smoke"></button>
+          <button class="fx-color" data-color="charm" style="--c:#ff44cc" title="Charm"></button>
+          <button class="fx-color" data-color="slime" style="--c:#6dbf3a" title="Slime"></button>
+          <button class="fx-color" data-color="water" style="--c:#2070d8" title="Water"></button>
+        </div>
+      </div>
 
       <div id="zoom-controls">
         <button id="zoom-in">+</button>
@@ -533,6 +626,37 @@
     </div>
 
     <div class="char-readonly-note" id="char-readonly-note" style="display:none">Read-only · Only the owner and the host can edit</div>
+  </div>
+</div>
+
+<div id="imggen-popup">
+  <div class="char-popup-header">
+    <span class="ttl">Generate Image (AI)</span>
+    <button id="imggen-close">×</button>
+  </div>
+  <div class="char-popup-body">
+    <div class="field">
+      <label>Type</label>
+      <select id="imggen-type" style="width: 100%;">
+        <option value="map">Battle Map (1024×1024)</option>
+        <option value="character">Character Portrait (512×512)</option>
+        <option value="creature">Creature / Monster (512×512)</option>
+        <option value="item">Item / Object (512×512)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Prompt</label>
+      <textarea id="imggen-prompt" rows="3" style="width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--cream); font-family: inherit; padding: 8px; border-radius: 3px; resize: vertical;" placeholder="A dimly lit dungeon with stone walls and torches..."></textarea>
+    </div>
+    <button id="imggen-go" class="primary" style="width:100%; padding: 10px;">Generate</button>
+    <div id="imggen-preview" style="display:none; margin-top: 14px;">
+      <img id="imggen-img" style="width:100%; border: 1px solid var(--border); border-radius: 4px; display: block;">
+      <div id="imggen-loading" style="text-align: center; color: var(--muted); padding: 40px;">Generating...</div>
+    </div>
+    <div id="imggen-actions" style="display:none; margin-top: 10px; gap: 6px; flex-wrap: wrap;">
+      <button id="imggen-use" class="primary" style="flex:1; min-width: 120px;">Show to All</button>
+      <button id="imggen-regen" style="flex:1; min-width: 120px;">Regenerate</button>
+    </div>
   </div>
 </div>
 
@@ -664,6 +788,7 @@
       channel() {
         let presenceHandler = null;
         let myPresence = null;
+        const broadcastHandlers = {};
         const ch = {
           on(event, opts, handler) {
             if (event === 'postgres_changes' && opts.table) {
@@ -671,7 +796,13 @@
               handlers[opts.table].push(handler);
             } else if (event === 'presence') {
               presenceHandler = handler;
+            } else if (event === 'broadcast') {
+              broadcastHandlers[opts.event] = handler;
             }
+            return ch;
+          },
+          send(msg) {
+            // Mock broadcast: no other clients, no-op
             return ch;
           },
           subscribe(cb) {
@@ -727,6 +858,21 @@
     mapMoveMode: false,     // host can drag the map when on
     movingMap: null,        // active map-drag state
     tokensLocked: false,    // when true, players cannot move tokens
+
+    activeTool: 'select',   // 'select' | 'measure' | 'fx'
+    activeFx: null,         // 'breath' | 'beam' | 'burn' | 'glow' (when activeTool is 'fx')
+    activeFxColor: 'fire',  // 'fire' | 'frost' | etc
+    fxDrawing: null,        // active effect drag state
+    measuring: null,        // active measure tool drag state
+
+    effects: new Map(),     // id -> effect data
+    remoteDrags: new Map(), // userId -> { tokenId, startX, startY, x, y, isMeasure, name }
+  };
+
+  const FX_COLORS = {
+    fire: '#d44a26', frost: '#6bb8e0', acid: '#7bb838', holy: '#e8c878',
+    blood: '#8b1e1e', death: '#1a1a1a', magic: '#b026ff', smoke: '#6a6a6a',
+    charm: '#ff44cc', slime: '#6dbf3a', water: '#2070d8',
   };
 
   // ============ UTILITIES ============
@@ -955,6 +1101,7 @@
       badge.className = 'role-badge role-host';
       document.getElementById('host-section').style.display = 'block';
       document.getElementById('gm-roll-toggle').style.display = 'flex';
+      document.getElementById('dm-toolbar').style.display = 'flex';
       // Host does not have a personal character. They click tokens to view player info.
       document.getElementById('open-char-info').style.display = 'none';
     } else {
@@ -995,6 +1142,13 @@
       renderHpTracker();
     }
 
+    // Load effects
+    const { data: effects } = await sb.from('vtt_effects').select('*').eq('session_id', STATE.sessionId);
+    if (effects) {
+      effects.forEach(fx => STATE.effects.set(fx.id, fx));
+      renderEffects();
+    }
+
     // Load persisted players
     const { data: players } = await sb.from('vtt_players').select('*').eq('session_id', STATE.sessionId);
     if (players) {
@@ -1026,6 +1180,8 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_tokens', filter }, handleTokenChange)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vtt_chat', filter }, handleChatInsert)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_players', filter }, handlePlayerChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_effects', filter }, handleEffectChange)
+      .on('broadcast', { event: 'drag' }, ({ payload }) => handleRemoteDrag(payload))
       .on('presence', { event: 'sync' }, handlePresenceSync)
       .subscribe(async (status) => {
         const ind = document.getElementById('conn-indicator');
@@ -1388,9 +1544,9 @@
 
   // ============ CHARACTER INFO POPUP ============
   const CLASS_COLORS = {
-    barbarian: '#c25050', bard: '#c878d4', cleric: '#e8c878', druid: '#7da848',
-    fighter: '#c0c0d0', monk: '#e08c5a', paladin: '#e8d890', ranger: '#5a9048',
-    rogue: '#8a6db0', sorcerer: '#d4583a', warlock: '#a868c8', wizard: '#5a7bc8',
+    barbarian: '#D35400', bard: '#D4AF37', cleric: '#C9A227', druid: '#8A9A5B',
+    fighter: '#A32121', monk: '#D9902F', paladin: '#F5E6B3', ranger: '#C2A878',
+    rogue: '#6DBF3A', sorcerer: '#B026FF', warlock: '#39FF14', wizard: '#00D4FF',
   };
 
   function getPlayerClassColor(playerId) {
@@ -1704,7 +1860,9 @@
     const t = `translate(${STATE.view.offsetX}px, ${STATE.view.offsetY}px) scale(${STATE.view.zoom})`;
     document.getElementById('grid').style.transform = t;
     document.getElementById('maplayer').style.transform = t;
+    document.getElementById('effectslayer').style.transform = t;
     document.getElementById('tokenlayer').style.transform = t;
+    renderRemoteMeasurements();  // these use screen coords, redraw on zoom/pan
   }
 
   // ============ HOST CONTROLS ============
@@ -1753,6 +1911,276 @@
     });
   });
 
+  // ============ DM TOOL SELECTION ============
+  function setActiveTool(tool, fx) {
+    STATE.activeTool = tool;
+    STATE.activeFx = fx || null;
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === tool && !fx));
+    document.querySelectorAll('.fx-btn').forEach(b => b.classList.toggle('active', tool === 'fx' && b.dataset.fx === fx));
+    const picker = document.getElementById('fx-color-picker');
+    picker.style.display = (tool === 'fx') ? 'block' : 'none';
+    // Cursor hint
+    const mc = document.getElementById('mapcontainer');
+    if (tool === 'measure' || tool === 'fx') mc.style.cursor = 'crosshair';
+    else if (STATE.mapMoveMode) mc.style.cursor = 'move';
+    else mc.style.cursor = '';
+  }
+
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+    btn.addEventListener('click', () => setActiveTool(btn.dataset.tool));
+  });
+  document.querySelectorAll('.fx-btn').forEach(btn => {
+    btn.addEventListener('click', () => setActiveTool('fx', btn.dataset.fx));
+  });
+  document.querySelectorAll('.fx-color').forEach(btn => {
+    btn.addEventListener('click', () => {
+      STATE.activeFxColor = btn.dataset.color;
+      document.querySelectorAll('.fx-color').forEach(b => b.classList.toggle('active', b === btn));
+    });
+  });
+  // Set initial active color
+  setTimeout(() => {
+    const first = document.querySelector('.fx-color[data-color="fire"]');
+    if (first) first.classList.add('active');
+  }, 0);
+
+  document.getElementById('clear-effects-btn').addEventListener('click', async () => {
+    if (!confirm('Clear all effects on the map?')) return;
+    // Delete all effects for this session
+    await sb.from('vtt_effects').delete().eq('session_id', STATE.sessionId);
+  });
+
+  // ============ EFFECTS RENDERING ============
+  function renderEffects() {
+    const layer = document.getElementById('effectslayer');
+    // Set viewport that matches our world coordinate system. We use a large viewBox so SVG draws don't get clipped.
+    layer.setAttribute('viewBox', '0 0 4000 4000');
+    layer.setAttribute('preserveAspectRatio', 'none');
+    layer.style.width = '4000px';
+    layer.style.height = '4000px';
+    let svg = '';
+    const ox = (STATE.map && STATE.map.offset_x) || 0;
+    const oy = (STATE.map && STATE.map.offset_y) || 0;
+    STATE.effects.forEach(fx => {
+      svg += effectToSVG(fx, ox, oy);
+    });
+    layer.innerHTML = svg;
+  }
+
+  function effectToSVG(fx, ox, oy) {
+    const color = FX_COLORS[fx.color] || FX_COLORS.fire;
+    const x1 = (fx.origin_x || 0) + ox;
+    const y1 = (fx.origin_y || 0) + oy;
+    const x2 = (fx.end_x || 0) + ox;
+    const y2 = (fx.end_y || 0) + oy;
+    const dx = x2 - x1, dy = y2 - y1;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+
+    if (fx.type === 'breath') {
+      // Cone: tip at origin, base perpendicular to direction at end. Half-angle ~30deg.
+      if (dist < 5) return '';
+      const angle = Math.atan2(dy, dx);
+      const halfWidth = dist * 0.5; // tan(~27deg) for a decent cone
+      const px = -Math.sin(angle) * halfWidth;
+      const py = Math.cos(angle) * halfWidth;
+      const p1 = `${x1},${y1}`;
+      const p2 = `${x2 + px},${y2 + py}`;
+      const p3 = `${x2 - px},${y2 - py}`;
+      return `<polygon class="fx-shape" points="${p1} ${p2} ${p3}" fill="${color}" style="color:${color}"/>`;
+    }
+    if (fx.type === 'beam') {
+      // Line from origin to end with thickness
+      const w = 10;
+      return `<line class="fx-shape" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${w}" stroke-linecap="round" style="color:${color}"/>`;
+    }
+    if (fx.type === 'rocket') {
+      // Projectile that travels from origin to target with an explosion at the end
+      if (dist < 5) return '';
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      const trail = `<line class="fx-shape" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="3" stroke-linecap="round" opacity="0.5" stroke-dasharray="4 4" style="color:${color}"/>`;
+      const head = `<circle class="fx-shape fx-rocket-head" cx="${x2}" cy="${y2}" r="10" fill="${color}" style="color:${color}"/>`;
+      const burst = `<circle class="fx-shape fx-rocket-burst" cx="${x2}" cy="${y2}" r="20" fill="${color}" fill-opacity="0.4" stroke="${color}" stroke-width="2" style="color:${color}"/>`;
+      return trail + burst + head;
+    }
+    if (fx.type === 'burn') {
+      const r = Math.max(10, dist);
+      return `<circle class="fx-shape" cx="${x1}" cy="${y1}" r="${r}" fill="${color}" style="color:${color}"/>`;
+    }
+    if (fx.type === 'glow') {
+      const r = Math.max(10, dist);
+      return `<circle class="fx-shape glow-pulse" cx="${x1}" cy="${y1}" r="${r}" fill="${color}" stroke="${color}" stroke-width="3" fill-opacity="0.3" style="color:${color}"/>`;
+    }
+    return '';
+  }
+
+  function handleEffectChange(payload) {
+    if (payload.eventType === 'DELETE') {
+      STATE.effects.delete(payload.old.id);
+      renderEffects();
+      return;
+    }
+    STATE.effects.set(payload.new.id, payload.new);
+    renderEffects();
+  }
+
+  // ============ MEASURE TOOL & FX PLACEMENT ============
+  // Reuse mapcontainer mousedown to handle these tools
+  function getMapCoords(clientX, clientY) {
+    const mp = screenToMap(clientX, clientY);
+    const ox = (STATE.map && STATE.map.offset_x) || 0;
+    const oy = (STATE.map && STATE.map.offset_y) || 0;
+    return { x: mp.x - ox, y: mp.y - oy };
+  }
+
+  // ============ LIVE DRAG BROADCAST ============
+  // Broadcast token drag and measurement tool positions so others can see them in realtime
+  let lastBroadcastTime = 0;
+  function broadcastDrag(payload) {
+    if (!STATE.channel) return;
+    const now = Date.now();
+    // Throttle to ~50ms
+    if (now - lastBroadcastTime < 50 && payload.type !== 'drag-end') return;
+    lastBroadcastTime = now;
+    try {
+      STATE.channel.send({ type: 'broadcast', event: 'drag', payload });
+    } catch (e) { /* ignore */ }
+  }
+
+  function handleRemoteDrag(payload) {
+    if (!payload || payload.userId === STATE.userId) return;
+    if (payload.type === 'drag-end') {
+      STATE.remoteDrags.delete(payload.userId);
+    } else {
+      STATE.remoteDrags.set(payload.userId, payload);
+    }
+    renderRemoteMeasurements();
+  }
+
+  function renderRemoteMeasurements() {
+    const svg = document.getElementById('remote-measurements');
+    if (!svg) return;
+    const rect = document.getElementById('mapcontainer').getBoundingClientRect();
+    svg.setAttribute('width', rect.width);
+    svg.setAttribute('height', rect.height);
+    const ox = (STATE.map && STATE.map.offset_x) || 0;
+    const oy = (STATE.map && STATE.map.offset_y) || 0;
+    let html = '';
+    STATE.remoteDrags.forEach(d => {
+      const sxScreen = (d.startX + ox) * STATE.view.zoom + STATE.view.offsetX;
+      const syScreen = (d.startY + oy) * STATE.view.zoom + STATE.view.offsetY;
+      const exScreen = (d.x + ox) * STATE.view.zoom + STATE.view.offsetX;
+      const eyScreen = (d.y + oy) * STATE.view.zoom + STATE.view.offsetY;
+      const midX = (sxScreen + exScreen) / 2;
+      const midY = (syScreen + eyScreen) / 2;
+      const dx = d.x - d.startX, dy = d.y - d.startY;
+      const squares = Math.max(Math.abs(dx), Math.abs(dy)) / STATE.gridSize;
+      const distFt = Math.round(squares) * STATE.gridFt;
+      const label = d.name ? `${d.name}: ${distFt} ft` : `${distFt} ft`;
+      html += `<g class="remote-measure"><line x1="${sxScreen}" y1="${syScreen}" x2="${exScreen}" y2="${eyScreen}"/><circle cx="${exScreen}" cy="${eyScreen}" r="5" fill="var(--gold)"/><text x="${midX}" y="${midY - 12}" text-anchor="middle">${label}</text></g>`;
+    });
+    svg.innerHTML = html;
+  }
+
+  // ============ IMAGE GENERATION (Pollinations.ai) ============
+  const IMG_GEN_PROMPTS = {
+    map: 'top-down dnd battle map, ',
+    character: 'fantasy character portrait, ',
+    creature: 'fantasy creature monster, full body, ',
+    item: 'fantasy item icon, transparent background, ',
+  };
+
+  let imgGenState = { type: 'map', prompt: '', url: '', seed: 0 };
+
+  document.getElementById('imggen-btn').addEventListener('click', () => {
+    document.getElementById('imggen-popup').classList.add('active');
+  });
+  document.getElementById('imggen-close').addEventListener('click', () => {
+    document.getElementById('imggen-popup').classList.remove('active');
+  });
+
+  document.getElementById('imggen-go').addEventListener('click', () => {
+    const type = document.getElementById('imggen-type').value;
+    const promptText = document.getElementById('imggen-prompt').value.trim();
+    if (!promptText) { toast('Enter a prompt first', 'error'); return; }
+    imgGenState = { type, prompt: promptText, seed: Math.floor(Math.random() * 1000000) };
+    runImgGen();
+  });
+  document.getElementById('imggen-regen').addEventListener('click', () => {
+    imgGenState.seed = Math.floor(Math.random() * 1000000);
+    runImgGen();
+  });
+
+  function runImgGen() {
+    const fullPrompt = IMG_GEN_PROMPTS[imgGenState.type] + imgGenState.prompt;
+    const dims = imgGenState.type === 'map' ? { w: 1024, h: 1024 } : { w: 512, h: 512 };
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=${dims.w}&height=${dims.h}&seed=${imgGenState.seed}&nologo=true`;
+    imgGenState.url = url;
+    const img = document.getElementById('imggen-img');
+    img.style.display = 'none';
+    document.getElementById('imggen-loading').style.display = 'block';
+    document.getElementById('imggen-preview').style.display = 'block';
+    document.getElementById('imggen-actions').style.display = 'none';
+    img.onload = () => {
+      img.style.display = 'block';
+      document.getElementById('imggen-loading').style.display = 'none';
+      document.getElementById('imggen-actions').style.display = 'flex';
+    };
+    img.onerror = () => {
+      document.getElementById('imggen-loading').textContent = 'Generation failed. Try a different prompt.';
+    };
+    img.src = url;
+  }
+
+  document.getElementById('imggen-use').addEventListener('click', async () => {
+    if (!imgGenState.url) return;
+    const type = imgGenState.type;
+    try {
+      // Fetch the generated image and convert to a Blob for upload
+      const res = await fetch(imgGenState.url);
+      const blob = await res.blob();
+      if (type === 'map') {
+        // Resize-ish (server returned 1024x1024 so it's already sized)
+        const path = `${STATE.sessionId}/maps/map.jpg`;
+        const finalUrl = await uploadImage(blob, path);
+        const cacheBuster = (DEMO_MODE || finalUrl.startsWith('data:') || finalUrl.startsWith('blob:')) ? finalUrl : finalUrl + '?t=' + Date.now();
+        // Get dimensions via Image
+        const img = new Image();
+        img.onload = async () => {
+          await sb.from('vtt_maps').upsert({
+            session_id: STATE.sessionId,
+            image_url: cacheBuster,
+            width: img.width,
+            height: img.height,
+            grid_ft: STATE.gridFt,
+            updated_at: new Date().toISOString(),
+          });
+          toast('Map updated for everyone');
+        };
+        img.src = imgGenState.url;
+      } else {
+        // Create a token with this image
+        const tokenId = genId();
+        const path = `${STATE.sessionId}/tokens/${tokenId}.jpg`;
+        const url = await uploadImage(blob, path);
+        const labelMap = { character: 'NPC', creature: 'Creature', item: 'Item' };
+        await sb.from('vtt_tokens').insert({
+          id: tokenId,
+          session_id: STATE.sessionId,
+          name: labelMap[type] || 'Token',
+          image_url: url,
+          x: null, y: null,
+          owner_id: STATE.userId,
+          current_hp: 10, max_hp: 10,
+        });
+        toast((labelMap[type] || 'Token') + ' added to tray');
+      }
+      document.getElementById('imggen-popup').classList.remove('active');
+    } catch (err) {
+      console.error(err);
+      toast('Failed to publish image', 'error');
+    }
+  });
+
   document.getElementById('zoom-in').addEventListener('click', () => { STATE.view.zoom = Math.min(3, STATE.view.zoom * 1.2); applyTransform(); });
   document.getElementById('zoom-out').addEventListener('click', () => { STATE.view.zoom = Math.max(0.3, STATE.view.zoom / 1.2); applyTransform(); });
   document.getElementById('zoom-reset').addEventListener('click', () => { STATE.view = { offsetX: 0, offsetY: 0, zoom: 1 }; applyTransform(); });
@@ -1772,7 +2200,30 @@
 
   let panStart = null;
   document.getElementById('mapcontainer').addEventListener('mousedown', (e) => {
-    if (e.target.closest('.map-token') || e.target.closest('#chatbox') || e.target.closest('#zoom-controls')) return;
+    if (e.target.closest('.map-token') || e.target.closest('#chatbox') || e.target.closest('#zoom-controls') || e.target.closest('#dm-toolbar') || e.target.closest('#fx-color-picker')) return;
+
+    // Host: Measure tool
+    if (STATE.isHost && STATE.activeTool === 'measure') {
+      const mc = getMapCoords(e.clientX, e.clientY);
+      STATE.measuring = { startX: mc.x, startY: mc.y, x: mc.x, y: mc.y };
+      broadcastDrag({
+        type: 'drag-start',
+        userId: STATE.userId,
+        name: STATE.username + ' (measuring)',
+        startX: mc.x, startY: mc.y,
+        x: mc.x, y: mc.y,
+        isMeasure: true,
+      });
+      return;
+    }
+
+    // Host: FX placement
+    if (STATE.isHost && STATE.activeTool === 'fx') {
+      const mc = getMapCoords(e.clientX, e.clientY);
+      STATE.fxDrawing = { type: STATE.activeFx, color: STATE.activeFxColor, origin_x: mc.x, origin_y: mc.y, end_x: mc.x, end_y: mc.y };
+      renderFxPreview();
+      return;
+    }
 
     // Host: if Move Map mode is active, drag moves the map image instead of panning view
     if (STATE.mapMoveMode && STATE.isHost && STATE.map) {
@@ -1790,7 +2241,42 @@
     panStart = { x: e.clientX - STATE.view.offsetX, y: e.clientY - STATE.view.offsetY };
     document.getElementById('mapcontainer').classList.add('panning');
   });
+
   document.addEventListener('mousemove', (e) => {
+    // Measure tool active
+    if (STATE.measuring) {
+      const mc = getMapCoords(e.clientX, e.clientY);
+      STATE.measuring.x = mc.x;
+      STATE.measuring.y = mc.y;
+      broadcastDrag({
+        type: 'drag-move',
+        userId: STATE.userId,
+        name: STATE.username + ' (measuring)',
+        startX: STATE.measuring.startX,
+        startY: STATE.measuring.startY,
+        x: mc.x, y: mc.y,
+        isMeasure: true,
+      });
+      // Render measurement locally (mock as a remote drag)
+      STATE.remoteDrags.set('__self_measure', {
+        startX: STATE.measuring.startX,
+        startY: STATE.measuring.startY,
+        x: mc.x, y: mc.y,
+        name: 'Measuring',
+      });
+      renderRemoteMeasurements();
+      return;
+    }
+
+    // FX drawing in progress
+    if (STATE.fxDrawing) {
+      const mc = getMapCoords(e.clientX, e.clientY);
+      STATE.fxDrawing.end_x = mc.x;
+      STATE.fxDrawing.end_y = mc.y;
+      renderFxPreview();
+      return;
+    }
+
     if (STATE.movingMap && STATE.map) {
       const dx = (e.clientX - STATE.movingMap.startMouseX) / STATE.view.zoom;
       const dy = (e.clientY - STATE.movingMap.startMouseY) / STATE.view.zoom;
@@ -1798,6 +2284,7 @@
       STATE.map.offset_y = STATE.movingMap.startOffsetY + dy;
       renderMap();
       renderTokens();
+      renderEffects();
       return;
     }
     if (panStart && !STATE.dragging) {
@@ -1806,7 +2293,37 @@
       applyTransform();
     }
   });
+
   document.addEventListener('mouseup', async () => {
+    // Finish measurement
+    if (STATE.measuring) {
+      broadcastDrag({ type: 'drag-end', userId: STATE.userId });
+      STATE.measuring = null;
+      STATE.remoteDrags.delete('__self_measure');
+      renderRemoteMeasurements();
+      return;
+    }
+
+    // Finish FX placement
+    if (STATE.fxDrawing) {
+      const fx = STATE.fxDrawing;
+      STATE.fxDrawing = null;
+      document.getElementById('effectslayer').querySelector('.fx-preview')?.remove();
+      // Persist
+      const id = genId();
+      await sb.from('vtt_effects').insert({
+        id,
+        session_id: STATE.sessionId,
+        type: fx.type,
+        color: fx.color,
+        origin_x: fx.origin_x,
+        origin_y: fx.origin_y,
+        end_x: fx.end_x,
+        end_y: fx.end_y,
+      });
+      return;
+    }
+
     if (STATE.movingMap && STATE.map) {
       // Persist new map offset
       await sb.from('vtt_maps').update({
@@ -1821,6 +2338,25 @@
     panStart = null;
     document.getElementById('mapcontainer').classList.remove('panning');
   });
+
+  function renderFxPreview() {
+    const layer = document.getElementById('effectslayer');
+    // Remove existing preview
+    layer.querySelector('.fx-preview')?.remove();
+    if (!STATE.fxDrawing) return;
+    const ox = (STATE.map && STATE.map.offset_x) || 0;
+    const oy = (STATE.map && STATE.map.offset_y) || 0;
+    const svgStr = effectToSVG(STATE.fxDrawing, ox, oy);
+    if (!svgStr) return;
+    // Inject as last child, marked as preview
+    const tmp = document.createElement('div');
+    tmp.innerHTML = `<svg>${svgStr}</svg>`;
+    const node = tmp.querySelector('*');
+    if (node) {
+      node.classList.add('fx-preview');
+      layer.appendChild(node);
+    }
+  }
 
   // ============ TOKEN DRAG ============
   function getEventPos(e) {
@@ -1885,6 +2421,17 @@
       el.style.top = (tok.y + oy - 25) + 'px';
     }
     updateMeasurement();
+    // Broadcast so other clients can see the live measurement line
+    if (STATE.dragging.moved) {
+      broadcastDrag({
+        type: 'drag-move',
+        userId: STATE.userId,
+        name: STATE.username,
+        startX: STATE.dragging.startX,
+        startY: STATE.dragging.startY,
+        x: tok.x, y: tok.y,
+      });
+    }
   }
 
   function updateMeasurement() {
@@ -1928,6 +2475,9 @@
     document.getElementById('measurement').style.display = 'none';
     const finalX = tok.x, finalY = tok.y, id = tok.id;
     STATE.dragging = null;
+
+    // Tell others to stop showing our drag line
+    broadcastDrag({ type: 'drag-end', userId: STATE.userId });
 
     // If the user did not move the mouse, treat it as a click and open character info
     if (!wasMoved) {
