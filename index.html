@@ -640,17 +640,18 @@
   .char-head-info input.char-level { width: 32px; text-align: center; }
   .char-head-info input.char-race { width: 100px; }
 
-  /* Char vitals - 5 columns so HP/AC/Speed/Init/Inspiration all fit on one row */
-  .char-vitals { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 12px; align-items: stretch; }
+  /* Char vitals - HP gets a wider first column (2x) so its inputs have room.
+   * Remaining 4 cols are AC, Speed, Init, Inspiration. */
+  .char-vitals { display: grid; grid-template-columns: 1.7fr 1fr 1fr 1fr 1fr; gap: 5px; margin-bottom: 12px; align-items: stretch; }
   .vital-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 3px; padding: 5px 4px; text-align: center; min-width: 0; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; }
   .vital-box label { display: block; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
   .vital-box .vital-val { font-family: 'Cinzel', serif; font-size: 14px; color: var(--gold); font-weight: 600; }
   .vital-box input { width: 100%; background: transparent; border: none; color: var(--gold); font-family: 'Cinzel', serif; font-size: 13px; font-weight: 600; text-align: center; padding: 0; }
   .vital-box input:focus { background: var(--bg); }
   .vital-box .vital-sub { font-size: 9px; color: var(--muted); margin-top: 1px; }
-  .vital-box .hp-edit-inline { display: flex; align-items: center; justify-content: center; gap: 1px; }
-  .vital-box .hp-edit-inline input { width: 26px; font-size: 12px; padding: 1px 0; }
-  .vital-box .hp-edit-inline .hp-sep { color: var(--muted); font-size: 11px; }
+  .vital-box .hp-edit-inline { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; }
+  .vital-box .hp-edit-inline input { width: 36px; font-size: 15px; padding: 2px 0; min-width: 0; }
+  .vital-box .hp-edit-inline .hp-sep { color: var(--muted); font-size: 13px; }
   /* HP vital - small decorative heart on top, HP values BELOW the heart
    * on clean dark background so they're always readable. The heart is
    * pure decoration and is not behind the numbers. */
@@ -664,8 +665,8 @@
     gap: 2px;
   }
   .vital-box.vital-hp .hp-heart-graphic {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     flex-shrink: 0;
     filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
   }
