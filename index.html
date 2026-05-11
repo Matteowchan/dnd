@@ -89,7 +89,9 @@
   .role-host { background: rgba(212,165,116,0.2); color: var(--gold); border: 1px solid var(--gold-soft); }
   .role-player { background: rgba(107,138,74,0.2); color: #a8c878; border: 1px solid var(--success); }
 
-  #main { flex: 1; display: flex; overflow: hidden; }
+  #main { flex: 1; display: flex; overflow: hidden; transition: padding-right 0.18s ease; }
+  body.panel-open #main { padding-right: 380px; }
+  body.panel-open.panel-collapsed #main { padding-right: 0; }
 
   /* SIDE PANEL */
   #sidepanel { width: 280px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
@@ -152,17 +154,55 @@
   #maplayer img { display: block; max-width: none; pointer-events: none; }
   #tokenlayer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: 0 0; pointer-events: none; }
   .map-token { position: absolute; width: 50px; height: 50px; border-radius: 50%; border: 3px solid var(--gold); background-size: cover; background-position: center; cursor: grab; box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3); pointer-events: auto; }
+  .map-token .token-x-btn { position: absolute; top: -7px; right: -7px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: white; border: 1.5px solid #1a1612; padding: 0; font-size: 12px; line-height: 1; cursor: pointer; opacity: 0; transition: opacity 0.12s, transform 0.12s; z-index: 3; box-shadow: 0 1px 4px rgba(0,0,0,0.6); }
+  .map-token:hover .token-x-btn { opacity: 0.95; }
+  .map-token .token-x-btn:hover { opacity: 1; transform: scale(1.18); }
   .map-token.smooth-move { transition: left 0.25s ease, top 0.25s ease; }
   .map-token.dragging { cursor: grabbing; z-index: 100; transform: scale(1.1); transition: none; }
   .map-token .name-tag { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: var(--cream); padding: 2px 8px; border-radius: 3px; font-size: 11px; white-space: nowrap; font-family: 'Cinzel', serif; }
 
   /* CHARACTER POPUP */
-  #char-popup { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); width: 560px; max-height: 88vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  #char-popup { position: fixed; top: 56px; right: 0; bottom: 0; width: 380px; background: var(--panel); border-left: 1px solid var(--border); box-shadow: -6px 0 20px rgba(0,0,0,0.4); z-index: 50; display: none; flex-direction: column; transition: transform 0.18s; }
   #char-popup.active { display: flex; }
-  .char-popup-header { padding: 10px 14px; background: var(--panel-light); border-bottom: 1px solid var(--border); cursor: move; display: flex; align-items: center; justify-content: space-between; border-radius: 6px 6px 0 0; }
+  #char-popup.collapsed { transform: translateX(380px); }
+  /* Header is shared with floating popups (imggen/spells/recap) which keep drag, so cursor:move applies there */
+  .char-popup-header { padding: 10px 14px; background: var(--panel-light); border-bottom: 1px solid var(--border); cursor: move; display: flex; align-items: center; justify-content: space-between; gap: 6px; border-radius: 6px 6px 0 0; }
   .char-popup-header .ttl { font-family: 'Cinzel', serif; font-size: 14px; color: var(--gold); letter-spacing: 0.05em; }
   .char-popup-header button { padding: 2px 10px; font-size: 14px; }
-  .char-popup-body { padding: 16px; overflow-y: auto; }
+  /* Override cursor on the docked char-popup since it doesn't drag */
+  #char-popup .char-popup-header { cursor: default; padding: 8px 12px; }
+  #char-popup .char-popup-header .ttl { font-size: 13px; }
+  #char-popup .char-popup-header button { font-size: 12px; padding: 2px 8px; }
+  #char-back-btn { background: var(--gold-soft); color: var(--cream); border-color: var(--gold); font-size: 11px; padding: 3px 8px; margin-left: auto; }
+  #char-popup-close { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  #char-popup .char-popup-body { padding: 0 14px 14px; overflow-y: auto; flex: 1; }
+  #char-popup .char-head { padding: 12px 14px 8px; border-bottom: 1px solid var(--border); }
+  #char-popup .char-vitals { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+
+  /* Floating "Character" button to bring back the panel when collapsed */
+  #char-panel-show { position: fixed; top: 64px; right: 8px; padding: 6px 12px; background: var(--gold-soft); color: var(--cream); border: 1px solid var(--gold); border-radius: 4px; font-size: 11px; letter-spacing: 0.08em; font-family: 'Cinzel', serif; cursor: pointer; z-index: 51; display: none; }
+  #char-popup.collapsed ~ #char-panel-show { display: block; }
+
+  /* Tab navigation */
+  .char-tabs { display: flex; background: var(--bg); border-bottom: 1px solid var(--border); padding: 0 8px; }
+  .char-tab { flex: 1; padding: 8px 4px; cursor: pointer; font-size: 11px; color: var(--muted); background: transparent; border: none; border-bottom: 2px solid transparent; font-family: 'Cinzel', serif; letter-spacing: 0.06em; text-transform: uppercase; }
+  .char-tab:hover { color: var(--cream); }
+  .char-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .char-tab-content { display: none; padding-top: 12px; }
+  .char-tab-content.active { display: block; }
+
+  /* Equipment slot grid */
+  .equipment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .eq-slot { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; }
+  .eq-slot.filled { border-color: var(--gold-soft); }
+  .eq-slot-label { font-size: 9px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; font-family: 'Cinzel', serif; margin-bottom: 3px; }
+  .eq-slot .eq-name { width: 100%; padding: 3px 5px; background: var(--panel); border: 1px solid var(--border); color: var(--cream); border-radius: 2px; font-size: 12px; font-family: inherit; margin-bottom: 2px; }
+  .eq-slot .eq-stats { width: 100%; padding: 3px 5px; background: var(--panel); border: 1px solid var(--border); color: var(--gold); border-radius: 2px; font-size: 10px; font-family: inherit; font-style: italic; }
+  .eq-slot input:focus { outline: none; border-color: var(--gold); }
+
+  /* Inventory rows show stats inline */
+  .inv-row .inv-stats { color: var(--gold); font-size: 10px; font-style: italic; margin-left: 6px; opacity: 0.8; }
+  .inv-add-row input[type="text"] { min-width: 0; }
 
   /* Character sheet sections */
   .char-pbrow { display: flex; align-items: center; gap: 10px; padding: 8px 12px; margin-top: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; }
@@ -363,6 +403,14 @@
   .spells-current-row { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 10px; }
   .spells-current-row strong { color: var(--gold); font-family: 'Cinzel', serif; letter-spacing: 0.05em; }
   #spells-activate:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Campaign Log / Recap popup */
+  #recap-popup { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); width: 620px; max-height: 86vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  #recap-popup.active { display: flex; }
+  #recap-popup .char-popup-body { padding: 16px; overflow-y: auto; }
+  #recap-textarea { width: 100%; min-height: 380px; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 4px; font-family: 'Georgia', serif; font-size: 14px; line-height: 1.55; resize: vertical; }
+  #recap-textarea:focus { outline: none; border-color: var(--gold); }
+  #recap-textarea:read-only { background: rgba(20,16,12,0.4); cursor: default; }
   .lib-thumb { position: relative; aspect-ratio: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; overflow: hidden; cursor: pointer; }
   .lib-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .lib-thumb:hover { border-color: var(--gold); }
@@ -571,6 +619,7 @@
     </div>
     <div style="display: flex; align-items: center; gap: 12px;">
       <span id="conn-indicator">Connecting</span>
+      <button id="recap-btn" title="Campaign Log / Recap">Recap</button>
       <button id="switch-role-btn" style="display:none;" title="Demo mode only">Switch Role</button>
       <button id="leave-btn" class="danger">Leave</button>
     </div>
@@ -676,7 +725,25 @@
     <div id="mapcontainer">
       <div id="grid"></div>
       <div id="maplayer"></div>
-      <svg id="effectslayer"></svg>
+      <svg id="effectslayer">
+        <defs>
+          <filter id="fx-glow-soft" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="fx-glow-hard" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="8" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+      </svg>
       <div id="tokenlayer"></div>
       <svg id="measurement" style="display:none"></svg>
       <svg id="remote-measurements"></svg>
@@ -779,115 +846,140 @@
 <div id="char-popup">
   <div class="char-popup-header">
     <span class="ttl">Character</span>
-    <button id="char-popup-close">×</button>
+    <button id="char-back-btn" style="display:none;" title="Return to your character">← My character</button>
+    <button id="char-popup-close" title="Hide panel">×</button>
   </div>
+
+  <div class="char-head">
+    <div class="char-portrait" id="char-portrait"></div>
+    <div class="char-head-info">
+      <input type="text" class="char-name" id="char-name" placeholder="Character name">
+      <div class="char-subline">
+        <span>Lvl</span>
+        <input type="number" class="char-level" id="char-level" min="1" max="20" value="1">
+        <select id="char-class">
+          <option value="">— class —</option>
+          <option value="barbarian">Barbarian</option>
+          <option value="bard">Bard</option>
+          <option value="cleric">Cleric</option>
+          <option value="druid">Druid</option>
+          <option value="fighter">Fighter</option>
+          <option value="monk">Monk</option>
+          <option value="paladin">Paladin</option>
+          <option value="ranger">Ranger</option>
+          <option value="rogue">Rogue</option>
+          <option value="sorcerer">Sorcerer</option>
+          <option value="warlock">Warlock</option>
+          <option value="wizard">Wizard</option>
+        </select>
+        <input type="text" class="char-race" id="char-race" placeholder="Race" maxlength="20">
+      </div>
+    </div>
+  </div>
+
+  <div class="char-vitals">
+    <div class="vital-box">
+      <label>HP</label>
+      <div class="hp-edit-inline">
+        <input type="number" id="char-hp-cur" min="0" placeholder="—">
+        <span class="hp-sep">/</span>
+        <input type="number" id="char-hp-max" min="1" placeholder="—">
+      </div>
+      <div class="vital-sub" id="char-hp-sub"></div>
+    </div>
+    <div class="vital-box">
+      <label>AC</label>
+      <input type="number" id="char-ac" min="0" max="40" value="10">
+    </div>
+    <div class="vital-box">
+      <label>Speed</label>
+      <input type="number" id="char-speed" min="0" max="120" value="30">
+      <div class="vital-sub">ft</div>
+    </div>
+    <div class="vital-box">
+      <label>Init</label>
+      <div class="vital-val" id="char-init">+0</div>
+      <div class="vital-sub">DEX mod</div>
+    </div>
+  </div>
+
+  <div class="char-tabs">
+    <button class="char-tab active" data-tab="stats">Stats</button>
+    <button class="char-tab" data-tab="skills">Skills</button>
+    <button class="char-tab" data-tab="equipment">Equipment</button>
+    <button class="char-tab" data-tab="buffs">Buffs</button>
+    <button class="char-tab" data-tab="notes">Notes</button>
+  </div>
+
   <div class="char-popup-body">
-    <div class="char-head">
-      <div class="char-portrait" id="char-portrait"></div>
-      <div class="char-head-info">
-        <input type="text" class="char-name" id="char-name" placeholder="Character name">
-        <div class="char-subline">
-          <span>Lvl</span>
-          <input type="number" class="char-level" id="char-level" min="1" max="20" value="1">
-          <select id="char-class">
-            <option value="">— class —</option>
-            <option value="barbarian">Barbarian</option>
-            <option value="bard">Bard</option>
-            <option value="cleric">Cleric</option>
-            <option value="druid">Druid</option>
-            <option value="fighter">Fighter</option>
-            <option value="monk">Monk</option>
-            <option value="paladin">Paladin</option>
-            <option value="ranger">Ranger</option>
-            <option value="rogue">Rogue</option>
-            <option value="sorcerer">Sorcerer</option>
-            <option value="warlock">Warlock</option>
-            <option value="wizard">Wizard</option>
-          </select>
-          <input type="text" class="char-race" id="char-race" placeholder="Race" maxlength="20">
+    <div class="char-tab-content active" data-tab="stats">
+      <div class="char-stats">
+        <div class="stat-box"><label>STR</label><input type="number" id="char-str" min="1" max="30" value="10"><div class="mod" id="mod-str">+0</div></div>
+        <div class="stat-box"><label>DEX</label><input type="number" id="char-dex" min="1" max="30" value="10"><div class="mod" id="mod-dex">+0</div></div>
+        <div class="stat-box"><label>CON</label><input type="number" id="char-con" min="1" max="30" value="10"><div class="mod" id="mod-con">+0</div></div>
+        <div class="stat-box"><label>INT</label><input type="number" id="char-int" min="1" max="30" value="10"><div class="mod" id="mod-int">+0</div></div>
+        <div class="stat-box"><label>WIS</label><input type="number" id="char-wis" min="1" max="30" value="10"><div class="mod" id="mod-wis">+0</div></div>
+        <div class="stat-box"><label>CHA</label><input type="number" id="char-cha" min="1" max="30" value="10"><div class="mod" id="mod-cha">+0</div></div>
+      </div>
+      <div class="char-pbrow">
+        <div class="pb-label">Proficiency Bonus</div>
+        <div class="pb-value" id="char-prof-bonus">+2</div>
+        <div class="pb-hint" id="char-prof-hint">(auto from level)</div>
+      </div>
+    </div>
+
+    <div class="char-tab-content" data-tab="skills">
+      <div class="char-section">
+        <div class="char-section-head">Saving Throws</div>
+        <div class="saves-grid" id="saves-grid"></div>
+      </div>
+      <div class="char-section">
+        <div class="char-section-head">Skills</div>
+        <div class="skills-grid" id="skills-grid"></div>
+      </div>
+    </div>
+
+    <div class="char-tab-content" data-tab="equipment">
+      <div class="char-section">
+        <div class="char-section-head">Equipped <span class="hint">(name and stat bonus)</span></div>
+        <div class="equipment-grid" id="equipment-grid"></div>
+      </div>
+      <div class="char-section">
+        <div class="char-section-head">Inventory <span class="char-gold-display">Gold: <input type="number" id="char-gold" value="0" min="0"></span></div>
+        <div id="inventory-list"></div>
+        <div class="inv-add-row">
+          <input type="text" id="inv-add-name" placeholder="Item name" maxlength="40">
+          <input type="number" id="inv-add-qty" placeholder="1" min="1" value="1" style="width:54px;">
+          <button id="inv-add-btn" class="primary">Add</button>
+        </div>
+        <input type="text" id="inv-add-stats" placeholder="Item stats (e.g. +1 AC, heals 2d4)" maxlength="60" style="width:100%; margin-top: 4px; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; font-size:12px; font-family: inherit;">
+      </div>
+    </div>
+
+    <div class="char-tab-content" data-tab="buffs">
+      <div class="char-section">
+        <div class="char-section-head">Active Buffs <span class="hint">(added to dice rolls)</span></div>
+        <div id="buffs-list"></div>
+        <div class="buff-add-row">
+          <input type="text" id="buff-add-name" placeholder="Buff name (e.g. Bless)" maxlength="30">
+          <input type="number" id="buff-add-mod" placeholder="+2" style="width:64px;">
+          <button id="buff-add-btn" class="primary">Add</button>
         </div>
       </div>
     </div>
 
-    <div class="char-vitals">
-      <div class="vital-box">
-        <label>HP</label>
-        <div class="hp-edit-inline">
-          <input type="number" id="char-hp-cur" min="0" placeholder="—">
-          <span class="hp-sep">/</span>
-          <input type="number" id="char-hp-max" min="1" placeholder="—">
-        </div>
-        <div class="vital-sub" id="char-hp-sub"></div>
+    <div class="char-tab-content" data-tab="notes">
+      <div class="char-notes">
+        <label>Notes</label>
+        <textarea id="char-notes" placeholder="Background, equipment notes, spells, anything you want to remember"></textarea>
       </div>
-      <div class="vital-box">
-        <label>AC</label>
-        <input type="number" id="char-ac" min="0" max="40" value="10">
-      </div>
-      <div class="vital-box">
-        <label>Speed</label>
-        <input type="number" id="char-speed" min="0" max="120" value="30">
-        <div class="vital-sub">ft</div>
-      </div>
-      <div class="vital-box">
-        <label>Init</label>
-        <div class="vital-val" id="char-init">+0</div>
-        <div class="vital-sub">DEX mod</div>
-      </div>
-    </div>
-
-    <div class="char-stats">
-      <div class="stat-box"><label>STR</label><input type="number" id="char-str" min="1" max="30" value="10"><div class="mod" id="mod-str">+0</div></div>
-      <div class="stat-box"><label>DEX</label><input type="number" id="char-dex" min="1" max="30" value="10"><div class="mod" id="mod-dex">+0</div></div>
-      <div class="stat-box"><label>CON</label><input type="number" id="char-con" min="1" max="30" value="10"><div class="mod" id="mod-con">+0</div></div>
-      <div class="stat-box"><label>INT</label><input type="number" id="char-int" min="1" max="30" value="10"><div class="mod" id="mod-int">+0</div></div>
-      <div class="stat-box"><label>WIS</label><input type="number" id="char-wis" min="1" max="30" value="10"><div class="mod" id="mod-wis">+0</div></div>
-      <div class="stat-box"><label>CHA</label><input type="number" id="char-cha" min="1" max="30" value="10"><div class="mod" id="mod-cha">+0</div></div>
-    </div>
-
-    <div class="char-pbrow">
-      <div class="pb-label">Proficiency Bonus</div>
-      <div class="pb-value" id="char-prof-bonus">+2</div>
-      <div class="pb-hint" id="char-prof-hint">(auto from level)</div>
-    </div>
-
-    <div class="char-section">
-      <div class="char-section-head">Saving Throws</div>
-      <div class="saves-grid" id="saves-grid"></div>
-    </div>
-
-    <div class="char-section">
-      <div class="char-section-head">Skills</div>
-      <div class="skills-grid" id="skills-grid"></div>
-    </div>
-
-    <div class="char-section">
-      <div class="char-section-head">Active Buffs <span class="hint">(added to dice rolls)</span></div>
-      <div id="buffs-list"></div>
-      <div class="buff-add-row">
-        <input type="text" id="buff-add-name" placeholder="Buff name (e.g. Bless)" maxlength="30">
-        <input type="number" id="buff-add-mod" placeholder="+2" style="width:64px;">
-        <button id="buff-add-btn" class="primary">Add</button>
-      </div>
-    </div>
-
-    <div class="char-section">
-      <div class="char-section-head">Inventory <span class="char-gold-display">Gold: <input type="number" id="char-gold" value="0" min="0"></span></div>
-      <div id="inventory-list"></div>
-      <div class="inv-add-row">
-        <input type="text" id="inv-add-name" placeholder="Item name" maxlength="40">
-        <input type="number" id="inv-add-qty" placeholder="1" min="1" value="1" style="width:64px;">
-        <button id="inv-add-btn" class="primary">Add</button>
-      </div>
-    </div>
-
-    <div class="char-notes">
-      <label>Notes</label>
-      <textarea id="char-notes" placeholder="Background, equipment, spells, anything you want to remember"></textarea>
     </div>
 
     <div class="char-readonly-note" id="char-readonly-note" style="display:none">Read-only · Only the owner and the host can edit</div>
   </div>
 </div>
+
+<button id="char-panel-show" title="Show character panel">Character</button>
 
 <div id="imggen-popup">
   <div class="char-popup-header">
@@ -1001,6 +1093,26 @@
         Selected: <strong id="spells-current-name">Pick a shape and element</strong>
       </div>
       <button id="spells-activate" class="primary" style="width:100%; padding: 10px;" disabled>Activate</button>
+    </div>
+  </div>
+</div>
+
+<div id="recap-popup">
+  <div class="char-popup-header">
+    <span class="ttl">Campaign Log</span>
+    <button id="recap-close">×</button>
+  </div>
+  <div class="char-popup-body">
+    <div id="recap-host-controls" style="display:none; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;">
+      <button id="recap-new-entry" class="primary">+ New session entry</button>
+      <span style="font-size:11px; color: var(--muted); align-self: center; margin-left: auto;">Auto-saved · visible to all players</span>
+    </div>
+    <textarea id="recap-textarea" placeholder="Session 1: The party met at the tavern in Phandalin..."></textarea>
+    <div id="recap-readonly-note" style="display:none; font-size: 11px; color: var(--muted); font-style: italic; margin-top: 6px;">Read-only · Only the host can edit the log</div>
+    <div style="border-top: 1px solid var(--border); margin-top: 14px; padding-top: 12px;">
+      <div style="font-family: 'Cinzel', serif; font-size: 11px; color: var(--gold); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">Danger Zone <span style="color: var(--muted); font-size: 9px;">(host only)</span></div>
+      <button id="delete-campaign-btn" class="danger" style="display:none; font-size: 11px;">Delete entire campaign (wipe everything)</button>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">Nothing is auto-deleted. Tokens, maps, log, and characters stay until the host explicitly clears them.</div>
     </div>
   </div>
 </div>
@@ -1242,18 +1354,18 @@
   };
   // Three-stop palettes for richer spell rendering: bright core -> mid -> dark edge
   const FX_PALETTES = {
-    fire:      { core: '#fff5b0', mid: '#ff7a1a', edge: '#8a1f00' },
-    frost:     { core: '#ffffff', mid: '#8fd4f0', edge: '#1e5a8a' },
-    acid:      { core: '#e4ffa0', mid: '#5fb028', edge: '#2a4a10' },
-    holy:      { core: '#ffffff', mid: '#ffd97a', edge: '#a07a0a' },
-    blood:     { core: '#ff5050', mid: '#a01818', edge: '#3a0a0a' },
-    death:     { core: '#a060b0', mid: '#4a1a5a', edge: '#100020' },
-    magic:     { core: '#ffa0f0', mid: '#b026ff', edge: '#4a0070' },
-    smoke:     { core: '#e0e0e0', mid: '#808080', edge: '#202020' },
-    charm:     { core: '#ffd0f0', mid: '#ff44cc', edge: '#a01070' },
-    slime:     { core: '#c0ff60', mid: '#6dbf3a', edge: '#2a5010' },
-    water:     { core: '#a0d0ff', mid: '#2070d8', edge: '#0a2a5a' },
-    lightning: { core: '#ffffff', mid: '#a0d0ff', edge: '#3a60a0' },
+    fire:      { core: '#ffe066', mid: '#ff3a0a', edge: '#6a0a00' },
+    frost:     { core: '#e0fbff', mid: '#26a8e0', edge: '#0a2a4a' },
+    acid:      { core: '#d9ff5e', mid: '#4ea81e', edge: '#1a3a08' },
+    holy:      { core: '#fff7c2', mid: '#ffb826', edge: '#7a4a00' },
+    blood:     { core: '#ff4040', mid: '#8a0c0c', edge: '#2a0404' },
+    death:     { core: '#b870d8', mid: '#3a0a5a', edge: '#0a0018' },
+    magic:     { core: '#ff80ff', mid: '#9c1ae0', edge: '#3a0060' },
+    smoke:     { core: '#f0f0f0', mid: '#6a6a6a', edge: '#181818' },
+    charm:     { core: '#ffc0e8', mid: '#ff1a9c', edge: '#7a0050' },
+    slime:     { core: '#d4ff70', mid: '#4eb826', edge: '#1a3a08' },
+    water:     { core: '#a0d8ff', mid: '#0c5ad4', edge: '#02164a' },
+    lightning: { core: '#ffffff', mid: '#7eb8ff', edge: '#1a3a8a' },
   };
 
   // ============ UTILITIES ============
@@ -1635,6 +1747,12 @@
 
     await loadInitialState();
     setupRealtime();
+
+    // Open the docked character panel automatically for players. For hosts,
+    // leave it closed - it will slide in when they click on a token.
+    if (!STATE.isHost) {
+      openCharPopup(STATE.userId);
+    }
   }
 
   function applyClassTheme(cls) {
@@ -1648,8 +1766,9 @@
   async function loadInitialState() {
     // Load active map slot from session
     const { data: session } = await sb.from('vtt_sessions').select('*').eq('id', STATE.sessionId).maybeSingle();
-    if (session && session.active_map_slot) {
-      STATE.activeMapSlot = session.active_map_slot;
+    if (session) {
+      STATE.session = session;
+      if (session.active_map_slot) STATE.activeMapSlot = session.active_map_slot;
     }
 
     // Load all map slots (up to 3)
@@ -1781,9 +1900,17 @@
 
   function handleSessionChange(payload) {
     if (payload.eventType !== 'UPDATE' || !payload.new) return;
+    STATE.session = payload.new;
     const newSlot = payload.new.active_map_slot;
     if (newSlot && newSlot !== STATE.activeMapSlot) {
       switchToMapSlot(newSlot, false);
+    }
+    // Reflect campaign log if the popup is open and we're not the editor
+    const popup = document.getElementById('recap-popup');
+    if (popup.classList.contains('active') && !STATE.isHost) {
+      const ta = document.getElementById('recap-textarea');
+      // Don't clobber if user is typing (they shouldn't be able to as a player anyway)
+      if (document.activeElement !== ta) ta.value = payload.new.campaign_log || '';
     }
   }
 
@@ -1946,6 +2073,33 @@
       nm.className = 'name-tag';
       nm.textContent = tok.name;
       el.appendChild(nm);
+
+      // Small × button on the token itself for owners or host
+      if (tok.owner_id === STATE.userId || STATE.isHost) {
+        const del = document.createElement('button');
+        del.className = 'token-x-btn';
+        del.textContent = '×';
+        del.title = 'Delete token';
+        del.addEventListener('mousedown', (e) => e.stopPropagation());
+        del.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
+        del.addEventListener('click', async (ev) => {
+          ev.stopPropagation();
+          ev.preventDefault();
+          if (!confirm(`Delete "${tok.name}"? This removes the token entirely.`)) return;
+          // Optimistic local removal
+          STATE.tokens.delete(tok.id);
+          renderTokens();
+          renderTokenTray();
+          renderHpTracker();
+          try {
+            const path = `${STATE.sessionId}/tokens/${tok.id}.jpg`;
+            await sb.storage.from(STORAGE_BUCKET).remove([path]);
+          } catch (e) { /* ignore */ }
+          await sb.from('vtt_tokens').delete().eq('id', tok.id);
+        });
+        el.appendChild(del);
+      }
+
       el.addEventListener('mousedown', (e) => startTokenDrag(e, tok));
       el.addEventListener('touchstart', (e) => startTokenDrag(e, tok), { passive: false });
       layer.appendChild(el);
@@ -2166,8 +2320,23 @@
     saveProfs: new Set(),    // 'str','dex',...
     skillProfs: new Set(),   // 'acrobatics','stealth',...
     buffs: [],               // [{ name, mod, active }]
-    inventory: [],           // [{ name, qty }]
+    inventory: [],           // [{ name, qty, stats }]
+    equipment: {},           // { helmet: {name, stats}, ... }
   };
+
+  // Equipment slot definitions in display order
+  const EQUIPMENT_SLOTS = [
+    { key: 'helmet',  label: 'Helmet'    },
+    { key: 'amulet',  label: 'Amulet'    },
+    { key: 'chest',   label: 'Chest'     },
+    { key: 'pants',   label: 'Pants'     },
+    { key: 'gloves',  label: 'Gloves'    },
+    { key: 'boots',   label: 'Boots'     },
+    { key: 'ring1',   label: 'Ring 1'    },
+    { key: 'ring2',   label: 'Ring 2'    },
+    { key: 'weapon',  label: 'Weapon'    },
+    { key: 'offhand', label: 'Off-hand'  },
+  ];
 
   // ============ CHARACTER SHEET EXTENSIONS (skills, saves, buffs, inventory) ============
   const SKILLS_DEF = [
@@ -2301,9 +2470,10 @@
     items.forEach((it, idx) => {
       const row = document.createElement('div');
       row.className = 'inv-row';
+      const statsHtml = it.stats ? `<span class="inv-stats">${escapeHtml(it.stats)}</span>` : '';
       row.innerHTML = `
         <span class="inv-qty">${it.qty}×</span>
-        <span class="inv-name">${escapeHtml(it.name)}</span>
+        <span class="inv-name">${escapeHtml(it.name)}${statsHtml}</span>
         <button class="inv-del">×</button>
       `;
       row.querySelector('.inv-del').addEventListener('click', () => {
@@ -2312,6 +2482,24 @@
         scheduleSavePlayer();
       });
       list.appendChild(row);
+    });
+  }
+
+  function renderEquipment(eq) {
+    const grid = document.getElementById('equipment-grid');
+    grid.innerHTML = '';
+    const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+    EQUIPMENT_SLOTS.forEach(slot => {
+      const cur = eq[slot.key] || { name: '', stats: '' };
+      const filled = !!(cur.name || cur.stats);
+      const div = document.createElement('div');
+      div.className = 'eq-slot' + (filled ? ' filled' : '');
+      div.innerHTML = `
+        <div class="eq-slot-label">${slot.label}</div>
+        <input type="text" class="eq-name" data-slot="${slot.key}" placeholder="Empty" value="${escapeHtml(cur.name || '')}" ${canEdit ? '' : 'readonly'}>
+        <input type="text" class="eq-stats" data-slot="${slot.key}" placeholder="Stats" value="${escapeHtml(cur.stats || '')}" ${canEdit ? '' : 'readonly'}>
+      `;
+      grid.appendChild(div);
     });
   }
 
@@ -2334,9 +2522,20 @@
     const canEdit = (playerId === STATE.userId) || STATE.isHost;
     const popup = document.getElementById('char-popup');
     popup.classList.add('active');
+    popup.classList.remove('collapsed');
+    document.body.classList.add('panel-open');
+    document.body.classList.remove('panel-collapsed');
+
+    // Show the "back to my character" link when a player is viewing somebody else
+    const backBtn = document.getElementById('char-back-btn');
+    if (!STATE.isHost && playerId !== STATE.userId) {
+      backBtn.style.display = 'inline-block';
+    } else {
+      backBtn.style.display = 'none';
+    }
 
     // Title
-    popup.querySelector('.ttl').textContent = player.is_host ? 'Host' : 'Character';
+    popup.querySelector('.ttl').textContent = player.is_host ? 'Host' : (playerId === STATE.userId ? 'My Character' : player.name + "'s Sheet");
 
     // Portrait from a token owned by this player
     let portraitUrl = '';
@@ -2393,10 +2592,15 @@
     CHAR_POPUP.skillProfs = parseSet(player.skill_profs);
     CHAR_POPUP.buffs = parseJsonArray(player.buffs);
     CHAR_POPUP.inventory = parseJsonArray(player.inventory);
+    // Equipment is a JSON object keyed by slot
+    try { CHAR_POPUP.equipment = JSON.parse(player.equipment || '{}') || {}; }
+    catch (e) { CHAR_POPUP.equipment = {}; }
+    if (typeof CHAR_POPUP.equipment !== 'object' || Array.isArray(CHAR_POPUP.equipment)) CHAR_POPUP.equipment = {};
     document.getElementById('char-gold').value = player.gold ?? 0;
     refreshDerivedSections();
     renderBuffs(CHAR_POPUP.buffs);
     renderInventory(CHAR_POPUP.inventory);
+    renderEquipment(CHAR_POPUP.equipment);
 
     // Set readonly state on all inputs based on permission
     const allInputs = popup.querySelectorAll('input, select, textarea');
@@ -2420,9 +2624,11 @@
   }
 
   function closeCharPopup() {
-    document.getElementById('char-popup').classList.remove('active');
-    CHAR_POPUP.targetPlayerId = null;
-    CHAR_POPUP.targetTokenId = null;
+    // For the docked panel, "close" really means "collapse to the side".
+    // We keep targetPlayerId so a re-open snaps back to the same character.
+    const popup = document.getElementById('char-popup');
+    popup.classList.add('collapsed');
+    document.body.classList.add('panel-collapsed');
   }
 
   function refreshCharPopupHp() {
@@ -2487,6 +2693,7 @@
       skill_profs: setToCsv(CHAR_POPUP.skillProfs),
       buffs: JSON.stringify(CHAR_POPUP.buffs),
       inventory: JSON.stringify(CHAR_POPUP.inventory),
+      equipment: JSON.stringify(CHAR_POPUP.equipment),
     };
 
     await sb.from('vtt_players').update(patch).eq('id', CHAR_POPUP.targetPlayerId);
@@ -2548,11 +2755,27 @@
     document.getElementById('inv-add-btn').addEventListener('click', () => {
       const name = document.getElementById('inv-add-name').value.trim();
       const qty = Math.max(1, parseInt(document.getElementById('inv-add-qty').value) || 1);
+      const stats = document.getElementById('inv-add-stats').value.trim();
       if (!name) { toast('Item name required', 'error'); return; }
-      CHAR_POPUP.inventory.push({ name, qty });
+      CHAR_POPUP.inventory.push({ name, qty, stats });
       document.getElementById('inv-add-name').value = '';
       document.getElementById('inv-add-qty').value = '1';
+      document.getElementById('inv-add-stats').value = '';
       renderInventory(CHAR_POPUP.inventory);
+      scheduleSavePlayer();
+    });
+
+    // Equipment slot edits (delegated since grid is rebuilt)
+    document.getElementById('equipment-grid').addEventListener('input', (e) => {
+      const slot = e.target.dataset.slot;
+      if (!slot) return;
+      if (!CHAR_POPUP.equipment[slot]) CHAR_POPUP.equipment[slot] = { name: '', stats: '' };
+      if (e.target.classList.contains('eq-name')) CHAR_POPUP.equipment[slot].name = e.target.value;
+      else if (e.target.classList.contains('eq-stats')) CHAR_POPUP.equipment[slot].stats = e.target.value;
+      // Toggle filled visual without rerendering the whole grid (which would steal focus)
+      const slotEl = e.target.closest('.eq-slot');
+      const filled = !!(CHAR_POPUP.equipment[slot].name || CHAR_POPUP.equipment[slot].stats);
+      if (slotEl) slotEl.classList.toggle('filled', filled);
       scheduleSavePlayer();
     });
 
@@ -2577,10 +2800,35 @@
     hpCur.addEventListener('input', saveHpToToken);
     hpMax.addEventListener('input', saveHpToToken);
 
-    // Drag popup
-    makePopupDraggable(popup);
+    // Char popup is now docked to the right side - no drag needed.
   }
   setupCharPopupListeners();
+
+  // ============ DOCKED PANEL WIRING ============
+  // Tab navigation
+  document.querySelectorAll('.char-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('.char-tab').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.char-tab-content').forEach(c => c.classList.toggle('active', c.dataset.tab === tab));
+    });
+  });
+
+  // Back-to-self button (for players viewing another character)
+  document.getElementById('char-back-btn').addEventListener('click', () => {
+    openCharPopup(STATE.userId);
+  });
+
+  // Floating "Character" button shown when panel is collapsed
+  document.getElementById('char-panel-show').addEventListener('click', () => {
+    const popup = document.getElementById('char-popup');
+    popup.classList.remove('collapsed');
+    document.body.classList.remove('panel-collapsed');
+    // If host hasn't picked anyone yet, fallback to own/blank
+    if (!CHAR_POPUP.targetPlayerId && !STATE.isHost) {
+      openCharPopup(STATE.userId);
+    }
+  });
 
   // Generic drag-by-header for any popup with a .char-popup-header
   function makePopupDraggable(popup) {
@@ -2607,6 +2855,75 @@
   // Apply drag to the image generation popup too
   makePopupDraggable(document.getElementById('imggen-popup'));
   makePopupDraggable(document.getElementById('spells-popup'));
+  makePopupDraggable(document.getElementById('recap-popup'));
+
+  // ============ CAMPAIGN LOG / RECAP ============
+  let recapSaveTimeout = null;
+  function openRecapPopup() {
+    const popup = document.getElementById('recap-popup');
+    popup.classList.add('active');
+    const ta = document.getElementById('recap-textarea');
+    // Load current log from session
+    ta.value = (STATE.session && STATE.session.campaign_log) || '';
+    if (STATE.isHost) {
+      ta.readOnly = false;
+      document.getElementById('recap-host-controls').style.display = 'flex';
+      document.getElementById('recap-readonly-note').style.display = 'none';
+      document.getElementById('delete-campaign-btn').style.display = 'inline-block';
+    } else {
+      ta.readOnly = true;
+      document.getElementById('recap-host-controls').style.display = 'none';
+      document.getElementById('recap-readonly-note').style.display = 'block';
+      document.getElementById('delete-campaign-btn').style.display = 'none';
+    }
+  }
+  document.getElementById('recap-btn').addEventListener('click', openRecapPopup);
+  document.getElementById('recap-close').addEventListener('click', () => {
+    document.getElementById('recap-popup').classList.remove('active');
+  });
+  document.getElementById('recap-textarea').addEventListener('input', () => {
+    if (!STATE.isHost) return;
+    clearTimeout(recapSaveTimeout);
+    recapSaveTimeout = setTimeout(async () => {
+      const val = document.getElementById('recap-textarea').value;
+      if (!STATE.session) STATE.session = { id: STATE.sessionId };
+      STATE.session.campaign_log = val;
+      try {
+        await sb.from('vtt_sessions').update({ campaign_log: val }).eq('id', STATE.sessionId);
+      } catch (e) { console.warn('Recap save failed', e); }
+    }, 500);
+  });
+  document.getElementById('recap-new-entry').addEventListener('click', () => {
+    if (!STATE.isHost) return;
+    const ta = document.getElementById('recap-textarea');
+    const date = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const header = `\n\n=== Session - ${date} ===\n`;
+    const cur = ta.value || '';
+    ta.value = (cur ? cur + header : header.trimStart());
+    ta.focus();
+    // Move caret to end
+    ta.selectionStart = ta.selectionEnd = ta.value.length;
+    ta.dispatchEvent(new Event('input'));
+  });
+  document.getElementById('delete-campaign-btn').addEventListener('click', async () => {
+    if (!STATE.isHost) return;
+    if (!confirm('WIPE the entire campaign? This deletes ALL tokens, maps, effects, chat, audio, and the log. Players remain registered but everything else is gone. This cannot be undone.')) return;
+    if (!confirm('Are you absolutely sure? Type-confirm not required - clicking OK will delete everything.')) return;
+    try {
+      const sid = STATE.sessionId;
+      await sb.from('vtt_tokens').delete().eq('session_id', sid);
+      await sb.from('vtt_effects').delete().eq('session_id', sid);
+      await sb.from('vtt_chat').delete().eq('session_id', sid);
+      await sb.from('vtt_maps').delete().eq('session_id', sid);
+      await sb.from('vtt_audio').delete().eq('session_id', sid);
+      await sb.from('vtt_sessions').update({ campaign_log: '', active_map_slot: 1 }).eq('id', sid);
+      toast('Campaign wiped. Reloading...', 'success', 2000);
+      setTimeout(() => location.reload(), 1500);
+    } catch (e) {
+      console.error(e);
+      toast('Wipe failed: ' + (e.message || 'error'), 'error');
+    }
+  });
 
   // ============ SPELLS POPUP ============
   const SPELL_DRAFT = { fx: null, color: null };
@@ -2872,6 +3189,19 @@
   });
 
   // ============ EFFECTS RENDERING ============
+  const FX_DEFS_HTML = `
+    <defs>
+      <filter id="fx-glow-soft" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="4" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="fx-glow-hard" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="8" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+  `;
+
   function renderEffects() {
     const layer = document.getElementById('effectslayer');
     // Set viewport that matches our world coordinate system. We use a large viewBox so SVG draws don't get clipped.
@@ -2879,7 +3209,7 @@
     layer.setAttribute('preserveAspectRatio', 'none');
     layer.style.width = '4000px';
     layer.style.height = '4000px';
-    let svg = '';
+    let svg = FX_DEFS_HTML;
     const ox = (STATE.map && STATE.map.offset_x) || 0;
     const oy = (STATE.map && STATE.map.offset_y) || 0;
     STATE.effects.forEach(fx => {
@@ -2936,68 +3266,71 @@
   function renderFxBreath(elem, p, gid, ox, oy, tx, ty, dx, dy, dist, rng) {
     if (dist < 5) return '';
     const angle = Math.atan2(dy, dx);
-    const halfW = dist * 0.5;
+    const halfW = dist * 0.45;
     const perpX = -Math.sin(angle), perpY = Math.cos(angle);
-    const poly = (w) => `${ox},${oy} ${tx + perpX*w},${ty + perpY*w} ${tx - perpX*w},${ty - perpY*w}`;
+    const poly = (w, lenScale = 1) => {
+      const ex = ox + dx * lenScale;
+      const ey = oy + dy * lenScale;
+      return `${ox},${oy} ${ex + perpX*w},${ey + perpY*w} ${ex - perpX*w},${ey - perpY*w}`;
+    };
 
-    // Stack three cones with decreasing width & increasing opacity for a glowing core
-    const outer  = poly(halfW);
-    const middle = poly(halfW * 0.7);
-    const inner  = poly(halfW * 0.42);
+    // Halo (wide, blurred) + main body (vivid, sharp) + bright inner streak
+    const halo   = poly(halfW * 1.15);
+    const body   = poly(halfW);
+    const inner  = poly(halfW * 0.5, 0.92);
+    const core   = poly(halfW * 0.22, 0.85);
 
-    // Sparkle / ember particles scattered through the cone
+    // Bright sparkle particles with their own glow
     let particles = '';
-    const n = (elem === 'fire' || elem === 'holy' || elem === 'magic' || elem === 'lightning') ? 10 : 6;
+    const n = (elem === 'fire' || elem === 'holy' || elem === 'magic' || elem === 'lightning') ? 14 : 8;
     for (let i = 0; i < n; i++) {
-      const t = 0.3 + rng() * 0.7;
-      const lateral = (rng() - 0.5) * halfW * t * 1.6;
+      const t = 0.2 + rng() * 0.78;
+      const lateral = (rng() - 0.5) * halfW * t * 1.5;
       const px = ox + dx * t + perpX * lateral;
       const py = oy + dy * t + perpY * lateral;
-      const r = 2 + rng() * 4;
-      particles += `<circle class="fx-shape" cx="${px}" cy="${py}" r="${r}" fill="${p.core}" opacity="${0.5 + rng()*0.4}" style="color:${p.core}"/>`;
+      const r = 1.8 + rng() * 3.2;
+      particles += `<circle class="fx-shape" cx="${px}" cy="${py}" r="${r}" fill="${p.core}" opacity="${0.6 + rng()*0.4}" filter="url(#fx-glow-soft)"/>`;
     }
 
-    // For lightning breath, add a few jagged arcs inside the cone
+    // For lightning breath, add jagged arcs inside the cone (with glow)
     let arcs = '';
     if (elem === 'lightning') {
-      for (let k = 0; k < 3; k++) {
-        const seg = 5;
+      for (let k = 0; k < 4; k++) {
+        const seg = 6;
         let d = `M ${ox} ${oy}`;
         for (let i = 1; i <= seg; i++) {
           const t = i / seg;
-          const lateral = (rng() - 0.5) * halfW * t * 1.2;
+          const lateral = (rng() - 0.5) * halfW * t * 1.1;
           const px = ox + dx * t + perpX * lateral;
           const py = oy + dy * t + perpY * lateral;
           d += ` L ${px} ${py}`;
         }
-        arcs += `<path class="fx-shape" d="${d}" stroke="${p.core}" stroke-width="2" fill="none" opacity="0.7" style="color:${p.core}"/>`;
+        arcs += `<path class="fx-shape" d="${d}" stroke="${p.core}" stroke-width="2.4" fill="none" opacity="0.9" filter="url(#fx-glow-soft)"/>`;
       }
     }
 
     return `
-      <defs>
-        <radialGradient id="${gid}" cx="${ox}" cy="${oy}" r="${dist}" gradientUnits="userSpaceOnUse">
-          <stop offset="0"   stop-color="${p.core}" stop-opacity="0.95"/>
-          <stop offset="0.45" stop-color="${p.mid}"  stop-opacity="0.75"/>
-          <stop offset="1"   stop-color="${p.edge}" stop-opacity="0.12"/>
-        </radialGradient>
-      </defs>
-      <polygon class="fx-shape" points="${outer}"  fill="url(#${gid})" style="color:${p.mid}"/>
-      <polygon class="fx-shape" points="${middle}" fill="${p.mid}" opacity="0.35" style="color:${p.mid}"/>
-      <polygon class="fx-shape" points="${inner}"  fill="${p.core}" opacity="0.55" style="color:${p.core}"/>
+      <polygon class="fx-shape" points="${halo}"  fill="${p.mid}" opacity="0.35" filter="url(#fx-glow-hard)"/>
+      <polygon class="fx-shape" points="${body}"  fill="${p.mid}" opacity="0.92"/>
+      <polygon class="fx-shape" points="${body}"  fill="none" stroke="${p.edge}" stroke-width="2" opacity="0.55"/>
+      <polygon class="fx-shape" points="${inner}" fill="${p.core}" opacity="0.55"/>
+      <polygon class="fx-shape" points="${core}"  fill="${p.core}" opacity="0.95" filter="url(#fx-glow-soft)"/>
       ${arcs}${particles}
     `;
   }
 
-  // ---- BEAM (line): triple-stroke for outer halo + mid + bright core. Lightning is jagged.
+  // ---- BEAM (line): wide outer glow + saturated mid + bright core + endpoint orbs
   function renderFxBeam(elem, p, gid, ox, oy, tx, ty, dx, dy, dist, rng) {
     if (dist < 5) return '';
     if (elem === 'lightning') return renderFxLightningBeam(p, ox, oy, tx, ty, dx, dy, dist, rng);
-    // Standard beam
+    // Standard beam - wide blurred halo + saturated body + bright core + endpoint glow orbs
     return `
-      <line class="fx-shape" x1="${ox}" y1="${oy}" x2="${tx}" y2="${ty}" stroke="${p.edge}" stroke-width="20" stroke-linecap="round" opacity="0.25" style="color:${p.mid}"/>
-      <line class="fx-shape" x1="${ox}" y1="${oy}" x2="${tx}" y2="${ty}" stroke="${p.mid}"  stroke-width="11" stroke-linecap="round" opacity="0.65" style="color:${p.mid}"/>
-      <line class="fx-shape" x1="${ox}" y1="${oy}" x2="${tx}" y2="${ty}" stroke="${p.core}" stroke-width="4"  stroke-linecap="round" opacity="1" style="color:${p.core}"/>
+      <line class="fx-shape" x1="${ox}" y1="${oy}" x2="${tx}" y2="${ty}" stroke="${p.mid}" stroke-width="22" stroke-linecap="round" opacity="0.45" filter="url(#fx-glow-hard)"/>
+      <line class="fx-shape" x1="${ox}" y1="${oy}" x2="${tx}" y2="${ty}" stroke="${p.mid}" stroke-width="10" stroke-linecap="round" opacity="0.95"/>
+      <line class="fx-shape" x1="${ox}" y1="${oy}" x2="${tx}" y2="${ty}" stroke="${p.edge}" stroke-width="10" stroke-linecap="round" opacity="0.4" fill="none"/>
+      <line class="fx-shape" x1="${ox}" y1="${oy}" x2="${tx}" y2="${ty}" stroke="${p.core}" stroke-width="3.5" stroke-linecap="round" opacity="1" filter="url(#fx-glow-soft)"/>
+      <circle class="fx-shape" cx="${ox}" cy="${oy}" r="9" fill="${p.core}" opacity="0.85" filter="url(#fx-glow-soft)"/>
+      <circle class="fx-shape" cx="${tx}" cy="${ty}" r="11" fill="${p.core}" opacity="0.85" filter="url(#fx-glow-soft)"/>
     `;
   }
 
@@ -3022,13 +3355,13 @@
       const forkLen = dist * 0.18;
       const fx = mid.x + Math.cos(forkAngle) * forkLen;
       const fy = mid.y + Math.sin(forkAngle) * forkLen;
-      fork = `<path class="fx-shape" d="M ${mid.x} ${mid.y} L ${fx} ${fy}" stroke="${p.core}" stroke-width="2.5" fill="none" opacity="0.85" style="color:${p.core}"/>`;
+      fork = `<path class="fx-shape" d="M ${mid.x} ${mid.y} L ${fx} ${fy}" stroke="${p.core}" stroke-width="3" fill="none" opacity="0.95" filter="url(#fx-glow-soft)"/>`;
     }
 
     return `
-      <path class="fx-shape" d="${path}" stroke="${p.edge}" stroke-width="14" stroke-linecap="round" fill="none" opacity="0.35" style="color:${p.mid}"/>
-      <path class="fx-shape" d="${path}" stroke="${p.mid}"  stroke-width="7"  stroke-linecap="round" fill="none" opacity="0.7" style="color:${p.mid}"/>
-      <path class="fx-shape" d="${path}" stroke="${p.core}" stroke-width="3"  stroke-linecap="round" fill="none" opacity="1" style="color:${p.core}"/>
+      <path class="fx-shape" d="${path}" stroke="${p.mid}" stroke-width="14" stroke-linecap="round" fill="none" opacity="0.55" filter="url(#fx-glow-hard)"/>
+      <path class="fx-shape" d="${path}" stroke="${p.mid}"  stroke-width="6"  stroke-linecap="round" fill="none" opacity="0.95"/>
+      <path class="fx-shape" d="${path}" stroke="${p.core}" stroke-width="2.5"  stroke-linecap="round" fill="none" opacity="1" filter="url(#fx-glow-soft)"/>
       ${fork}
     `;
   }
@@ -3038,74 +3371,59 @@
     if (dist < 5) return '';
     // Trail: dots from origin to target, growing and brightening toward target
     let trail = '';
-    const TRAIL_N = 14;
+    const TRAIL_N = 16;
     for (let i = 0; i < TRAIL_N; i++) {
       const t = i / (TRAIL_N - 1);
-      const px = ox + dx * t + (rng() - 0.5) * 4;
-      const py = oy + dy * t + (rng() - 0.5) * 4;
-      const r = 2 + t * 7;
-      const op = 0.1 + t * 0.75;
+      const px = ox + dx * t + (rng() - 0.5) * 5;
+      const py = oy + dy * t + (rng() - 0.5) * 5;
+      const r = 2 + t * 8;
+      const op = 0.12 + t * 0.85;
       const fill = t > 0.6 ? p.core : p.mid;
-      trail += `<circle class="fx-shape" cx="${px}" cy="${py}" r="${r}" fill="${fill}" opacity="${op}" style="color:${p.mid}"/>`;
+      trail += `<circle class="fx-shape" cx="${px}" cy="${py}" r="${r}" fill="${fill}" opacity="${op}" filter="url(#fx-glow-soft)"/>`;
     }
-    // Impact orb at target with concentric rings
+    // Impact at target: big glowing halo + bright core + ring
     const impact = `
-      <defs>
-        <radialGradient id="${gid}" cx="${tx}" cy="${ty}" r="32" gradientUnits="userSpaceOnUse">
-          <stop offset="0"   stop-color="${p.core}" stop-opacity="1"/>
-          <stop offset="0.4" stop-color="${p.mid}"  stop-opacity="0.85"/>
-          <stop offset="1"   stop-color="${p.edge}" stop-opacity="0"/>
-        </radialGradient>
-      </defs>
-      <circle class="fx-shape" cx="${tx}" cy="${ty}" r="32" fill="url(#${gid})" style="color:${p.mid}"/>
-      <circle class="fx-shape" cx="${tx}" cy="${ty}" r="14" fill="${p.core}" opacity="0.9" style="color:${p.core}"/>
+      <circle class="fx-shape" cx="${tx}" cy="${ty}" r="38" fill="${p.mid}" opacity="0.5" filter="url(#fx-glow-hard)"/>
+      <circle class="fx-shape" cx="${tx}" cy="${ty}" r="26" fill="${p.mid}" opacity="0.9"/>
+      <circle class="fx-shape" cx="${tx}" cy="${ty}" r="26" fill="none" stroke="${p.edge}" stroke-width="2" opacity="0.7"/>
+      <circle class="fx-shape" cx="${tx}" cy="${ty}" r="14" fill="${p.core}" opacity="1" filter="url(#fx-glow-soft)"/>
     `;
     return trail + impact;
   }
 
-  // ---- BURN (area): radial gradient blast with debris/sparkle ring
+  // ---- BURN (area): radial blast with bright core, vibrant ring, glowing embers
   function renderFxBurn(elem, p, gid, ox, oy, dist, rng) {
     const r = Math.max(14, dist);
-    // Debris/ember ring at the edge
+    // Debris/ember ring at the edge - each ember glows
     let ring = '';
-    const NDOTS = 14;
+    const NDOTS = 16;
     for (let i = 0; i < NDOTS; i++) {
       const ang = (i / NDOTS) * Math.PI * 2 + rng() * 0.4;
       const rad = r * (0.82 + rng() * 0.22);
       const px = ox + Math.cos(ang) * rad;
       const py = oy + Math.sin(ang) * rad;
-      const pr = 2 + rng() * 5;
+      const pr = 2.5 + rng() * 5;
       const fill = i % 2 === 0 ? p.core : p.mid;
-      ring += `<circle class="fx-shape" cx="${px}" cy="${py}" r="${pr}" fill="${fill}" opacity="${0.6 + rng()*0.3}" style="color:${fill}"/>`;
+      ring += `<circle class="fx-shape" cx="${px}" cy="${py}" r="${pr}" fill="${fill}" opacity="${0.7 + rng()*0.3}" filter="url(#fx-glow-soft)"/>`;
     }
     return `
-      <defs>
-        <radialGradient id="${gid}" cx="${ox}" cy="${oy}" r="${r}" gradientUnits="userSpaceOnUse">
-          <stop offset="0"    stop-color="${p.core}" stop-opacity="0.9"/>
-          <stop offset="0.4"  stop-color="${p.mid}"  stop-opacity="0.7"/>
-          <stop offset="0.85" stop-color="${p.edge}" stop-opacity="0.3"/>
-          <stop offset="1"    stop-color="${p.edge}" stop-opacity="0"/>
-        </radialGradient>
-      </defs>
-      <circle class="fx-shape" cx="${ox}" cy="${oy}" r="${r}" fill="url(#${gid})" style="color:${p.mid}"/>
-      <circle class="fx-shape" cx="${ox}" cy="${oy}" r="${r * 0.45}" fill="${p.core}" opacity="0.4" style="color:${p.core}"/>
+      <circle class="fx-shape" cx="${ox}" cy="${oy}" r="${r}" fill="${p.mid}" opacity="0.4" filter="url(#fx-glow-hard)"/>
+      <circle class="fx-shape" cx="${ox}" cy="${oy}" r="${r * 0.85}" fill="${p.mid}" opacity="0.7"/>
+      <circle class="fx-shape" cx="${ox}" cy="${oy}" r="${r * 0.85}" fill="none" stroke="${p.edge}" stroke-width="2.5" opacity="0.65"/>
+      <circle class="fx-shape" cx="${ox}" cy="${oy}" r="${r * 0.45}" fill="${p.core}" opacity="0.7"/>
+      <circle class="fx-shape" cx="${ox}" cy="${oy}" r="${r * 0.18}" fill="${p.core}" opacity="1" filter="url(#fx-glow-soft)"/>
       ${ring}
     `;
   }
 
-  // ---- GLOW (aura): pulsing concentric rings with translucent fill
+  // ---- GLOW (aura): pulsing concentric rings with glowing halo
   function renderFxGlow(elem, p, gid, ox, oy, dist) {
     const r = Math.max(14, dist);
     return `
-      <defs>
-        <radialGradient id="${gid}" cx="${ox}" cy="${oy}" r="${r}" gradientUnits="userSpaceOnUse">
-          <stop offset="0"   stop-color="${p.core}" stop-opacity="0.35"/>
-          <stop offset="0.7" stop-color="${p.mid}"  stop-opacity="0.25"/>
-          <stop offset="1"   stop-color="${p.edge}" stop-opacity="0"/>
-        </radialGradient>
-      </defs>
-      <circle class="fx-shape glow-pulse" cx="${ox}" cy="${oy}" r="${r}" fill="url(#${gid})" stroke="${p.mid}" stroke-width="3" stroke-opacity="0.7" style="color:${p.mid}"/>
-      <circle class="fx-shape glow-pulse" cx="${ox}" cy="${oy}" r="${r * 0.6}" fill="none" stroke="${p.core}" stroke-width="2" stroke-opacity="0.55" style="color:${p.core}"/>
+      <circle class="fx-shape glow-pulse" cx="${ox}" cy="${oy}" r="${r}" fill="${p.mid}" opacity="0.18" filter="url(#fx-glow-hard)"/>
+      <circle class="fx-shape glow-pulse" cx="${ox}" cy="${oy}" r="${r}" fill="none" stroke="${p.mid}" stroke-width="3" stroke-opacity="0.85"/>
+      <circle class="fx-shape glow-pulse" cx="${ox}" cy="${oy}" r="${r * 0.62}" fill="none" stroke="${p.core}" stroke-width="2.2" stroke-opacity="0.8" filter="url(#fx-glow-soft)"/>
+      <circle class="fx-shape" cx="${ox}" cy="${oy}" r="${r * 0.18}" fill="${p.core}" opacity="0.9" filter="url(#fx-glow-soft)"/>
     `;
   }
 
@@ -3622,8 +3940,8 @@
   document.getElementById('mapcontainer').addEventListener('mousedown', (e) => {
     if (e.target.closest('.map-token') || e.target.closest('#chatbox') || e.target.closest('#zoom-controls') || e.target.closest('#dm-toolbar') || e.target.closest('#fx-color-picker')) return;
 
-    // Host: Measure tool
-    if (STATE.isHost && STATE.activeTool === 'measure') {
+    // Measure tool (available to everyone)
+    if (STATE.activeTool === 'measure') {
       const mc = getMapCoords(e.clientX, e.clientY);
       STATE.measuring = { startX: mc.x, startY: mc.y, x: mc.x, y: mc.y };
       broadcastDrag({
@@ -3637,8 +3955,8 @@
       return;
     }
 
-    // Host: FX placement
-    if (STATE.isHost && STATE.activeTool === 'fx') {
+    // FX placement (available to everyone - players can cast too)
+    if (STATE.activeTool === 'fx') {
       const mc = getMapCoords(e.clientX, e.clientY);
       STATE.fxDrawing = { type: STATE.activeFx, color: STATE.activeFxColor, origin_x: mc.x, origin_y: mc.y, end_x: mc.x, end_y: mc.y };
       renderFxPreview();
