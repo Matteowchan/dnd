@@ -7092,25 +7092,60 @@
     runImgGen();
   });
 
+  // Models we try in order. If one fails (timeout, 5xx, blank response), we
+  // automatically try the next. Pollinations' free tier rotates which models
+  // are responsive, so this is more resilient than picking one.
+  const IMG_MODELS = ['turbo', 'flux', 'zimage'];
+
   function runImgGen() {
     const fullPrompt = IMG_GEN_PROMPTS[imgGenState.type] + imgGenState.prompt;
-    // Always use the fast (turbo) model. The slower flux models were producing
-    // intermittent failures (timeouts / blank responses); turbo is reliable
-    // and finishes in ~4-8 seconds.
-    const model = 'turbo';
     const w = (imgGenState.type === 'map') ? 1024 : 768;
     const h = w;
-    const loadingText = 'Generating (turbo, 4-8s)...';
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=${w}&height=${h}&seed=${imgGenState.seed}&model=${model}&nologo=true`;
-    imgGenState.url = url;
-    const img = document.getElementById('imggen-img');
-    img.style.display = 'none';
+    document.getElementById('imggen-img').style.display = 'none';
     document.getElementById('imggen-loading').style.display = 'block';
-    document.getElementById('imggen-loading').textContent = loadingText;
     document.getElementById('imggen-preview').style.display = 'block';
     document.getElementById('imggen-actions').style.display = 'none';
     document.getElementById('imggen-status').style.display = 'none';
+    tryGenerate(fullPrompt, w, h, 0);
+  }
+
+  function tryGenerate(prompt, w, h, modelIdx) {
+    if (modelIdx >= IMG_MODELS.length) {
+      // All fallbacks exhausted
+      document.getElementById('imggen-loading').textContent = 'Generation failed after multiple attempts. The service may be busy - please try again in a moment or change your prompt.';
+      return;
+    }
+    const model = IMG_MODELS[modelIdx];
+    const loadingText = `Generating with ${model} (${modelIdx + 1}/${IMG_MODELS.length})...`;
+    document.getElementById('imggen-loading').textContent = loadingText;
+
+    // Use a fresh seed-bumped URL each time so we don't hit Cloudflare's
+    // cached error response from a previous attempt.
+    const cacheBust = imgGenState.seed + modelIdx * 1000;
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${cacheBust}&model=${model}&nologo=true`;
+    imgGenState.url = url;
+    const img = document.getElementById('imggen-img');
+
+    // Detect both "load with broken/blank image" and load timeout
+    let resolved = false;
+    const TIMEOUT_MS = 30000;
+    const timer = setTimeout(() => {
+      if (resolved) return;
+      resolved = true;
+      console.warn(`Image gen timed out on ${model}, falling back`);
+      tryGenerate(prompt, w, h, modelIdx + 1);
+    }, TIMEOUT_MS);
+
     img.onload = () => {
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timer);
+      // Sanity check: a truly broken response sometimes returns a 1×1 placeholder
+      if (img.naturalWidth < 64 || img.naturalHeight < 64) {
+        console.warn(`Image gen returned tiny image on ${model} (${img.naturalWidth}×${img.naturalHeight}), falling back`);
+        tryGenerate(prompt, w, h, modelIdx + 1);
+        return;
+      }
       img.style.display = 'block';
       document.getElementById('imggen-loading').style.display = 'none';
       document.getElementById('imggen-actions').style.display = 'flex';
@@ -7122,7 +7157,11 @@
       });
     };
     img.onerror = () => {
-      document.getElementById('imggen-loading').textContent = 'Generation failed. Try a different prompt or speed setting.';
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timer);
+      console.warn(`Image gen errored on ${model}, falling back`);
+      tryGenerate(prompt, w, h, modelIdx + 1);
     };
     img.src = url;
   }
