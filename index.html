@@ -21,6 +21,11 @@
     --danger: #a04848;
     --success: #6b8a4a;
     --ember: #e08c3a;
+    /* Resizable bars - widths and font scale factors (1.0 = base) */
+    --side-w: 280px;
+    --rb-w: 380px;
+    --side-scale: 1;
+    --rb-scale: 1;
   }
   /* Class themes override --gold and --gold-soft when applied to <html> */
   html.theme-barbarian   { --gold: #D35400; --gold-soft: #8B1E1E; }
@@ -90,11 +95,22 @@
   .role-player { background: rgba(107,138,74,0.2); color: #a8c878; border: 1px solid var(--success); }
 
   #main { flex: 1; display: flex; overflow: hidden; transition: padding-right 0.18s ease; }
-  body.panel-open #main { padding-right: 380px; }
-  body.panel-open.panel-collapsed #main { padding-right: 0; }
 
   /* SIDE PANEL */
-  #sidepanel { width: 280px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+  #sidepanel { width: var(--side-w, 280px); background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; position: relative; font-size: calc(13px * var(--side-scale, 1)); }
+  /* Resizer strip - drag to resize, font inside the bar scales proportionally */
+  .resizer { width: 6px; flex-shrink: 0; cursor: ew-resize; background: var(--panel-light); transition: background 0.15s; position: relative; user-select: none; }
+  .resizer:hover, .resizer.dragging { background: var(--gold); }
+  .resizer::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 2px; height: 28px; background: var(--gold-soft); border-radius: 1px; pointer-events: none; }
+  /* While dragging, freeze cursor and disable selection across the document */
+  body.resizing { cursor: ew-resize !important; user-select: none !important; }
+  body.resizing * { cursor: ew-resize !important; user-select: none !important; }
+
+  /* Scale-aware sizing for elements inside the side panel */
+  #sidepanel h3 { font-size: calc(11px * var(--side-scale, 1)); }
+  #sidepanel button, #sidepanel input, #sidepanel select, #sidepanel textarea { font-size: calc(12px * var(--side-scale, 1)); }
+  #sidepanel .dice-btn { font-size: calc(14px * var(--side-scale, 1)); }
+  #sidepanel .player-name { font-size: calc(13px * var(--side-scale, 1)); }
   .panel-section { padding: 16px; border-bottom: 1px solid var(--border); }
   .panel-section h3 { font-size: 12px; color: var(--gold); margin-bottom: 12px; text-transform: uppercase; }
   .map-slots { display: flex; gap: 4px; margin-bottom: 10px; }
@@ -179,9 +195,57 @@
   #char-popup .char-head { padding: 12px 14px 8px; border-bottom: 1px solid var(--border); }
   #char-popup .char-vitals { padding: 10px 14px; border-bottom: 1px solid var(--border); }
 
-  /* Floating "Character" button to bring back the panel when collapsed */
-  #char-panel-show { position: fixed; top: 64px; right: 8px; padding: 6px 12px; background: var(--gold-soft); color: var(--cream); border: 1px solid var(--gold); border-radius: 4px; font-size: 11px; letter-spacing: 0.08em; font-family: 'Cinzel', serif; cursor: pointer; z-index: 51; display: none; }
-  #char-popup.collapsed ~ #char-panel-show { display: block; }
+  /* RIGHT BAR - dockable column on the right with Tools, HP, Char Info, Chat */
+  #right-bar { position: fixed; top: 56px; right: 0; bottom: 0; width: var(--rb-w, 380px); background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; z-index: 50; transition: transform 0.18s; font-size: calc(13px * var(--rb-scale, 1)); }
+  body.right-bar-open #main { padding-right: var(--rb-w, 380px); }
+  body.right-bar-open.right-bar-collapsed #main { padding-right: 0; }
+  #right-bar.collapsed { transform: translateX(var(--rb-w, 380px)); }
+  /* Right-bar resizer on its left edge (overlays the border) */
+  #right-bar .rb-resizer { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; cursor: ew-resize; background: transparent; transition: background 0.15s; z-index: 60; }
+  #right-bar .rb-resizer:hover, #right-bar .rb-resizer.dragging { background: var(--gold); }
+  #right-bar .rb-resizer::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 2px; height: 28px; background: var(--gold-soft); border-radius: 1px; pointer-events: none; }
+
+  /* Scale-aware sizing inside right-bar */
+  #right-bar .rb-section-head { font-size: calc(11px * var(--rb-scale, 1)); }
+  #right-bar .tool-btn-label { font-size: calc(9px * var(--rb-scale, 1)); }
+  #right-bar input, #right-bar select, #right-bar textarea, #right-bar button { font-size: calc(12px * var(--rb-scale, 1)); }
+  #right-bar .char-tab { font-size: calc(10px * var(--rb-scale, 1)); }
+  #right-bar #chatlog .msg { font-size: calc(12px * var(--rb-scale, 1)); }
+
+  /* Tools strip inside right-bar (horizontal compact row) */
+  #right-bar #dm-toolbar { position: static; flex-direction: row; flex-wrap: wrap; padding: 8px; gap: 4px; border: none; border-bottom: 1px solid var(--border); border-radius: 0; backdrop-filter: none; background: var(--panel-light); flex-shrink: 0; }
+  #right-bar .tool-btn { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; }
+  #right-bar .tool-btn-label { font-family: 'Cinzel', serif; letter-spacing: 0.04em; text-transform: uppercase; }
+  #right-bar .tool-btn svg { display: block; }
+
+  /* HP tracker section in right bar */
+  .rb-section { padding: 0; }
+  .rb-section-head { font-family: 'Cinzel', serif; font-size: 11px; color: var(--gold); letter-spacing: 0.12em; text-transform: uppercase; padding: 8px 12px 6px; border-bottom: 1px solid var(--border); background: var(--panel-light); display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .rb-section-head .hint { font-size: 9px; color: var(--muted); letter-spacing: 0.05em; text-transform: none; font-style: italic; font-family: inherit; margin-left: auto; }
+  .rb-hpwrap { flex-shrink: 0; max-height: 180px; display: flex; flex-direction: column; border-bottom: 1px solid var(--border); }
+  #hp-tracker-list-right { padding: 6px 8px; overflow-y: auto; }
+  #hp-tracker-list-right .hp-row { cursor: pointer; transition: background 0.12s; }
+  #hp-tracker-list-right .hp-row:hover { background: rgba(212,175,55,0.07); }
+  #hp-tracker-list-right .hp-row.viewing { border-color: var(--gold); background: rgba(212,175,55,0.12); }
+
+  /* Char-popup as an embedded section (not fixed) */
+  #right-bar #char-popup { position: static; width: auto; right: auto; top: auto; bottom: auto; border-left: none; box-shadow: none; flex: 1; min-height: 0; transform: none; transition: none; }
+  #right-bar #char-popup.collapsed { display: none; }
+  #right-bar #char-popup .char-popup-header { padding: 6px 12px; }
+
+  /* Chatbox embedded at bottom of right bar */
+  #right-bar #chatbox { position: static; width: auto; left: auto; bottom: auto; right: auto; height: 240px; flex-shrink: 0; border-radius: 0; border: none; border-top: 1px solid var(--border); box-shadow: none; backdrop-filter: none; background: var(--panel); display: flex; flex-direction: column; }
+  /* When the character sheet is collapsed, chat expands to fill the space */
+  #right-bar #char-popup.collapsed + #chatbox { flex: 1; height: auto; }
+  #right-bar #chatbox-header { cursor: default; border-radius: 0; padding: 6px 12px; }
+  #right-bar #chatbox.minimized { height: auto; width: auto; }
+  #right-bar #chatbox.minimized #chatlog,
+  #right-bar #chatbox.minimized #chatinput { display: none; }
+  #right-bar #chatlog { flex: 1; min-height: 0; }
+  #right-bar #chatinput { padding: 6px 8px; }
+
+  /* Show "Character" reopen button only when right-bar is collapsed - currently unused */
+  #char-panel-show { display: none !important; }
 
   /* Tab navigation */
   .char-tabs { display: flex; background: var(--bg); border-bottom: 1px solid var(--border); padding: 0 8px; }
@@ -301,22 +365,12 @@
   #zoom-controls button { width: 36px; height: 36px; padding: 0; font-size: 18px; }
 
   /* DM TOOLBAR */
-  #dm-toolbar { position: absolute; top: 16px; right: 16px; background: rgba(26,22,18,0.95); border: 1px solid var(--border); border-radius: 6px; padding: 6px; display: flex; flex-direction: column; gap: 2px; z-index: 100; backdrop-filter: blur(6px); }
-  .tool-section { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; border-bottom: 1px solid var(--border); }
-  .tool-section:last-child { border-bottom: none; }
-  .tool-label { font-family: 'Cinzel', serif; font-size: 9px; color: var(--muted); text-align: center; letter-spacing: 0.15em; margin-bottom: 2px; }
-  .tool-btn, .fx-btn { width: 36px; height: 36px; padding: 6px; background: transparent; border: 1px solid transparent; border-radius: 3px; color: var(--cream); cursor: pointer; display: flex; align-items: center; justify-content: center; }
-  .tool-btn:hover, .fx-btn:hover { background: var(--panel-light); border-color: var(--border); }
-  .tool-btn.active, .fx-btn.active { background: var(--gold); color: #1a1612; border-color: var(--gold); }
-  .tool-btn.active svg, .fx-btn.active svg { color: #1a1612; }
-
-  /* FX COLOR PICKER */
-  #fx-color-picker { position: absolute; top: 16px; right: 70px; background: rgba(26,22,18,0.95); border: 1px solid var(--border); border-radius: 6px; padding: 10px; z-index: 110; backdrop-filter: blur(6px); }
-  .fx-color-label { font-family: 'Cinzel', serif; font-size: 10px; color: var(--muted); text-align: center; letter-spacing: 0.15em; margin-bottom: 8px; }
-  .fx-color-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-  .fx-color { width: 28px; height: 28px; border-radius: 50%; background: var(--c); border: 2px solid transparent; cursor: pointer; padding: 0; }
-  .fx-color:hover { transform: scale(1.1); border-color: var(--cream); }
-  .fx-color.active { border-color: var(--cream); box-shadow: 0 0 8px var(--c); }
+  /* dm-toolbar default styling. Inside #right-bar it gets overridden to be a horizontal strip. */
+  #dm-toolbar { display: flex; flex-direction: column; gap: 2px; padding: 6px; background: rgba(26,22,18,0.95); border: 1px solid var(--border); border-radius: 6px; z-index: 100; }
+  .tool-btn { width: 36px; height: 36px; padding: 6px; background: transparent; border: 1px solid transparent; border-radius: 3px; color: var(--cream); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .tool-btn:hover { background: var(--panel-light); border-color: var(--border); }
+  .tool-btn.active { background: var(--gold); color: #1a1612; border-color: var(--gold); }
+  .tool-btn.active svg { color: #1a1612; }
 
   /* EFFECTS LAYER */
   #effectslayer { position: absolute; top: 0; left: 0; width: 4000px; height: 4000px; transform-origin: 0 0; pointer-events: none; overflow: visible; }
@@ -502,6 +556,8 @@
 
   /* PLAYERS LIST */
   .player-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 3px; font-size: 13px; }
+  .player-item.clickable { cursor: pointer; transition: background 0.12s; }
+  .player-item.clickable:hover { background: rgba(212,175,55,0.08); }
   .player-item .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; box-shadow: 0 0 6px rgba(107,138,74,0.6); }
   .player-item.offline .dot { background: var(--muted); box-shadow: none; }
   .player-item.host-item .dot { background: var(--gold); box-shadow: 0 0 6px rgba(212,165,116,0.6); }
@@ -658,7 +714,6 @@
         </label>
         <div class="token-tray" id="token-tray"></div>
         <div style="font-size: 12px; color: var(--muted); margin-top: 8px; font-style: italic;">Drag onto the map</div>
-        <button id="open-char-info" style="width: 100%; margin-top: 10px;" class="primary">Character Info</button>
       </div>
 
       <div class="panel-section">
@@ -689,11 +744,6 @@
         </div>
       </div>
 
-      <div class="panel-section" id="hp-tracker-section" style="display:none">
-        <h3>HP Tracker</h3>
-        <div id="hp-tracker-list"></div>
-      </div>
-
       <div class="panel-section">
         <h3>Background Music</h3>
         <div id="audio-host-controls" style="display:none">
@@ -722,6 +772,8 @@
       </div>
     </div>
 
+    <div class="resizer" id="left-resizer" title="Drag to resize"></div>
+
     <div id="mapcontainer">
       <div id="grid"></div>
       <div id="maplayer"></div>
@@ -749,75 +801,30 @@
       <svg id="remote-measurements"></svg>
 
       <div id="dm-toolbar" style="display:none">
-        <div class="tool-section">
-          <div class="tool-label">Tools</div>
-          <button class="tool-btn active" data-tool="select" title="Select / move tokens">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 2l8 19 2.5-8.5L22 11z"/></svg>
-          </button>
-          <button class="tool-btn" data-tool="measure" title="Measure distance">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l4-4M7 13l4-4M11 9l4-4M15 5l4-4M5 19l-2 2M21 15l-4 4-12-12 4-4z"/></svg>
-          </button>
-          <button class="tool-btn" id="imggen-btn" title="Generate image (AI)">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l1.5 4L11 8.5 6.5 10 5 14l-1.5-4L-1 8.5 3.5 7zM17 12l1 3 3 1-3 1-1 3-1-3-3-1 3-1zM16 3l.7 1.8L18.5 5.5l-1.8.7L16 8l-.7-1.8L13.5 5.5l1.8-.7z"/></svg>
-          </button>
-          <button class="tool-btn" id="spells-btn" title="Open Spells panel">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v6H4z M4 14h16v6H4z M8 7h2 M8 17h2"/></svg>
-          </button>
-        </div>
-        <div class="tool-section">
-          <div class="tool-label">FX</div>
-          <button class="fx-btn" data-fx="breath" title="Breath (cone)">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2 L4 20 L20 20 Z"/></svg>
-          </button>
-          <button class="fx-btn" data-fx="beam" title="Beam (line)">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="4"><line x1="3" y1="3" x2="21" y2="21"/></svg>
-          </button>
-          <button class="fx-btn" data-fx="rocket" title="Rocket (projectile)">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2 L18 12 L15 12 L15 22 L9 22 L9 12 L6 12 Z"/></svg>
-          </button>
-          <button class="fx-btn" data-fx="burn" title="Burn (radius)">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="12" cy="12" r="9"/></svg>
-          </button>
-          <button class="fx-btn" data-fx="glow" title="Glow (pulsing)">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
-          </button>
-          <button class="fx-btn" data-fx="sword" title="Sword slash">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 19 L17 7 L19 5 L18 8 L6 20 Z M5 19 L7 21 M14 10 L17 13"/></svg>
-          </button>
-          <button class="fx-btn" data-fx="shield" title="Shield barrier">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 L4 5 V12 C4 17 8 21 12 22 C16 21 20 17 20 12 V5 Z"/></svg>
-          </button>
-          <button class="fx-btn" data-fx="hit" title="Hit / impact">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 L12 22 M2 12 L22 12 M5 5 L19 19 M5 19 L19 5"/></svg>
-          </button>
-          <button class="fx-btn" data-fx="fist" title="Fist / punch">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="6" cy="10" r="2.2"/><circle cx="12" cy="9.5" r="2.4"/><circle cx="18" cy="10" r="2.2"/><rect x="3" y="13" width="18" height="7" rx="2"/></svg>
-          </button>
-          <button class="fx-btn" data-fx="arrow" title="Arrow (aim)">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 12 L21 12 M15 6 L21 12 L15 18"/></svg>
-          </button>
-          <button class="tool-btn" id="clear-effects-btn" title="Clear all effects">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <div id="fx-color-picker" style="display:none">
-        <div class="fx-color-label">Element</div>
-        <div class="fx-color-grid">
-          <button class="fx-color" data-color="fire"  style="--c:#d44a26" title="Fire"></button>
-          <button class="fx-color" data-color="frost" style="--c:#6bb8e0" title="Frost"></button>
-          <button class="fx-color" data-color="acid"  style="--c:#7bb838" title="Acid"></button>
-          <button class="fx-color" data-color="holy"  style="--c:#e8c878" title="Holy"></button>
-          <button class="fx-color" data-color="blood" style="--c:#8b1e1e" title="Blood"></button>
-          <button class="fx-color" data-color="death" style="--c:#1a1a1a" title="Death"></button>
-          <button class="fx-color" data-color="magic" style="--c:#b026ff" title="Magic"></button>
-          <button class="fx-color" data-color="smoke" style="--c:#6a6a6a" title="Smoke"></button>
-          <button class="fx-color" data-color="charm" style="--c:#ff44cc" title="Charm"></button>
-          <button class="fx-color" data-color="slime" style="--c:#6dbf3a" title="Slime"></button>
-          <button class="fx-color" data-color="water" style="--c:#2070d8" title="Water"></button>
-          <button class="fx-color" data-color="lightning" style="--c:#a0d0ff" title="Lightning"></button>
-        </div>
+        <button class="tool-btn active" data-tool="select" title="Select / move tokens">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 2l8 19 2.5-8.5L22 11z"/></svg>
+          <span class="tool-btn-label">Select</span>
+        </button>
+        <button class="tool-btn" data-tool="measure" title="Measure distance">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l4-4M7 13l4-4M11 9l4-4M15 5l4-4M5 19l-2 2M21 15l-4 4-12-12 4-4z"/></svg>
+          <span class="tool-btn-label">Measure</span>
+        </button>
+        <button class="tool-btn" id="spells-btn" title="Open Spells panel">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l1.5 4L11 8.5 6.5 10 5 14l-1.5-4L-1 8.5 3.5 7zM17 12l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/></svg>
+          <span class="tool-btn-label">Spells</span>
+        </button>
+        <button class="tool-btn" id="imggen-btn" title="Generate image (AI)">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><circle cx="8.5" cy="9" r="1.5" fill="currentColor"/><path d="M21 14l-5-5-7 7"/></svg>
+          <span class="tool-btn-label">Generate</span>
+        </button>
+        <button class="tool-btn" id="clear-my-effects-btn" title="Remove only the effects you cast">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14"/><path d="M10 11v6M14 11v6" stroke-width="1.5"/></svg>
+          <span class="tool-btn-label">Clear Mine</span>
+        </button>
+        <button class="tool-btn" id="clear-effects-btn" title="Clear all effects on the map (DM only)">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14"/></svg>
+          <span class="tool-btn-label">Clear All</span>
+        </button>
       </div>
 
       <div id="zoom-controls">
@@ -1707,11 +1714,70 @@
   })();
 
   // ============ ENTER APP ============
+  // Build the right-bar layout by relocating existing components into a single
+  // docked vertical column. This consolidates the tools, HP tracker, character
+  // sheet, and chat into one cohesive panel.
+  function buildRightBar() {
+    if (document.getElementById('right-bar')) return; // Already built
+    const rb = document.createElement('div');
+    rb.id = 'right-bar';
+
+    // Left-edge resizer (drag to widen/narrow; font inside scales)
+    const rbResizer = document.createElement('div');
+    rbResizer.className = 'rb-resizer';
+    rbResizer.id = 'right-resizer';
+    rbResizer.title = 'Drag to resize';
+    rb.appendChild(rbResizer);
+
+    // Tools strip (top): the trimmed dm-toolbar
+    const tb = document.getElementById('dm-toolbar');
+    if (tb) {
+      tb.parentNode.removeChild(tb);
+      tb.style.display = 'flex';
+      tb.classList.add('rb-tools');
+      rb.appendChild(tb);
+    }
+
+    // HP Tracker section (DM-only - clickable rows open the character sheet below)
+    if (STATE.isHost) {
+      const hpSec = document.createElement('div');
+      hpSec.className = 'rb-section rb-hpwrap';
+      hpSec.innerHTML = `
+        <div class="rb-section-head">HP Tracker <span class="hint">(click a row to view character)</span></div>
+        <div id="hp-tracker-list-right"></div>
+      `;
+      rb.appendChild(hpSec);
+    }
+
+    // Character sheet (the docked panel) - starts collapsed; openCharPopup expands it
+    const cp = document.getElementById('char-popup');
+    if (cp) {
+      cp.parentNode.removeChild(cp);
+      cp.classList.add('collapsed');
+      rb.appendChild(cp);
+    }
+
+    // Chat at the bottom
+    const cb = document.getElementById('chatbox');
+    if (cb) {
+      cb.parentNode.removeChild(cb);
+      cb.style.display = '';
+      rb.appendChild(cb);
+    }
+
+    document.body.appendChild(rb);
+    // Mark body so #main reserves space for it
+    document.body.classList.add('right-bar-open');
+  }
+
   async function enterApp() {
     document.getElementById('login').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     document.getElementById('session-code-display').textContent = STATE.sessionId;
     document.getElementById('username-display').textContent = STATE.username;
+
+    // Build the right bar by relocating existing components into a single container
+    buildRightBar();
 
     // Apply class theme for players
     if (STATE.playerClass) {
@@ -1733,7 +1799,6 @@
       badge.className = 'role-badge role-host';
       document.getElementById('host-section').style.display = 'block';
       document.getElementById('gm-roll-toggle').style.display = 'flex';
-      document.getElementById('open-char-info').style.display = 'none';
     } else {
       const cls = STATE.playerClass ? ' · ' + STATE.playerClass.toUpperCase() : '';
       badge.textContent = 'PLAYER' + cls;
@@ -1752,6 +1817,113 @@
     // leave it closed - it will slide in when they click on a token.
     if (!STATE.isHost) {
       openCharPopup(STATE.userId);
+    }
+
+    // Hook up the side-bar resizers and restore saved widths
+    setupResizers();
+  }
+
+  // ============ SIDE BAR RESIZERS ============
+  // Both side panels can be widened or narrowed by dragging their gold strip.
+  // Text inside scales proportionally via the --side-scale / --rb-scale variables.
+  const RESIZER_LS_KEY = 'vtt_resizer_widths_v1';
+  const SIDE_BASE = 280;      // pixel baseline that maps to scale = 1
+  const RB_BASE = 380;        // pixel baseline for right bar
+  const SIDE_MIN = 200, SIDE_MAX = 520;
+  const RB_MIN = 300,  RB_MAX = 640;
+
+  function applySideWidth(w) {
+    w = Math.max(SIDE_MIN, Math.min(SIDE_MAX, w));
+    const scale = w / SIDE_BASE;
+    const sp = document.getElementById('sidepanel');
+    if (sp) {
+      sp.style.setProperty('--side-w', w + 'px');
+      sp.style.setProperty('--side-scale', scale.toFixed(3));
+    }
+  }
+  function applyRbWidth(w) {
+    w = Math.max(RB_MIN, Math.min(RB_MAX, w));
+    const scale = w / RB_BASE;
+    const rb = document.getElementById('right-bar');
+    if (rb) {
+      rb.style.setProperty('--rb-w', w + 'px');
+      rb.style.setProperty('--rb-scale', scale.toFixed(3));
+    }
+    // Also set on body so #main padding picks it up
+    document.body.style.setProperty('--rb-w', w + 'px');
+  }
+  function saveResizerWidths() {
+    try {
+      const sp = document.getElementById('sidepanel');
+      const rb = document.getElementById('right-bar');
+      const data = {
+        side: sp ? parseInt(sp.style.getPropertyValue('--side-w')) || SIDE_BASE : SIDE_BASE,
+        rb:   rb ? parseInt(rb.style.getPropertyValue('--rb-w'))   || RB_BASE   : RB_BASE,
+      };
+      localStorage.setItem(RESIZER_LS_KEY, JSON.stringify(data));
+    } catch (e) {}
+  }
+  function loadResizerWidths() {
+    try {
+      const raw = localStorage.getItem(RESIZER_LS_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (e) { return null; }
+  }
+
+  function setupResizers() {
+    // Restore previous widths
+    const saved = loadResizerWidths();
+    applySideWidth(saved && saved.side ? saved.side : SIDE_BASE);
+    applyRbWidth(saved && saved.rb ? saved.rb : RB_BASE);
+
+    // Left resizer drags the side panel right edge
+    const left = document.getElementById('left-resizer');
+    if (left) {
+      left.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        left.classList.add('dragging');
+        document.body.classList.add('resizing');
+        const onMove = (ev) => {
+          const sp = document.getElementById('sidepanel');
+          if (!sp) return;
+          const rect = sp.getBoundingClientRect();
+          applySideWidth(ev.clientX - rect.left);
+        };
+        const onUp = () => {
+          left.classList.remove('dragging');
+          document.body.classList.remove('resizing');
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          saveResizerWidths();
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    }
+
+    // Right resizer drags the right bar left edge (so dragging left widens)
+    const right = document.getElementById('right-resizer');
+    if (right) {
+      right.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        right.classList.add('dragging');
+        document.body.classList.add('resizing');
+        const onMove = (ev) => {
+          // Width = distance from cursor to viewport right edge
+          const w = window.innerWidth - ev.clientX;
+          applyRbWidth(w);
+        };
+        const onUp = () => {
+          right.classList.remove('dragging');
+          document.body.classList.remove('resizing');
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          saveResizerWidths();
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
     }
   }
 
@@ -2180,7 +2352,17 @@
       const online = STATE.onlinePlayers.has(p.id);
       const item = document.createElement('div');
       item.className = 'player-item' + (p.is_host ? ' host-item' : '') + (online ? '' : ' offline');
+      // Anyone can click a non-host player name to open their character sheet.
+      // For non-hosts, only their own name opens (others would be read-only anyway).
+      const canOpen = !p.is_host && (STATE.isHost || p.id === STATE.userId);
+      if (canOpen) {
+        item.classList.add('clickable');
+        item.title = 'Click to open character sheet';
+      }
       item.innerHTML = `<div class="dot"></div><div class="name">${escapeHtml(p.name)}</div><div class="role-tag">${p.is_host ? 'Host' : 'Player'}</div>`;
+      if (canOpen) {
+        item.addEventListener('click', () => openCharPopup(p.id));
+      }
       list.appendChild(item);
     });
   }
@@ -2196,6 +2378,9 @@
     const cur = tok.current_hp;
     const max = tok.max_hp;
     if (cur == null || max == null || max <= 0) return null;
+    // Privacy: players only see HP bars on their own tokens. The DM sees all.
+    // Teammates' and enemies' HP is hidden from players entirely.
+    if (!STATE.isHost && tok.owner_id !== STATE.userId) return null;
     const pct = Math.max(0, Math.min(100, (cur / max) * 100));
     const bar = document.createElement('div');
     bar.className = 'token-hp-bar';
@@ -2204,28 +2389,48 @@
   }
 
   function renderHpTracker() {
-    const section = document.getElementById('hp-tracker-section');
-    const list = document.getElementById('hp-tracker-list');
-    list.innerHTML = '';
+    // HP tracker is a DM-only tool now. Players just see their own HP in their
+    // character sheet on the right bar. Hide the section entirely for players.
+    const rightWrap = document.querySelector('#right-bar .rb-hpwrap');
+    if (rightWrap) {
+      rightWrap.style.display = STATE.isHost ? '' : 'none';
+    }
+    if (!STATE.isHost) return;
 
-    // Show every token in the session, on map or in tray. Visible to everyone
-    // so the party can track its members and any creatures the DM has placed.
+    const rightList = document.getElementById('hp-tracker-list-right');
+    if (!rightList) return;
+
     const visible = Array.from(STATE.tokens.values())
       .sort((a, b) => {
-        // On-map tokens first, then by name
         const aOn = a.x != null ? 0 : 1;
         const bOn = b.x != null ? 0 : 1;
         if (aOn !== bOn) return aOn - bOn;
         return (a.name || '').localeCompare(b.name || '');
       });
 
+    rightList.innerHTML = '';
     if (visible.length === 0) {
-      section.style.display = 'none';
+      rightList.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:6px;text-align:center;">No tokens yet</div>';
       return;
     }
-    section.style.display = 'block';
-
-    visible.forEach(tok => list.appendChild(buildHpRow(tok)));
+    visible.forEach(tok => {
+      const row = buildHpRow(tok);
+      row.dataset.ownerId = tok.owner_id || '';
+      row.dataset.tokenId = tok.id;
+      if (CHAR_POPUP.targetPlayerId && tok.owner_id === CHAR_POPUP.targetPlayerId) {
+        row.classList.add('viewing');
+      }
+      // Click anywhere on the row that isn't an input/button opens the character sheet
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('input, button')) return;
+        if (!tok.owner_id) {
+          toast('This token has no character', 'error');
+          return;
+        }
+        openCharPopup(tok.owner_id, tok.id);
+      });
+      rightList.appendChild(row);
+    });
   }
 
   function buildHpRow(tok) {
@@ -2523,8 +2728,14 @@
     const popup = document.getElementById('char-popup');
     popup.classList.add('active');
     popup.classList.remove('collapsed');
-    document.body.classList.add('panel-open');
-    document.body.classList.remove('panel-collapsed');
+    document.body.classList.remove('right-bar-collapsed');
+    const rb = document.getElementById('right-bar');
+    if (rb) rb.classList.remove('collapsed');
+
+    // Highlight the row currently being viewed in the right-bar HP tracker
+    document.querySelectorAll('#hp-tracker-list-right .hp-row').forEach(r => {
+      r.classList.toggle('viewing', r.dataset.ownerId === playerId);
+    });
 
     // Show the "back to my character" link when a player is viewing somebody else
     const backBtn = document.getElementById('char-back-btn');
@@ -2624,11 +2835,10 @@
   }
 
   function closeCharPopup() {
-    // For the docked panel, "close" really means "collapse to the side".
-    // We keep targetPlayerId so a re-open snaps back to the same character.
+    // Collapse the character sheet inside the right bar. Chat and tools stay visible.
     const popup = document.getElementById('char-popup');
     popup.classList.add('collapsed');
-    document.body.classList.add('panel-collapsed');
+    document.querySelectorAll('#hp-tracker-list-right .hp-row').forEach(r => r.classList.remove('viewing'));
   }
 
   function refreshCharPopupHp() {
@@ -2726,6 +2936,8 @@
     // Saving throw and skill proficiency toggles (delegated since the rows are rebuilt)
     document.getElementById('saves-grid').addEventListener('change', (e) => {
       if (!e.target.classList.contains('save-prof')) return;
+      const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) { e.target.checked = !e.target.checked; return; }
       const stat = e.target.dataset.stat;
       if (e.target.checked) CHAR_POPUP.saveProfs.add(stat); else CHAR_POPUP.saveProfs.delete(stat);
       renderSaves(CHAR_POPUP.saveProfs);
@@ -2733,6 +2945,8 @@
     });
     document.getElementById('skills-grid').addEventListener('change', (e) => {
       if (!e.target.classList.contains('skill-prof')) return;
+      const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) { e.target.checked = !e.target.checked; return; }
       const skill = e.target.dataset.skill;
       if (e.target.checked) CHAR_POPUP.skillProfs.add(skill); else CHAR_POPUP.skillProfs.delete(skill);
       renderSkills(CHAR_POPUP.skillProfs);
@@ -2819,12 +3033,10 @@
     openCharPopup(STATE.userId);
   });
 
-  // Floating "Character" button shown when panel is collapsed
+  // Char "show" button - kept for backward compatibility, simply uncollapses
   document.getElementById('char-panel-show').addEventListener('click', () => {
     const popup = document.getElementById('char-popup');
     popup.classList.remove('collapsed');
-    document.body.classList.remove('panel-collapsed');
-    // If host hasn't picked anyone yet, fallback to own/blank
     if (!CHAR_POPUP.targetPlayerId && !STATE.isHost) {
       openCharPopup(STATE.userId);
     }
@@ -2982,16 +3194,12 @@
     // Apply selection: switch active tool to fx with chosen shape and element
     STATE.activeFxColor = SPELL_DRAFT.color;
     setActiveTool('fx', SPELL_DRAFT.fx);
-    // Reflect color choice in the legacy color picker too
-    document.querySelectorAll('.fx-color').forEach(b => b.classList.toggle('active', b.dataset.color === SPELL_DRAFT.color));
     document.getElementById('spells-popup').classList.remove('active');
     toast('Casting ' + spellNameFor(SPELL_DRAFT.fx, SPELL_DRAFT.color) + ' - drag on the map');
   });
 
   // Wire the "Character Info" button
-  document.getElementById('open-char-info').addEventListener('click', () => {
-    openCharPopup(STATE.userId);
-  });
+  // (Character Info button removed - the right-bar shows the character sheet automatically)
 
   // ============ MAP UPLOAD ============
   document.getElementById('map-upload').addEventListener('change', async (e) => {
@@ -3148,8 +3356,10 @@
     STATE.activeFx = fx || null;
     document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === tool && !fx));
     document.querySelectorAll('.fx-btn').forEach(b => b.classList.toggle('active', tool === 'fx' && b.dataset.fx === fx));
-    const picker = document.getElementById('fx-color-picker');
-    picker.style.display = (tool === 'fx') ? 'block' : 'none';
+    // fx-color-picker has been removed - the Spells popup is the single source for picking shape+element.
+    // Mark the Spells button visually active when the user is casting a spell.
+    const spellsBtn = document.getElementById('spells-btn');
+    if (spellsBtn) spellsBtn.classList.toggle('active', tool === 'fx');
     // Cursor hint
     const mc = document.getElementById('mapcontainer');
     if (tool === 'measure' || tool === 'fx') mc.style.cursor = 'crosshair';
@@ -3160,23 +3370,11 @@
   document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
     btn.addEventListener('click', () => setActiveTool(btn.dataset.tool));
   });
-  document.querySelectorAll('.fx-btn').forEach(btn => {
-    btn.addEventListener('click', () => setActiveTool('fx', btn.dataset.fx));
-  });
-  document.querySelectorAll('.fx-color').forEach(btn => {
-    btn.addEventListener('click', () => {
-      STATE.activeFxColor = btn.dataset.color;
-      document.querySelectorAll('.fx-color').forEach(b => b.classList.toggle('active', b === btn));
-    });
-  });
-  // Set initial active color
-  setTimeout(() => {
-    const first = document.querySelector('.fx-color[data-color="fire"]');
-    if (first) first.classList.add('active');
-  }, 0);
+  // fx-btn and fx-color elements have been removed; the Spells popup is the
+  // single interface for picking spell shape and element.
 
   document.getElementById('clear-effects-btn').addEventListener('click', async () => {
-    if (!confirm('Clear all effects on the map?')) return;
+    if (!confirm('Clear ALL effects on the map (including other players\')?')) return;
     // Local clear for immediate feedback; realtime DELETE events sync other clients
     STATE.effects.clear();
     renderEffects();
@@ -3185,6 +3383,22 @@
     } catch (e) {
       console.error('Effect delete failed:', e);
       toast('Failed to clear effects', 'error');
+    }
+  });
+
+  document.getElementById('clear-my-effects-btn').addEventListener('click', async () => {
+    // Each user can remove only the effects they cast
+    const myFx = Array.from(STATE.effects.values()).filter(fx => fx.user_id === STATE.userId);
+    if (myFx.length === 0) { toast('You haven\'t cast any effects'); return; }
+    // Local clear of just my own
+    myFx.forEach(fx => STATE.effects.delete(fx.id));
+    renderEffects();
+    try {
+      await sb.from('vtt_effects').delete().eq('session_id', STATE.sessionId).eq('user_id', STATE.userId);
+      toast(`Removed ${myFx.length} effect${myFx.length === 1 ? '' : 's'}`);
+    } catch (e) {
+      console.error('Effect delete failed:', e);
+      toast('Failed to clear your effects', 'error');
     }
   });
 
@@ -3938,7 +4152,7 @@
 
   let panStart = null;
   document.getElementById('mapcontainer').addEventListener('mousedown', (e) => {
-    if (e.target.closest('.map-token') || e.target.closest('#chatbox') || e.target.closest('#zoom-controls') || e.target.closest('#dm-toolbar') || e.target.closest('#fx-color-picker')) return;
+    if (e.target.closest('.map-token') || e.target.closest('#chatbox') || e.target.closest('#zoom-controls') || e.target.closest('#dm-toolbar') || e.target.closest('#right-bar')) return;
 
     // Measure tool (available to everyone)
     if (STATE.activeTool === 'measure') {
@@ -4047,7 +4261,7 @@
       const fx = STATE.fxDrawing;
       STATE.fxDrawing = null;
       document.getElementById('effectslayer').querySelector('#fx-preview-group')?.remove();
-      // Persist
+      // Persist (record who cast it for ownership-based deletion)
       const id = genId();
       await sb.from('vtt_effects').insert({
         id,
@@ -4058,6 +4272,7 @@
         origin_y: fx.origin_y,
         end_x: fx.end_x,
         end_y: fx.end_y,
+        user_id: STATE.userId,
       });
       return;
     }
@@ -4629,26 +4844,10 @@
     if (error) { console.error(error); toast('Message failed', 'error'); }
   }
 
-  // Chat box drag
-  (function setupChatDrag() {
-    const box = document.getElementById('chatbox');
-    const handle = document.getElementById('chatbox-header');
-    let dragging = false, sx, sy, sl, st;
-    handle.addEventListener('mousedown', (e) => {
-      if (e.target.tagName === 'BUTTON') return;
-      dragging = true;
-      sx = e.clientX; sy = e.clientY;
-      const r = box.getBoundingClientRect();
-      sl = r.left; st = r.top;
-      box.style.right = 'auto'; box.style.bottom = 'auto';
-    });
-    document.addEventListener('mousemove', (e) => {
-      if (!dragging) return;
-      box.style.left = (sl + e.clientX - sx) + 'px';
-      box.style.top = (st + e.clientY - sy) + 'px';
-    });
-    document.addEventListener('mouseup', () => dragging = false);
-  })();
+  // Chat box drag - disabled because chatbox now lives inside the docked right
+  // bar. The drag behavior caused a jumpy mousedown experience; the chat is now
+  // always anchored at the bottom of the right panel.
+  // (setupChatDrag intentionally not called)
 
   document.getElementById('chat-minimize').addEventListener('click', () => {
     document.getElementById('chatbox').classList.toggle('minimized');
