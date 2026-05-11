@@ -635,6 +635,20 @@
   .char-head-info input.char-name:focus { background: var(--bg); border-color: var(--border); }
   .char-head-info input.char-name:read-only { border-color: transparent; }
   .char-head-info .char-subline { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 13px; color: var(--muted); padding: 0 6px; }
+  .char-head-info .char-subline-2 { padding: 0 6px; margin-top: 3px; }
+  .char-head-info .char-subline-2 input {
+    width: 100%;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 3px 7px;
+    color: var(--cream);
+    font-family: 'Crimson Pro', serif;
+    font-size: 11px;
+    font-style: italic;
+  }
+  .char-head-info .char-subline-2 input::placeholder { color: var(--muted); font-size: 10px; }
+  .char-head-info .char-subline-2 input:focus { outline: none; border-color: var(--gold); background: rgba(0,0,0,0.4); }
   .char-head-info select, .char-head-info input.char-level, .char-head-info input.char-race { background: transparent; border: none; color: var(--cream); padding: 2px 4px; font-family: inherit; font-size: 13px; }
   .char-head-info select { color: var(--gold); font-family: 'Cinzel', serif; text-transform: capitalize; }
   .char-head-info input.char-level { width: 32px; text-align: center; }
@@ -652,38 +666,54 @@
   .vital-box .hp-edit-inline { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; }
   .vital-box .hp-edit-inline input { width: 36px; font-size: 15px; padding: 2px 0; min-width: 0; }
   .vital-box .hp-edit-inline .hp-sep { color: var(--muted); font-size: 13px; }
-  /* HP vital - small decorative heart on top, HP values BELOW the heart
-   * on clean dark background so they're always readable. The heart is
-   * pure decoration and is not behind the numbers. */
+  /* HP vital - decorative heart on top, two text boxes (cur / max) below.
+   * Inputs are large and obviously editable. Max HP is auto-calculated from
+   * class hit die + CON modifier + level but can be overridden by typing. */
   .vital-box.vital-hp {
-    background: linear-gradient(180deg, rgba(160,72,72,0.15), rgba(40,10,10,0.35));
+    background: linear-gradient(180deg, rgba(160,72,72,0.18), rgba(40,10,10,0.4));
     border: 1px solid rgba(196,104,104,0.5);
-    padding: 4px 4px 6px;
+    padding: 4px 4px 5px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 3px;
   }
   .vital-box.vital-hp .hp-heart-graphic {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     flex-shrink: 0;
     filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
   }
   .vital-box.vital-hp .hp-heart-graphic svg { width: 100%; height: 100%; display: block; }
   .vital-box.vital-hp label { display: none; }
   .vital-box.vital-hp .hp-edit-inline {
-    display: flex; align-items: center; justify-content: center; gap: 1px;
+    display: flex; align-items: center; justify-content: center; gap: 3px;
     width: 100%;
-    padding-top: 2px;
-    border-top: 1px solid rgba(196,104,104,0.4);
   }
   .vital-box.vital-hp input,
   .vital-box.vital-hp .hp-sep {
     color: #fff; font-weight: 700;
     text-shadow: 0 1px 2px rgba(0,0,0,0.7);
   }
-  .vital-box.vital-hp input:focus { background: rgba(0,0,0,0.5); border-radius: 3px; }
+  .vital-box.vital-hp .hp-edit-inline input {
+    width: 38px;
+    min-width: 0;
+    font-size: 15px;
+    padding: 3px 2px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(196,104,104,0.4);
+    border-radius: 3px;
+    font-family: 'Cinzel', serif;
+    text-align: center;
+    color: #fff;
+  }
+  .vital-box.vital-hp .hp-edit-inline input:focus {
+    background: rgba(0,0,0,0.6);
+    border-color: var(--gold);
+    outline: none;
+  }
+  .vital-box.vital-hp .hp-edit-inline input.auto-calc { color: #ffd0d0; opacity: 0.85; }
+  .vital-box.vital-hp .hp-sep { font-size: 14px; color: #d28a8a; }
   /* Low HP - pulse the heart graphic */
   .vital-box.vital-hp.low .hp-heart-graphic { animation: hp-low-pulse 1.4s ease-in-out infinite; }
   .vital-box.vital-hp.zero { border-color: var(--danger); background: linear-gradient(180deg, rgba(80,15,15,0.55), rgba(20,5,5,0.65)); }
@@ -1359,6 +1389,9 @@
           <option value="tabaxi">Tabaxi</option>
         </select>
       </div>
+      <div class="char-subline-2">
+        <input type="text" id="char-subclass" placeholder="Subclass (e.g. Battle Master, Life Domain)" maxlength="40">
+      </div>
       <div id="race-traits" class="race-traits"></div>
     </div>
   </div>
@@ -1637,14 +1670,6 @@
         <option value="character">Character Portrait</option>
         <option value="creature">Creature / Monster</option>
         <option value="item">Item / Object</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Speed vs Quality</label>
-      <select id="imggen-mode" style="width: 100%;">
-        <option value="fast">Fast (Turbo · 4-8s, lower detail)</option>
-        <option value="balanced" selected>Balanced (Flux · 10-20s, sharp)</option>
-        <option value="hires">Hi-Res Map (Flux 2048 · 25-45s, very sharp)</option>
       </select>
     </div>
     <div class="field">
@@ -4049,6 +4074,8 @@
     saveOverrides: {},       // { 'str': 5, ... }
     skillOverrides: {},      // { 'acrobatics': 7, ... }
     passiveOverrides: { perception: 0, investigation: 0, insight: 0 }, // manual + modifiers
+    hpMaxManual: false,      // true once the user types in max HP themselves
+    hpCurManual: false,      // true once the user types in current HP
     buffs: [],               // [{ name, mod, active }]
     inventory: [],           // [{ name, qty, stats }]
     equipment: {},           // { helmet: {name, stats}, ... }
@@ -4543,6 +4570,47 @@
     renderSaves(CHAR_POPUP.saveProfs);
     renderSkills(CHAR_POPUP.skillProfs);
     renderPassiveSenses();
+    refreshHpAutoCalc();
+  }
+
+  // 5e average-HP formula: level 1 = HD max + CON mod;
+  // each level after = (HD/2 + 1) + CON mod (standard average method).
+  // Final max = HD_max + CON*level + (level-1)*(HD/2 + 1)
+  function suggestedMaxHp() {
+    const cls = document.getElementById('char-class').value;
+    const level = parseInt(document.getElementById('char-level').value) || 1;
+    const conMod = Math.floor(((parseInt(document.getElementById('char-con').value) || 10) - 10) / 2);
+    const hd = hitDieForClass(cls);
+    if (level < 1) return null;
+    const lvl1 = hd + conMod;
+    const perLvl = Math.floor(hd / 2) + 1 + conMod;
+    const total = lvl1 + (level - 1) * perLvl;
+    return Math.max(1, total);
+  }
+
+  // Fills the max-HP input with the auto-calculated suggestion, but only if
+  // the user hasn't manually set it (we mark a CHAR_POPUP flag when they do).
+  // The input always remains editable; the auto value is just a smart default.
+  function refreshHpAutoCalc() {
+    const maxInp = document.getElementById('char-hp-max');
+    const curInp = document.getElementById('char-hp-cur');
+    if (!maxInp) return;
+    const suggested = suggestedMaxHp();
+    if (suggested == null) return;
+    maxInp.placeholder = String(suggested);
+    maxInp.title = `Auto: HD + CON mod × level (= ${suggested}). Override by typing.`;
+    // If the user hasn't manually edited max HP yet, write the suggested value
+    if (!CHAR_POPUP.hpMaxManual) {
+      maxInp.value = suggested;
+      maxInp.classList.add('auto-calc');
+      // If current HP also unset, default it to max so the bar reads correctly
+      if (curInp && (curInp.value === '' || parseInt(curInp.value) === 0) && !CHAR_POPUP.hpCurManual) {
+        curInp.value = suggested;
+        curInp.classList.add('auto-calc');
+      }
+    } else {
+      maxInp.classList.remove('auto-calc');
+    }
   }
 
   // Passive Senses (5e): 10 + the relevant skill modifier. The skill modifier
@@ -4700,6 +4768,11 @@
     const player = STATE.persistedPlayers.find(p => p.id === playerId);
     if (!player) { toast('Character not found', 'error'); return; }
 
+    // Suppress auto-save while we populate fields - synthetic change events
+    // from setting <select>.value would otherwise trigger saves that read
+    // half-populated DOM and overwrite good data with blanks.
+    CHAR_POPUP.loading = true;
+
     CHAR_POPUP.targetPlayerId = playerId;
     CHAR_POPUP.targetTokenId = tokenId || null;
 
@@ -4744,6 +4817,7 @@
     document.getElementById('char-level').value = player.level || 1;
     document.getElementById('char-class').value = player.class || '';
     document.getElementById('char-race').value = player.race || '';
+    document.getElementById('char-subclass').value = player.subclass || '';
     document.getElementById('char-ac').value = player.ac ?? 10;
     document.getElementById('char-speed').value = player.speed ?? 30;
     document.getElementById('char-str').value = player.strength ?? 10;
@@ -4754,7 +4828,7 @@
     document.getElementById('char-cha').value = player.charisma ?? 10;
     document.getElementById('char-notes').value = player.notes || '';
 
-    // HP display (from the specific token, or first owned token, or hide)
+    // HP display (from the specific token, or first owned token, or auto-suggest if no token)
     let hpTok = null;
     if (tokenId && STATE.tokens.has(tokenId)) hpTok = STATE.tokens.get(tokenId);
     else hpTok = Array.from(STATE.tokens.values()).find(t => t.owner_id === playerId && t.x != null);
@@ -4762,10 +4836,17 @@
     const hpMaxInp = document.getElementById('char-hp-max');
     const hpBox = document.getElementById('char-hp-box');
     if (hpBox) hpBox.classList.remove('low', 'zero');
+    // Reset manual flags - we'll set them later if the player overrode auto
+    CHAR_POPUP.hpMaxManual = false;
+    CHAR_POPUP.hpCurManual = false;
     if (hpTok) {
-      CHAR_POPUP.targetTokenId = hpTok.id; // Remember the token for HP edits
+      CHAR_POPUP.targetTokenId = hpTok.id;
       hpCurInp.value = hpTok.current_hp ?? 10;
       hpMaxInp.value = hpTok.max_hp ?? 10;
+      // Treat any non-default value as a manual override so we don't auto-overwrite it
+      const suggested = suggestedMaxHp();
+      CHAR_POPUP.hpMaxManual = (hpTok.max_hp != null && hpTok.max_hp !== suggested);
+      CHAR_POPUP.hpCurManual = true; // current HP is always manual once a token exists
       hpCurInp.disabled = false;
       hpMaxInp.disabled = false;
       document.getElementById('char-hp-sub').textContent = hpTok.name;
@@ -4777,11 +4858,15 @@
         else if (pct < 40) hpBox.classList.add('low');
       }
     } else {
+      // No token yet - inputs stay editable, showing the auto-calculated suggestion.
+      // When the user uploads a portrait and a token is auto-created, the max HP
+      // we computed here will be used as its starting HP.
+      CHAR_POPUP.targetTokenId = null;
+      hpCurInp.disabled = false;
+      hpMaxInp.disabled = false;
       hpCurInp.value = '';
       hpMaxInp.value = '';
-      hpCurInp.disabled = true;
-      hpMaxInp.disabled = true;
-      document.getElementById('char-hp-sub').textContent = 'No token on map';
+      document.getElementById('char-hp-sub').textContent = '';
     }
 
     updateStatMods();
@@ -4852,13 +4937,18 @@
       } else if (inp.type === 'checkbox' || inp.type === 'radio') {
         inp.disabled = !canEdit;
       } else if (inp.id === 'char-hp-cur' || inp.id === 'char-hp-max') {
-        // HP inputs: only editable when there's a token on the map
-        inp.readOnly = !canEdit || !hpTok;
+        // HP inputs are always editable as long as the user can edit the sheet.
+        // If there's no token yet, the edits will be picked up when a token
+        // is auto-created (via portrait upload) or via DM monster spawn.
+        inp.readOnly = !canEdit;
       } else {
         inp.readOnly = !canEdit;
       }
     });
     document.getElementById('char-readonly-note').style.display = canEdit ? 'none' : 'block';
+    // Population complete - re-enable auto-save. Use a microtask delay so any
+    // pending synthetic events from setting .value get processed first.
+    setTimeout(() => { CHAR_POPUP.loading = false; }, 50);
   }
 
   function closeCharPopup() {
@@ -4913,12 +5003,17 @@
   }
 
   function scheduleSavePlayer() {
+    // While the popup is mid-load we ignore save triggers, otherwise a freshly
+    // populated dropdown firing a synthetic change event would clobber the
+    // real value with an empty one before the DOM is fully wired.
+    if (CHAR_POPUP.loading) return;
     clearTimeout(CHAR_POPUP.saveTimeout);
     CHAR_POPUP.saveTimeout = setTimeout(saveCharacterChanges, 400);
   }
 
   async function saveCharacterChanges() {
     if (!CHAR_POPUP.targetPlayerId) return;
+    if (CHAR_POPUP.loading) return;
     const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
     if (!canEdit) return;
 
@@ -4927,6 +5022,7 @@
       level: parseInt(document.getElementById('char-level').value) || 1,
       class: document.getElementById('char-class').value,
       race: document.getElementById('char-race').value,
+      subclass: document.getElementById('char-subclass').value || '',
       ac: parseInt(document.getElementById('char-ac').value) || 10,
       speed: parseInt(document.getElementById('char-speed').value) || 30,
       strength: parseInt(document.getElementById('char-str').value) || 10,
@@ -4956,7 +5052,14 @@
       conditions: serializeConditions(CHAR_POPUP.conditions, CHAR_POPUP.exhaustionLevel),
     };
 
-    await sb.from('vtt_players').update(patch).eq('id', CHAR_POPUP.targetPlayerId);
+    let { error } = await sb.from('vtt_players').update(patch).eq('id', CHAR_POPUP.targetPlayerId);
+    if (error && error.message && /subclass|passive_overrides/i.test(error.message)) {
+      // Legacy schema - retry without the optional columns
+      const { subclass, passive_overrides, ...minimal } = patch;
+      await sb.from('vtt_players').update(minimal).eq('id', CHAR_POPUP.targetPlayerId);
+    } else if (error) {
+      console.error('Save player failed', error);
+    }
 
     // If user changed their own class, re-apply theme
     if (CHAR_POPUP.targetPlayerId === STATE.userId && patch.class !== STATE.playerClass) {
@@ -4984,6 +5087,53 @@
     document.getElementById('char-gold').addEventListener('input', scheduleSavePlayer);
     document.getElementById('char-silver').addEventListener('input', scheduleSavePlayer);
     document.getElementById('char-copper').addEventListener('input', scheduleSavePlayer);
+
+    // Subclass free-text input
+    const subEl = document.getElementById('char-subclass');
+    if (subEl) subEl.addEventListener('input', scheduleSavePlayer);
+
+    // HP inputs - mark as manual when user types so auto-calc doesn't overwrite.
+    // If a token already exists for this character, update its HP in the DB.
+    const hpCurEl = document.getElementById('char-hp-cur');
+    const hpMaxEl = document.getElementById('char-hp-max');
+    async function pushHpToToken() {
+      if (!CHAR_POPUP.targetTokenId) return; // no token yet - HP is just queued visually
+      const cur = parseInt(hpCurEl.value);
+      const max = parseInt(hpMaxEl.value);
+      if (isNaN(cur) || isNaN(max) || max <= 0) return;
+      const tok = STATE.tokens.get(CHAR_POPUP.targetTokenId);
+      if (!tok) return;
+      tok.current_hp = Math.min(cur, max);
+      tok.max_hp = max;
+      STATE.tokens.set(tok.id, tok);
+      try {
+        await sb.from('vtt_tokens').update({ current_hp: tok.current_hp, max_hp: tok.max_hp, updated_at: new Date().toISOString() }).eq('id', tok.id);
+      } catch (e) { console.error('HP save failed', e); }
+      // Refresh HP bars, tracker, and visual cues
+      const hpBox = document.getElementById('char-hp-box');
+      if (hpBox) {
+        hpBox.classList.remove('low', 'zero');
+        const pct = (tok.current_hp / tok.max_hp) * 100;
+        if (tok.current_hp === 0) hpBox.classList.add('zero');
+        else if (pct < 40) hpBox.classList.add('low');
+      }
+      renderTokens();
+      renderHpTracker();
+    }
+    if (hpCurEl) {
+      hpCurEl.addEventListener('input', () => {
+        CHAR_POPUP.hpCurManual = true;
+        hpCurEl.classList.remove('auto-calc');
+      });
+      hpCurEl.addEventListener('change', pushHpToToken);
+    }
+    if (hpMaxEl) {
+      hpMaxEl.addEventListener('input', () => {
+        CHAR_POPUP.hpMaxManual = true;
+        hpMaxEl.classList.remove('auto-calc');
+      });
+      hpMaxEl.addEventListener('change', pushHpToToken);
+    }
 
     // Race dropdown also updates the traits panel below
     document.getElementById('char-race').addEventListener('change', (e) => {
@@ -5075,6 +5225,12 @@
         } else {
           // Create a new token for this player, placed in the tray (x=null)
           const tokenId = genId();
+          // Pull initial HP from the char sheet inputs (auto-calculated or
+          // manually edited). Fall back to 10 if nothing reasonable is set.
+          const hpMaxInpEl = document.getElementById('char-hp-max');
+          const hpCurInpEl = document.getElementById('char-hp-cur');
+          const initialMax = parseInt(hpMaxInpEl && hpMaxInpEl.value) || suggestedMaxHp() || 10;
+          const initialCur = parseInt(hpCurInpEl && hpCurInpEl.value) || initialMax;
           const newTok = {
             id: tokenId,
             session_id: STATE.sessionId,
@@ -5082,12 +5238,13 @@
             image_url: url,
             x: null, y: null,
             owner_id: targetPlayerId,
-            current_hp: 10,
-            max_hp: 10,
+            current_hp: Math.min(initialCur, initialMax),
+            max_hp: initialMax,
           };
           const { error } = await sb.from('vtt_tokens').insert(newTok);
           if (error) throw error;
           STATE.tokens.set(tokenId, newTok);
+          CHAR_POPUP.targetTokenId = tokenId; // so subsequent HP edits target this token
           renderTokens();
           renderTokenTray();
           renderHpTracker();
@@ -6911,7 +7068,7 @@
     item: 'fantasy item icon, transparent background, high detail, ',
   };
 
-  let imgGenState = { type: 'map', mode: 'balanced', prompt: '', url: '', seed: 0 };
+  let imgGenState = { type: 'map', prompt: '', url: '', seed: 0 };
 
   document.getElementById('imggen-btn').addEventListener('click', () => {
     document.getElementById('imggen-popup').classList.add('active');
@@ -6920,26 +7077,14 @@
   document.getElementById('imggen-close').addEventListener('click', () => {
     document.getElementById('imggen-popup').classList.remove('active');
   });
-  // When the user picks a type, suggest a sensible default speed mode.
-  // Characters/items/creatures lean fast; maps lean balanced.
-  document.getElementById('imggen-type').addEventListener('change', (e) => {
-    const modeSel = document.getElementById('imggen-mode');
-    if (!modeSel) return;
-    if (e.target.value === 'character' || e.target.value === 'item') {
-      modeSel.value = 'fast';
-    } else if (e.target.value === 'map') {
-      modeSel.value = 'balanced';
-    } else if (e.target.value === 'creature') {
-      modeSel.value = 'balanced';
-    }
-  });
+  // Type listener no longer needed (no mode selector); kept as no-op for safety.
+  document.getElementById('imggen-type').addEventListener('change', () => {});
 
   document.getElementById('imggen-go').addEventListener('click', () => {
     const type = document.getElementById('imggen-type').value;
-    const mode = document.getElementById('imggen-mode').value;
     const promptText = document.getElementById('imggen-prompt').value.trim();
     if (!promptText) { toast('Enter a prompt first', 'error'); return; }
-    imgGenState = { type, mode, prompt: promptText, seed: Math.floor(Math.random() * 1000000) };
+    imgGenState = { type, prompt: promptText, seed: Math.floor(Math.random() * 1000000) };
     runImgGen();
   });
   document.getElementById('imggen-regen').addEventListener('click', () => {
@@ -6949,30 +7094,14 @@
 
   function runImgGen() {
     const fullPrompt = IMG_GEN_PROMPTS[imgGenState.type] + imgGenState.prompt;
-    // Mode determines model + resolution. Turbo is much faster but lower fidelity,
-    // good for character portraits and quick iterations. Flux is the default for
-    // balanced quality. Hi-Res Map cranks size to 2048 with flux for sharp battlemaps.
-    const mode = imgGenState.mode || 'balanced';
-    let model = 'flux';
-    let w = 1024, h = 1024;
-    let loadingText = 'Generating (10-20s)...';
-    if (mode === 'fast') {
-      model = 'turbo';
-      w = h = (imgGenState.type === 'map') ? 1024 : 768;
-      loadingText = 'Generating (turbo, 4-8s)...';
-    } else if (mode === 'hires') {
-      model = 'flux';
-      w = h = (imgGenState.type === 'map') ? 2048 : 1024;
-      loadingText = 'Generating hi-res (25-45s)...';
-    } else {
-      // balanced
-      model = 'flux';
-      w = h = (imgGenState.type === 'map') ? 1536 : 1024;
-    }
-    // enhance=true rewrites prompts for better composition. Skip on turbo - it
-    // can slow turbo down and the gain is smaller at lower fidelity.
-    const enhanceParam = (mode === 'fast') ? '' : '&enhance=true';
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=${w}&height=${h}&seed=${imgGenState.seed}&model=${model}&nologo=true${enhanceParam}`;
+    // Always use the fast (turbo) model. The slower flux models were producing
+    // intermittent failures (timeouts / blank responses); turbo is reliable
+    // and finishes in ~4-8 seconds.
+    const model = 'turbo';
+    const w = (imgGenState.type === 'map') ? 1024 : 768;
+    const h = w;
+    const loadingText = 'Generating (turbo, 4-8s)...';
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=${w}&height=${h}&seed=${imgGenState.seed}&model=${model}&nologo=true`;
     imgGenState.url = url;
     const img = document.getElementById('imggen-img');
     img.style.display = 'none';
