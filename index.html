@@ -99,9 +99,9 @@
   /* SIDE PANEL */
   #sidepanel { width: var(--side-w, 280px); background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; position: relative; font-size: calc(13px * var(--side-scale, 1)); }
   /* Resizer strip - drag to resize, font inside the bar scales proportionally */
-  .resizer { width: 6px; flex-shrink: 0; cursor: ew-resize; background: var(--panel-light); transition: background 0.15s; position: relative; user-select: none; }
-  .resizer:hover, .resizer.dragging { background: var(--gold); }
-  .resizer::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 2px; height: 28px; background: var(--gold-soft); border-radius: 1px; pointer-events: none; }
+  .resizer { width: 8px; flex-shrink: 0; cursor: ew-resize; background: linear-gradient(90deg, transparent 0%, var(--gold-soft) 100%); opacity: 0.5; transition: opacity 0.15s, background 0.15s; position: relative; user-select: none; }
+  .resizer:hover, .resizer.dragging { opacity: 1; background: linear-gradient(90deg, transparent 0%, var(--gold-soft) 40%, var(--gold) 100%); }
+  .resizer::after { content: ''; position: absolute; top: 50%; right: 3px; transform: translateY(-50%); width: 2px; height: 36px; background: var(--gold); border-radius: 1px; pointer-events: none; box-shadow: 0 0 4px var(--gold); }
   /* While dragging, freeze cursor and disable selection across the document */
   body.resizing { cursor: ew-resize !important; user-select: none !important; }
   body.resizing * { cursor: ew-resize !important; user-select: none !important; }
@@ -200,10 +200,10 @@
   body.right-bar-open #main { padding-right: var(--rb-w, 380px); }
   body.right-bar-open.right-bar-collapsed #main { padding-right: 0; }
   #right-bar.collapsed { transform: translateX(var(--rb-w, 380px)); }
-  /* Right-bar resizer on its left edge (overlays the border) */
-  #right-bar .rb-resizer { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; cursor: ew-resize; background: transparent; transition: background 0.15s; z-index: 60; }
-  #right-bar .rb-resizer:hover, #right-bar .rb-resizer.dragging { background: var(--gold); }
-  #right-bar .rb-resizer::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 2px; height: 28px; background: var(--gold-soft); border-radius: 1px; pointer-events: none; }
+  /* Right-bar resizer on its left edge (overlays the border, visible gold accent) */
+  #right-bar .rb-resizer { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; cursor: ew-resize; background: linear-gradient(90deg, var(--gold-soft) 0%, transparent 60%); opacity: 0.5; transition: opacity 0.15s, background 0.15s; z-index: 60; user-select: none; }
+  #right-bar .rb-resizer:hover, #right-bar .rb-resizer.dragging { opacity: 1; background: linear-gradient(90deg, var(--gold) 0%, var(--gold-soft) 50%, transparent 100%); }
+  #right-bar .rb-resizer::after { content: ''; position: absolute; top: 50%; left: 3px; transform: translateY(-50%); width: 2px; height: 36px; background: var(--gold); border-radius: 1px; pointer-events: none; box-shadow: 0 0 4px var(--gold); }
 
   /* Scale-aware sizing inside right-bar */
   #right-bar .rb-section-head { font-size: calc(11px * var(--rb-scale, 1)); }
@@ -3418,6 +3418,9 @@
 
   function renderEffects() {
     const layer = document.getElementById('effectslayer');
+    // Preserve any in-progress preview group so a remote-triggered re-render
+    // doesn't wipe the visual the caster is still drawing.
+    const livePreview = layer.querySelector('#fx-preview-group');
     // Set viewport that matches our world coordinate system. We use a large viewBox so SVG draws don't get clipped.
     layer.setAttribute('viewBox', '0 0 4000 4000');
     layer.setAttribute('preserveAspectRatio', 'none');
@@ -3430,6 +3433,8 @@
       svg += effectToSVG(fx, ox, oy);
     });
     layer.innerHTML = svg;
+    // Re-attach the in-progress preview on top of the permanent effects
+    if (livePreview) layer.appendChild(livePreview);
   }
 
   function effectToSVG(fx, ox, oy) {
@@ -4152,7 +4157,11 @@
 
   let panStart = null;
   document.getElementById('mapcontainer').addEventListener('mousedown', (e) => {
-    if (e.target.closest('.map-token') || e.target.closest('#chatbox') || e.target.closest('#zoom-controls') || e.target.closest('#dm-toolbar') || e.target.closest('#right-bar')) return;
+    // Ignore clicks that are on UI overlays inside the map container itself.
+    // The right-bar is a sibling element, so clicks on it never bubble here.
+    if (e.target.closest('.map-token') || e.target.closest('#chatbox') ||
+        e.target.closest('#zoom-controls') || e.target.closest('#dm-toolbar') ||
+        e.target.closest('.resizer') || e.target.closest('.rb-resizer')) return;
 
     // Measure tool (available to everyone)
     if (STATE.activeTool === 'measure') {
@@ -4261,9 +4270,8 @@
       const fx = STATE.fxDrawing;
       STATE.fxDrawing = null;
       document.getElementById('effectslayer').querySelector('#fx-preview-group')?.remove();
-      // Persist (record who cast it for ownership-based deletion)
       const id = genId();
-      await sb.from('vtt_effects').insert({
+      const effect = {
         id,
         session_id: STATE.sessionId,
         type: fx.type,
@@ -4273,7 +4281,17 @@
         end_x: fx.end_x,
         end_y: fx.end_y,
         user_id: STATE.userId,
-      });
+      };
+      // Local-first: add to state and render immediately so the effect stays
+      // visible. Realtime echo will be deduped because the row uses the same id.
+      STATE.effects.set(id, effect);
+      renderEffects();
+      // Persist
+      try {
+        await sb.from('vtt_effects').insert(effect);
+      } catch (e) {
+        console.error('Effect persist failed:', e);
+      }
       return;
     }
 
@@ -4574,6 +4592,34 @@
     return t;
   }
 
+  // Build a random bounce trajectory for a die. The die starts off-screen on
+  // one of eight directions (edges + corners), bounces toward the opposite
+  // side, ricochets twice with diminishing amplitude, and lands at center.
+  function buildBouncePath() {
+    const W = Math.max(window.innerWidth, 600);
+    const H = Math.max(window.innerHeight, 400);
+    const sides = [
+      { x: -W * 0.45, y: 0 },
+      { x:  W * 0.45, y: 0 },
+      { x: 0, y: -H * 0.45 },
+      { x: 0, y:  H * 0.45 },
+      { x: -W * 0.4, y: -H * 0.35 },
+      { x:  W * 0.4, y: -H * 0.35 },
+      { x: -W * 0.4, y:  H * 0.35 },
+      { x:  W * 0.4, y:  H * 0.35 },
+    ];
+    const s = sides[Math.floor(Math.random() * sides.length)];
+    // Add a little jitter so multiple dice don't follow identical paths
+    const jx = (Math.random() - 0.5) * 60;
+    const jy = (Math.random() - 0.5) * 60;
+    return {
+      start: { x: s.x + jx, y: s.y + jy },
+      b1:    { x: -s.x * 0.55 + jx * 0.4, y: -s.y * 0.55 + jy * 0.4 },
+      b2:    { x:  s.x * 0.22 - jx * 0.3, y:  s.y * 0.22 - jy * 0.3 },
+      b3:    { x: -s.x * 0.07,             y: -s.y * 0.07 },
+    };
+  }
+
   function animateDiceRoll(msg) {
     // Cancel any in-flight animations from previous rolls so they cannot
     // overwrite the new roll's display
@@ -4593,20 +4639,25 @@
     // Build a class-colored palette for the player who rolled
     const palette = dicePaletteForUserId(msg.user_id);
 
-    const ANIM_DURATION = 1400;
-    const STAGGER = 110;
+    // Bounce timing - each die takes ~1300ms to fully settle.
+    const T_FLY     = 380;  // cross from edge to opposite side
+    const T_BOUNCE1 = 320;  // ricochet back partially
+    const T_BOUNCE2 = 260;  // small bounce
+    const T_SETTLE  = 260;  // final settle at center
+    const ANIM_DURATION = T_FLY + T_BOUNCE1 + T_BOUNCE2 + T_SETTLE; // 1220ms
+    const STAGGER = 130;
     const totalSettleTime = ANIM_DURATION + (msg.rolls.length - 1) * STAGGER;
 
     msg.rolls.forEach((val, i) => {
       const delay = i * STAGGER;
+      const path = buildBouncePath();
       let dieEl;
 
       if (msg.sides === 6) {
-        // True 3D cube. Animate via a SINGLE CSS transition to the target face
-        // (with extra full rotations layered in) so the cube never jumps.
+        // True 3D cube. We animate translate + rotateX/Y together so the cube
+        // tumbles realistically as it bounces across the screen.
         dieEl = document.createElement('div');
         dieEl.className = 'die3d d6';
-        // Apply class palette via CSS custom properties
         dieEl.style.setProperty('--dice-light',  palette.light);
         dieEl.style.setProperty('--dice-mid',    palette.mid);
         dieEl.style.setProperty('--dice-dark',   palette.dark);
@@ -4630,23 +4681,59 @@
         const sign = Math.random() < 0.5 ? -1 : 1;
         const finalX = targetRot.x + sign * extraX;
         const finalY = targetRot.y + extraY;
-        dieEl.style.transform = `translateY(-260px) rotateX(${Math.random()*60-30}deg) rotateY(${Math.random()*60-30}deg)`;
+
+        // Initial position - off-screen edge with random tilt
+        dieEl.style.transform = `translate(${path.start.x}px, ${path.start.y}px) rotateX(${Math.random()*60-30}deg) rotateY(${Math.random()*60-30}deg)`;
+
+        // Stage 1: cross the screen
         scheduleDice(() => {
-          dieEl.style.transition = `transform ${ANIM_DURATION/1000}s cubic-bezier(0.28, 1.05, 0.38, 1)`;
-          dieEl.style.transform = `translateY(0) rotateX(${finalX}deg) rotateY(${finalY}deg)`;
+          dieEl.style.transition = `transform ${T_FLY}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+          dieEl.style.transform = `translate(${path.b1.x}px, ${path.b1.y}px) rotateX(${finalX * 0.4}deg) rotateY(${finalY * 0.4}deg)`;
         }, 20 + delay);
+        // Stage 2: ricochet back
+        scheduleDice(() => {
+          dieEl.style.transition = `transform ${T_BOUNCE1}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+          dieEl.style.transform = `translate(${path.b2.x}px, ${path.b2.y}px) rotateX(${finalX * 0.7}deg) rotateY(${finalY * 0.7}deg)`;
+        }, 20 + delay + T_FLY);
+        // Stage 3: small bounce
+        scheduleDice(() => {
+          dieEl.style.transition = `transform ${T_BOUNCE2}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+          dieEl.style.transform = `translate(${path.b3.x}px, ${path.b3.y}px) rotateX(${finalX * 0.9}deg) rotateY(${finalY * 0.9}deg)`;
+        }, 20 + delay + T_FLY + T_BOUNCE1);
+        // Stage 4: settle at center with the final face up
+        scheduleDice(() => {
+          dieEl.style.transition = `transform ${T_SETTLE}ms cubic-bezier(0.28, 1.05, 0.38, 1)`;
+          dieEl.style.transform = `translate(0, 0) rotateX(${finalX}deg) rotateY(${finalY}deg)`;
+        }, 20 + delay + T_FLY + T_BOUNCE1 + T_BOUNCE2);
         scheduleDice(() => { dieEl.classList.add('settled'); }, ANIM_DURATION + delay + 50);
       } else {
-        // Polyhedron-style die for everything else. Cycle random numbers during spin.
+        // Polyhedron die (2D). Same bouncing path, with 2D rotation only.
         dieEl = document.createElement('div');
         dieEl.className = 'die-poly';
         dieEl.innerHTML = polyhedronSVG(msg.sides, palette) + `<div class="val">?</div>`;
-        dieEl.style.transform = `translateY(-260px) rotate(${Math.random()*120-60}deg) scale(0.5)`;
         const finalRot = (Math.random() < 0.5 ? -1 : 1) * (540 + Math.floor(Math.random() * 540));
+
+        // Initial off-screen position
+        dieEl.style.transform = `translate(${path.start.x}px, ${path.start.y}px) rotate(${Math.random()*180-90}deg) scale(0.6)`;
+
         scheduleDice(() => {
-          dieEl.style.transition = `transform ${ANIM_DURATION/1000}s cubic-bezier(0.28, 1.05, 0.38, 1)`;
-          dieEl.style.transform = `translateY(0) rotate(${finalRot}deg) scale(1)`;
+          dieEl.style.transition = `transform ${T_FLY}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+          dieEl.style.transform = `translate(${path.b1.x}px, ${path.b1.y}px) rotate(${finalRot * 0.4}deg) scale(0.85)`;
         }, 20 + delay);
+        scheduleDice(() => {
+          dieEl.style.transition = `transform ${T_BOUNCE1}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+          dieEl.style.transform = `translate(${path.b2.x}px, ${path.b2.y}px) rotate(${finalRot * 0.7}deg) scale(0.95)`;
+        }, 20 + delay + T_FLY);
+        scheduleDice(() => {
+          dieEl.style.transition = `transform ${T_BOUNCE2}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+          dieEl.style.transform = `translate(${path.b3.x}px, ${path.b3.y}px) rotate(${finalRot * 0.9}deg) scale(1)`;
+        }, 20 + delay + T_FLY + T_BOUNCE1);
+        scheduleDice(() => {
+          dieEl.style.transition = `transform ${T_SETTLE}ms cubic-bezier(0.28, 1.05, 0.38, 1)`;
+          dieEl.style.transform = `translate(0, 0) rotate(${finalRot}deg) scale(1)`;
+        }, 20 + delay + T_FLY + T_BOUNCE1 + T_BOUNCE2);
+
+        // Cycle random numbers during the spin, settle on the final value
         const valEl = dieEl.querySelector('.val');
         const interval = setInterval(() => {
           valEl.textContent = Math.floor(Math.random() * msg.sides) + 1;
