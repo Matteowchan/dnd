@@ -163,6 +163,9 @@
   .vital-box input { width: 100%; background: transparent; border: none; color: var(--gold); font-family: 'Cinzel', serif; font-size: 18px; font-weight: 600; text-align: center; padding: 0; }
   .vital-box input:focus { background: var(--bg); }
   .vital-box .vital-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .vital-box .hp-edit-inline { display: flex; align-items: center; justify-content: center; gap: 2px; }
+  .vital-box .hp-edit-inline input { width: 38px; font-size: 16px; padding: 2px 0; }
+  .vital-box .hp-edit-inline .hp-sep { color: var(--muted); font-size: 14px; }
 
   .char-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 16px; }
   .stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 3px; padding: 6px 4px; text-align: center; }
@@ -283,9 +286,10 @@
   #toast.error { border-color: var(--danger); color: #e8a0a0; }
 
   /* CONNECTION INDICATOR */
-  #conn-indicator { position: fixed; top: 14px; right: 14px; padding: 4px 10px; background: rgba(26,22,18,0.9); border: 1px solid var(--border); border-radius: 3px; font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; z-index: 1500; }
+  #conn-indicator { padding: 3px 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 3px; font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
   #conn-indicator.connected { color: var(--success); border-color: var(--success); }
   #conn-indicator.disconnected { color: var(--danger); border-color: var(--danger); }
+  #conn-indicator.demo { color: var(--ember); border-color: var(--ember); }
 </style>
 </head>
 <body>
@@ -354,7 +358,9 @@
       <span style="font-size: 13px; color: var(--muted)">|</span>
       <span style="font-size: 13px;" id="username-display"></span>
     </div>
-    <div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span id="conn-indicator">Connecting</span>
+      <button id="switch-role-btn" style="display:none;" title="Demo mode only">Switch Role</button>
       <button id="leave-btn" class="danger">Leave</button>
     </div>
   </div>
@@ -371,6 +377,11 @@
           <label style="margin: 0;">Ft per square</label>
           <input type="number" id="grid-ft" value="5" min="1" max="50" style="width: 70px;">
           <button id="apply-grid">Apply</button>
+        </div>
+        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
+          <button id="move-map-toggle" style="width: 100%;">Move Map: <b>Off</b></button>
+          <button id="lock-tokens-toggle" style="width: 100%;">Lock Tokens: <b>Off</b></button>
+          <button id="clear-tokens-btn" style="width: 100%;" class="danger">Clear Map</button>
         </div>
       </div>
 
@@ -484,7 +495,11 @@
     <div class="char-vitals">
       <div class="vital-box">
         <label>HP</label>
-        <div class="vital-val" id="char-hp-display">—</div>
+        <div class="hp-edit-inline">
+          <input type="number" id="char-hp-cur" min="0" placeholder="—">
+          <span class="hp-sep">/</span>
+          <input type="number" id="char-hp-max" min="1" placeholder="—">
+        </div>
         <div class="vital-sub" id="char-hp-sub"></div>
       </div>
       <div class="vital-box">
@@ -526,7 +541,6 @@
   <div class="dice-result-summary" id="dice-result"></div>
 </div>
 
-<div id="conn-indicator" style="display:none">Connecting</div>
 <div id="toast"></div>
 
 <script>
@@ -539,9 +553,21 @@
 
   const STORAGE_BUCKET = 'vtt-images';
 
-  // Demo mode: activates when Supabase config is not set.
-  // Everything works locally in-memory with no multiplayer sync.
-  const DEMO_MODE = SUPABASE_URL.includes('YOUR_') || SUPABASE_ANON_KEY.includes('YOUR_');
+  // Demo mode: activates when Supabase config is not set,
+  // OR when running inside a sandboxed iframe like the Claude artifact preview.
+  function detectPreviewEnv() {
+    // Claude artifact runtime exposes window.storage
+    if (typeof window.storage === 'object' && window.storage !== null) return true;
+    // Cross-origin iframe (parent window inaccessible) - typical for sandboxed previews
+    try {
+      if (window.self !== window.top) return true;
+    } catch (e) {
+      return true;
+    }
+    return false;
+  }
+  const IN_PREVIEW = detectPreviewEnv();
+  const DEMO_MODE = IN_PREVIEW || SUPABASE_URL.includes('YOUR_') || SUPABASE_ANON_KEY.includes('YOUR_');
 
   // ----- MOCK SUPABASE (for demo mode) -----
   function createMockSupabase() {
@@ -697,6 +723,10 @@
     dragging: null,
     channel: null,
     myMsgIds: new Set(),
+
+    mapMoveMode: false,     // host can drag the map when on
+    movingMap: null,        // active map-drag state
+    tokensLocked: false,    // when true, players cannot move tokens
   };
 
   // ============ UTILITIES ============
@@ -904,7 +934,6 @@
   async function enterApp() {
     document.getElementById('login').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
-    document.getElementById('conn-indicator').style.display = 'block';
     document.getElementById('session-code-display').textContent = STATE.sessionId;
     document.getElementById('username-display').textContent = STATE.username;
 
@@ -916,8 +945,9 @@
     if (DEMO_MODE) {
       document.getElementById('demo-banner').style.display = 'block';
       document.getElementById('conn-indicator').textContent = 'Demo';
-      document.getElementById('conn-indicator').style.color = 'var(--ember)';
-      document.getElementById('conn-indicator').style.borderColor = 'var(--ember)';
+      document.getElementById('conn-indicator').classList.add('demo');
+      // Show Switch Role button only in demo mode
+      document.getElementById('switch-role-btn').style.display = 'inline-block';
     }
     const badge = document.getElementById('role-badge');
     if (STATE.isHost) {
@@ -951,6 +981,8 @@
     if (mapData) {
       STATE.map = mapData;
       STATE.gridFt = mapData.grid_ft || 5;
+      STATE.tokensLocked = !!mapData.tokens_locked;
+      updateLockTokensButtonLabel();
       renderMap();
     }
 
@@ -1019,12 +1051,23 @@
   function handleMapChange(payload) {
     if (payload.eventType === 'DELETE') {
       STATE.map = null;
+      STATE.tokensLocked = false;
+      updateLockTokensButtonLabel();
       renderMap();
+      renderTokens();
       return;
     }
     STATE.map = payload.new;
     STATE.gridFt = payload.new.grid_ft || 5;
+    STATE.tokensLocked = !!payload.new.tokens_locked;
+    updateLockTokensButtonLabel();
     renderMap();
+    renderTokens();
+  }
+
+  function updateLockTokensButtonLabel() {
+    const btn = document.getElementById('lock-tokens-toggle');
+    if (btn) btn.innerHTML = 'Lock Tokens: <b>' + (STATE.tokensLocked ? 'On' : 'Off') + '</b>';
   }
 
   function handleTokenChange(payload) {
@@ -1048,9 +1091,11 @@
       }
       const el = document.querySelector(`.map-token[data-id="${tok.id}"]`);
       if (el && tok.x != null && tok.y != null) {
+        const ox = (STATE.map && STATE.map.offset_x) || 0;
+        const oy = (STATE.map && STATE.map.offset_y) || 0;
         el.classList.add('smooth-move');
-        el.style.left = (tok.x - 25) + 'px';
-        el.style.top = (tok.y - 25) + 'px';
+        el.style.left = (tok.x + ox - 25) + 'px';
+        el.style.top = (tok.y + oy - 25) + 'px';
         setTimeout(() => el.classList.remove('smooth-move'), 300);
 
         // Refresh HP bar
@@ -1123,6 +1168,9 @@
       img.src = STATE.map.image_url;
       img.style.width = STATE.map.width + 'px';
       img.style.height = STATE.map.height + 'px';
+      img.style.position = 'absolute';
+      img.style.left = (STATE.map.offset_x || 0) + 'px';
+      img.style.top = (STATE.map.offset_y || 0) + 'px';
       layer.appendChild(img);
     }
     applyTransform();
@@ -1131,14 +1179,16 @@
   function renderTokens() {
     const layer = document.getElementById('tokenlayer');
     layer.innerHTML = '';
+    const ox = (STATE.map && STATE.map.offset_x) || 0;
+    const oy = (STATE.map && STATE.map.offset_y) || 0;
     STATE.tokens.forEach(tok => {
       if (tok.x == null || tok.y == null) return;
       const el = document.createElement('div');
       el.className = 'map-token';
       el.dataset.id = tok.id;
       el.style.backgroundImage = `url(${tok.image_url})`;
-      el.style.left = (tok.x - 25) + 'px';
-      el.style.top = (tok.y - 25) + 'px';
+      el.style.left = (tok.x + ox - 25) + 'px';
+      el.style.top = (tok.y + oy - 25) + 'px';
       // Border color reflects the owner's class
       el.style.borderColor = getPlayerClassColor(tok.owner_id);
 
@@ -1408,12 +1458,21 @@
     let hpTok = null;
     if (tokenId && STATE.tokens.has(tokenId)) hpTok = STATE.tokens.get(tokenId);
     else hpTok = Array.from(STATE.tokens.values()).find(t => t.owner_id === playerId && t.x != null);
-    if (hpTok && hpTok.current_hp != null) {
-      document.getElementById('char-hp-display').textContent = `${hpTok.current_hp}/${hpTok.max_hp}`;
+    const hpCurInp = document.getElementById('char-hp-cur');
+    const hpMaxInp = document.getElementById('char-hp-max');
+    if (hpTok) {
+      CHAR_POPUP.targetTokenId = hpTok.id; // Remember the token for HP edits
+      hpCurInp.value = hpTok.current_hp ?? 10;
+      hpMaxInp.value = hpTok.max_hp ?? 10;
+      hpCurInp.disabled = false;
+      hpMaxInp.disabled = false;
       document.getElementById('char-hp-sub').textContent = hpTok.name;
     } else {
-      document.getElementById('char-hp-display').textContent = '—';
-      document.getElementById('char-hp-sub').textContent = '';
+      hpCurInp.value = '';
+      hpMaxInp.value = '';
+      hpCurInp.disabled = true;
+      hpMaxInp.disabled = true;
+      document.getElementById('char-hp-sub').textContent = 'No token on map';
     }
 
     updateStatMods();
@@ -1424,10 +1483,15 @@
       if (inp.id === 'char-ac' || inp.id === 'char-speed' || inp.id === 'char-level' ||
           inp.id === 'char-name' || inp.id === 'char-race' || inp.id === 'char-notes' ||
           inp.id === 'char-class' ||
+          inp.id === 'char-hp-cur' || inp.id === 'char-hp-max' ||
           inp.id.startsWith('char-str') || inp.id.startsWith('char-dex') ||
           inp.id.startsWith('char-con') || inp.id.startsWith('char-int') ||
           inp.id.startsWith('char-wis') || inp.id.startsWith('char-cha')) {
         if (inp.tagName === 'SELECT') inp.disabled = !canEdit;
+        else if (inp.id === 'char-hp-cur' || inp.id === 'char-hp-max') {
+          // HP inputs: disable only if no token OR no edit permission
+          inp.readOnly = !canEdit || !hpTok;
+        }
         else inp.readOnly = !canEdit;
       }
     });
@@ -1448,12 +1512,18 @@
     } else {
       hpTok = Array.from(STATE.tokens.values()).find(t => t.owner_id === CHAR_POPUP.targetPlayerId && t.x != null);
     }
-    if (hpTok && hpTok.current_hp != null) {
-      document.getElementById('char-hp-display').textContent = `${hpTok.current_hp}/${hpTok.max_hp}`;
+    const hpCurInp = document.getElementById('char-hp-cur');
+    const hpMaxInp = document.getElementById('char-hp-max');
+    // Don't override values the user is currently editing
+    if (document.activeElement === hpCurInp || document.activeElement === hpMaxInp) return;
+    if (hpTok) {
+      hpCurInp.value = hpTok.current_hp ?? 10;
+      hpMaxInp.value = hpTok.max_hp ?? 10;
       document.getElementById('char-hp-sub').textContent = hpTok.name;
     } else {
-      document.getElementById('char-hp-display').textContent = '—';
-      document.getElementById('char-hp-sub').textContent = '';
+      hpCurInp.value = '';
+      hpMaxInp.value = '';
+      document.getElementById('char-hp-sub').textContent = 'No token on map';
     }
   }
 
@@ -1506,7 +1576,7 @@
     const popup = document.getElementById('char-popup');
     document.getElementById('char-popup-close').addEventListener('click', closeCharPopup);
 
-    // Auto-save on change for editable fields
+    // Auto-save on change for player profile fields
     ['char-name', 'char-level', 'char-class', 'char-race', 'char-ac', 'char-speed',
      'char-str', 'char-dex', 'char-con', 'char-int', 'char-wis', 'char-cha', 'char-notes']
       .forEach(id => {
@@ -1514,6 +1584,27 @@
         el.addEventListener('input', () => { updateStatMods(); scheduleSavePlayer(); });
         el.addEventListener('change', () => { updateStatMods(); scheduleSavePlayer(); });
       });
+
+    // HP inputs save to the token, not the player
+    const hpCur = document.getElementById('char-hp-cur');
+    const hpMax = document.getElementById('char-hp-max');
+    let hpSaveTimeout = null;
+    const saveHpToToken = () => {
+      clearTimeout(hpSaveTimeout);
+      hpSaveTimeout = setTimeout(async () => {
+        if (!CHAR_POPUP.targetTokenId) return;
+        const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+        if (!canEdit) return;
+        const patch = {
+          current_hp: Math.max(0, parseInt(hpCur.value) || 0),
+          max_hp: Math.max(1, parseInt(hpMax.value) || 1),
+          updated_at: new Date().toISOString(),
+        };
+        await sb.from('vtt_tokens').update(patch).eq('id', CHAR_POPUP.targetTokenId);
+      }, 400);
+    };
+    hpCur.addEventListener('input', saveHpToToken);
+    hpMax.addEventListener('input', saveHpToToken);
 
     // Drag popup
     const handle = popup.querySelector('.char-popup-header');
@@ -1616,6 +1707,52 @@
     document.getElementById('tokenlayer').style.transform = t;
   }
 
+  // ============ HOST CONTROLS ============
+  document.getElementById('move-map-toggle').addEventListener('click', () => {
+    STATE.mapMoveMode = !STATE.mapMoveMode;
+    const btn = document.getElementById('move-map-toggle');
+    btn.innerHTML = 'Move Map: <b>' + (STATE.mapMoveMode ? 'On' : 'Off') + '</b>';
+    btn.classList.toggle('primary', STATE.mapMoveMode);
+    document.getElementById('mapcontainer').style.cursor = STATE.mapMoveMode ? 'move' : '';
+  });
+
+  document.getElementById('lock-tokens-toggle').addEventListener('click', async () => {
+    if (!STATE.map) { toast('Upload a map first', 'error'); return; }
+    const newState = !STATE.tokensLocked;
+    await sb.from('vtt_maps').update({
+      tokens_locked: newState,
+      updated_at: new Date().toISOString(),
+    }).eq('session_id', STATE.sessionId);
+    // Realtime will update local state and button label
+    // System message
+    await sb.from('vtt_chat').insert({
+      id: genId(),
+      session_id: STATE.sessionId,
+      msg_type: 'system',
+      text: newState ? 'Host locked token movement.' : 'Host unlocked token movement.',
+      ts: nowTs(),
+    });
+  });
+
+  document.getElementById('clear-tokens-btn').addEventListener('click', async () => {
+    if (!confirm('Clear all tokens from the map? (Tokens stay in the tray, ready to re-place.)')) return;
+    // Set x,y to null for all tokens in this session
+    const tokensOnMap = Array.from(STATE.tokens.values()).filter(t => t.x != null);
+    for (const tok of tokensOnMap) {
+      await sb.from('vtt_tokens').update({
+        x: null, y: null,
+        updated_at: new Date().toISOString(),
+      }).eq('id', tok.id);
+    }
+    await sb.from('vtt_chat').insert({
+      id: genId(),
+      session_id: STATE.sessionId,
+      msg_type: 'system',
+      text: 'Host cleared all tokens from the map.',
+      ts: nowTs(),
+    });
+  });
+
   document.getElementById('zoom-in').addEventListener('click', () => { STATE.view.zoom = Math.min(3, STATE.view.zoom * 1.2); applyTransform(); });
   document.getElementById('zoom-out').addEventListener('click', () => { STATE.view.zoom = Math.max(0.3, STATE.view.zoom / 1.2); applyTransform(); });
   document.getElementById('zoom-reset').addEventListener('click', () => { STATE.view = { offsetX: 0, offsetY: 0, zoom: 1 }; applyTransform(); });
@@ -1636,17 +1773,51 @@
   let panStart = null;
   document.getElementById('mapcontainer').addEventListener('mousedown', (e) => {
     if (e.target.closest('.map-token') || e.target.closest('#chatbox') || e.target.closest('#zoom-controls')) return;
+
+    // Host: if Move Map mode is active, drag moves the map image instead of panning view
+    if (STATE.mapMoveMode && STATE.isHost && STATE.map) {
+      const pos = { x: e.clientX, y: e.clientY };
+      STATE.movingMap = {
+        startMouseX: pos.x,
+        startMouseY: pos.y,
+        startOffsetX: STATE.map.offset_x || 0,
+        startOffsetY: STATE.map.offset_y || 0,
+      };
+      document.getElementById('mapcontainer').classList.add('panning');
+      return;
+    }
+
     panStart = { x: e.clientX - STATE.view.offsetX, y: e.clientY - STATE.view.offsetY };
     document.getElementById('mapcontainer').classList.add('panning');
   });
   document.addEventListener('mousemove', (e) => {
+    if (STATE.movingMap && STATE.map) {
+      const dx = (e.clientX - STATE.movingMap.startMouseX) / STATE.view.zoom;
+      const dy = (e.clientY - STATE.movingMap.startMouseY) / STATE.view.zoom;
+      STATE.map.offset_x = STATE.movingMap.startOffsetX + dx;
+      STATE.map.offset_y = STATE.movingMap.startOffsetY + dy;
+      renderMap();
+      renderTokens();
+      return;
+    }
     if (panStart && !STATE.dragging) {
       STATE.view.offsetX = e.clientX - panStart.x;
       STATE.view.offsetY = e.clientY - panStart.y;
       applyTransform();
     }
   });
-  document.addEventListener('mouseup', () => {
+  document.addEventListener('mouseup', async () => {
+    if (STATE.movingMap && STATE.map) {
+      // Persist new map offset
+      await sb.from('vtt_maps').update({
+        offset_x: STATE.map.offset_x,
+        offset_y: STATE.map.offset_y,
+        updated_at: new Date().toISOString(),
+      }).eq('session_id', STATE.sessionId);
+      STATE.movingMap = null;
+      document.getElementById('mapcontainer').classList.remove('panning');
+      return;
+    }
     panStart = null;
     document.getElementById('mapcontainer').classList.remove('panning');
   });
@@ -1665,16 +1836,26 @@
   }
 
   function startTokenDrag(e, tok) {
+    // Players cannot move tokens when host has locked them
+    if (STATE.tokensLocked && !STATE.isHost) {
+      // Allow click to view info but not drag
+      e.preventDefault();
+      e.stopPropagation();
+      openCharPopup(tok.owner_id, tok.id);
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     const pos = getEventPos(e);
     const mp = screenToMap(pos.x, pos.y);
+    const ox = (STATE.map && STATE.map.offset_x) || 0;
+    const oy = (STATE.map && STATE.map.offset_y) || 0;
     STATE.dragging = {
       token: { ...tok },
       startX: tok.x,
       startY: tok.y,
-      offsetX: mp.x - tok.x,
-      offsetY: mp.y - tok.y,
+      offsetX: mp.x - tok.x - ox,
+      offsetY: mp.y - tok.y - oy,
       initMouseX: pos.x,
       initMouseY: pos.y,
       moved: false,
@@ -1693,13 +1874,15 @@
       STATE.dragging.moved = true;
     }
     const mp = screenToMap(pos.x, pos.y);
+    const ox = (STATE.map && STATE.map.offset_x) || 0;
+    const oy = (STATE.map && STATE.map.offset_y) || 0;
     const tok = STATE.dragging.token;
-    tok.x = mp.x - STATE.dragging.offsetX;
-    tok.y = mp.y - STATE.dragging.offsetY;
+    tok.x = mp.x - STATE.dragging.offsetX - ox;
+    tok.y = mp.y - STATE.dragging.offsetY - oy;
     const el = document.querySelector(`.map-token[data-id="${tok.id}"]`);
     if (el) {
-      el.style.left = (tok.x - 25) + 'px';
-      el.style.top = (tok.y - 25) + 'px';
+      el.style.left = (tok.x + ox - 25) + 'px';
+      el.style.top = (tok.y + oy - 25) + 'px';
     }
     updateMeasurement();
   }
@@ -1721,10 +1904,12 @@
     svg.style.top = '0';
     svg.style.left = '0';
 
-    const sxScreen = sx * STATE.view.zoom + STATE.view.offsetX;
-    const syScreen = sy * STATE.view.zoom + STATE.view.offsetY;
-    const exScreen = tok.x * STATE.view.zoom + STATE.view.offsetX;
-    const eyScreen = tok.y * STATE.view.zoom + STATE.view.offsetY;
+    const ox = (STATE.map && STATE.map.offset_x) || 0;
+    const oy = (STATE.map && STATE.map.offset_y) || 0;
+    const sxScreen = (sx + ox) * STATE.view.zoom + STATE.view.offsetX;
+    const syScreen = (sy + oy) * STATE.view.zoom + STATE.view.offsetY;
+    const exScreen = (tok.x + ox) * STATE.view.zoom + STATE.view.offsetX;
+    const eyScreen = (tok.y + oy) * STATE.view.zoom + STATE.view.offsetY;
     const midX = (sxScreen + exScreen) / 2;
     const midY = (syScreen + eyScreen) / 2;
 
@@ -1778,9 +1963,11 @@
     const id = e.dataTransfer.getData('text/plain');
     if (!id) return;
     const mp = screenToMap(e.clientX, e.clientY);
+    const ox = (STATE.map && STATE.map.offset_x) || 0;
+    const oy = (STATE.map && STATE.map.offset_y) || 0;
     await sb.from('vtt_tokens').update({
-      x: mp.x,
-      y: mp.y,
+      x: mp.x - ox,
+      y: mp.y - oy,
       updated_at: new Date().toISOString(),
     }).eq('id', id);
   });
@@ -2025,6 +2212,11 @@
       // Unsubscribe
       if (STATE.channel) await STATE.channel.unsubscribe();
     } catch (e) { console.warn(e); }
+    location.reload();
+  });
+
+  // Demo-only: switch between Host and Player view without leaving the session
+  document.getElementById('switch-role-btn').addEventListener('click', () => {
     location.reload();
   });
 
