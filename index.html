@@ -278,7 +278,7 @@
   .rb-hpwrap { flex-shrink: 0; max-height: 180px; display: flex; flex-direction: column; border-bottom: 1px solid var(--border); }
 
   /* Initiative tracker in right-bar */
-  .rb-initwrap { flex-shrink: 0; max-height: 260px; display: flex; flex-direction: column; border-bottom: 1px solid var(--border); }
+  .rb-initwrap { flex-shrink: 0; max-height: 380px; display: flex; flex-direction: column; border-bottom: 1px solid var(--border); }
   .rb-initwrap .rb-section-head { display: flex; align-items: center; gap: 6px; padding: 6px 10px; }
   .rb-initwrap .init-title { flex: 1; }
   .rb-initwrap .init-round { font-family: 'Cinzel', serif; font-size: 10px; color: var(--gold); letter-spacing: 0.08em; }
@@ -416,6 +416,14 @@
 
   /* Roll Log embedded at the bottom of the right bar (fixed compact height) */
   #right-bar #chatbox { position: static; width: auto; left: auto; bottom: auto; right: auto; height: 200px; max-height: 200px; flex-shrink: 0; flex-grow: 0; margin-top: auto; border-radius: 0; border: none; border-top: 1px solid var(--border); box-shadow: none; backdrop-filter: none; background: var(--panel); display: flex; flex-direction: column; }
+  /* Roll Log placed inside the left sidepanel - sits at the bottom, fixed height */
+  #sidepanel #chatbox, #chatbox.in-sidepanel { position: static; width: auto; left: auto; bottom: auto; right: auto; height: 280px; max-height: 280px; flex-shrink: 0; margin-top: auto; border-radius: 4px; border: 1px solid var(--border); box-shadow: none; backdrop-filter: none; background: var(--panel); display: flex; flex-direction: column; margin-bottom: 12px; }
+  #sidepanel #chatbox .chat-header, #chatbox.in-sidepanel .chat-header { padding: 6px 10px; }
+  #sidepanel #chatbox #chatlog, #chatbox.in-sidepanel #chatlog { flex: 1; min-height: 0; }
+  #sidepanel #chatbox .chat-input-row, #chatbox.in-sidepanel .chat-input-row { padding: 6px; }
+  /* Sidepanel itself becomes a flex column so the chatbox sticks at the bottom */
+  #sidepanel { display: flex; flex-direction: column; }
+  #sidepanel > .panel-section:not(:last-child) { flex-shrink: 0; }
   #right-bar #chatbox-header { cursor: default; border-radius: 0; padding: 6px 12px; }
   #right-bar #chatbox.minimized { height: auto; max-height: none; }
   #right-bar #chatbox.minimized #chatlog,
@@ -465,15 +473,15 @@
   .save-row .save-bonus { margin-left: auto; color: var(--gold); font-weight: 700; }
   .save-row.state-prof .save-stat, .save-row.state-exp .save-stat { color: var(--cream); }
 
-  /* Editable bonus value (manual override) */
-  .bonus-input { width: 40px; text-align: right; background: transparent; border: 1px solid transparent; color: var(--gold); font-weight: 700; font-family: inherit; padding: 2px 4px; border-radius: 3px; margin-left: auto; -moz-appearance: textfield; }
-  .bonus-input::-webkit-outer-spin-button, .bonus-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  .bonus-input:hover:not([readonly]) { border-color: var(--gold-soft); }
-  .bonus-input:focus { outline: none; border-color: var(--gold); background: var(--panel-light); }
-  .overridden .bonus-input { color: #ffc77a; font-style: italic; border-color: var(--gold-soft); background: rgba(212,175,55,0.06); }
-  .state-exp .bonus-input { color: #ffd87a; text-shadow: 0 0 6px rgba(255,216,122,0.5); }
-  .bonus-reset { background: transparent; border: none; color: var(--muted); font-size: 12px; cursor: pointer; padding: 2px 4px; margin-left: 2px; }
-  .bonus-reset:hover { color: var(--gold); }
+  /* Skill/Save bonus boxes: base (auto, readonly), extra (manual editable), total */
+  .bonus-base { width: 30px; text-align: center; color: var(--muted); font-weight: 600; font-family: 'Cinzel', serif; padding: 2px 0; border: 1px solid var(--border); background: rgba(0,0,0,0.25); border-radius: 3px; font-size: 12px; margin-left: auto; cursor: help; }
+  .bonus-extra { width: 36px; text-align: center; background: var(--bg); border: 1px solid var(--gold-soft); color: var(--gold); font-weight: 700; font-family: 'Cinzel', serif; padding: 2px 0; border-radius: 3px; font-size: 12px; -moz-appearance: textfield; }
+  .bonus-extra::-webkit-outer-spin-button, .bonus-extra::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .bonus-extra:focus { outline: none; border-color: var(--gold); background: var(--panel-light); }
+  .bonus-extra[readonly] { opacity: 0.5; cursor: default; }
+  .overridden .bonus-extra { color: #ffc77a; border-color: var(--gold); background: rgba(212,175,55,0.12); }
+  .bonus-total { font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold); min-width: 28px; text-align: center; padding: 2px 4px; }
+  .state-exp .bonus-total { color: #ffd87a; text-shadow: 0 0 6px rgba(255,216,122,0.5); }
 
   /* Tri-state proficiency toggle: empty / proficient (✓) / expertise (★) */
   .prof-toggle { width: 16px; height: 16px; padding: 0; background: var(--bg); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 3px; cursor: pointer; font-size: 11px; line-height: 1; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: background 0.12s, border-color 0.12s; flex-shrink: 0; }
@@ -496,15 +504,28 @@
   .skill-row.state-prof, .skill-row.state-exp { background: rgba(212,175,55,0.08); }
 
   /* Buffs */
-  #buffs-list { display: flex; flex-direction: column; gap: 4px; }
-  .buff-row { display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: var(--bg); border: 1px solid var(--gold-soft); border-radius: 3px; font-size: 12px; }
-  .buff-row.inactive { opacity: 0.45; border-color: var(--border); }
-  .buff-row .buff-toggle { width: 14px; height: 14px; cursor: pointer; accent-color: var(--gold); }
-  .buff-row .buff-name { flex: 1; color: var(--cream); font-weight: 600; }
-  .buff-row .buff-mod { color: var(--gold); font-weight: 700; font-family: 'Cinzel', serif; }
-  .buff-row .buff-del { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 1px 7px; font-size: 13px; line-height: 1; cursor: pointer; border-radius: 2px; }
-  .buff-row .buff-del:hover { color: var(--danger); border-color: var(--danger); }
-  .buff-add-row { display: flex; gap: 5px; margin-top: 8px; }
+  /* Buff presets row - quick-add chips like Conditions tab */
+  .buff-presets { display: flex; flex-wrap: wrap; gap: 4px; }
+  .buff-preset-chip { display: flex; align-items: center; gap: 4px; padding: 4px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; color: var(--muted); font-size: 11px; cursor: pointer; transition: background 0.12s, border-color 0.12s, color 0.12s; font-family: inherit; }
+  .buff-preset-chip:hover { background: var(--panel-light); color: var(--cream); border-color: var(--gold-soft); }
+  .buff-preset-chip.on { background: rgba(212,165,116,0.15); color: var(--gold); border-color: var(--gold); }
+  .buff-preset-chip .bp-name { font-weight: 600; }
+  .buff-preset-chip .bp-mod { font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold); }
+
+  /* Active buffs grid - like condition toggles */
+  .buffs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .buff-tile { padding: 6px 8px; background: var(--bg); border: 1px solid var(--buff-color, var(--border)); border-left: 3px solid var(--buff-color, var(--gold)); border-radius: 3px; cursor: pointer; transition: background 0.12s, opacity 0.15s; }
+  .buff-tile:hover { background: var(--panel-light); }
+  .buff-tile:not(.on) { opacity: 0.45; border-left-color: var(--border); }
+  .buff-tile-row { display: flex; align-items: center; gap: 6px; }
+  .buff-tile-name { flex: 1; color: var(--cream); font-weight: 600; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .buff-tile.on .buff-tile-name { color: var(--buff-color, var(--gold)); }
+  .buff-tile-mod { color: var(--gold); font-weight: 700; font-family: 'Cinzel', serif; font-size: 13px; }
+  .buff-tile-del { background: transparent; border: none; color: var(--muted); padding: 0 4px; cursor: pointer; font-size: 14px; line-height: 1; }
+  .buff-tile-del:hover { color: var(--danger); }
+  .buff-source { color: var(--gold); margin-right: 3px; font-size: 10px; }
+
+  .buff-add-row { display: flex; gap: 5px; }
   .buff-add-row input { flex: 1; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; font-family: inherit; font-size: 12px; }
   .buff-add-row button { padding: 6px 12px; }
 
@@ -568,16 +589,30 @@
   .char-head-info input.char-level { width: 32px; text-align: center; }
   .char-head-info input.char-race { width: 100px; }
 
-  .char-vitals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
-  .vital-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 3px; padding: 8px 6px; text-align: center; }
-  .vital-box label { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
-  .vital-box .vital-val { font-family: 'Cinzel', serif; font-size: 18px; color: var(--gold); font-weight: 600; }
-  .vital-box input { width: 100%; background: transparent; border: none; color: var(--gold); font-family: 'Cinzel', serif; font-size: 18px; font-weight: 600; text-align: center; padding: 0; }
+  /* Char vitals - 5 columns so HP/AC/Speed/Init/Inspiration all fit on one row */
+  .char-vitals { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 12px; }
+  .vital-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 3px; padding: 5px 4px; text-align: center; min-width: 0; position: relative; overflow: hidden; }
+  .vital-box label { display: block; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+  .vital-box .vital-val { font-family: 'Cinzel', serif; font-size: 16px; color: var(--gold); font-weight: 600; }
+  .vital-box input { width: 100%; background: transparent; border: none; color: var(--gold); font-family: 'Cinzel', serif; font-size: 15px; font-weight: 600; text-align: center; padding: 0; }
   .vital-box input:focus { background: var(--bg); }
-  .vital-box .vital-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
-  .vital-box .hp-edit-inline { display: flex; align-items: center; justify-content: center; gap: 2px; }
-  .vital-box .hp-edit-inline input { width: 38px; font-size: 16px; padding: 2px 0; }
-  .vital-box .hp-edit-inline .hp-sep { color: var(--muted); font-size: 14px; }
+  .vital-box .vital-sub { font-size: 9px; color: var(--muted); margin-top: 1px; }
+  .vital-box .hp-edit-inline { display: flex; align-items: center; justify-content: center; gap: 1px; }
+  .vital-box .hp-edit-inline input { width: 26px; font-size: 13px; padding: 1px 0; }
+  .vital-box .hp-edit-inline .hp-sep { color: var(--muted); font-size: 12px; }
+  /* HP vital - heart shape with red theme */
+  .vital-box.vital-hp { background: linear-gradient(135deg, rgba(160,72,72,0.22), rgba(160,72,72,0.06)); border-color: rgba(196,104,104,0.5); }
+  .vital-box.vital-hp label { color: #d28a8a; }
+  .vital-box.vital-hp input, .vital-box.vital-hp .hp-sep { color: #ff7a7a; text-shadow: 0 0 6px rgba(255,122,122,0.5); }
+  .vital-box.vital-hp .vital-sub { color: rgba(210,138,138,0.7); }
+  .vital-box.vital-hp .hp-heart { position: absolute; right: -8px; top: -8px; width: 30px; height: 30px; opacity: 0.18; pointer-events: none; color: var(--danger); }
+  .vital-box.vital-hp.low { animation: hp-low-pulse 1.8s ease-in-out infinite; }
+  .vital-box.vital-hp.zero { background: linear-gradient(135deg, rgba(160,72,72,0.55), rgba(40,10,10,0.5)); border-color: var(--danger); }
+  .vital-box.vital-hp.zero input { color: #ff4040; }
+  @keyframes hp-low-pulse {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(160,72,72,0.4); }
+    50% { box-shadow: 0 0 10px 2px rgba(160,72,72,0.6); }
+  }
 
   .char-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 16px; }
   .stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 3px; padding: 6px 4px; text-align: center; }
@@ -1210,7 +1245,8 @@
   </div>
 
   <div class="char-vitals">
-    <div class="vital-box">
+    <div class="vital-box vital-hp" id="char-hp-box">
+      <svg class="hp-heart" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
       <label>HP</label>
       <div class="hp-edit-inline">
         <input type="number" id="char-hp-cur" min="0" placeholder="—">
@@ -1382,10 +1418,17 @@
 
     <div class="char-tab-content" data-tab="buffs">
       <div class="char-section">
-        <div class="char-section-head">Active Buffs <span class="hint">(added to dice rolls)</span></div>
-        <div id="buffs-list"></div>
+        <div class="char-section-head">Quick Buffs <span class="hint">(click to add common buffs)</span></div>
+        <div class="buff-presets" id="buff-presets"></div>
+      </div>
+      <div class="char-section">
+        <div class="char-section-head">Active Buffs <span class="hint">(click to toggle, × to remove)</span></div>
+        <div id="buffs-grid" class="buffs-grid"></div>
+      </div>
+      <div class="char-section">
+        <div class="char-section-head">Add Custom Buff</div>
         <div class="buff-add-row">
-          <input type="text" id="buff-add-name" placeholder="Buff name (e.g. Bless)" maxlength="30">
+          <input type="text" id="buff-add-name" placeholder="Buff name (e.g. Bardic Inspiration)" maxlength="30">
           <input type="number" id="buff-add-mod" placeholder="+2" style="width:64px;">
           <button id="buff-add-btn" class="primary">Add</button>
         </div>
@@ -2313,12 +2356,14 @@
       rb.appendChild(cp);
     }
 
-    // Chat at the bottom
+    // Move the Roll Log to the LEFT side panel (more space for char sheet on the right)
     const cb = document.getElementById('chatbox');
-    if (cb) {
+    const sidepanel = document.getElementById('sidepanel');
+    if (cb && sidepanel) {
       cb.parentNode.removeChild(cb);
       cb.style.display = '';
-      rb.appendChild(cb);
+      cb.classList.add('in-sidepanel');
+      sidepanel.appendChild(cb);
     }
 
     document.body.appendChild(rb);
@@ -3936,20 +3981,21 @@
       const mod = statMod(getCharStat(stat));
       const isExp = CHAR_POPUP.saveExpertise && CHAR_POPUP.saveExpertise.has(stat);
       const isProf = saveProfs.has(stat) || isExp;
-      const bonus = isExp ? pb * 2 : (isProf ? pb : 0);
-      const autoTotal = mod + bonus;
-      const override = CHAR_POPUP.saveOverrides && CHAR_POPUP.saveOverrides[stat];
-      const hasOverride = (override != null && override !== '');
-      const total = hasOverride ? parseInt(override) : autoTotal;
+      const profPart = isExp ? pb * 2 : (isProf ? pb : 0);
+      const baseTotal = mod + profPart;
+      // The user's custom +bonus (saved separately from the auto base value)
+      const extra = parseInt(CHAR_POPUP.saveOverrides && CHAR_POPUP.saveOverrides[stat]) || 0;
+      const total = baseTotal + extra;
       const state = isExp ? 'exp' : (isProf ? 'prof' : 'none');
       const row = document.createElement('div');
-      row.className = 'save-row state-' + state + (hasOverride ? ' overridden' : '');
+      row.className = 'save-row state-' + state + (extra !== 0 ? ' overridden' : '');
       row.dataset.stat = stat;
       row.innerHTML = `
         <button class="prof-toggle" data-kind="save" data-key="${stat}" title="None → Proficient → Expertise">${state === 'exp' ? '★' : (state === 'prof' ? '✓' : '')}</button>
         <span class="save-stat">${stat.toUpperCase()}</span>
-        <input type="text" inputmode="numeric" pattern="[+\-0-9]*" class="bonus-input" data-kind="save" data-key="${stat}" value="${fmtMod(total)}" title="${hasOverride ? 'Manual override · click ↺ to reset' : 'Auto-calculated · type to override'}" ${canEdit ? '' : 'readonly'}>
-        ${hasOverride ? `<button class="bonus-reset" data-kind="save" data-key="${stat}" title="Reset to auto">↺</button>` : ''}
+        <span class="bonus-base" title="Auto: ability mod ${fmtMod(mod)}${profPart ? ' + prof ' + fmtMod(profPart) : ''}">${fmtMod(baseTotal)}</span>
+        <input type="text" inputmode="numeric" pattern="[+\-0-9]*" class="bonus-extra" data-kind="save" data-key="${stat}" value="${extra >= 0 ? '+' + extra : extra}" title="Extra bonus (manual). Final = base ${fmtMod(baseTotal)} + this." ${canEdit ? '' : 'readonly'}>
+        <span class="bonus-total" title="Final bonus">${fmtMod(total)}</span>
       `;
       grid.appendChild(row);
     });
@@ -3964,53 +4010,96 @@
       const mod = statMod(getCharStat(s.stat));
       const isExp = CHAR_POPUP.skillExpertise && CHAR_POPUP.skillExpertise.has(s.key);
       const isProf = skillProfs.has(s.key) || isExp;
-      const bonus = isExp ? pb * 2 : (isProf ? pb : 0);
-      const autoTotal = mod + bonus;
-      const override = CHAR_POPUP.skillOverrides && CHAR_POPUP.skillOverrides[s.key];
-      const hasOverride = (override != null && override !== '');
-      const total = hasOverride ? parseInt(override) : autoTotal;
+      const profPart = isExp ? pb * 2 : (isProf ? pb : 0);
+      const baseTotal = mod + profPart;
+      const extra = parseInt(CHAR_POPUP.skillOverrides && CHAR_POPUP.skillOverrides[s.key]) || 0;
+      const total = baseTotal + extra;
       const state = isExp ? 'exp' : (isProf ? 'prof' : 'none');
       const row = document.createElement('div');
-      row.className = 'skill-row state-' + state + (hasOverride ? ' overridden' : '');
+      row.className = 'skill-row state-' + state + (extra !== 0 ? ' overridden' : '');
       row.dataset.skill = s.key;
       row.innerHTML = `
         <button class="prof-toggle" data-kind="skill" data-key="${s.key}" title="None → Proficient → Expertise">${state === 'exp' ? '★' : (state === 'prof' ? '✓' : '')}</button>
         <span class="skill-stat">${s.stat.toUpperCase()}</span>
         <span class="skill-name">${s.name}</span>
-        <input type="text" inputmode="numeric" pattern="[+\-0-9]*" class="bonus-input" data-kind="skill" data-key="${s.key}" value="${fmtMod(total)}" title="${hasOverride ? 'Manual override · click ↺ to reset' : 'Auto-calculated · type to override'}" ${canEdit ? '' : 'readonly'}>
-        ${hasOverride ? `<button class="bonus-reset" data-kind="skill" data-key="${s.key}" title="Reset to auto">↺</button>` : ''}
+        <span class="bonus-base" title="Auto: ${s.stat.toUpperCase()} mod ${fmtMod(mod)}${profPart ? ' + prof ' + fmtMod(profPart) : ''}">${fmtMod(baseTotal)}</span>
+        <input type="text" inputmode="numeric" pattern="[+\-0-9]*" class="bonus-extra" data-kind="skill" data-key="${s.key}" value="${extra >= 0 ? '+' + extra : extra}" title="Extra bonus (manual). Final = base ${fmtMod(baseTotal)} + this." ${canEdit ? '' : 'readonly'}>
+        <span class="bonus-total" title="Final bonus">${fmtMod(total)}</span>
       `;
       grid.appendChild(row);
     });
   }
 
+  // Common preset buffs - one tap to add. Modeled like Conditions tab.
+  const BUFF_PRESETS = [
+    { name: 'Bless',                mod: 2, desc: '+1d4 to attacks and saves (avg +2)' },
+    { name: 'Bardic Inspiration',   mod: 4, desc: 'Bonus die to add to one roll (avg ~+3 to +5)' },
+    { name: 'Guidance',             mod: 2, desc: '+1d4 to one ability check (avg +2)' },
+    { name: 'Heroism',              mod: 0, desc: 'Immune to frightened; temp HP each round' },
+    { name: 'Rage',                 mod: 2, desc: 'Bonus damage on STR melee' },
+    { name: 'Aid',                  mod: 0, desc: 'Max HP +5 for 8 hours' },
+    { name: 'Faerie Fire',          mod: 0, desc: 'Targets give advantage on attacks vs them' },
+    { name: 'Divine Favor',         mod: 0, desc: '+1d4 radiant damage on weapon attacks' },
+    { name: 'Hex',                  mod: 0, desc: '+1d6 necrotic damage on hits' },
+    { name: 'Hunter\'s Mark',       mod: 0, desc: '+1d6 damage to marked target' },
+    { name: 'Inspire',              mod: 1, desc: 'Generic morale boost' },
+    { name: 'Custom +1',            mod: 1, desc: 'Flat +1 to next roll' },
+  ];
+
   function renderBuffs(buffs) {
-    const list = document.getElementById('buffs-list');
-    list.innerHTML = '';
+    // -- Presets bar: quick-add chips at the top of the Buffs tab --
+    const presets = document.getElementById('buff-presets');
+    if (presets) {
+      presets.innerHTML = '';
+      BUFF_PRESETS.forEach(p => {
+        const isActive = buffs.find(b => b.name === p.name && b.active !== false);
+        const chip = document.createElement('button');
+        chip.className = 'buff-preset-chip' + (isActive ? ' on' : '');
+        chip.title = p.desc + (p.mod ? ` (default ${p.mod >= 0 ? '+' : ''}${p.mod})` : '');
+        chip.dataset.name = p.name;
+        chip.dataset.mod = p.mod;
+        chip.innerHTML = `<span class="bp-name">${escapeHtml(p.name)}</span>${p.mod ? `<span class="bp-mod">${p.mod >= 0 ? '+' : ''}${p.mod}</span>` : ''}`;
+        presets.appendChild(chip);
+      });
+    }
+
+    // -- Active buffs grid: each one is a toggleable chip like a condition --
+    const grid = document.getElementById('buffs-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
     if (!buffs.length) {
-      list.innerHTML = '<div style="font-size: 11px; color: var(--muted); padding: 4px 0;">No active buffs. Bless, Bardic Inspiration, etc. go here.</div>';
+      grid.innerHTML = '<div style="font-size: 11px; color: var(--muted); padding: 4px 0; grid-column: 1 / -1;">No active buffs. Tap a preset above or add a custom one.</div>';
       return;
     }
     buffs.forEach((b, idx) => {
-      const row = document.createElement('div');
-      row.className = 'buff-row' + (b.active === false ? ' inactive' : '');
-      row.innerHTML = `
-        <input type="checkbox" class="buff-toggle" ${b.active !== false ? 'checked' : ''}>
-        <span class="buff-name">${escapeHtml(b.name)}</span>
-        <span class="buff-mod">${b.mod >= 0 ? '+' : ''}${b.mod}</span>
-        <button class="buff-del">×</button>
+      const isActive = b.active !== false;
+      const tile = document.createElement('div');
+      tile.className = 'buff-tile' + (isActive ? ' on' : '');
+      // Color the chip border by element if the buff has one (spells write color)
+      const color = (b.color && ELEMENT_COLORS[b.color]) || '#d4a574';
+      tile.style.setProperty('--buff-color', color);
+      const sourceTag = b.source ? '<span class="buff-source" title="From a spell cast">★</span>' : '';
+      tile.innerHTML = `
+        <div class="buff-tile-row">
+          <span class="buff-tile-name">${sourceTag}${escapeHtml(b.name)}</span>
+          <span class="buff-tile-mod">${b.mod >= 0 ? '+' : ''}${b.mod}</span>
+          <button class="buff-tile-del" title="Remove">×</button>
+        </div>
       `;
-      row.querySelector('.buff-toggle').addEventListener('change', (e) => {
-        CHAR_POPUP.buffs[idx].active = e.target.checked;
-        row.classList.toggle('inactive', !e.target.checked);
-        scheduleSavePlayer();
-      });
-      row.querySelector('.buff-del').addEventListener('click', () => {
-        CHAR_POPUP.buffs.splice(idx, 1);
+      tile.addEventListener('click', (e) => {
+        if (e.target.closest('.buff-tile-del')) return;
+        CHAR_POPUP.buffs[idx].active = !isActive;
         renderBuffs(CHAR_POPUP.buffs);
         scheduleSavePlayer();
       });
-      list.appendChild(row);
+      tile.querySelector('.buff-tile-del').addEventListener('click', (e) => {
+        e.stopPropagation();
+        CHAR_POPUP.buffs.splice(idx, 1);
+        renderBuffs(CHAR_POPUP.buffs);
+        renderTokens(); // refresh auras
+        scheduleSavePlayer();
+      });
+      grid.appendChild(tile);
     });
   }
 
@@ -4354,6 +4443,8 @@
     else hpTok = Array.from(STATE.tokens.values()).find(t => t.owner_id === playerId && t.x != null);
     const hpCurInp = document.getElementById('char-hp-cur');
     const hpMaxInp = document.getElementById('char-hp-max');
+    const hpBox = document.getElementById('char-hp-box');
+    if (hpBox) hpBox.classList.remove('low', 'zero');
     if (hpTok) {
       CHAR_POPUP.targetTokenId = hpTok.id; // Remember the token for HP edits
       hpCurInp.value = hpTok.current_hp ?? 10;
@@ -4361,6 +4452,13 @@
       hpCurInp.disabled = false;
       hpMaxInp.disabled = false;
       document.getElementById('char-hp-sub').textContent = hpTok.name;
+      if (hpBox) {
+        const cur = hpTok.current_hp ?? 10;
+        const max = hpTok.max_hp || 1;
+        const pct = (cur / max) * 100;
+        if (cur === 0) hpBox.classList.add('zero');
+        else if (pct < 40) hpBox.classList.add('low');
+      }
     } else {
       hpCurInp.value = '';
       hpMaxInp.value = '';
@@ -4455,17 +4553,29 @@
     }
     const hpCurInp = document.getElementById('char-hp-cur');
     const hpMaxInp = document.getElementById('char-hp-max');
+    const hpBox = document.getElementById('char-hp-box');
     // Don't override values the user is currently editing
     if (document.activeElement === hpCurInp || document.activeElement === hpMaxInp) return;
     if (hpTok) {
       hpCurInp.value = hpTok.current_hp ?? 10;
       hpMaxInp.value = hpTok.max_hp ?? 10;
       document.getElementById('char-hp-sub').textContent = hpTok.name;
+      // Apply low-HP visual cues
+      if (hpBox) {
+        const cur = hpTok.current_hp ?? 10;
+        const max = hpTok.max_hp || 1;
+        const pct = (cur / max) * 100;
+        hpBox.classList.toggle('zero', cur === 0);
+        hpBox.classList.toggle('low', cur > 0 && pct < 40);
+      }
     } else {
       hpCurInp.value = '';
       hpMaxInp.value = '';
       document.getElementById('char-hp-sub').textContent = 'No token on map';
+      if (hpBox) { hpBox.classList.remove('low', 'zero'); }
     }
+    // Death saves panel visibility depends on HP - refresh it
+    renderDeathSaves();
   }
 
   function updateStatMods() {
@@ -4878,32 +4988,16 @@
     document.getElementById('saves-grid').addEventListener('click', (e) => {
       const btn = e.target.closest('.prof-toggle');
       if (btn) { cycleProfState('save', btn.dataset.key); return; }
-      const reset = e.target.closest('.bonus-reset');
-      if (reset) {
-        const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
-        if (!canEdit) return;
-        delete CHAR_POPUP.saveOverrides[reset.dataset.key];
-        renderSaves(CHAR_POPUP.saveProfs);
-        scheduleSavePlayer();
-      }
     });
     document.getElementById('skills-grid').addEventListener('click', (e) => {
       const btn = e.target.closest('.prof-toggle');
       if (btn) { cycleProfState('skill', btn.dataset.key); return; }
-      const reset = e.target.closest('.bonus-reset');
-      if (reset) {
-        const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
-        if (!canEdit) return;
-        delete CHAR_POPUP.skillOverrides[reset.dataset.key];
-        renderSkills(CHAR_POPUP.skillProfs);
-        scheduleSavePlayer();
-      }
     });
 
-    // Manual bonus override: user types a number into the bonus input. Saves on
-    // blur. Empty input clears the override and resumes auto calculation.
-    function handleBonusOverride(e) {
-      const inp = e.target.closest('.bonus-input');
+    // Extra bonus (manual): the user types a +X / -Y into the small input.
+    // The base value is auto-calculated and read-only; this only adds to it.
+    function handleBonusExtra(e) {
+      const inp = e.target.closest('.bonus-extra');
       if (!inp) return;
       const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
       if (!canEdit) return;
@@ -4911,26 +5005,25 @@
       const key = inp.dataset.key;
       const raw = inp.value.trim();
       const store = kind === 'save' ? CHAR_POPUP.saveOverrides : CHAR_POPUP.skillOverrides;
-      if (raw === '' || raw === '+' || raw === '-') {
+      if (raw === '' || raw === '+' || raw === '-' || raw === '+0' || raw === '-0' || raw === '0') {
         delete store[key];
       } else {
-        // Tolerate "+5", "-1", "5"
         const n = parseInt(raw.replace(/^\+/, ''));
-        if (isNaN(n)) { delete store[key]; }
+        if (isNaN(n) || n === 0) { delete store[key]; }
         else store[key] = n;
       }
       if (kind === 'save') renderSaves(CHAR_POPUP.saveProfs);
       else renderSkills(CHAR_POPUP.skillProfs);
       scheduleSavePlayer();
     }
-    document.getElementById('saves-grid').addEventListener('change', handleBonusOverride);
-    document.getElementById('skills-grid').addEventListener('change', handleBonusOverride);
-    // Also re-render and save on Enter so users get instant feedback
+    document.getElementById('saves-grid').addEventListener('change', handleBonusExtra);
+    document.getElementById('skills-grid').addEventListener('change', handleBonusExtra);
+    // Press Enter to commit and re-render
     document.getElementById('saves-grid').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.target.classList.contains('bonus-input')) { e.target.blur(); }
+      if (e.key === 'Enter' && e.target.classList.contains('bonus-extra')) { e.target.blur(); }
     });
     document.getElementById('skills-grid').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.target.classList.contains('bonus-input')) { e.target.blur(); }
+      if (e.key === 'Enter' && e.target.classList.contains('bonus-extra')) { e.target.blur(); }
     });
 
     // Buff add
@@ -4944,6 +5037,29 @@
       renderBuffs(CHAR_POPUP.buffs);
       scheduleSavePlayer();
     });
+
+    // Buff preset chips - clicking adds (or toggles off if already present)
+    const presetsEl = document.getElementById('buff-presets');
+    if (presetsEl) {
+      presetsEl.addEventListener('click', (e) => {
+        const chip = e.target.closest('.buff-preset-chip');
+        if (!chip) return;
+        const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+        if (!canEdit) return;
+        const name = chip.dataset.name;
+        const mod = parseInt(chip.dataset.mod) || 0;
+        const existing = CHAR_POPUP.buffs.findIndex(b => b.name === name);
+        if (existing >= 0) {
+          // Already there - remove it (toggle behavior)
+          CHAR_POPUP.buffs.splice(existing, 1);
+        } else {
+          CHAR_POPUP.buffs.push({ name, mod, active: true });
+        }
+        renderBuffs(CHAR_POPUP.buffs);
+        renderTokens();
+        scheduleSavePlayer();
+      });
+    }
 
     // Inventory add
     document.getElementById('inv-add-btn').addEventListener('click', () => {
