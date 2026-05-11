@@ -317,7 +317,41 @@
     50% { box-shadow: 0 0 0 3px var(--gold), 0 0 26px 10px rgba(255,216,122,0.7); }
   }
 
-  /* NPC add dialog (now Monster Manager) */
+  /* Short/Long Rest popup */
+  #rest-popup { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); width: 460px; max-width: 92vw; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  #rest-popup.active { display: flex; }
+  .rest-intro { font-size: 13px; color: var(--cream); line-height: 1.55; margin-bottom: 12px; font-family: 'Crimson Pro', serif; }
+  .rest-intro b { color: var(--gold); }
+  .rest-results { font-size: 13px; color: var(--cream); padding: 10px 12px; background: rgba(212,165,116,0.08); border: 1px solid var(--gold-soft); border-radius: 4px; margin-bottom: 12px; min-height: 0; max-height: 240px; overflow-y: auto; }
+  .rest-results .res-row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dashed rgba(212,165,116,0.15); }
+  .rest-results .res-row:last-child { border-bottom: none; }
+  .rest-results .res-key { color: var(--muted); }
+  .rest-results .res-val { color: var(--gold); font-family: 'Cinzel', serif; font-weight: 700; }
+  .rest-results .res-val.gain { color: #8fb46e; }
+  .rest-results .res-val.lose { color: #ff7a7a; }
+  .rest-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* DM Special Rules popup */
+  #dm-rules-popup { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); width: 560px; max-width: 92vw; max-height: 80vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  #dm-rules-popup.active { display: flex; }
+  .dm-rules-hint { font-size: 12px; color: var(--muted); font-style: italic; line-height: 1.5; padding: 8px 12px; background: rgba(212,165,116,0.06); border-left: 3px solid var(--gold-soft); border-radius: 3px; }
+  #dm-rules-textarea { width: 100%; min-height: 220px; padding: 10px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 4px; font-family: 'Crimson Pro', serif; font-size: 14px; line-height: 1.5; resize: vertical; }
+  #dm-rules-textarea:focus { outline: none; border-color: var(--gold); }
+  .dm-rules-row { display: flex; align-items: center; gap: 6px; }
+  .dm-rules-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cream); cursor: pointer; }
+  .dm-rules-toggle input { accent-color: var(--gold); }
+
+  /* Violation warning popup */
+  #dm-rules-warning { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 440px; max-width: 92vw; background: linear-gradient(180deg, rgba(60,20,20,0.98), rgba(40,10,10,0.98)); border: 2px solid var(--danger); border-radius: 8px; box-shadow: 0 0 60px rgba(160,72,72,0.5), 0 20px 60px rgba(0,0,0,0.8); z-index: 2000; display: none; flex-direction: column; align-items: center; padding: 24px; text-align: center; gap: 12px; animation: dmw-pulse 1.2s ease-in-out infinite; }
+  #dm-rules-warning.active { display: flex; }
+  .dmw-icon { font-size: 48px; color: var(--danger); line-height: 1; filter: drop-shadow(0 0 12px var(--danger)); }
+  .dmw-title { font-family: 'Cinzel', serif; font-size: 20px; color: var(--danger); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; }
+  .dmw-rule { font-family: 'Crimson Pro', serif; font-size: 16px; color: var(--cream); font-style: italic; line-height: 1.5; padding: 8px 14px; background: rgba(0,0,0,0.4); border-left: 3px solid var(--danger); border-radius: 3px; width: 100%; box-sizing: border-box; }
+  .dmw-context { font-size: 12px; color: var(--muted); font-family: 'Crimson Pro', serif; }
+  @keyframes dmw-pulse {
+    0%, 100% { box-shadow: 0 0 30px rgba(160,72,72,0.4), 0 20px 60px rgba(0,0,0,0.8); }
+    50% { box-shadow: 0 0 60px rgba(160,72,72,0.7), 0 20px 60px rgba(0,0,0,0.8); }
+  }
   #init-npc-popup { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); width: 500px; max-width: 92vw; max-height: 80vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
   #init-npc-popup.active { display: flex; }
   #init-npc-popup .npc-body { padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
@@ -644,6 +678,10 @@
 
   /* EFFECTS LAYER */
   #effectslayer { position: absolute; top: 0; left: 0; width: 4000px; height: 4000px; transform-origin: 0 0; pointer-events: none; overflow: visible; }
+  /* Eraser mode: make effects clickable. Hovered effects glow red to signal removal. */
+  body.eraser-mode #effectslayer { pointer-events: auto; cursor: not-allowed; }
+  body.eraser-mode #effectslayer .fx-anim { pointer-events: auto; cursor: pointer; transition: filter 0.15s; }
+  body.eraser-mode #effectslayer .fx-anim:hover { filter: drop-shadow(0 0 12px #ff4040) brightness(1.2); }
   .fx-shape { opacity: 0.55; filter: drop-shadow(0 0 8px currentColor); }
   .fx-shape.glow-pulse { animation: fx-pulse 1.5s ease-in-out infinite; }
   .fx-shape.fx-rocket-burst { animation: rocket-burst 0.6s ease-out forwards; transform-origin: center; transform-box: fill-box; }
@@ -992,6 +1030,9 @@
         <svg id="theme-icon-light" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" fill="none"/></svg>
       </button>
       <button id="recap-btn" title="Campaign Log / Recap">Recap</button>
+      <button id="dm-rules-btn" title="Special DM rules - will alert when violated">DM Rules</button>
+      <button id="short-rest-btn" title="Short Rest (1 hour): spend Hit Dice to heal; some class features recharge. No spell slots restored (except Warlock).">Short Rest</button>
+      <button id="long-rest-btn" title="Long Rest (8 hours): full HP, full spell slots, half Hit Dice restored, exhaustion reduced by 1.">Long Rest</button>
       <button id="switch-role-btn" style="display:none;" title="Demo mode only">Switch Role</button>
       <button id="leave-btn" class="danger">Leave</button>
     </div>
@@ -1158,13 +1199,13 @@
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><circle cx="8.5" cy="9" r="1.5" fill="currentColor"/><path d="M21 14l-5-5-7 7"/></svg>
           <span class="tool-btn-label">Generate</span>
         </button>
-        <button class="tool-btn" id="clear-my-effects-btn" title="Remove only the effects you cast">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14"/><path d="M10 11v6M14 11v6" stroke-width="1.5"/></svg>
-          <span class="tool-btn-label">Clear Mine</span>
+        <button class="tool-btn" id="eraser-btn" title="Eraser: click an effect on the map to remove it (only yours; DM can erase anyone's)">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M16 4l4 4-9 9H6l-2-2 12-11z"/><path d="M9 11l4 4"/></svg>
+          <span class="tool-btn-label">Eraser</span>
         </button>
-        <button class="tool-btn" id="clear-effects-btn" title="Clear all effects on the map (DM only)">
+        <button class="tool-btn" id="clear-effects-btn" title="Remove all spell effects on the map (DM only)">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14"/></svg>
-          <span class="tool-btn-label">Clear All</span>
+          <span class="tool-btn-label">Remove Spell FX</span>
         </button>
       </div>
 
@@ -1639,6 +1680,57 @@
       <button id="spells-activate" class="primary" style="width:100%; padding: 10px;" disabled>Activate</button>
     </div>
   </div>
+</div>
+
+<!-- Short / Long Rest popup -->
+<div id="rest-popup">
+  <div class="char-popup-header">
+    <span class="ttl" id="rest-popup-title">Rest</span>
+    <button id="rest-popup-close">×</button>
+  </div>
+  <div class="char-popup-body" style="padding: 14px;">
+    <div id="rest-popup-intro" class="rest-intro"></div>
+    <div id="rest-popup-results" class="rest-results"></div>
+    <div class="rest-actions">
+      <button id="rest-cancel" class="init-mini-btn">Cancel</button>
+      <button id="rest-confirm" class="init-mini-btn primary">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- DM Special Rules popup -->
+<div id="dm-rules-popup">
+  <div class="char-popup-header">
+    <span class="ttl">Special DM Rules</span>
+    <button id="dm-rules-close">×</button>
+  </div>
+  <div class="char-popup-body" style="padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+    <div class="dm-rules-hint">
+      Write house rules, banned actions, table etiquette, or campaign-specific restrictions.
+      The system will warn players (and you) when a chat message or roll appears to violate one of them.
+      One rule per line works best.
+    </div>
+    <textarea id="dm-rules-textarea" placeholder="Example:&#10;No metagaming - players cannot use OOC knowledge in character.&#10;No Critical Role memes during serious scenes.&#10;Spell descriptions must be roleplayed before damage is rolled.&#10;Players cannot attack other players' characters without consent.&#10;No phones at the table during combat."></textarea>
+    <div class="dm-rules-row">
+      <label class="dm-rules-toggle">
+        <input type="checkbox" id="dm-rules-enabled" checked>
+        <span>Enforce rules (popup warnings on violation)</span>
+      </label>
+    </div>
+    <div class="rest-actions">
+      <button id="dm-rules-cancel" class="init-mini-btn">Cancel</button>
+      <button id="dm-rules-save" class="init-mini-btn primary">Save Rules</button>
+    </div>
+  </div>
+</div>
+
+<!-- DM Rules violation warning (shown to a player when their action breaks a rule) -->
+<div id="dm-rules-warning">
+  <div class="dmw-icon">⚠</div>
+  <div class="dmw-title">DM Rule Reminder</div>
+  <div class="dmw-rule" id="dmw-rule-text"></div>
+  <div class="dmw-context" id="dmw-context-text"></div>
+  <button id="dmw-dismiss" class="init-mini-btn primary">Acknowledge</button>
 </div>
 
 <div id="recap-popup">
@@ -2404,11 +2496,13 @@
       const cls = STATE.playerClass ? ' · ' + STATE.playerClass.toUpperCase() : '';
       badge.textContent = 'PLAYER' + cls;
       badge.className = 'role-badge role-player';
-      // Players don't get image generation or clear-effects (DM-only powers)
+      // Players don't get image generation, clear-effects, or DM Rules editor (DM-only powers)
       const imggenBtn = document.getElementById('imggen-btn');
       const clearBtn = document.getElementById('clear-effects-btn');
+      const dmRulesBtn = document.getElementById('dm-rules-btn');
       if (imggenBtn) imggenBtn.style.display = 'none';
       if (clearBtn) clearBtn.style.display = 'none';
+      if (dmRulesBtn) dmRulesBtn.style.display = 'none';
     }
 
     await loadInitialState();
@@ -5233,6 +5327,288 @@
     }
   });
 
+  // ============ SHORT REST / LONG REST ============
+  // 5e SRD rest mechanics:
+  //   Short Rest (1 hour): spend Hit Dice to heal (1d{HD} + CON mod per die).
+  //     Spell slots NOT restored except Warlock. Some class abilities recharge.
+  //   Long Rest (8 hours): full HP, all spell slots restored, half max HD restored
+  //     (round up, min 1), exhaustion reduced by 1, death saves reset.
+  function hitDieForClass(cls) {
+    const dice = {
+      'Barbarian': 12, 'Fighter': 10, 'Paladin': 10, 'Ranger': 10,
+      'Bard': 8, 'Cleric': 8, 'Druid': 8, 'Monk': 8, 'Rogue': 8, 'Warlock': 8,
+      'Sorcerer': 6, 'Wizard': 6, 'Artificer': 8,
+    };
+    return dice[cls] || 8;
+  }
+
+  // Compute the changes a rest would apply to the current user. Returns a
+  // plain object (no DB writes yet) so the popup can show a preview first.
+  function previewRest(kind) {
+    const player = STATE.persistedPlayers.find(p => p.id === STATE.userId);
+    if (!player) return null;
+    const level = parseInt(player.level) || 1;
+    const conMod = Math.floor(((parseInt(player.constitution) || 10) - 10) / 2);
+    const hd = hitDieForClass(player.class);
+    const myToken = Array.from(STATE.tokens.values()).find(t => t.owner_id === STATE.userId && t.x != null);
+    const curHp = myToken ? (myToken.current_hp ?? 0) : null;
+    const maxHp = myToken ? (myToken.max_hp ?? 0) : null;
+    // Magic state (spell slots)
+    let magic = null;
+    try { magic = JSON.parse(player.magic_data || '{}'); } catch (e) { magic = null; }
+    const conds = parseConditions(player.conditions);
+
+    if (kind === 'long') {
+      const halfHd = Math.max(1, Math.floor(level / 2));
+      const slotsRestored = magic && magic.slots ? Object.entries(magic.slots).filter(([lv, v]) => v && v.max > 0).map(([lv, v]) => `Lv ${lv}: ${v.max}`).join(', ') : '';
+      return {
+        kind: 'long',
+        title: 'Long Rest (8 hours)',
+        intro: 'A full night of rest. Restores all hit points, all spell slots, half of your hit dice, reduces exhaustion by 1, and resets death saves.',
+        changes: [
+          { key: 'Hit Points', val: maxHp != null ? `${curHp ?? '?'} → ${maxHp} (full)` : 'No token on map', cls: 'gain' },
+          { key: 'Hit Dice restored', val: `+${halfHd} (half of ${level})`, cls: 'gain' },
+          { key: 'Spell slots', val: slotsRestored || 'none configured', cls: 'gain' },
+          { key: 'Exhaustion', val: conds.exhaustionLevel > 0 ? `${conds.exhaustionLevel} → ${conds.exhaustionLevel - 1}` : '0 (none)', cls: conds.exhaustionLevel > 0 ? 'gain' : '' },
+          { key: 'Death saves', val: 'reset', cls: 'gain' },
+          { key: 'Heroic Inspiration', val: parseInt(player.inspiration) ? 'kept (5.5e: rest preserves)' : 'none', cls: '' },
+        ],
+        // Closure that performs the DB writes
+        apply: async () => {
+          const updates = {};
+          if (myToken && maxHp != null) {
+            await sb.from('vtt_tokens').update({ current_hp: maxHp, updated_at: new Date().toISOString() }).eq('id', myToken.id);
+            myToken.current_hp = maxHp;
+          }
+          // Restore spell slots: each level's current -> max
+          if (magic && magic.slots) {
+            Object.keys(magic.slots).forEach(lv => {
+              if (magic.slots[lv]) magic.slots[lv].cur = magic.slots[lv].max || 0;
+            });
+            updates.magic_data = JSON.stringify(magic);
+            // Local sync if char popup open on us
+            if (CHAR_POPUP.targetPlayerId === STATE.userId) {
+              CHAR_POPUP.magic = magic;
+              if (typeof renderMagic === 'function') renderMagic(CHAR_POPUP.magic);
+            }
+          }
+          // Reduce exhaustion by 1, reset death saves
+          if (conds.exhaustionLevel > 0) {
+            const newConds = serializeConditions(conds.conditions, conds.exhaustionLevel - 1);
+            updates.conditions = newConds;
+            if (CHAR_POPUP.targetPlayerId === STATE.userId) {
+              CHAR_POPUP.exhaustionLevel = conds.exhaustionLevel - 1;
+              renderConditionsStrip();
+              renderConditionsTab();
+            }
+          }
+          updates.death_saves = '';
+          if (CHAR_POPUP.targetPlayerId === STATE.userId) {
+            CHAR_POPUP.deathSaves = { s: 0, f: 0 };
+            renderDeathSaves();
+          }
+          if (Object.keys(updates).length > 0) {
+            await sb.from('vtt_players').update(updates).eq('id', STATE.userId);
+            Object.assign(player, updates);
+          }
+          // Announce in chat for the table
+          await sb.from('vtt_chat').insert({
+            id: genId(),
+            session_id: STATE.sessionId,
+            user_id: STATE.userId,
+            user_name: player.name || STATE.username,
+            is_host: STATE.isHost,
+            msg_type: 'system',
+            text: `${player.name || STATE.username} took a Long Rest. Fully healed and refreshed.`,
+            ts: nowTs(),
+          });
+        },
+      };
+    } else {
+      // Short rest: roll one Hit Die for healing (player can choose to spend more later)
+      const heal = Math.floor(Math.random() * hd) + 1 + conMod;
+      const newHp = myToken && curHp != null && maxHp != null ? Math.min(maxHp, curHp + heal) : null;
+      return {
+        kind: 'short',
+        title: 'Short Rest (1 hour)',
+        intro: `A brief respite. Spend one Hit Die (d${hd}) + CON modifier (${conMod >= 0 ? '+' : ''}${conMod}) to heal. Spell slots do NOT restore (Warlock excepted). Some class features recharge.`,
+        changes: [
+          { key: `Hit Die roll (d${hd})`, val: `${heal - conMod} ${conMod >= 0 ? '+' : ''} ${conMod} = ${heal}`, cls: 'gain' },
+          { key: 'Hit Points', val: newHp != null ? `${curHp} → ${newHp}` : 'No token on map', cls: 'gain' },
+          { key: 'Spell slots', val: player.class === 'Warlock' ? 'restored (Warlock Pact Magic)' : 'unchanged', cls: player.class === 'Warlock' ? 'gain' : '' },
+          { key: 'Hit Dice remaining', val: `${level - 1} / ${level} (you spent 1)`, cls: 'lose' },
+        ],
+        apply: async () => {
+          if (myToken && newHp != null) {
+            await sb.from('vtt_tokens').update({ current_hp: newHp, updated_at: new Date().toISOString() }).eq('id', myToken.id);
+            myToken.current_hp = newHp;
+          }
+          // Warlock: restore all spell slots
+          if (player.class === 'Warlock' && magic && magic.slots) {
+            Object.keys(magic.slots).forEach(lv => {
+              if (magic.slots[lv]) magic.slots[lv].cur = magic.slots[lv].max || 0;
+            });
+            await sb.from('vtt_players').update({ magic_data: JSON.stringify(magic) }).eq('id', STATE.userId);
+            player.magic_data = JSON.stringify(magic);
+            if (CHAR_POPUP.targetPlayerId === STATE.userId) {
+              CHAR_POPUP.magic = magic;
+              if (typeof renderMagic === 'function') renderMagic(CHAR_POPUP.magic);
+            }
+          }
+          await sb.from('vtt_chat').insert({
+            id: genId(),
+            session_id: STATE.sessionId,
+            user_id: STATE.userId,
+            user_name: player.name || STATE.username,
+            is_host: STATE.isHost,
+            msg_type: 'system',
+            text: `${player.name || STATE.username} took a Short Rest. Rolled d${hd}+${conMod} = ${heal} HP recovered.`,
+            ts: nowTs(),
+          });
+        },
+      };
+    }
+  }
+
+  let CURRENT_REST = null;
+  function openRestPopup(kind) {
+    const data = previewRest(kind);
+    if (!data) { toast('No character data found', 'error'); return; }
+    CURRENT_REST = data;
+    document.getElementById('rest-popup-title').textContent = data.title;
+    document.getElementById('rest-popup-intro').innerHTML = data.intro;
+    const resultsEl = document.getElementById('rest-popup-results');
+    resultsEl.innerHTML = data.changes.map(c => `<div class="res-row"><span class="res-key">${escapeHtml(c.key)}</span><span class="res-val ${c.cls || ''}">${escapeHtml(c.val)}</span></div>`).join('');
+    document.getElementById('rest-popup').classList.add('active');
+  }
+  document.getElementById('short-rest-btn').addEventListener('click', () => openRestPopup('short'));
+  document.getElementById('long-rest-btn').addEventListener('click', () => openRestPopup('long'));
+  document.getElementById('rest-popup-close').addEventListener('click', () => document.getElementById('rest-popup').classList.remove('active'));
+  document.getElementById('rest-cancel').addEventListener('click', () => document.getElementById('rest-popup').classList.remove('active'));
+  document.getElementById('rest-confirm').addEventListener('click', async () => {
+    if (!CURRENT_REST) return;
+    const btn = document.getElementById('rest-confirm');
+    btn.disabled = true;
+    btn.textContent = 'Resting...';
+    try {
+      await CURRENT_REST.apply();
+      toast(`${CURRENT_REST.title.split(' (')[0]} complete`, 'success');
+    } catch (e) {
+      console.error(e);
+      toast('Rest failed: ' + (e.message || 'error'), 'error');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Confirm';
+    document.getElementById('rest-popup').classList.remove('active');
+    CURRENT_REST = null;
+  });
+
+  // ============ DM SPECIAL RULES ============
+  // DM writes free-form rules. When any chat message is sent, simple keyword
+  // matching plus simple "rule type" heuristics check the text. If a likely
+  // violation is found, a warning popup pops up locally for the speaker.
+  function getDmRules() {
+    const s = STATE.session || {};
+    const enabled = !!s.dm_rules_enabled;
+    const raw = (s.dm_rules || '').trim();
+    if (!enabled || !raw) return [];
+    return raw.split('\n').map(r => r.trim()).filter(r => r.length > 0);
+  }
+
+  // Heuristic check: returns the first rule that the given text appears to violate.
+  // The detection is intentionally permissive - DM should treat warnings as reminders,
+  // not judgments. Each rule extracts banned/required keywords and the text is scanned.
+  function detectRuleViolation(text, rules) {
+    if (!text || !rules || rules.length === 0) return null;
+    const lower = text.toLowerCase();
+    const STOPWORDS = new Set(['the','a','an','and','or','of','in','on','to','for','no','not','must','should','cannot','can','do',"don't",'during','at','with','from','is','are','be','by','as','this','that','their','they','any','all','one','if','then','when','only','please','your','my','have','has','will','would','could','other','others','without']);
+    // Extract significant tokens from text (word stems)
+    const stemmed = (w) => {
+      // Conservative plural/verb stripping: only remove 's' from end, never 'es'
+      // because "phones" → "phone" must match "phone" (not become "phon").
+      if (w.length > 5 && w.endsWith('ing')) return w.slice(0, -3);
+      if (w.length > 4 && w.endsWith('ed') && !w.endsWith('eed')) return w.slice(0, -2);
+      if (w.length > 4 && w.endsWith('s') && !w.endsWith('ss') && !w.endsWith('us')) return w.slice(0, -1);
+      return w;
+    };
+    const textTokens = new Set(
+      lower.split(/[^a-z']+/)
+        .filter(w => w.length >= 4 && !STOPWORDS.has(w))
+        .map(stemmed)
+    );
+    if (textTokens.size === 0) return null;
+    // Score every rule and pick the highest. This avoids flagging the wrong rule
+    // when a low-signal word (like "player") appears in multiple rules.
+    let best = null;
+    for (const rule of rules) {
+      const ruleLower = rule.toLowerCase();
+      const isNegative = /\b(no|never|don't|do not|cannot|can't|must not|forbidden|banned|not allowed)\b/.test(ruleLower);
+      const ruleTokens = ruleLower.split(/[^a-z']+/)
+        .filter(w => w.length >= 4 && !STOPWORDS.has(w))
+        .map(stemmed);
+      if (ruleTokens.length === 0) continue;
+      const uniqueRuleTokens = Array.from(new Set(ruleTokens));
+      const matches = uniqueRuleTokens.filter(t => textTokens.has(t));
+      const threshold = isNegative ? 1 : 2;
+      if (matches.length < threshold) continue;
+      // Score: match count plus the share of the rule that matched.
+      // A more specific rule (more keywords match) outranks a generic one.
+      const score = matches.length + (matches.length / uniqueRuleTokens.length);
+      if (!best || score > best.score) {
+        best = { rule, matched: matches.slice(0, 3), score };
+      }
+    }
+    return best;
+  }
+
+  function showRuleWarning(rule, contextText) {
+    document.getElementById('dmw-rule-text').textContent = rule;
+    const ctx = document.getElementById('dmw-context-text');
+    ctx.textContent = contextText ? `Triggered by: "${contextText.slice(0, 120)}${contextText.length > 120 ? '...' : ''}"` : '';
+    document.getElementById('dm-rules-warning').classList.add('active');
+  }
+  document.getElementById('dmw-dismiss').addEventListener('click', () => {
+    document.getElementById('dm-rules-warning').classList.remove('active');
+  });
+
+  // Hook the chat send so we can scan local messages BEFORE they go out
+  // (the listener that actually sends is set up elsewhere; we wrap by listening
+  // to keydown on the input and scanning the value)
+  function scanForRuleViolation(text) {
+    const rules = getDmRules();
+    if (rules.length === 0) return;
+    const hit = detectRuleViolation(text, rules);
+    if (hit) showRuleWarning(hit.rule, text);
+  }
+
+  // DM Rules popup wiring
+  function openDmRulesPopup() {
+    if (!STATE.isHost) { toast('DM only', 'error'); return; }
+    const s = STATE.session || {};
+    document.getElementById('dm-rules-textarea').value = s.dm_rules || '';
+    document.getElementById('dm-rules-enabled').checked = !!s.dm_rules_enabled;
+    document.getElementById('dm-rules-popup').classList.add('active');
+  }
+  document.getElementById('dm-rules-btn').addEventListener('click', openDmRulesPopup);
+  document.getElementById('dm-rules-close').addEventListener('click', () => document.getElementById('dm-rules-popup').classList.remove('active'));
+  document.getElementById('dm-rules-cancel').addEventListener('click', () => document.getElementById('dm-rules-popup').classList.remove('active'));
+  document.getElementById('dm-rules-save').addEventListener('click', async () => {
+    if (!STATE.isHost) return;
+    const rules = document.getElementById('dm-rules-textarea').value;
+    const enabled = document.getElementById('dm-rules-enabled').checked;
+    try {
+      await sb.from('vtt_sessions').update({ dm_rules: rules, dm_rules_enabled: enabled }).eq('id', STATE.sessionId);
+      if (!STATE.session) STATE.session = { id: STATE.sessionId };
+      STATE.session.dm_rules = rules;
+      STATE.session.dm_rules_enabled = enabled;
+      toast(enabled ? 'Rules saved and active' : 'Rules saved (disabled)', 'success');
+      document.getElementById('dm-rules-popup').classList.remove('active');
+    } catch (e) {
+      console.error(e);
+      toast('Save failed: ' + (e.message || 'error'), 'error');
+    }
+  });
+
   // ============ SPELLS POPUP ============
   const SPELL_DRAFT = { fx: null, color: null, buff: null };
   // Pending buff attached to the currently-being-cast effect. Once the area
@@ -5453,8 +5829,13 @@
     // Cursor hint
     const mc = document.getElementById('mapcontainer');
     if (tool === 'measure' || tool === 'fx') mc.style.cursor = 'crosshair';
+    else if (tool === 'eraser') mc.style.cursor = 'not-allowed';
     else if (STATE.mapMoveMode) mc.style.cursor = 'move';
     else mc.style.cursor = '';
+    // Toggle eraser button visual state and body class (controls pointer-events)
+    const erBtn = document.getElementById('eraser-btn');
+    if (erBtn) erBtn.classList.toggle('active', tool === 'eraser');
+    document.body.classList.toggle('eraser-mode', tool === 'eraser');
   }
 
   document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
@@ -5483,29 +5864,50 @@
     }
   });
 
-  document.getElementById('clear-my-effects-btn').addEventListener('click', async () => {
-    // Each user can remove only the effects they cast
-    const myFx = Array.from(STATE.effects.values()).filter(fx => fx.user_id === STATE.userId);
-    if (myFx.length === 0) { toast('You haven\'t cast any effects'); return; }
-    // Local clear of just my own
-    myFx.forEach(fx => STATE.effects.delete(fx.id));
+  document.getElementById('eraser-btn').addEventListener('click', () => {
+    // Eraser is a tool mode like fx/imggen. Clicking an effect on the map
+    // while it's active removes that single effect. DM can erase anyone's;
+    // players can only erase the ones they cast themselves.
+    if (STATE.activeTool === 'eraser') {
+      setActiveTool(null);
+      toast('Eraser off');
+    } else {
+      setActiveTool('eraser');
+      toast(STATE.isHost ? 'Eraser ON - click an effect to remove it' : 'Eraser ON - click your own effects to remove them');
+    }
+  });
+
+  // Eraser tool click - removes a single effect when in eraser mode
+  document.getElementById('effectslayer').addEventListener('click', async (e) => {
+    if (STATE.activeTool !== 'eraser') return;
+    // Walk up to the nearest <g> with a data-fx-id
+    let node = e.target;
+    while (node && node !== e.currentTarget) {
+      if (node.dataset && node.dataset.fxId) break;
+      node = node.parentNode;
+    }
+    if (!node || !node.dataset || !node.dataset.fxId) return;
+    const fxId = node.dataset.fxId;
+    const fxUser = node.dataset.fxUser || '';
+    // Permission check: players can only erase their own; DM can erase anyone's
+    if (!STATE.isHost && fxUser !== STATE.userId) {
+      toast('You can only erase your own spell effects', 'error');
+      return;
+    }
+    // Optimistic local removal
+    STATE.effects.delete(fxId);
     renderEffects();
-    // Broadcast so other clients clear MY effects from their state too
+    // Broadcast so other clients drop it too (realtime DELETE can lag)
     try {
       if (STATE.channel) {
-        STATE.channel.send({
-          type: 'broadcast',
-          event: 'effect-clear',
-          payload: { scope: 'user', userId: STATE.userId, targetUserId: STATE.userId },
-        });
+        STATE.channel.send({ type: 'broadcast', event: 'effect-clear', payload: { scope: 'single', userId: STATE.userId, fxId } });
       }
     } catch (e) { /* ignore */ }
     try {
-      await sb.from('vtt_effects').delete().eq('session_id', STATE.sessionId).eq('user_id', STATE.userId);
-      toast(`Removed ${myFx.length} effect${myFx.length === 1 ? '' : 's'}`);
-    } catch (e) {
-      console.error('Effect delete failed:', e);
-      toast('Failed to clear your effects', 'error');
+      await sb.from('vtt_effects').delete().eq('id', fxId);
+    } catch (err) {
+      console.error('Effect delete failed', err);
+      toast('Failed to delete effect', 'error');
     }
   });
 
@@ -5694,8 +6096,9 @@
     else if (fx.type === 'fist')   inner = renderFxFist(elem, p, gid, x1, y1, dist, rng);
     else if (fx.type === 'arrow')  inner = renderFxArrow(elem, p, gid, x1, y1, x2, y2, dx, dy, dist, rng);
     if (!inner) return '';
-    // Wrap so CSS can target type-specific animations
-    return `<g class="fx-anim fx-anim-${fx.type} fx-elem-${elem}">${inner}</g>`;
+    // Wrap so CSS can target type-specific animations and so the eraser tool
+    // can find the right effect by id when the user clicks it
+    return `<g class="fx-anim fx-anim-${fx.type} fx-elem-${elem}" data-fx-id="${escapeHtml(fx.id || '')}" data-fx-user="${escapeHtml(fx.user_id || '')}">${inner}</g>`;
   }
 
   // Deterministic PRNG so a given effect renders identically each tick
@@ -6158,6 +6561,11 @@
           removed++;
         }
       });
+    } else if (payload.scope === 'single' && payload.fxId) {
+      if (STATE.effects.has(payload.fxId)) {
+        STATE.effects.delete(payload.fxId);
+        removed = 1;
+      }
     }
     if (removed > 0) renderEffects();
   }
@@ -7393,6 +7801,9 @@
     renderChatMessage(msg);
     const { error } = await sb.from('vtt_chat').insert(msg);
     if (error) { console.error(error); toast('Message failed', 'error'); }
+    // DM rule check (after send so the message is logged anyway - the warning
+    // is a reminder, not a block). DM is exempted.
+    if (!STATE.isHost) scanForRuleViolation(text);
   }
 
   // Chat box drag - disabled because chatbox now lives inside the docked right
