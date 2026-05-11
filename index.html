@@ -311,16 +311,27 @@
   .save-row .save-prof { width: 14px; height: 14px; cursor: pointer; accent-color: var(--gold); }
   .save-row .save-stat { font-family: 'Cinzel', serif; color: var(--muted); font-size: 10px; letter-spacing: 0.1em; min-width: 26px; }
   .save-row .save-bonus { margin-left: auto; color: var(--gold); font-weight: 700; }
-  .save-row:has(.save-prof:checked) .save-stat { color: var(--cream); }
+  .save-row.state-prof .save-stat, .save-row.state-exp .save-stat { color: var(--cream); }
 
-  /* Skills */
-  .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  /* Tri-state proficiency toggle: empty / proficient (✓) / expertise (★) */
+  .prof-toggle { width: 16px; height: 16px; padding: 0; background: var(--bg); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 3px; cursor: pointer; font-size: 11px; line-height: 1; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: background 0.12s, border-color 0.12s; flex-shrink: 0; }
+  .prof-toggle:hover { border-color: var(--gold); }
+  .state-prof .prof-toggle { background: var(--gold); color: #1a1612; border-color: var(--gold); }
+  .state-exp .prof-toggle { background: linear-gradient(135deg, var(--gold) 0%, #ffd87a 100%); color: #1a1612; border-color: #ffd87a; box-shadow: 0 0 4px var(--gold); }
+  .state-exp .skill-bonus, .state-exp .save-bonus { color: #ffd87a; text-shadow: 0 0 6px rgba(255,216,122,0.5); }
+
+  /* SKILLS */
   .skill-row { display: flex; align-items: center; gap: 6px; padding: 3px 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; font-size: 12px; }
   .skill-row .skill-prof { width: 13px; height: 13px; cursor: pointer; accent-color: var(--gold); }
   .skill-row .skill-stat { font-family: 'Cinzel', serif; color: var(--muted); font-size: 9px; letter-spacing: 0.1em; min-width: 22px; }
   .skill-row .skill-name { flex: 1; color: var(--cream); }
   .skill-row .skill-bonus { color: var(--gold); font-weight: 700; min-width: 26px; text-align: right; }
+  .skill-row.state-prof .skill-name, .skill-row.state-exp .skill-name { font-weight: 600; }
+
+  /* Skills */
+  .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
   .skill-row:has(.skill-prof:checked) { background: rgba(212,175,55,0.06); }
+  .skill-row.state-prof, .skill-row.state-exp { background: rgba(212,175,55,0.08); }
 
   /* Buffs */
   #buffs-list { display: flex; flex-direction: column; gap: 4px; }
@@ -364,11 +375,16 @@
 
   /* Spell slots */
   .spell-slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px; }
-  .slot-cell { background: var(--panel-light); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; }
+  .slot-cell { background: var(--panel-light); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; position: relative; }
   .slot-cell .slot-label { font-family: 'Cinzel', serif; font-size: 10px; color: var(--gold); letter-spacing: 0.08em; }
   .slot-cell .slot-inputs { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
   .slot-cell input { width: 36px; text-align: center; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; padding: 3px 4px; font-size: 12px; }
   .slot-cell .sep { color: var(--muted); }
+  .slot-cell .slot-del { position: absolute; top: 2px; right: 4px; width: 14px; height: 14px; background: transparent; border: none; color: var(--muted); font-size: 13px; line-height: 1; cursor: pointer; padding: 0; }
+  .slot-cell .slot-del:hover { color: var(--danger); }
+  .slot-add-row { display: flex; gap: 6px; margin-top: 8px; align-items: center; }
+  .slot-add-row select { padding: 5px 8px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; font-size: 12px; font-family: inherit; flex: 0 0 auto; }
+  #spell-slots-grid:empty + .slot-add-row::before { content: 'No slot levels yet —'; color: var(--muted); font-size: 11px; font-style: italic; margin-right: 6px; }
 
   /* Magic add rows and lists (attacks, cantrips, spells) */
   .magic-add-row { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
@@ -773,13 +789,9 @@
       </div>
 
       <div class="panel-section">
-        <h3>Character Tokens</h3>
-        <label class="upload-box" style="margin-bottom: 10px;">
-          <input type="file" id="token-upload" accept="image/*">
-          <span>Upload token image</span>
-        </label>
+        <h3>Tokens on map</h3>
         <div class="token-tray" id="token-tray"></div>
-        <div style="font-size: 12px; color: var(--muted); margin-top: 8px; font-style: italic;">Drag onto the map</div>
+        <div style="font-size: 12px; color: var(--muted); margin-top: 8px; font-style: italic;">Upload a portrait from the character sheet to add your token. Drag onto the map.</div>
       </div>
 
       <div class="panel-section">
@@ -1061,6 +1073,10 @@
       <div class="char-section">
         <div class="char-section-head">Spell Slots <span class="hint">(used / total)</span></div>
         <div id="spell-slots-grid" class="spell-slots-grid"></div>
+        <div class="slot-add-row">
+          <select id="slot-add-level"></select>
+          <button id="slot-add-btn" class="primary">+ Add slot level</button>
+        </div>
       </div>
       <div class="char-section">
         <div class="char-section-head">Attacks <span class="hint">(weapon or spell attack)</span></div>
@@ -2213,6 +2229,7 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_audio', filter }, handleAudioChange)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vtt_sessions', filter: `id=eq.${STATE.sessionId}` }, handleSessionChange)
       .on('broadcast', { event: 'drag' }, ({ payload }) => handleRemoteDrag(payload))
+      .on('broadcast', { event: 'effect-clear' }, ({ payload }) => handleRemoteEffectClear(payload))
       .on('presence', { event: 'sync' }, handlePresenceSync)
       .subscribe(async (status) => {
         const ind = document.getElementById('conn-indicator');
@@ -2728,6 +2745,8 @@
     // Extended sheet state for the currently-open character
     saveProfs: new Set(),    // 'str','dex',...
     skillProfs: new Set(),   // 'acrobatics','stealth',...
+    saveExpertise: new Set(),
+    skillExpertise: new Set(),
     buffs: [],               // [{ name, mod, active }]
     inventory: [],           // [{ name, qty, stats }]
     equipment: {},           // { helmet: {name, stats}, ... }
@@ -2850,12 +2869,16 @@
     const pb = getProfBonus();
     SAVE_STATS.forEach(stat => {
       const mod = statMod(getCharStat(stat));
-      const isProf = saveProfs.has(stat);
-      const total = mod + (isProf ? pb : 0);
+      const isExp = CHAR_POPUP.saveExpertise && CHAR_POPUP.saveExpertise.has(stat);
+      const isProf = saveProfs.has(stat) || isExp;
+      const bonus = isExp ? pb * 2 : (isProf ? pb : 0);
+      const total = mod + bonus;
+      const state = isExp ? 'exp' : (isProf ? 'prof' : 'none');
       const row = document.createElement('div');
-      row.className = 'save-row';
+      row.className = 'save-row state-' + state;
+      row.dataset.stat = stat;
       row.innerHTML = `
-        <input type="checkbox" class="save-prof" data-stat="${stat}" ${isProf ? 'checked' : ''}>
+        <button class="prof-toggle" data-kind="save" data-key="${stat}" title="None → Proficient → Expertise">${state === 'exp' ? '★' : (state === 'prof' ? '✓' : '')}</button>
         <span class="save-stat">${stat.toUpperCase()}</span>
         <span class="save-bonus">${fmtMod(total)}</span>
       `;
@@ -2869,12 +2892,16 @@
     const pb = getProfBonus();
     SKILLS_DEF.forEach(s => {
       const mod = statMod(getCharStat(s.stat));
-      const isProf = skillProfs.has(s.key);
-      const total = mod + (isProf ? pb : 0);
+      const isExp = CHAR_POPUP.skillExpertise && CHAR_POPUP.skillExpertise.has(s.key);
+      const isProf = skillProfs.has(s.key) || isExp;
+      const bonus = isExp ? pb * 2 : (isProf ? pb : 0);
+      const total = mod + bonus;
+      const state = isExp ? 'exp' : (isProf ? 'prof' : 'none');
       const row = document.createElement('div');
-      row.className = 'skill-row';
+      row.className = 'skill-row state-' + state;
+      row.dataset.skill = s.key;
       row.innerHTML = `
-        <input type="checkbox" class="skill-prof" data-skill="${s.key}" ${isProf ? 'checked' : ''}>
+        <button class="prof-toggle" data-kind="skill" data-key="${s.key}" title="None → Proficient → Expertise">${state === 'exp' ? '★' : (state === 'prof' ? '✓' : '')}</button>
         <span class="skill-stat">${s.stat.toUpperCase()}</span>
         <span class="skill-name">${s.name}</span>
         <span class="skill-bonus">${fmtMod(total)}</span>
@@ -2961,15 +2988,23 @@
     const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
     const m = magic || emptyMagicData();
 
-    // Spell slots grid: levels 1-9. Each shows current/max with quick adjusters.
+    // Spell slots grid: only render levels the user has activated. Default
+    // state has no levels - the user clicks "+ Add slot level" to add one.
     const slotsGrid = document.getElementById('spell-slots-grid');
     if (slotsGrid) {
       slotsGrid.innerHTML = '';
+      // A level is "active" if it has any cur or max set (we never delete keys, just clear values).
+      const activeLevels = [];
       for (let lv = 1; lv <= 9; lv++) {
+        const s = m.slots[lv];
+        if (s && (s.cur > 0 || s.max > 0 || s.active)) activeLevels.push(lv);
+      }
+      activeLevels.forEach(lv => {
         const s = m.slots[lv] || { cur: 0, max: 0 };
         const cell = document.createElement('div');
         cell.className = 'slot-cell';
         cell.innerHTML = `
+          ${canEdit ? `<button class="slot-del" data-lv="${lv}" title="Remove this slot level">×</button>` : ''}
           <div class="slot-label">Lv ${lv}</div>
           <div class="slot-inputs">
             <input type="number" class="slot-cur" data-lv="${lv}" min="0" max="99" value="${s.cur}" ${canEdit ? '' : 'readonly'}>
@@ -2978,6 +3013,26 @@
           </div>
         `;
         slotsGrid.appendChild(cell);
+      });
+      // Populate the "Add slot level" dropdown with the levels not yet active
+      const sel = document.getElementById('slot-add-level');
+      if (sel) {
+        sel.innerHTML = '';
+        for (let lv = 1; lv <= 9; lv++) {
+          if (!activeLevels.includes(lv)) {
+            const opt = document.createElement('option');
+            opt.value = lv;
+            opt.textContent = `Level ${lv}`;
+            sel.appendChild(opt);
+          }
+        }
+        const addBtn = document.getElementById('slot-add-btn');
+        if (addBtn) {
+          const allActive = activeLevels.length >= 9;
+          addBtn.disabled = allActive || !canEdit;
+          addBtn.style.opacity = (allActive || !canEdit) ? '0.5' : '';
+          sel.disabled = allActive || !canEdit;
+        }
       }
     }
 
@@ -3124,6 +3179,8 @@
     // Load character sheet extensions (skills, saves, buffs, inventory, gold/silver/copper, magic)
     CHAR_POPUP.saveProfs = parseSet(player.save_profs);
     CHAR_POPUP.skillProfs = parseSet(player.skill_profs);
+    CHAR_POPUP.saveExpertise = parseSet(player.save_expertise);
+    CHAR_POPUP.skillExpertise = parseSet(player.skill_expertise);
     CHAR_POPUP.buffs = parseJsonArray(player.buffs);
     CHAR_POPUP.inventory = parseJsonArray(player.inventory);
     // Equipment is a JSON object keyed by slot
@@ -3239,6 +3296,8 @@
       copper: parseInt(document.getElementById('char-copper').value) || 0,
       save_profs: setToCsv(CHAR_POPUP.saveProfs),
       skill_profs: setToCsv(CHAR_POPUP.skillProfs),
+      save_expertise: setToCsv(CHAR_POPUP.saveExpertise),
+      skill_expertise: setToCsv(CHAR_POPUP.skillExpertise),
       buffs: JSON.stringify(CHAR_POPUP.buffs),
       inventory: JSON.stringify(CHAR_POPUP.inventory),
       equipment: JSON.stringify(CHAR_POPUP.equipment),
@@ -3286,14 +3345,49 @@
       const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
       if (!canEdit) { toast('Cannot edit this character', 'error'); return; }
       try {
+        // Resize once - the same image is used for both portrait and token.
+        const { blob } = await fileToResizedBlob(file, 256);
         const path = `${STATE.sessionId}/portraits/${CHAR_POPUP.targetPlayerId}-${Date.now()}.jpg`;
-        const up = await sb.storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true });
-        if (up.error) throw up.error;
-        const { data: pub } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
-        const url = pub.publicUrl;
+        const url = await uploadImage(blob, path);
         document.getElementById('char-portrait').style.backgroundImage = `url('${url}')`;
         await sb.from('vtt_players').update({ portrait_url: url }).eq('id', CHAR_POPUP.targetPlayerId);
-        toast('Portrait updated');
+
+        // Auto-create or update the owner's token so the portrait doubles as the token.
+        const targetPlayerId = CHAR_POPUP.targetPlayerId;
+        const targetPlayer = STATE.persistedPlayers.find(p => p.id === targetPlayerId);
+        const targetName = (targetPlayer && targetPlayer.name) || STATE.username || 'Unnamed';
+        const existing = Array.from(STATE.tokens.values()).find(t => t.owner_id === targetPlayerId);
+        if (existing) {
+          // Update the existing token's image (it may still be in the tray or on the map)
+          await sb.from('vtt_tokens').update({ image_url: url, name: targetName, updated_at: new Date().toISOString() }).eq('id', existing.id);
+          existing.image_url = url;
+          existing.name = targetName;
+          STATE.tokens.set(existing.id, existing);
+          renderTokens();
+          renderTokenTray();
+          renderHpTracker();
+          toast('Portrait and token updated');
+        } else {
+          // Create a new token for this player, placed in the tray (x=null)
+          const tokenId = genId();
+          const newTok = {
+            id: tokenId,
+            session_id: STATE.sessionId,
+            name: targetName,
+            image_url: url,
+            x: null, y: null,
+            owner_id: targetPlayerId,
+            current_hp: 10,
+            max_hp: 10,
+          };
+          const { error } = await sb.from('vtt_tokens').insert(newTok);
+          if (error) throw error;
+          STATE.tokens.set(tokenId, newTok);
+          renderTokens();
+          renderTokenTray();
+          renderHpTracker();
+          toast('Portrait set. Drag the token onto the map.');
+        }
       } catch (err) {
         console.error('Portrait upload failed', err);
         toast('Portrait upload failed', 'error');
@@ -3311,6 +3405,31 @@
       if (!CHAR_POPUP.magic.slots[lv]) CHAR_POPUP.magic.slots[lv] = { cur: 0, max: 0 };
       if (t.classList.contains('slot-cur')) CHAR_POPUP.magic.slots[lv].cur = v;
       else CHAR_POPUP.magic.slots[lv].max = v;
+      scheduleSavePlayer();
+    });
+    // Remove a slot level (×): zero it out and mark inactive so the cell vanishes
+    document.getElementById('spell-slots-grid').addEventListener('click', (e) => {
+      const btn = e.target.closest('.slot-del');
+      if (!btn) return;
+      const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) return;
+      const lv = parseInt(btn.dataset.lv);
+      if (!CHAR_POPUP.magic) CHAR_POPUP.magic = emptyMagicData();
+      CHAR_POPUP.magic.slots[lv] = { cur: 0, max: 0, active: false };
+      renderMagic(CHAR_POPUP.magic);
+      scheduleSavePlayer();
+    });
+    // Add a slot level from the dropdown
+    document.getElementById('slot-add-btn').addEventListener('click', () => {
+      const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) return;
+      const sel = document.getElementById('slot-add-level');
+      const lv = parseInt(sel.value);
+      if (!lv || lv < 1 || lv > 9) return;
+      if (!CHAR_POPUP.magic) CHAR_POPUP.magic = emptyMagicData();
+      // Default to 2 slots for a fresh level (typical low-level caster amount)
+      CHAR_POPUP.magic.slots[lv] = { cur: 2, max: 2, active: true };
+      renderMagic(CHAR_POPUP.magic);
       scheduleSavePlayer();
     });
 
@@ -3375,24 +3494,40 @@
       }
     });
 
-    // Saving throw and skill proficiency toggles (delegated since the rows are rebuilt)
-    document.getElementById('saves-grid').addEventListener('change', (e) => {
-      if (!e.target.classList.contains('save-prof')) return;
+    // Saving throw and skill proficiency cycle (none → proficient → expertise → none).
+    // Delegated since the rows are rebuilt.
+    function cycleProfState(kind, key) {
       const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
-      if (!canEdit) { e.target.checked = !e.target.checked; return; }
-      const stat = e.target.dataset.stat;
-      if (e.target.checked) CHAR_POPUP.saveProfs.add(stat); else CHAR_POPUP.saveProfs.delete(stat);
-      renderSaves(CHAR_POPUP.saveProfs);
+      if (!canEdit) return;
+      const profSet = kind === 'save' ? CHAR_POPUP.saveProfs : CHAR_POPUP.skillProfs;
+      const expSet  = kind === 'save' ? CHAR_POPUP.saveExpertise : CHAR_POPUP.skillExpertise;
+      const isProf = profSet.has(key);
+      const isExp  = expSet.has(key);
+      // none → prof → expertise → none
+      if (!isProf && !isExp) {
+        profSet.add(key);
+      } else if (isProf && !isExp) {
+        // Promote to expertise (remove plain prof flag - expertise implies prof)
+        profSet.delete(key);
+        expSet.add(key);
+      } else {
+        // Was expertise - clear both
+        profSet.delete(key);
+        expSet.delete(key);
+      }
+      if (kind === 'save') renderSaves(CHAR_POPUP.saveProfs);
+      else renderSkills(CHAR_POPUP.skillProfs);
       scheduleSavePlayer();
+    }
+    document.getElementById('saves-grid').addEventListener('click', (e) => {
+      const btn = e.target.closest('.prof-toggle');
+      if (!btn) return;
+      cycleProfState('save', btn.dataset.key);
     });
-    document.getElementById('skills-grid').addEventListener('change', (e) => {
-      if (!e.target.classList.contains('skill-prof')) return;
-      const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
-      if (!canEdit) { e.target.checked = !e.target.checked; return; }
-      const skill = e.target.dataset.skill;
-      if (e.target.checked) CHAR_POPUP.skillProfs.add(skill); else CHAR_POPUP.skillProfs.delete(skill);
-      renderSkills(CHAR_POPUP.skillProfs);
-      scheduleSavePlayer();
+    document.getElementById('skills-grid').addEventListener('click', (e) => {
+      const btn = e.target.closest('.prof-toggle');
+      if (!btn) return;
+      cycleProfState('skill', btn.dataset.key);
     });
 
     // Buff add
@@ -3697,31 +3832,9 @@
   });
 
   // ============ TOKEN UPLOAD ============
-  document.getElementById('token-upload').addEventListener('change', async (e) => {
-    if (!e.target.files[0]) return;
-    try {
-      const { blob } = await fileToResizedBlob(e.target.files[0], 200);
-      const tokenId = genId();
-      const path = `${STATE.sessionId}/tokens/${tokenId}.jpg`;
-      const url = await uploadImage(blob, path);
-      const { error } = await sb.from('vtt_tokens').insert({
-        id: tokenId,
-        session_id: STATE.sessionId,
-        name: STATE.username,
-        image_url: url,
-        x: null, y: null,
-        owner_id: STATE.userId,
-        current_hp: 10,
-        max_hp: 10,
-      });
-      if (error) throw error;
-      toast('Token added. Drag onto map.');
-    } catch (err) {
-      console.error(err);
-      toast('Token upload failed', 'error');
-    }
-    e.target.value = '';
-  });
+  // Token upload has been removed. Portraits now double as tokens - when a
+  // character portrait is uploaded the JS automatically creates or updates the
+  // owner's token. See the portrait upload handler in the char-popup setup.
 
   // ============ MAP TRANSFORM ============
   function applyTransform() {
@@ -3817,9 +3930,16 @@
 
   document.getElementById('clear-effects-btn').addEventListener('click', async () => {
     if (!confirm('Clear ALL effects on the map (including other players\')?')) return;
-    // Local clear for immediate feedback; realtime DELETE events sync other clients
+    // Local clear for immediate feedback
     STATE.effects.clear();
     renderEffects();
+    // Broadcast to every connected client so they remove their copies right away
+    // (realtime postgres DELETE events are unreliable for batch deletes).
+    try {
+      if (STATE.channel) {
+        STATE.channel.send({ type: 'broadcast', event: 'effect-clear', payload: { scope: 'all', userId: STATE.userId } });
+      }
+    } catch (e) { /* ignore */ }
     try {
       await sb.from('vtt_effects').delete().eq('session_id', STATE.sessionId);
     } catch (e) {
@@ -3835,6 +3955,16 @@
     // Local clear of just my own
     myFx.forEach(fx => STATE.effects.delete(fx.id));
     renderEffects();
+    // Broadcast so other clients clear MY effects from their state too
+    try {
+      if (STATE.channel) {
+        STATE.channel.send({
+          type: 'broadcast',
+          event: 'effect-clear',
+          payload: { scope: 'user', userId: STATE.userId, targetUserId: STATE.userId },
+        });
+      }
+    } catch (e) { /* ignore */ }
     try {
       await sb.from('vtt_effects').delete().eq('session_id', STATE.sessionId).eq('user_id', STATE.userId);
       toast(`Removed ${myFx.length} effect${myFx.length === 1 ? '' : 's'}`);
@@ -4348,6 +4478,27 @@
       STATE.remoteDrags.set(payload.userId, payload);
     }
     renderRemoteMeasurements();
+  }
+
+  // Realtime DELETE events on vtt_effects can be unreliable for batch deletes,
+  // so we additionally broadcast effect-clear events. Every client removes the
+  // matching effects from its local state immediately.
+  function handleRemoteEffectClear(payload) {
+    if (!payload) return;
+    if (payload.userId === STATE.userId) return; // we already cleared locally
+    let removed = 0;
+    if (payload.scope === 'all') {
+      removed = STATE.effects.size;
+      STATE.effects.clear();
+    } else if (payload.scope === 'user' && payload.targetUserId) {
+      Array.from(STATE.effects.values()).forEach(fx => {
+        if (fx.user_id === payload.targetUserId) {
+          STATE.effects.delete(fx.id);
+          removed++;
+        }
+      });
+    }
+    if (removed > 0) renderEffects();
   }
 
   function renderRemoteMeasurements() {
@@ -5034,35 +5185,46 @@
     return t;
   }
 
-  // Build a random bounce trajectory for a die. The die starts off-screen on
-  // one of eight directions, bounces 1-4 times with diminishing amplitude
-  // (random per die), and lands at center.
+  // Build a bounce trajectory that actually bounces off the screen edges. The
+  // die starts off-screen, ricochets between 3-6 edge points, and finishes at
+  // a comfortable resting position (not necessarily centered).
   function buildBouncePath() {
     const W = Math.max(window.innerWidth, 600);
     const H = Math.max(window.innerHeight, 400);
-    const sides = [
-      { x: -W * 0.45, y: 0 },
-      { x:  W * 0.45, y: 0 },
-      { x: 0, y: -H * 0.45 },
-      { x: 0, y:  H * 0.45 },
-      { x: -W * 0.4, y: -H * 0.35 },
-      { x:  W * 0.4, y: -H * 0.35 },
-      { x: -W * 0.4, y:  H * 0.35 },
-      { x:  W * 0.4, y:  H * 0.35 },
-    ];
-    const s = sides[Math.floor(Math.random() * sides.length)];
-    const jx = (Math.random() - 0.5) * 60;
-    const jy = (Math.random() - 0.5) * 60;
-    // Random bounce count: 1-4 ricochets after the initial fly. Each bounce
-    // has decreasing amplitude with alternating signs so the path zig-zags.
-    const bounceCount = 1 + Math.floor(Math.random() * 4); // 1..4
-    const amps = [0.55, 0.28, 0.12, 0.05].slice(0, bounceCount);
-    const points = [{ x: s.x + jx, y: s.y + jy }];
-    let sign = -1;
-    amps.forEach(a => {
-      points.push({ x: s.x * a * sign + jx * a * 0.6, y: s.y * a * sign + jy * a * 0.6 });
-      sign *= -1;
-    });
+    const margin = 100; // die radius + breathing room
+    // Translation is relative to flexbox center. Map [margin, W-margin] x
+    // [margin, H-margin] (where the die center can sit) to translation offsets.
+    const minX = margin - W / 2;
+    const maxX = W / 2 - margin;
+    const minY = margin - H / 2;
+    const maxY = H / 2 - margin;
+    const randRange = (a, b) => Math.random() * (b - a) + a;
+
+    // Off-screen starting position
+    const startSide = Math.floor(Math.random() * 4);
+    let start;
+    if (startSide === 0)      start = { x: minX - 160, y: randRange(minY, maxY) };       // off left
+    else if (startSide === 1) start = { x: maxX + 160, y: randRange(minY, maxY) };       // off right
+    else if (startSide === 2) start = { x: randRange(minX, maxX), y: minY - 160 };       // off top
+    else                      start = { x: randRange(minX, maxX), y: maxY + 160 };       // off bottom
+
+    // Random bounce count (3-6) so each die feels different
+    const bounceCount = 3 + Math.floor(Math.random() * 4);
+
+    const points = [start];
+    let lastEdge = startSide;
+    for (let i = 0; i < bounceCount; i++) {
+      // Pick a different edge than last time for visual interest
+      let edge;
+      do { edge = Math.floor(Math.random() * 4); } while (edge === lastEdge);
+      lastEdge = edge;
+      if (edge === 0)      points.push({ x: minX, y: randRange(minY, maxY) });
+      else if (edge === 1) points.push({ x: maxX, y: randRange(minY, maxY) });
+      else if (edge === 2) points.push({ x: randRange(minX, maxX), y: minY });
+      else                 points.push({ x: randRange(minX, maxX), y: maxY });
+    }
+    // Final resting place - somewhere visible, not necessarily centered
+    points.push({ x: randRange(minX * 0.6, maxX * 0.6), y: randRange(minY * 0.6, maxY * 0.6) });
     return { points, bounceCount };
   }
 
@@ -5085,37 +5247,29 @@
     // Build a class-colored palette for the player who rolled
     const palette = dicePaletteForUserId(msg.user_id);
 
-    // Per-bounce timing
-    const T_FLY     = 380;
-    const T_BOUNCE  = 260;
-    const T_SETTLE  = 260;
-    const STAGGER = 130;
-    // Compute the total time for the LONGEST die so the result reveals after
-    // every die has truly settled.
-    let maxDieDuration = 0;
-    const dieDurations = msg.rolls.map(() => {
-      const bc = 1 + Math.floor(Math.random() * 4);
-      const d = T_FLY + (bc - 1) * T_BOUNCE + T_SETTLE;
-      if (d > maxDieDuration) maxDieDuration = d;
-      return { bc, d };
+    // Slower per-bounce timing so the roll feels weighty
+    const T_FLY    = 520;   // initial cross from edge
+    const T_BOUNCE = 380;   // each ricochet
+    const T_SETTLE = 460;   // final landing
+    const STAGGER  = 180;
+
+    // Pre-compute each die's path so we can derive an accurate maxDuration.
+    const dieData = msg.rolls.map(() => {
+      const path = buildBouncePath();
+      // Total animation = fly + (bounces) + settle. Path has 1 start + bounceCount + 1 final.
+      const dur = T_FLY + path.bounceCount * T_BOUNCE + T_SETTLE;
+      return { path, dur };
     });
+    const maxDieDuration = Math.max.apply(null, dieData.map(d => d.dur));
     const totalSettleTime = maxDieDuration + (msg.rolls.length - 1) * STAGGER;
 
     msg.rolls.forEach((val, i) => {
       const delay = i * STAGGER;
-      const path = buildBouncePath();
-      // Use the pre-rolled bounce count so totalSettleTime matches.
-      const targetBounces = dieDurations[i].bc;
-      // Rebuild points to match the pre-rolled count
-      while (path.points.length - 1 > targetBounces) path.points.pop();
-      while (path.points.length - 1 < targetBounces) {
-        const last = path.points[path.points.length - 1];
-        path.points.push({ x: -last.x * 0.4, y: -last.y * 0.4 });
-      }
+      const { path } = dieData[i];
       let dieEl;
 
       if (msg.sides === 6) {
-        // 3D cube that tumbles realistically along the bounce path.
+        // 3D cube that tumbles along the bounce path.
         dieEl = document.createElement('div');
         dieEl.className = 'die3d d6';
         dieEl.style.setProperty('--dice-light',  palette.light);
@@ -5136,72 +5290,68 @@
           5: { x: -90, y: 0 },
           6: { x: 90,  y: 0 },
         }[val];
-        const extraX = 360 * (2 + Math.floor(Math.random() * 3));
-        const extraY = 360 * (2 + Math.floor(Math.random() * 3));
+        const extraX = 360 * (3 + Math.floor(Math.random() * 4));
+        const extraY = 360 * (3 + Math.floor(Math.random() * 4));
         const sign = Math.random() < 0.5 ? -1 : 1;
         const finalX = targetRot.x + sign * extraX;
         const finalY = targetRot.y + extraY;
-        const segments = targetBounces + 1; // fly + bounces (settle is last)
 
-        // Initial position
+        // Initial position - off-screen with random tilt
         dieEl.style.transform = `translate(${path.points[0].x}px, ${path.points[0].y}px) rotateX(${Math.random()*60-30}deg) rotateY(${Math.random()*60-30}deg)`;
 
         let timeOffset = 20 + delay;
+        const segCount = path.points.length - 1;
         for (let seg = 1; seg < path.points.length; seg++) {
-          const dur = seg === 1 ? T_FLY : T_BOUNCE;
-          const progress = seg / segments;
-          const rotX = finalX * progress;
-          const rotY = finalY * progress;
+          const isLast = seg === path.points.length - 1;
+          const dur = seg === 1 ? T_FLY : (isLast ? T_SETTLE : T_BOUNCE);
+          const easing = isLast ? 'cubic-bezier(0.28, 1.05, 0.38, 1)' : 'cubic-bezier(0.45, 0.05, 0.55, 0.95)';
+          const progress = seg / segCount;
+          // Final segment must land on the EXACT target rotation so the right face shows.
+          const rx = isLast ? finalX : finalX * progress;
+          const ry = isLast ? finalY : finalY * progress;
           const pt = path.points[seg];
-          ((duration, p, rx, ry) => {
+          ((duration, p, rotX, rotY, ease) => {
             scheduleDice(() => {
-              dieEl.style.transition = `transform ${duration}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
-              dieEl.style.transform = `translate(${p.x}px, ${p.y}px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+              dieEl.style.transition = `transform ${duration}ms ${ease}`;
+              dieEl.style.transform = `translate(${p.x}px, ${p.y}px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
             }, timeOffset);
-          })(dur, pt, rotX, rotY);
+          })(dur, pt, rx, ry, easing);
           timeOffset += dur;
         }
-        // Final settle to center with final face up
-        scheduleDice(() => {
-          dieEl.style.transition = `transform ${T_SETTLE}ms cubic-bezier(0.28, 1.05, 0.38, 1)`;
-          dieEl.style.transform = `translate(0, 0) rotateX(${finalX}deg) rotateY(${finalY}deg)`;
-        }, timeOffset);
-        scheduleDice(() => { dieEl.classList.add('settled'); }, timeOffset + T_SETTLE + 30);
+        scheduleDice(() => { dieEl.classList.add('settled'); }, timeOffset + 30);
       } else {
-        // Polyhedron die (2D rotation).
+        // Polyhedron die (2D rotation)
         dieEl = document.createElement('div');
         dieEl.className = 'die-poly';
         dieEl.innerHTML = polyhedronSVG(msg.sides, palette) + `<div class="val">?</div>`;
-        const finalRot = (Math.random() < 0.5 ? -1 : 1) * (540 + Math.floor(Math.random() * 540));
-        const segments = targetBounces + 1;
+        const finalRot = (Math.random() < 0.5 ? -1 : 1) * (720 + Math.floor(Math.random() * 720));
 
-        dieEl.style.transform = `translate(${path.points[0].x}px, ${path.points[0].y}px) rotate(${Math.random()*180-90}deg) scale(0.6)`;
+        dieEl.style.transform = `translate(${path.points[0].x}px, ${path.points[0].y}px) rotate(${Math.random()*180-90}deg) scale(0.55)`;
 
         let timeOffset = 20 + delay;
+        const segCount = path.points.length - 1;
         for (let seg = 1; seg < path.points.length; seg++) {
-          const dur = seg === 1 ? T_FLY : T_BOUNCE;
-          const progress = seg / segments;
-          const rot = finalRot * progress;
-          const scale = 0.6 + (1 - 0.6) * progress;
+          const isLast = seg === path.points.length - 1;
+          const dur = seg === 1 ? T_FLY : (isLast ? T_SETTLE : T_BOUNCE);
+          const easing = isLast ? 'cubic-bezier(0.28, 1.05, 0.38, 1)' : 'cubic-bezier(0.45, 0.05, 0.55, 0.95)';
+          const progress = seg / segCount;
+          const rot = isLast ? finalRot : finalRot * progress;
+          const scale = 0.55 + (1 - 0.55) * progress;
           const pt = path.points[seg];
-          ((duration, p, r, sc) => {
+          ((duration, p, r, sc, ease) => {
             scheduleDice(() => {
-              dieEl.style.transition = `transform ${duration}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+              dieEl.style.transition = `transform ${duration}ms ${ease}`;
               dieEl.style.transform = `translate(${p.x}px, ${p.y}px) rotate(${r}deg) scale(${sc})`;
             }, timeOffset);
-          })(dur, pt, rot, scale);
+          })(dur, pt, rot, scale, easing);
           timeOffset += dur;
         }
-        scheduleDice(() => {
-          dieEl.style.transition = `transform ${T_SETTLE}ms cubic-bezier(0.28, 1.05, 0.38, 1)`;
-          dieEl.style.transform = `translate(0, 0) rotate(${finalRot}deg) scale(1)`;
-        }, timeOffset);
 
-        // Cycle random numbers during the spin
+        // Cycle random numbers during the spin until the die fully settles
         const valEl = dieEl.querySelector('.val');
         const interval = setInterval(() => {
           valEl.textContent = Math.floor(Math.random() * msg.sides) + 1;
-        }, 70);
+        }, 90);
         DICE_TIMERS.intervals.push(interval);
         scheduleDice(() => {
           clearInterval(interval);
@@ -5209,7 +5359,7 @@
           if (idx >= 0) DICE_TIMERS.intervals.splice(idx, 1);
           valEl.textContent = val;
           dieEl.classList.add('settled');
-        }, timeOffset + T_SETTLE + 30);
+        }, timeOffset + 30);
       }
 
       stage.appendChild(dieEl);
@@ -5245,16 +5395,16 @@
     if (hasNat20) result.classList.add('nat20');
     if (hasNat1) result.classList.add('nat1');
 
-    // Reveal result after dice settle, plus trigger crit effects
+    // Reveal result after dice settle, plus trigger crit effects (slower for drama)
     scheduleDice(() => {
-      result.style.transition = 'opacity 0.3s';
+      result.style.transition = 'opacity 0.7s ease';
       result.style.opacity = '1';
       if (hasNat20) triggerNat20();
       if (hasNat1) triggerNat1();
-    }, totalSettleTime + 150);
+    }, totalSettleTime + 350);
 
-    // Hide overlay
-    scheduleDice(() => { overlay.classList.remove('active'); }, totalSettleTime + 2400);
+    // Hide overlay (longer so the result lingers)
+    scheduleDice(() => { overlay.classList.remove('active'); }, totalSettleTime + 3600);
   }
 
   function triggerNat20() {
