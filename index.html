@@ -276,6 +276,134 @@
   .rb-section-head { font-family: 'Cinzel', serif; font-size: 11px; color: var(--gold); letter-spacing: 0.12em; text-transform: uppercase; padding: 8px 12px 6px; border-bottom: 1px solid var(--border); background: var(--panel-light); display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
   .rb-section-head .hint { font-size: 9px; color: var(--muted); letter-spacing: 0.05em; text-transform: none; font-style: italic; font-family: inherit; margin-left: auto; }
   .rb-hpwrap { flex-shrink: 0; max-height: 180px; display: flex; flex-direction: column; border-bottom: 1px solid var(--border); }
+
+  /* Initiative tracker in right-bar */
+  .rb-initwrap { flex-shrink: 0; max-height: 260px; display: flex; flex-direction: column; border-bottom: 1px solid var(--border); }
+  .rb-initwrap .rb-section-head { display: flex; align-items: center; gap: 6px; padding: 6px 10px; }
+  .rb-initwrap .init-title { flex: 1; }
+  .rb-initwrap .init-round { font-family: 'Cinzel', serif; font-size: 10px; color: var(--gold); letter-spacing: 0.08em; }
+  .rb-initwrap .init-toggle-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 0 6px; cursor: pointer; border-radius: 3px; font-size: 12px; line-height: 1.4; }
+  .rb-initwrap .init-toggle-btn:hover { color: var(--gold); border-color: var(--gold-soft); }
+  .rb-initwrap.collapsed .init-body { display: none; }
+  .init-controls { display: flex; gap: 4px; padding: 6px 8px; flex-wrap: wrap; border-bottom: 1px solid rgba(58,47,36,0.5); background: rgba(36,30,23,0.4); }
+  .init-mini-btn { flex: 1; min-width: 0; padding: 5px 8px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; border-radius: 3px; transition: background 0.12s, border-color 0.12s; }
+  .init-mini-btn:hover { background: var(--panel-light); border-color: var(--gold-soft); }
+  .init-mini-btn.primary { background: var(--gold); color: #1a1612; border-color: var(--gold); }
+  .init-mini-btn.primary:hover { background: #ffd87a; }
+  .init-mini-btn.danger { color: var(--danger); border-color: var(--border); }
+  .init-mini-btn.danger:hover { background: rgba(160,72,72,0.15); border-color: var(--danger); }
+  .init-list { flex: 1; min-height: 0; overflow-y: auto; padding: 4px; }
+  .init-empty { padding: 14px 10px; text-align: center; font-style: italic; color: var(--muted); font-size: 11px; }
+  .init-empty-hint { display: block; color: var(--gold-soft); margin-top: 4px; font-style: normal; font-size: 10px; }
+  .init-row { display: flex; align-items: center; gap: 6px; padding: 5px 8px; margin: 2px 0; background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--border); border-radius: 3px; font-size: 12px; cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+  .init-row:hover { background: var(--panel-light); border-color: var(--gold-soft); }
+  .init-row.active { background: rgba(212,165,116,0.15); border-color: var(--gold); border-left-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold-soft); }
+  .init-row.active .init-name { color: var(--gold); font-weight: 700; }
+  .init-row.downed { opacity: 0.45; text-decoration: line-through; }
+  .init-row.npc { border-left-color: var(--danger); }
+  .init-row.npc.active { border-left-color: var(--gold); }
+  .init-row .init-portrait { width: 22px; height: 22px; border-radius: 50%; background-size: cover; background-position: center; background-color: var(--panel-light); flex-shrink: 0; border: 1px solid var(--border); }
+  .init-row .init-value { font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold); min-width: 26px; text-align: center; }
+  .init-row.npc .init-value { color: var(--danger); }
+  .init-row.active .init-value { color: var(--gold); }
+  .init-row .init-name { flex: 1; color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .init-row .init-hp { font-size: 11px; color: var(--muted); font-family: 'Cinzel', serif; min-width: 50px; text-align: right; }
+  .init-row .init-row-del { background: transparent; border: none; color: var(--muted); font-size: 14px; padding: 0 4px; cursor: pointer; line-height: 1; }
+  .init-row .init-row-del:hover { color: var(--danger); }
+  /* On-map highlight for the active token in combat */
+  .map-token.init-active { box-shadow: 0 0 0 3px var(--gold), 0 0 18px 6px rgba(255,216,122,0.6); animation: init-active-pulse 1.6s ease-in-out infinite; }
+  @keyframes init-active-pulse {
+    0%, 100% { box-shadow: 0 0 0 3px var(--gold), 0 0 18px 6px rgba(255,216,122,0.5); }
+    50% { box-shadow: 0 0 0 3px var(--gold), 0 0 26px 10px rgba(255,216,122,0.7); }
+  }
+
+  /* NPC add dialog (now Monster Manager) */
+  #init-npc-popup { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); width: 500px; max-width: 92vw; max-height: 80vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  #init-npc-popup.active { display: flex; }
+  #init-npc-popup .npc-body { padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+  #init-npc-popup .npc-row { display: flex; gap: 6px; align-items: center; }
+  #init-npc-popup .npc-row label { font-family: 'Cinzel', serif; font-size: 11px; color: var(--gold); letter-spacing: 0.06em; min-width: 60px; }
+  #init-npc-popup .npc-row input { flex: 1; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; font-size: 13px; font-family: inherit; }
+
+  /* Monster manager tabs */
+  .monster-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+  .monster-tab { flex: 1; padding: 8px; background: transparent; border: 1px solid transparent; color: var(--muted); cursor: pointer; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 3px 3px 0 0; }
+  .monster-tab.active { color: var(--gold); border-color: var(--gold) var(--gold) var(--panel); background: var(--panel-light); }
+  .monster-tab-content { display: none; flex-direction: column; gap: 8px; }
+  .monster-tab-content.active { display: flex; }
+  .monster-search { padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 4px; font-size: 13px; font-family: inherit; }
+  .monster-preset-list { display: flex; flex-direction: column; gap: 4px; max-height: 360px; overflow-y: auto; padding-right: 4px; }
+  .monster-card { display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px; align-items: center; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--danger); border-radius: 4px; cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+  .monster-card:hover { background: var(--panel-light); border-color: var(--gold-soft); }
+  .monster-card.selected { background: rgba(212,165,116,0.12); border-color: var(--gold); border-left-color: var(--gold); }
+  .monster-card .m-name { font-family: 'Cinzel', serif; color: var(--cream); font-weight: 600; }
+  .monster-card.selected .m-name { color: var(--gold); }
+  .monster-card .m-cr { font-size: 10px; color: var(--muted); letter-spacing: 0.06em; }
+  .monster-card .m-cr b { color: var(--ember); }
+  .monster-card .m-stat { font-size: 11px; color: var(--muted); font-family: 'Cinzel', serif; }
+  .monster-card .m-stat b { color: var(--gold); font-weight: 700; }
+  .monster-preset-actions { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .monster-place-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cream); cursor: pointer; }
+  .monster-place-toggle input { accent-color: var(--gold); }
+
+  /* Inspiration star in char head */
+  .vital-inspiration { cursor: pointer; transition: background 0.15s; }
+  .vital-inspiration:hover { background: var(--panel-light); }
+  .inspiration-star { color: var(--border); transition: color 0.2s, transform 0.2s, filter 0.2s; display: flex; align-items: center; justify-content: center; }
+  .vital-inspiration.has-insp .inspiration-star { color: var(--gold); filter: drop-shadow(0 0 6px rgba(212,165,116,0.7)); animation: insp-glow 2s ease-in-out infinite; }
+  @keyframes insp-glow {
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(212,165,116,0.7)); }
+    50% { filter: drop-shadow(0 0 14px rgba(255,216,122,1)); }
+  }
+
+  /* Death Saves panel */
+  .death-saves-panel { margin: 0 14px 12px; padding: 10px 12px; background: linear-gradient(135deg, rgba(160,72,72,0.18), rgba(160,72,72,0.06)); border: 1px solid var(--danger); border-radius: 5px; }
+  .death-saves-panel .ds-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .ds-label { font-family: 'Cinzel', serif; color: var(--danger); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; }
+  .ds-group { display: flex; align-items: center; gap: 4px; }
+  .ds-group .ds-name { font-family: 'Cinzel', serif; font-size: 10px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-right: 4px; }
+  .ds-pip { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.1s; background: transparent; padding: 0; }
+  .ds-pip:hover { transform: scale(1.15); }
+  .ds-success .ds-pip.filled { background: #6b8a4a; border-color: #8fb46e; box-shadow: 0 0 6px rgba(143,180,110,0.6); }
+  .ds-failure .ds-pip.filled { background: var(--danger); border-color: #c46868; box-shadow: 0 0 6px rgba(196,104,104,0.6); }
+  .ds-roll { padding: 6px 14px; background: var(--gold); color: #1a1612; border: none; border-radius: 3px; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.08em; cursor: pointer; }
+  .ds-roll:hover { background: #ffd87a; }
+  .ds-reset { padding: 6px 10px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 3px; font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.06em; cursor: pointer; }
+  .ds-reset:hover { color: var(--cream); border-color: var(--gold-soft); }
+  .ds-status { margin-top: 6px; font-style: italic; color: var(--ember); font-size: 12px; min-height: 18px; }
+  .ds-status.dead { color: var(--danger); font-weight: 700; }
+  .ds-status.stable { color: var(--success); }
+
+  /* Conditions strip (icons under vitals in the char popup) */
+  .conditions-strip { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 14px 8px; min-height: 22px; }
+  .conditions-strip:empty { display: none; }
+  .cond-chip { display: flex; align-items: center; gap: 4px; padding: 2px 7px; background: var(--bg); border: 1px solid var(--cond-color, var(--border)); border-radius: 10px; font-size: 10px; font-family: 'Cinzel', serif; color: var(--cond-color, var(--cream)); letter-spacing: 0.05em; cursor: help; }
+  .cond-chip.with-rounds::after { content: ' (' attr(data-rounds) 'r)'; opacity: 0.7; }
+  .cond-chip .cond-code { background: var(--cond-color); color: #1a1612; width: 18px; height: 14px; display: flex; align-items: center; justify-content: center; border-radius: 2px; font-weight: 700; font-size: 9px; }
+
+  /* Conditions tab grid */
+  .conditions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .cond-toggle { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; cursor: pointer; transition: background 0.12s, border-color 0.12s; font-size: 12px; text-align: left; color: var(--cream); font-family: inherit; }
+  .cond-toggle:hover { background: var(--panel-light); }
+  .cond-toggle.on { border-color: var(--cond-color, var(--gold)); background: rgba(212,165,116,0.08); }
+  .cond-toggle .cond-icon { width: 24px; height: 18px; background: var(--cond-color, var(--border)); color: #1a1612; font-family: 'Cinzel', serif; font-weight: 700; font-size: 10px; display: flex; align-items: center; justify-content: center; border-radius: 2px; flex-shrink: 0; }
+  .cond-toggle .cond-info { flex: 1; min-width: 0; }
+  .cond-toggle .cond-name { color: var(--cream); font-weight: 600; }
+  .cond-toggle.on .cond-name { color: var(--cond-color, var(--gold)); }
+  .cond-toggle .cond-rounds { font-size: 10px; color: var(--muted); margin-left: 4px; }
+
+  /* Exhaustion */
+  .exhaustion-row { display: flex; gap: 4px; }
+  .exh-pip { flex: 1; padding: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; cursor: pointer; font-family: 'Cinzel', serif; font-weight: 700; font-size: 13px; color: var(--muted); transition: background 0.12s, border-color 0.12s; }
+  .exh-pip:hover { border-color: var(--ember); }
+  .exh-pip.on { background: var(--ember); color: #1a1612; border-color: var(--ember); }
+  .exh-pip.on.level-6 { background: var(--danger); border-color: var(--danger); box-shadow: 0 0 8px var(--danger); }
+  .exhaustion-effect { font-size: 12px; color: var(--ember); margin-top: 6px; min-height: 18px; font-style: italic; }
+
+  /* Token condition strip - small badges arranged below the token */
+  .token-conditions { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; margin-top: 2px; pointer-events: auto; z-index: 6; }
+  .token-conditions .tc-badge { width: 16px; height: 14px; background: var(--cond-color); color: #1a1612; font-family: 'Cinzel', serif; font-weight: 700; font-size: 8px; display: flex; align-items: center; justify-content: center; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.5); cursor: help; }
+  .token-conditions .tc-badge:hover { transform: scale(1.2); }
   #hp-tracker-list-right { padding: 6px 8px; overflow-y: auto; }
   #hp-tracker-list-right .hp-row { cursor: pointer; transition: background 0.12s; }
   #hp-tracker-list-right .hp-row:hover { background: rgba(212,175,55,0.07); }
@@ -1105,7 +1233,39 @@
       <div class="vital-val" id="char-init">+0</div>
       <div class="vital-sub">DEX mod</div>
     </div>
+    <div class="vital-box vital-inspiration" id="char-inspiration-box" title="Heroic Inspiration: click to toggle. When you have it, your next d20 roll is automatically re-rolled and the better of the two is kept.">
+      <label>Insp.</label>
+      <div class="inspiration-star" id="char-inspiration-star">
+        <svg viewBox="0 0 24 24" width="22" height="22"><polygon points="12,2 14.9,8.6 22,9.3 16.7,14.1 18.2,21 12,17.6 5.8,21 7.3,14.1 2,9.3 9.1,8.6" fill="currentColor"/></svg>
+      </div>
+      <div class="vital-sub">Heroic</div>
+    </div>
   </div>
+
+  <!-- Death Saves panel: only visible when current HP is 0 and the character has a token -->
+  <div class="death-saves-panel" id="death-saves-panel" style="display:none">
+    <div class="ds-row">
+      <span class="ds-label">DEATH SAVES</span>
+      <div class="ds-group ds-success" title="Successes (3 to stabilize)">
+        <span class="ds-name">Successes</span>
+        <span class="ds-pip" data-kind="s" data-idx="0"></span>
+        <span class="ds-pip" data-kind="s" data-idx="1"></span>
+        <span class="ds-pip" data-kind="s" data-idx="2"></span>
+      </div>
+      <div class="ds-group ds-failure" title="Failures (3 = death)">
+        <span class="ds-name">Failures</span>
+        <span class="ds-pip" data-kind="f" data-idx="0"></span>
+        <span class="ds-pip" data-kind="f" data-idx="1"></span>
+        <span class="ds-pip" data-kind="f" data-idx="2"></span>
+      </div>
+      <button id="ds-roll-btn" class="ds-roll" title="Roll a death save (d20). 1 = 2 fails, 2-9 = 1 fail, 10-19 = 1 success, 20 = wake up at 1 HP.">Roll</button>
+      <button id="ds-reset-btn" class="ds-reset" title="Reset death saves (e.g. after being healed)">Reset</button>
+    </div>
+    <div class="ds-status" id="ds-status"></div>
+  </div>
+
+  <!-- Conditions strip - icons under vitals, click to toggle -->
+  <div class="conditions-strip" id="conditions-strip"></div>
 
   <div class="char-tabs">
     <button class="char-tab active" data-tab="stats">Stats</button>
@@ -1113,6 +1273,7 @@
     <button class="char-tab" data-tab="equipment">Equipment</button>
     <button class="char-tab" data-tab="spells">Spells</button>
     <button class="char-tab" data-tab="buffs">Buffs</button>
+    <button class="char-tab" data-tab="conditions">Conditions</button>
     <button class="char-tab" data-tab="notes">Notes</button>
   </div>
 
@@ -1231,6 +1392,25 @@
       </div>
     </div>
 
+    <div class="char-tab-content" data-tab="conditions">
+      <div class="char-section">
+        <div class="char-section-head">Active Conditions <span class="hint">(click to toggle)</span></div>
+        <div id="conditions-grid" class="conditions-grid"></div>
+      </div>
+      <div class="char-section">
+        <div class="char-section-head">Exhaustion <span class="hint">(5.5e: -2 per level on d20 tests; level 6 = death)</span></div>
+        <div id="exhaustion-row" class="exhaustion-row">
+          <button class="exh-pip" data-level="1">1</button>
+          <button class="exh-pip" data-level="2">2</button>
+          <button class="exh-pip" data-level="3">3</button>
+          <button class="exh-pip" data-level="4">4</button>
+          <button class="exh-pip" data-level="5">5</button>
+          <button class="exh-pip" data-level="6">6</button>
+        </div>
+        <div id="exhaustion-effect" class="exhaustion-effect"></div>
+      </div>
+    </div>
+
     <div class="char-tab-content" data-tab="notes">
       <div class="char-notes">
         <label>Notes</label>
@@ -1281,6 +1461,43 @@
       <div style="font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px;">Maps · Characters · Items</div>
       <div id="imggen-library-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-height: 240px; overflow-y: auto;"></div>
       <div id="imggen-library-empty" style="font-size: 12px; color: var(--muted); text-align: center; padding: 10px;">No saved images yet. Generated images appear here.</div>
+    </div>
+  </div>
+</div>
+
+<div id="init-npc-popup">
+  <div class="char-popup-header">
+    <span class="ttl">Monster Manager</span>
+    <button id="init-npc-close">×</button>
+  </div>
+  <div class="npc-body">
+    <div class="monster-tabs">
+      <button class="monster-tab active" data-mtab="preset">Preset</button>
+      <button class="monster-tab" data-mtab="custom">Custom</button>
+    </div>
+
+    <div class="monster-tab-content active" data-mtab="preset">
+      <input type="text" id="monster-search" placeholder="Search monsters (goblin, dragon, troll...)" class="monster-search">
+      <div id="monster-preset-list" class="monster-preset-list"></div>
+      <div class="monster-preset-actions">
+        <label class="monster-place-toggle">
+          <input type="checkbox" id="monster-as-token" checked>
+          <span>Add to map as a token (uncheck for initiative-only entry)</span>
+        </label>
+        <button id="monster-spawn-btn" class="init-mini-btn primary" disabled>Add Selected to Combat</button>
+      </div>
+    </div>
+
+    <div class="monster-tab-content" data-mtab="custom">
+      <div class="npc-row"><label>Name</label><input type="text" id="npc-name" placeholder="Goblin Boss" maxlength="40"></div>
+      <div class="npc-row"><label>Initiative</label><input type="number" id="npc-init" placeholder="auto roll if blank" min="0" max="40"></div>
+      <div class="npc-row"><label>DEX bonus</label><input type="number" id="npc-dex" placeholder="0" min="-5" max="10" value="0"></div>
+      <div class="npc-row"><label>HP</label><input type="number" id="npc-hp" placeholder="20" min="1"></div>
+      <div class="npc-row"><label>AC</label><input type="number" id="npc-ac" placeholder="13" min="1"></div>
+      <div class="npc-row" style="justify-content: flex-end; gap: 8px; margin-top: 6px;">
+        <button id="npc-cancel" class="init-mini-btn">Cancel</button>
+        <button id="npc-add-confirm" class="init-mini-btn primary">Add</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1604,6 +1821,10 @@
     tokens: new Map(),     // id -> token data
     onlinePlayers: new Map(), // userId -> { name, isHost }
     persistedPlayers: [],   // from vtt_players table
+
+    // Initiative tracker state (mirrored to vtt_sessions.initiative as JSON)
+    // Shape: { active: bool, round: int, turn: int, entries: [...] }
+    initiative: { active: false, round: 0, turn: 0, entries: [] },
 
     view: { offsetX: 0, offsetY: 0, zoom: 1 },
     gridSize: 50,
@@ -2061,6 +2282,29 @@
       rb.appendChild(hpSec);
     }
 
+    // Initiative tracker section - visible to everyone (DM has controls, players see read-only)
+    const initSec = document.createElement('div');
+    initSec.className = 'rb-section rb-initwrap';
+    initSec.innerHTML = `
+      <div class="rb-section-head init-head">
+        <span class="init-title">Initiative</span>
+        <span class="init-round" id="init-round-label"></span>
+        <button class="init-toggle-btn" id="init-toggle-btn" title="Collapse / expand">−</button>
+      </div>
+      <div class="init-body" id="init-body">
+        <div class="init-controls" id="init-controls" style="display:none">
+          <button id="init-roll-all" class="init-mini-btn" title="Roll initiative for all tokens on the map">Roll All</button>
+          <button id="init-add-npc" class="init-mini-btn" title="Add a custom NPC entry">+ NPC</button>
+          <button id="init-next-turn" class="init-mini-btn primary" title="Advance to next turn">Next ▸</button>
+          <button id="init-clear" class="init-mini-btn danger" title="End combat / clear initiative">End</button>
+        </div>
+        <div id="init-list" class="init-list">
+          <div class="init-empty">No combat in progress. <span class="init-empty-hint">DM: click Roll All to start.</span></div>
+        </div>
+      </div>
+    `;
+    rb.appendChild(initSec);
+
     // Character sheet (the docked panel) - starts collapsed; openCharPopup expands it
     const cp = document.getElementById('char-popup');
     if (cp) {
@@ -2139,6 +2383,10 @@
     setupThemeToggle();
     // Hook up the dice set picker (player-customizable dice palette)
     setupDiceSetPicker();
+    // Hook up the initiative tracker controls
+    setupInitiativeControls();
+    // Initial initiative render (in case combat is in progress from a previous session)
+    renderInitiative();
   }
 
   // ============ SIDE BAR RESIZERS ============
@@ -2367,6 +2615,421 @@
     if (cls) root.classList.add('theme-' + cls);
   }
 
+  // ============ INITIATIVE TRACKER ============
+  // DM-driven combat turn order. State lives on vtt_sessions.initiative (JSON)
+  // so every client stays in sync. Players see the order but only the DM has
+  // controls. Click a token (DM) to insert it; "Roll All" auto-rolls all
+  // on-map tokens using their owner's DEX modifier.
+  function rollInit(dexBonus) {
+    return Math.floor(Math.random() * 20) + 1 + (parseInt(dexBonus) || 0);
+  }
+
+  // Read DEX bonus from a player record (used for initiative auto-roll)
+  function playerDexMod(player) {
+    if (!player) return 0;
+    const dex = parseInt(player.dexterity) || 10;
+    return Math.floor((dex - 10) / 2);
+  }
+
+  function sortInitiativeEntries(entries) {
+    // Higher initiative first. Ties broken by DEX bonus, then by name.
+    return entries.slice().sort((a, b) => {
+      if (b.init !== a.init) return b.init - a.init;
+      if ((b.dex || 0) !== (a.dex || 0)) return (b.dex || 0) - (a.dex || 0);
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  }
+
+  async function saveInitiative() {
+    if (!STATE.isHost) return;
+    try {
+      await sb.from('vtt_sessions').update({ initiative: JSON.stringify(STATE.initiative) }).eq('id', STATE.sessionId);
+    } catch (e) {
+      console.error('Initiative save failed', e);
+      toast('Initiative sync failed', 'error');
+    }
+  }
+
+  // Auto-roll every on-map token's initiative and start combat
+  async function startInitiative() {
+    if (!STATE.isHost) return;
+    const tokens = Array.from(STATE.tokens.values()).filter(t => t.x != null && t.y != null);
+    if (tokens.length === 0) {
+      toast('No tokens on the map', 'error');
+      return;
+    }
+    const entries = tokens.map(tok => {
+      const owner = STATE.persistedPlayers.find(p => p.id === tok.owner_id);
+      const dex = playerDexMod(owner);
+      return {
+        tokenId: tok.id,
+        name: tok.name || 'Unnamed',
+        init: rollInit(dex),
+        dex,
+        hp: tok.current_hp != null ? tok.current_hp : null,
+        maxHp: tok.max_hp != null ? tok.max_hp : null,
+        portrait: tok.image_url || '',
+        isNpc: false,
+        downed: false,
+      };
+    });
+    STATE.initiative = {
+      active: true,
+      round: 1,
+      turn: 0,
+      entries: sortInitiativeEntries(entries),
+    };
+    renderInitiative();
+    renderTokens();
+    await saveInitiative();
+    toast(`Combat started · ${entries.length} combatant${entries.length === 1 ? '' : 's'}`);
+  }
+
+  // Advance to the next combatant. Wraps to round+1 at the end of the order.
+  async function nextTurn() {
+    if (!STATE.isHost) return;
+    if (!STATE.initiative.active || STATE.initiative.entries.length === 0) return;
+    let turn = STATE.initiative.turn + 1;
+    let round = STATE.initiative.round;
+    if (turn >= STATE.initiative.entries.length) {
+      turn = 0;
+      round += 1;
+    }
+    STATE.initiative.turn = turn;
+    STATE.initiative.round = round;
+    renderInitiative();
+    renderTokens();
+    await saveInitiative();
+  }
+
+  async function endInitiative() {
+    if (!STATE.isHost) return;
+    if (!confirm('End combat and clear the initiative order?')) return;
+    STATE.initiative = { active: false, round: 0, turn: 0, entries: [] };
+    renderInitiative();
+    renderTokens();
+    await saveInitiative();
+    toast('Combat ended');
+  }
+
+  async function addNpcInitiative(npc) {
+    if (!STATE.isHost) return;
+    if (!STATE.initiative.active) {
+      STATE.initiative = { active: true, round: 1, turn: 0, entries: [] };
+    }
+    const entry = {
+      tokenId: null, // NPC has no associated token
+      name: npc.name || 'NPC',
+      init: npc.init != null ? npc.init : rollInit(npc.dex),
+      dex: npc.dex || 0,
+      hp: npc.hp != null ? npc.hp : null,
+      maxHp: npc.hp != null ? npc.hp : null,
+      ac: npc.ac || null,
+      portrait: '',
+      isNpc: true,
+      downed: false,
+    };
+    STATE.initiative.entries.push(entry);
+    STATE.initiative.entries = sortInitiativeEntries(STATE.initiative.entries);
+    renderInitiative();
+    await saveInitiative();
+    toast(`${entry.name} joined · init ${entry.init}`);
+  }
+
+  async function removeInitiativeEntry(idx) {
+    if (!STATE.isHost) return;
+    if (idx < 0 || idx >= STATE.initiative.entries.length) return;
+    // Removing an entry before or at the active turn shifts the turn pointer
+    if (idx < STATE.initiative.turn) STATE.initiative.turn -= 1;
+    STATE.initiative.entries.splice(idx, 1);
+    if (STATE.initiative.turn >= STATE.initiative.entries.length) STATE.initiative.turn = 0;
+    if (STATE.initiative.entries.length === 0) {
+      STATE.initiative.active = false;
+      STATE.initiative.round = 0;
+    }
+    renderInitiative();
+    renderTokens();
+    await saveInitiative();
+  }
+
+  async function toggleDowned(idx) {
+    if (!STATE.isHost) return;
+    const e = STATE.initiative.entries[idx];
+    if (!e) return;
+    e.downed = !e.downed;
+    renderInitiative();
+    await saveInitiative();
+  }
+
+  function renderInitiative() {
+    const list = document.getElementById('init-list');
+    const controls = document.getElementById('init-controls');
+    const roundLbl = document.getElementById('init-round-label');
+    if (!list) return;
+    // DM-only controls
+    if (controls) controls.style.display = STATE.isHost ? 'flex' : 'none';
+    // Round counter
+    if (roundLbl) {
+      roundLbl.textContent = STATE.initiative.active ? `Round ${STATE.initiative.round}` : '';
+    }
+    list.innerHTML = '';
+    if (!STATE.initiative.active || STATE.initiative.entries.length === 0) {
+      list.innerHTML = STATE.isHost
+        ? `<div class="init-empty">No combat in progress.<span class="init-empty-hint">Click Roll All to start.</span></div>`
+        : `<div class="init-empty">No active combat.</div>`;
+      return;
+    }
+    STATE.initiative.entries.forEach((e, idx) => {
+      const row = document.createElement('div');
+      row.className = 'init-row';
+      if (idx === STATE.initiative.turn) row.classList.add('active');
+      if (e.isNpc) row.classList.add('npc');
+      if (e.downed) row.classList.add('downed');
+      // Sync HP from current token state if we have one (HP can change between turns)
+      let hp = e.hp, maxHp = e.maxHp;
+      if (e.tokenId) {
+        const tok = STATE.tokens.get(e.tokenId);
+        if (tok) { hp = tok.current_hp; maxHp = tok.max_hp; }
+      }
+      const hpText = (hp != null && maxHp != null) ? `${hp}/${maxHp}` : '';
+      // For players, hide HP details of NPCs and other PCs (only their own visible)
+      const myToken = e.tokenId && STATE.tokens.get(e.tokenId);
+      const ownsThis = myToken && myToken.owner_id === STATE.userId;
+      const showHp = STATE.isHost || ownsThis;
+      row.innerHTML = `
+        ${e.portrait ? `<div class="init-portrait" style="background-image:url('${e.portrait}')"></div>` : `<div class="init-portrait"></div>`}
+        <span class="init-value">${e.init}</span>
+        <span class="init-name">${escapeHtml(e.name)}</span>
+        ${showHp && hpText ? `<span class="init-hp">${hpText}</span>` : ''}
+        ${STATE.isHost ? `<button class="init-row-del" data-idx="${idx}" title="Remove from order">×</button>` : ''}
+      `;
+      // DM: clicking row makes that combatant active. Double-click on a token
+      // entry opens the character sheet. Clicking HP toggles downed state.
+      row.addEventListener('click', (ev) => {
+        if (ev.target.classList.contains('init-row-del')) return;
+        if (STATE.isHost) {
+          // Click jumps the turn to this entry; shift-click toggles downed
+          if (ev.shiftKey) {
+            toggleDowned(idx);
+          } else {
+            STATE.initiative.turn = idx;
+            renderInitiative();
+            renderTokens();
+            saveInitiative();
+          }
+        } else if (e.tokenId) {
+          const tok = STATE.tokens.get(e.tokenId);
+          if (tok && tok.owner_id) openCharPopup(tok.owner_id, tok.id);
+        }
+      });
+      const delBtn = row.querySelector('.init-row-del');
+      if (delBtn) {
+        delBtn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          removeInitiativeEntry(idx);
+        });
+      }
+      list.appendChild(row);
+    });
+  }
+
+  // Add the "init-active" class to the on-map token whose turn it is
+  function highlightActiveInitToken() {
+    document.querySelectorAll('.map-token.init-active').forEach(el => el.classList.remove('init-active'));
+    if (!STATE.initiative.active) return;
+    const entry = STATE.initiative.entries[STATE.initiative.turn];
+    if (!entry || !entry.tokenId) return;
+    const el = document.querySelector(`.map-token[data-id="${entry.tokenId}"]`);
+    if (el) el.classList.add('init-active');
+  }
+
+  function setupInitiativeControls() {
+    const rollAll = document.getElementById('init-roll-all');
+    const addNpc = document.getElementById('init-add-npc');
+    const next = document.getElementById('init-next-turn');
+    const clear = document.getElementById('init-clear');
+    const toggleBtn = document.getElementById('init-toggle-btn');
+    if (rollAll) rollAll.addEventListener('click', startInitiative);
+    if (addNpc) addNpc.addEventListener('click', () => {
+      document.getElementById('init-npc-popup').classList.add('active');
+    });
+    if (next) next.addEventListener('click', nextTurn);
+    if (clear) clear.addEventListener('click', endInitiative);
+    if (toggleBtn) toggleBtn.addEventListener('click', () => {
+      const wrap = document.querySelector('.rb-initwrap');
+      if (wrap) {
+        wrap.classList.toggle('collapsed');
+        toggleBtn.textContent = wrap.classList.contains('collapsed') ? '+' : '−';
+      }
+    });
+
+    // NPC popup wiring
+    const closeNpc = () => document.getElementById('init-npc-popup').classList.remove('active');
+    const closeBtn = document.getElementById('init-npc-close');
+    const cancelBtn = document.getElementById('npc-cancel');
+    const confirmBtn = document.getElementById('npc-add-confirm');
+    if (closeBtn) closeBtn.addEventListener('click', closeNpc);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeNpc);
+    if (confirmBtn) confirmBtn.addEventListener('click', async () => {
+      const name = document.getElementById('npc-name').value.trim();
+      if (!name) { toast('NPC name required', 'error'); return; }
+      const initStr = document.getElementById('npc-init').value.trim();
+      const npc = {
+        name,
+        init: initStr === '' ? null : parseInt(initStr),
+        dex: parseInt(document.getElementById('npc-dex').value) || 0,
+        hp: parseInt(document.getElementById('npc-hp').value) || null,
+        ac: parseInt(document.getElementById('npc-ac').value) || null,
+      };
+      ['npc-name', 'npc-init', 'npc-hp', 'npc-ac'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('npc-dex').value = 0;
+      closeNpc();
+      await addNpcInitiative(npc);
+    });
+
+    // ----- Monster Manager (preset library) -----
+    document.querySelectorAll('.monster-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.monster-tab').forEach(t => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.monster-tab-content').forEach(c => c.classList.toggle('active', c.dataset.mtab === tab.dataset.mtab));
+      });
+    });
+
+    let selectedMonster = null;
+    function renderMonsterList(filter) {
+      const list = document.getElementById('monster-preset-list');
+      if (!list) return;
+      list.innerHTML = '';
+      const q = (filter || '').toLowerCase().trim();
+      MONSTER_PRESETS
+        .filter(m => !q || m.name.toLowerCase().includes(q) || m.cr.toLowerCase().includes(q))
+        .forEach(m => {
+          const dexMod = Math.floor((m.dex - 10) / 2);
+          const card = document.createElement('div');
+          card.className = 'monster-card' + (selectedMonster && selectedMonster.id === m.id ? ' selected' : '');
+          card.dataset.id = m.id;
+          card.innerHTML = `
+            <div>
+              <div class="m-name">${escapeHtml(m.name)}</div>
+              <div class="m-cr">CR <b>${m.cr}</b> · ${m.speed}ft · DEX ${m.dex} (${fmtMod(dexMod)})</div>
+            </div>
+            <div class="m-stat">AC<br><b>${m.ac}</b></div>
+            <div class="m-stat">HP<br><b>${m.hp}</b></div>
+            <div class="m-stat">INIT<br><b>${fmtMod(m.init)}</b></div>
+          `;
+          card.addEventListener('click', () => {
+            selectedMonster = m;
+            document.querySelectorAll('.monster-card').forEach(c => c.classList.toggle('selected', c.dataset.id === m.id));
+            document.getElementById('monster-spawn-btn').disabled = false;
+          });
+          list.appendChild(card);
+        });
+    }
+    renderMonsterList('');
+    const searchInp = document.getElementById('monster-search');
+    if (searchInp) searchInp.addEventListener('input', (e) => renderMonsterList(e.target.value));
+
+    const spawnBtn = document.getElementById('monster-spawn-btn');
+    if (spawnBtn) {
+      spawnBtn.addEventListener('click', async () => {
+        if (!selectedMonster) return;
+        const placeAsToken = document.getElementById('monster-as-token').checked;
+        await spawnMonster(selectedMonster, placeAsToken);
+        // Pick a unique suffix so multiple goblins are distinguishable
+        const count = STATE.initiative.entries.filter(e => e.name && e.name.startsWith(selectedMonster.name)).length;
+        closeNpc();
+        toast(`${selectedMonster.name}${count > 0 ? ' ' + (count + 1) : ''} joined combat`);
+      });
+    }
+  }
+
+  // ============ MONSTER SPAWN ============
+  // Adds a monster preset to the initiative tracker. If placeAsToken is true,
+  // also creates a token on the map (no image, just the name initial). Each
+  // copy gets a numeric suffix so multiple Goblins are distinguishable.
+  async function spawnMonster(preset, placeAsToken) {
+    if (!STATE.isHost) return;
+    if (!STATE.initiative.active) {
+      STATE.initiative = { active: true, round: 1, turn: 0, entries: [] };
+    }
+    // Generate a unique label
+    const existing = STATE.initiative.entries.filter(e => e.name && e.name.startsWith(preset.name)).length;
+    const label = existing > 0 ? `${preset.name} ${existing + 1}` : preset.name;
+
+    let tokenId = null;
+    if (placeAsToken) {
+      tokenId = genId();
+      // Place near map center, offset by existing count so they don't overlap
+      const baseX = 400 + (existing * 60);
+      const baseY = 300;
+      const tok = {
+        id: tokenId,
+        session_id: STATE.sessionId,
+        name: label,
+        image_url: monsterPlaceholderImg(preset),
+        x: baseX, y: baseY,
+        owner_id: null,
+        current_hp: preset.hp,
+        max_hp: preset.hp,
+        is_npc: true,
+        monster_data: JSON.stringify({
+          preset_id: preset.id,
+          ac: preset.ac,
+          init_bonus: preset.init,
+          attacks: preset.attacks,
+          stats: { str: preset.str, dex: preset.dex, con: preset.con, int: preset.int, wis: preset.wis, cha: preset.cha },
+        }),
+      };
+      STATE.tokens.set(tokenId, tok);
+      try {
+        // Send only the columns that exist; legacy schemas may not have monster_data
+        await sb.from('vtt_tokens').insert(tok);
+      } catch (e) {
+        // Retry without the new columns if they're missing
+        const minimal = { id: tok.id, session_id: tok.session_id, name: tok.name, image_url: tok.image_url, x: tok.x, y: tok.y, owner_id: tok.owner_id, current_hp: tok.current_hp, max_hp: tok.max_hp };
+        try { await sb.from('vtt_tokens').insert(minimal); } catch (e2) { console.error('Token insert failed', e2); }
+      }
+      renderTokens();
+      renderTokenTray();
+    }
+
+    const init = Math.floor(Math.random() * 20) + 1 + preset.init;
+    const entry = {
+      tokenId,
+      name: label,
+      init,
+      dex: preset.init, // initiative bonus is dex-based
+      hp: preset.hp,
+      maxHp: preset.hp,
+      ac: preset.ac,
+      portrait: '',
+      isNpc: true,
+      downed: false,
+    };
+    STATE.initiative.entries.push(entry);
+    STATE.initiative.entries = sortInitiativeEntries(STATE.initiative.entries);
+    renderInitiative();
+    await saveInitiative();
+  }
+
+  // Inline SVG placeholder for monster tokens (initial letter on colored background)
+  function monsterPlaceholderImg(preset) {
+    const initial = (preset.name || '?').charAt(0).toUpperCase();
+    const colors = {
+      goblin: '#5b8a3a', orc: '#7d4a25', kobold: '#a85020', wolf: '#665a4a',
+      skeleton: '#d0d0c4', zombie: '#5a7050', bandit: '#705540', guard: '#a89568',
+      gnoll: '#a87040', hobgoblin: '#a04848', ogre: '#7a5a3a', bugbear: '#8a6535',
+      owlbear: '#7d5a25', troll: '#3a6a3a', mummy: '#a8945a', lich: '#2a1a3a',
+      'red-dragon': '#9a2828',
+    };
+    const bg = colors[preset.id] || '#5a4630';
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
+      <rect width='64' height='64' fill='${bg}'/>
+      <text x='32' y='44' text-anchor='middle' font-family='Cinzel, serif' font-weight='700' font-size='38' fill='#1a1612'>${initial}</text>
+    </svg>`;
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+
   // ============ INITIAL STATE LOAD ============
   async function loadInitialState() {
     // Load active map slot from session
@@ -2374,6 +3037,18 @@
     if (session) {
       STATE.session = session;
       if (session.active_map_slot) STATE.activeMapSlot = session.active_map_slot;
+      // Restore initiative state
+      try {
+        const ini = JSON.parse(session.initiative || '{}');
+        if (ini && typeof ini === 'object') {
+          STATE.initiative = {
+            active: !!ini.active,
+            round: ini.round || 0,
+            turn: ini.turn || 0,
+            entries: Array.isArray(ini.entries) ? ini.entries : [],
+          };
+        }
+      } catch (e) { STATE.initiative = { active: false, round: 0, turn: 0, entries: [] }; }
     }
 
     // Load all map slots (up to 3)
@@ -2518,6 +3193,20 @@
       // Don't clobber if user is typing (they shouldn't be able to as a player anyway)
       if (document.activeElement !== ta) ta.value = payload.new.campaign_log || '';
     }
+    // Sync initiative state across all clients
+    try {
+      const ini = JSON.parse(payload.new.initiative || '{}');
+      if (ini && typeof ini === 'object') {
+        STATE.initiative = {
+          active: !!ini.active,
+          round: ini.round || 0,
+          turn: ini.turn || 0,
+          entries: Array.isArray(ini.entries) ? ini.entries : [],
+        };
+        renderInitiative();
+        renderTokens(); // refresh active-token highlight
+      }
+    } catch (e) { /* ignore malformed init JSON */ }
   }
 
   function switchToMapSlot(slot, persist) {
@@ -2556,6 +3245,17 @@
       if (el) el.remove();
       renderTokenTray();
       renderHpTracker();
+      // If this token was in the initiative order, drop it (DM authoritative)
+      if (STATE.isHost && STATE.initiative.active) {
+        const idx = STATE.initiative.entries.findIndex(e => e.tokenId === payload.old.id);
+        if (idx >= 0) {
+          STATE.initiative.entries.splice(idx, 1);
+          if (STATE.initiative.turn >= STATE.initiative.entries.length) STATE.initiative.turn = 0;
+          if (STATE.initiative.entries.length === 0) STATE.initiative = { active: false, round: 0, turn: 0, entries: [] };
+          renderInitiative();
+          saveInitiative();
+        }
+      }
       return;
     }
     const tok = payload.new;
@@ -2591,6 +3291,8 @@
     renderTokenTray();
     renderHpTracker();
     refreshCharPopupHp();
+    // Initiative list shows HP from token state; refresh if combat is active.
+    if (STATE.initiative && STATE.initiative.active) renderInitiative();
   }
 
   function handleChatInsert(payload) {
@@ -2691,6 +3393,26 @@
         el.appendChild(badge);
       }
 
+      // Active conditions on this token's owner - small badges below the token
+      const tokConditions = getConditionsForToken(tok);
+      if (tokConditions.length > 0) {
+        const condStrip = document.createElement('div');
+        condStrip.className = 'token-conditions';
+        tokConditions.forEach(c => {
+          const def = D5E_CONDITIONS[c.key];
+          if (!def) return;
+          const b = document.createElement('div');
+          b.className = 'tc-badge';
+          b.style.setProperty('--cond-color', def.color);
+          b.textContent = c.key === 'exhaustion' ? `${def.code}${c.level}` : def.code;
+          b.title = c.key === 'exhaustion'
+            ? `${def.name} ${c.level}: ${def.desc}`
+            : `${def.name}: ${def.desc}`;
+          condStrip.appendChild(b);
+        });
+        el.appendChild(condStrip);
+      }
+
       // HP bar above the token
       const hpBar = buildTokenHpBar(tok);
       if (hpBar) el.appendChild(hpBar);
@@ -2730,6 +3452,8 @@
       el.addEventListener('touchstart', (e) => startTokenDrag(e, tok), { passive: false });
       layer.appendChild(el);
     });
+    // Apply the active-turn highlight to the current combatant's token
+    highlightActiveInitToken();
   }
 
   function renderTokenTray() {
@@ -2998,6 +3722,11 @@
     inventory: [],           // [{ name, qty, stats }]
     equipment: {},           // { helmet: {name, stats}, ... }
     magic: null,             // { cantrips, spells, attacks, slots } - set by openCharPopup
+    // 5.5e additions
+    inspiration: 0,          // 0 or 1 (Heroic Inspiration)
+    deathSaves: { s: 0, f: 0 }, // successes, failures (each 0-3)
+    conditions: [],          // [{ key, until_round }]
+    exhaustionLevel: 0,      // 0-6
   };
 
   // Equipment slot definitions in display order
@@ -3036,6 +3765,52 @@
     { key: 'survival',        name: 'Survival',        stat: 'wis' },
   ];
   const SAVE_STATS = ['str','dex','con','int','wis','cha'];
+
+  // ============ D&D 5e CONDITIONS ============
+  // Standard 5e condition list with short codes (for token badges), display
+  // names, and hover descriptions. Exhaustion is special - it has 6 levels.
+  const D5E_CONDITIONS = {
+    blinded:      { code: 'BL',  name: 'Blinded',      color: '#5a5a5a', desc: 'Cannot see. Auto-fails sight checks. Attacks vs you have advantage; your attacks have disadvantage.' },
+    charmed:      { code: 'CH',  name: 'Charmed',      color: '#ff8fb4', desc: 'Cannot attack the charmer. Charmer has advantage on social checks vs you.' },
+    deafened:     { code: 'DE',  name: 'Deafened',     color: '#7a6b50', desc: 'Cannot hear. Auto-fails hearing checks.' },
+    frightened:   { code: 'FR',  name: 'Frightened',   color: '#a060d0', desc: 'Disadvantage on checks and attacks while the source of fear is in line of sight. Cannot willingly move closer to the source.' },
+    grappled:     { code: 'GR',  name: 'Grappled',     color: '#888830', desc: 'Speed becomes 0. Ends if grappler is incapacitated or moved away.' },
+    incapacitated:{ code: 'IN',  name: 'Incapacitated',color: '#806060', desc: 'Cannot take actions or reactions.' },
+    invisible:    { code: 'IV',  name: 'Invisible',    color: '#a8d8ff', desc: 'Cannot be seen without aid. Attacks vs you have disadvantage; your attacks have advantage.' },
+    paralyzed:    { code: 'PA',  name: 'Paralyzed',    color: '#ffd040', desc: 'Incapacitated, cannot move or speak. Auto-fails STR/DEX saves. Attacks against you have advantage; hits within 5ft are crits.' },
+    petrified:    { code: 'PT',  name: 'Petrified',    color: '#9a9a8a', desc: 'Transformed to stone. Incapacitated, cannot speak, auto-fails STR/DEX. Resistance to all damage.' },
+    poisoned:     { code: 'PO',  name: 'Poisoned',     color: '#7dcc4d', desc: 'Disadvantage on attacks and ability checks.' },
+    prone:        { code: 'PR',  name: 'Prone',        color: '#a87740', desc: 'Movement costs double. Disadvantage on attacks. Melee attacks within 5ft have advantage; ranged attacks have disadvantage.' },
+    restrained:   { code: 'RE',  name: 'Restrained',   color: '#a04848', desc: 'Speed 0. Disadvantage on attacks and DEX saves. Attacks vs you have advantage.' },
+    stunned:      { code: 'ST',  name: 'Stunned',      color: '#ffe070', desc: 'Incapacitated, cannot move, can speak falteringly. Auto-fails STR/DEX saves. Attacks vs you have advantage.' },
+    unconscious:  { code: 'UN',  name: 'Unconscious',  color: '#404040', desc: 'Incapacitated, cannot move or speak, unaware. Drops what it holds, falls prone. Auto-fails STR/DEX saves. Attacks vs you have advantage; hits within 5ft are crits.' },
+    exhaustion:   { code: 'EX',  name: 'Exhaustion',   color: '#c8503c', desc: 'Levels 1-6. 5.5e: each level applies -2 penalty per level on d20 tests. Level 6 = death.' },
+  };
+
+  // ============ MONSTER PRESETS (5e SRD) ============
+  // Compact stat blocks for common monsters. The DM can spawn these directly
+  // into the initiative tracker (with no map token) or as a placed token.
+  const MONSTER_PRESETS = [
+    { id: 'goblin',     name: 'Goblin',         cr: '1/4', ac: 15, hp: 7,   init: 2,  speed: 30, str: 8,  dex: 14, con: 10, int: 10, wis: 8,  cha: 8,  attacks: [{ name: 'Scimitar',   bonus: '+4', dmg: '1d6+2 slash' }, { name: 'Shortbow',   bonus: '+4', dmg: '1d6+2 pierce, 80ft' }] },
+    { id: 'orc',        name: 'Orc',            cr: '1/2', ac: 13, hp: 15,  init: 1,  speed: 30, str: 16, dex: 12, con: 16, int: 7,  wis: 11, cha: 10, attacks: [{ name: 'Greataxe',   bonus: '+5', dmg: '1d12+3 slash' }, { name: 'Javelin',    bonus: '+5', dmg: '1d6+3 pierce, 30/120ft' }] },
+    { id: 'kobold',     name: 'Kobold',         cr: '1/8', ac: 12, hp: 5,   init: 2,  speed: 30, str: 7,  dex: 15, con: 9,  int: 8,  wis: 7,  cha: 8,  attacks: [{ name: 'Dagger',     bonus: '+4', dmg: '1d4+2 pierce' }, { name: 'Sling',      bonus: '+4', dmg: '1d4+2 bludgeon, 30/120ft' }] },
+    { id: 'wolf',       name: 'Wolf',           cr: '1/4', ac: 13, hp: 11,  init: 2,  speed: 40, str: 12, dex: 15, con: 12, int: 3,  wis: 12, cha: 6,  attacks: [{ name: 'Bite',       bonus: '+4', dmg: '2d4+2 pierce; DC 11 STR or prone' }] },
+    { id: 'skeleton',   name: 'Skeleton',       cr: '1/4', ac: 13, hp: 13,  init: 2,  speed: 30, str: 10, dex: 14, con: 15, int: 6,  wis: 8,  cha: 5,  attacks: [{ name: 'Shortsword', bonus: '+4', dmg: '1d6+2 pierce' }, { name: 'Shortbow',   bonus: '+4', dmg: '1d6+2 pierce, 80/320ft' }] },
+    { id: 'zombie',     name: 'Zombie',         cr: '1/4', ac: 8,  hp: 22,  init: -2, speed: 20, str: 13, dex: 6,  con: 16, int: 3,  wis: 6,  cha: 5,  attacks: [{ name: 'Slam',       bonus: '+3', dmg: '1d6+1 bludgeon' }] },
+    { id: 'bandit',     name: 'Bandit',         cr: '1/8', ac: 12, hp: 11,  init: 1,  speed: 30, str: 11, dex: 12, con: 12, int: 10, wis: 10, cha: 10, attacks: [{ name: 'Scimitar',   bonus: '+3', dmg: '1d6+1 slash' }, { name: 'Light Crossbow', bonus: '+3', dmg: '1d8+1 pierce, 80/320ft' }] },
+    { id: 'guard',      name: 'Guard',          cr: '1/8', ac: 16, hp: 11,  init: 1,  speed: 30, str: 13, dex: 12, con: 12, int: 10, wis: 11, cha: 10, attacks: [{ name: 'Spear',      bonus: '+3', dmg: '1d6+1 pierce; 1d8+1 two-handed' }] },
+    { id: 'gnoll',      name: 'Gnoll',          cr: '1/2', ac: 15, hp: 22,  init: 1,  speed: 30, str: 14, dex: 12, con: 11, int: 6,  wis: 10, cha: 7,  attacks: [{ name: 'Bite',       bonus: '+4', dmg: '1d4+2 pierce' }, { name: 'Spear',      bonus: '+4', dmg: '1d6+2 pierce' }, { name: 'Longbow',    bonus: '+3', dmg: '1d8+1 pierce' }] },
+    { id: 'hobgoblin',  name: 'Hobgoblin',      cr: '1/2', ac: 18, hp: 11,  init: 1,  speed: 30, str: 13, dex: 12, con: 12, int: 10, wis: 10, cha: 9,  attacks: [{ name: 'Longsword',  bonus: '+3', dmg: '1d8+1 slash; 1d10+1 two-handed' }, { name: 'Longbow',    bonus: '+3', dmg: '1d8+1 pierce' }] },
+    { id: 'ogre',       name: 'Ogre',           cr: '2',   ac: 11, hp: 59,  init: -1, speed: 40, str: 19, dex: 8,  con: 16, int: 5,  wis: 7,  cha: 7,  attacks: [{ name: 'Greatclub',  bonus: '+6', dmg: '2d8+4 bludgeon' }, { name: 'Javelin',    bonus: '+6', dmg: '2d6+4 pierce, 30/120ft' }] },
+    { id: 'bugbear',    name: 'Bugbear',        cr: '1',   ac: 16, hp: 27,  init: 2,  speed: 30, str: 15, dex: 14, con: 13, int: 8,  wis: 11, cha: 9,  attacks: [{ name: 'Morningstar',bonus: '+4', dmg: '2d8+2 pierce (surprise: +2d6)' }, { name: 'Javelin',    bonus: '+4', dmg: '2d6+2 pierce' }] },
+    { id: 'owlbear',    name: 'Owlbear',        cr: '3',   ac: 13, hp: 59,  init: 1,  speed: 40, str: 20, dex: 12, con: 17, int: 3,  wis: 12, cha: 7,  attacks: [{ name: 'Beak',       bonus: '+7', dmg: '1d10+5 pierce' }, { name: 'Claws',      bonus: '+7', dmg: '2d8+5 slash' }] },
+    { id: 'troll',      name: 'Troll',          cr: '5',   ac: 15, hp: 84,  init: 1,  speed: 30, str: 18, dex: 13, con: 20, int: 7,  wis: 9,  cha: 7,  attacks: [{ name: 'Bite',       bonus: '+7', dmg: '1d6+4 pierce' }, { name: 'Claw',       bonus: '+7', dmg: '2d6+4 slash (x2)' }] },
+    { id: 'mummy',      name: 'Mummy',          cr: '3',   ac: 11, hp: 58,  init: 0,  speed: 20, str: 16, dex: 8,  con: 15, int: 6,  wis: 10, cha: 12, attacks: [{ name: 'Rotting Fist',bonus: '+5', dmg: '2d6+3 bludgeon + 3d6 necrotic; DC 12 CON or Mummy Rot' }] },
+    { id: 'lich',       name: 'Lich',           cr: '21',  ac: 17, hp: 135, init: 3,  speed: 30, str: 11, dex: 16, con: 16, int: 20, wis: 14, cha: 16, attacks: [{ name: 'Paralyzing Touch', bonus: '+12', dmg: '3d6 cold; DC 18 CON or paralyzed' }] },
+    { id: 'red-dragon', name: 'Adult Red Dragon', cr: '17', ac: 19, hp: 256, init: 0, speed: 40, str: 27, dex: 10, con: 25, int: 16, wis: 13, cha: 21, attacks: [{ name: 'Bite',       bonus: '+14', dmg: '2d10+8 pierce + 4d6 fire' }, { name: 'Claw',       bonus: '+14', dmg: '2d6+8 slash' }, { name: 'Fire Breath', bonus: 'DC 21 DEX', dmg: '18d6 fire (60ft cone)' }] },
+  ];
+
+
 
   // D&D 5e basic races with their key traits. Shown under the race dropdown.
   const D5E_RACES = {
@@ -3078,6 +3853,48 @@
       const base = emptyMagicData();
       return Object.assign(base, m, { slots: Object.assign(base.slots, m.slots || {}) });
     } catch (e) { return emptyMagicData(); }
+  }
+
+  // ---------- Death Saves serialization ----------
+  // Stored as 'sX/fY' for compactness (e.g. 's2/f1' = 2 successes, 1 failure)
+  function parseDeathSaves(raw) {
+    if (!raw || typeof raw !== 'string') return { s: 0, f: 0 };
+    const m = raw.match(/s(\d)\/f(\d)/);
+    if (!m) return { s: 0, f: 0 };
+    return { s: Math.min(3, Math.max(0, parseInt(m[1]) || 0)), f: Math.min(3, Math.max(0, parseInt(m[2]) || 0)) };
+  }
+  function serializeDeathSaves(ds) {
+    if (!ds || (ds.s === 0 && ds.f === 0)) return '';
+    return `s${ds.s}/f${ds.f}`;
+  }
+
+  // ---------- Conditions serialization ----------
+  // Stored as JSON array. Exhaustion is split out as a level (0-6) to keep
+  // the conditions array a flat list of plain condition keys.
+  function parseConditions(raw) {
+    const out = { conditions: [], exhaustionLevel: 0 };
+    if (!raw || typeof raw !== 'string') return out;
+    try {
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return out;
+      arr.forEach(entry => {
+        if (!entry || typeof entry !== 'object') return;
+        if (entry.key === 'exhaustion') {
+          out.exhaustionLevel = Math.min(6, Math.max(0, parseInt(entry.level) || 0));
+        } else if (entry.key && D5E_CONDITIONS[entry.key]) {
+          out.conditions.push({
+            key: entry.key,
+            until_round: entry.until_round != null ? parseInt(entry.until_round) : null,
+          });
+        }
+      });
+    } catch (e) { /* ignore */ }
+    return out;
+  }
+  function serializeConditions(conditions, exhaustionLevel) {
+    const out = (conditions || []).map(c => ({ key: c.key, until_round: c.until_round != null ? c.until_round : null }));
+    if (exhaustionLevel && exhaustionLevel > 0) out.push({ key: 'exhaustion', level: exhaustionLevel });
+    return JSON.stringify(out);
   }
 
   function profBonusForLevel(level) {
@@ -3352,6 +4169,127 @@
     renderSkills(CHAR_POPUP.skillProfs);
   }
 
+  // ---------- 5.5e renderers ----------
+  function renderInspiration() {
+    const box = document.getElementById('char-inspiration-box');
+    if (!box) return;
+    box.classList.toggle('has-insp', !!CHAR_POPUP.inspiration);
+  }
+
+  // Death saves only show when the character's HP is 0 and they have a token on the map
+  function renderDeathSaves() {
+    const panel = document.getElementById('death-saves-panel');
+    if (!panel) return;
+    // Find the linked token to check current HP
+    let curHp = null;
+    if (CHAR_POPUP.targetPlayerId) {
+      const tok = Array.from(STATE.tokens.values()).find(t => t.owner_id === CHAR_POPUP.targetPlayerId);
+      if (tok && tok.x != null) curHp = tok.current_hp;
+    }
+    const isDying = curHp === 0;
+    panel.style.display = isDying ? '' : 'none';
+    if (!isDying) {
+      // If HP > 0 and death saves had any state, clear them silently
+      if (CHAR_POPUP.deathSaves.s > 0 || CHAR_POPUP.deathSaves.f > 0) {
+        CHAR_POPUP.deathSaves = { s: 0, f: 0 };
+        scheduleSavePlayer();
+      }
+      return;
+    }
+    const ds = CHAR_POPUP.deathSaves;
+    panel.querySelectorAll('.ds-pip').forEach(pip => {
+      const kind = pip.dataset.kind;
+      const idx = parseInt(pip.dataset.idx);
+      const filled = kind === 's' ? idx < ds.s : idx < ds.f;
+      pip.classList.toggle('filled', filled);
+    });
+    const status = document.getElementById('ds-status');
+    if (status) {
+      status.className = 'ds-status';
+      if (ds.f >= 3) { status.textContent = 'Dead. Resurrection required.'; status.classList.add('dead'); }
+      else if (ds.s >= 3) { status.textContent = 'Stable. Unconscious until healed or 1d4 hours pass.'; status.classList.add('stable'); }
+      else if (ds.s > 0 || ds.f > 0) status.textContent = `${ds.s} success${ds.s===1?'':'es'}, ${ds.f} failure${ds.f===1?'':'s'}`;
+      else status.textContent = 'Roll a death save on your turn (d20).';
+    }
+  }
+
+  function renderConditionsStrip() {
+    const strip = document.getElementById('conditions-strip');
+    if (!strip) return;
+    strip.innerHTML = '';
+    const currentRound = (STATE.initiative && STATE.initiative.active) ? STATE.initiative.round : null;
+    // Auto-expire conditions whose until_round has passed
+    if (currentRound != null) {
+      const before = CHAR_POPUP.conditions.length;
+      CHAR_POPUP.conditions = CHAR_POPUP.conditions.filter(c => c.until_round == null || c.until_round >= currentRound);
+      if (CHAR_POPUP.conditions.length !== before) scheduleSavePlayer();
+    }
+    CHAR_POPUP.conditions.forEach(c => {
+      const def = D5E_CONDITIONS[c.key];
+      if (!def) return;
+      const chip = document.createElement('div');
+      chip.className = 'cond-chip';
+      chip.style.setProperty('--cond-color', def.color);
+      chip.title = `${def.name}: ${def.desc}`;
+      const roundsLeft = (c.until_round != null && currentRound != null) ? (c.until_round - currentRound + 1) : null;
+      chip.innerHTML = `<span class="cond-code">${def.code}</span><span>${def.name}</span>${roundsLeft != null ? ` <span style="opacity:0.7">${roundsLeft}r</span>` : ''}`;
+      strip.appendChild(chip);
+    });
+    if (CHAR_POPUP.exhaustionLevel > 0) {
+      const def = D5E_CONDITIONS.exhaustion;
+      const chip = document.createElement('div');
+      chip.className = 'cond-chip';
+      chip.style.setProperty('--cond-color', def.color);
+      chip.title = `${def.name} level ${CHAR_POPUP.exhaustionLevel}: ${def.desc}`;
+      chip.innerHTML = `<span class="cond-code">${def.code}${CHAR_POPUP.exhaustionLevel}</span><span>Exhaustion ${CHAR_POPUP.exhaustionLevel}</span>`;
+      strip.appendChild(chip);
+    }
+  }
+
+  function renderConditionsTab() {
+    const grid = document.getElementById('conditions-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+    const currentRound = (STATE.initiative && STATE.initiative.active) ? STATE.initiative.round : null;
+    Object.keys(D5E_CONDITIONS).forEach(key => {
+      if (key === 'exhaustion') return; // handled separately
+      const def = D5E_CONDITIONS[key];
+      const active = CHAR_POPUP.conditions.find(c => c.key === key);
+      const btn = document.createElement('button');
+      btn.className = 'cond-toggle' + (active ? ' on' : '');
+      btn.dataset.key = key;
+      btn.style.setProperty('--cond-color', def.color);
+      btn.disabled = !canEdit;
+      const roundsLeft = (active && active.until_round != null && currentRound != null) ? (active.until_round - currentRound + 1) : null;
+      btn.innerHTML = `
+        <span class="cond-icon">${def.code}</span>
+        <span class="cond-info">
+          <span class="cond-name">${def.name}</span>${roundsLeft != null ? `<span class="cond-rounds">${roundsLeft}r</span>` : ''}
+        </span>
+      `;
+      btn.title = def.desc + (canEdit ? '\n\nClick to toggle.' : '');
+      grid.appendChild(btn);
+    });
+    // Exhaustion pips
+    const exhRow = document.getElementById('exhaustion-row');
+    if (exhRow) {
+      exhRow.querySelectorAll('.exh-pip').forEach(pip => {
+        const lv = parseInt(pip.dataset.level);
+        pip.classList.toggle('on', lv <= CHAR_POPUP.exhaustionLevel);
+        pip.classList.toggle('level-6', lv === 6 && CHAR_POPUP.exhaustionLevel === 6);
+        pip.disabled = !canEdit;
+      });
+    }
+    const exhEffect = document.getElementById('exhaustion-effect');
+    if (exhEffect) {
+      const lv = CHAR_POPUP.exhaustionLevel;
+      if (lv === 0) exhEffect.textContent = '';
+      else if (lv === 6) exhEffect.textContent = 'Death (5.5e level 6).';
+      else exhEffect.textContent = `5.5e: −${lv * 2} penalty on every d20 test while exhausted.`;
+    }
+  }
+
   function openCharPopup(playerId, tokenId) {
     const player = STATE.persistedPlayers.find(p => p.id === playerId);
     if (!player) { toast('Character not found', 'error'); return; }
@@ -3450,6 +4388,12 @@
     catch (e) { CHAR_POPUP.equipment = {}; }
     if (typeof CHAR_POPUP.equipment !== 'object' || Array.isArray(CHAR_POPUP.equipment)) CHAR_POPUP.equipment = {};
     CHAR_POPUP.magic = parseMagicData(player.magic_data);
+    // 5.5e: Inspiration, death saves, conditions, exhaustion
+    CHAR_POPUP.inspiration = parseInt(player.inspiration) || 0;
+    CHAR_POPUP.deathSaves = parseDeathSaves(player.death_saves);
+    const condData = parseConditions(player.conditions);
+    CHAR_POPUP.conditions = condData.conditions;
+    CHAR_POPUP.exhaustionLevel = condData.exhaustionLevel;
     document.getElementById('char-gold').value = player.gold ?? 0;
     document.getElementById('char-silver').value = player.silver ?? 0;
     document.getElementById('char-copper').value = player.copper ?? 0;
@@ -3469,6 +4413,11 @@
     renderInventory(CHAR_POPUP.inventory);
     renderEquipment(CHAR_POPUP.equipment);
     renderMagic(CHAR_POPUP.magic);
+    // 5.5e renderers
+    renderInspiration();
+    renderDeathSaves();
+    renderConditionsStrip();
+    renderConditionsTab();
 
     // Set readonly/disabled state on all inputs based on permission. The
     // default behavior is "editable" - we only block when canEdit is false,
@@ -3566,6 +4515,9 @@
       inventory: JSON.stringify(CHAR_POPUP.inventory),
       equipment: JSON.stringify(CHAR_POPUP.equipment),
       magic_data: JSON.stringify(CHAR_POPUP.magic || emptyMagicData()),
+      inspiration: CHAR_POPUP.inspiration ? 1 : 0,
+      death_saves: serializeDeathSaves(CHAR_POPUP.deathSaves),
+      conditions: serializeConditions(CHAR_POPUP.conditions, CHAR_POPUP.exhaustionLevel),
     };
 
     await sb.from('vtt_players').update(patch).eq('id', CHAR_POPUP.targetPlayerId);
@@ -3697,7 +4649,147 @@
       scheduleSavePlayer();
     });
 
-    // Attack add
+    // Inspiration toggle (5.5e: a single boolean parıltı)
+    const inspBox = document.getElementById('char-inspiration-box');
+    if (inspBox) {
+      inspBox.addEventListener('click', () => {
+        const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+        if (!canEdit) return;
+        CHAR_POPUP.inspiration = CHAR_POPUP.inspiration ? 0 : 1;
+        renderInspiration();
+        scheduleSavePlayer();
+        toast(CHAR_POPUP.inspiration ? 'Heroic Inspiration granted ★' : 'Inspiration removed');
+      });
+    }
+
+    // Death save pips: clicking a pip toggles its state. Useful for the DM
+    // to manually correct after a wrong roll, or for the player to set state.
+    document.querySelectorAll('#death-saves-panel .ds-pip').forEach(pip => {
+      pip.addEventListener('click', () => {
+        const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+        if (!canEdit) return;
+        const kind = pip.dataset.kind;
+        const idx = parseInt(pip.dataset.idx);
+        const cur = kind === 's' ? CHAR_POPUP.deathSaves.s : CHAR_POPUP.deathSaves.f;
+        // Toggle: if this pip is filled, set count to idx; otherwise set count to idx+1
+        const newCount = (idx < cur) ? idx : idx + 1;
+        if (kind === 's') CHAR_POPUP.deathSaves.s = newCount;
+        else CHAR_POPUP.deathSaves.f = newCount;
+        renderDeathSaves();
+        scheduleSavePlayer();
+      });
+    });
+
+    // Roll a death save - automatically applies the result based on 5e rules:
+    //   1 = 2 failures, 2-9 = 1 failure, 10-19 = 1 success, 20 = wake at 1 HP
+    const dsRollBtn = document.getElementById('ds-roll-btn');
+    if (dsRollBtn) {
+      dsRollBtn.addEventListener('click', async () => {
+        const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+        if (!canEdit) return;
+        const roll = Math.floor(Math.random() * 20) + 1;
+        let msg;
+        if (roll === 20) {
+          // Natural 20: wake up at 1 HP. Find the token and heal it.
+          CHAR_POPUP.deathSaves = { s: 0, f: 0 };
+          const tok = Array.from(STATE.tokens.values()).find(t => t.owner_id === CHAR_POPUP.targetPlayerId);
+          if (tok) {
+            await sb.from('vtt_tokens').update({ current_hp: 1, updated_at: new Date().toISOString() }).eq('id', tok.id);
+            tok.current_hp = 1;
+          }
+          msg = `Death Save: ${roll} - Natural 20! Wake up at 1 HP!`;
+        } else if (roll === 1) {
+          CHAR_POPUP.deathSaves.f = Math.min(3, CHAR_POPUP.deathSaves.f + 2);
+          msg = `Death Save: ${roll} - Critical fail (2 failures)`;
+        } else if (roll <= 9) {
+          CHAR_POPUP.deathSaves.f = Math.min(3, CHAR_POPUP.deathSaves.f + 1);
+          msg = `Death Save: ${roll} - Failure`;
+        } else {
+          CHAR_POPUP.deathSaves.s = Math.min(3, CHAR_POPUP.deathSaves.s + 1);
+          msg = `Death Save: ${roll} - Success`;
+        }
+        renderDeathSaves();
+        scheduleSavePlayer();
+        // Log to chat for the table to see
+        try {
+          const player = STATE.persistedPlayers.find(p => p.id === CHAR_POPUP.targetPlayerId);
+          await sb.from('vtt_chat').insert({
+            id: genId(),
+            session_id: STATE.sessionId,
+            user_id: STATE.userId,
+            user_name: (player && player.name) || STATE.username,
+            is_host: STATE.isHost,
+            msg_type: 'system',
+            text: msg,
+            ts: nowTs(),
+          });
+        } catch (e) { /* ignore */ }
+      });
+    }
+    const dsResetBtn = document.getElementById('ds-reset-btn');
+    if (dsResetBtn) {
+      dsResetBtn.addEventListener('click', () => {
+        const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+        if (!canEdit) return;
+        CHAR_POPUP.deathSaves = { s: 0, f: 0 };
+        renderDeathSaves();
+        scheduleSavePlayer();
+      });
+    }
+
+    // Conditions tab toggles. Right-click sets a duration (rounds) for the condition.
+    document.getElementById('conditions-grid').addEventListener('click', (e) => {
+      const btn = e.target.closest('.cond-toggle');
+      if (!btn) return;
+      const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) return;
+      const key = btn.dataset.key;
+      const existing = CHAR_POPUP.conditions.findIndex(c => c.key === key);
+      if (existing >= 0) {
+        CHAR_POPUP.conditions.splice(existing, 1);
+      } else {
+        CHAR_POPUP.conditions.push({ key, until_round: null });
+      }
+      renderConditionsTab();
+      renderConditionsStrip();
+      renderTokens(); // refresh token badges
+      scheduleSavePlayer();
+    });
+    document.getElementById('conditions-grid').addEventListener('contextmenu', (e) => {
+      const btn = e.target.closest('.cond-toggle');
+      if (!btn) return;
+      e.preventDefault();
+      const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) return;
+      const key = btn.dataset.key;
+      const rounds = parseInt(prompt(`How many rounds should "${D5E_CONDITIONS[key].name}" last? (blank = until removed)`));
+      const currentRound = (STATE.initiative && STATE.initiative.active) ? STATE.initiative.round : 1;
+      const existing = CHAR_POPUP.conditions.find(c => c.key === key);
+      const until = isNaN(rounds) ? null : (currentRound + rounds - 1);
+      if (existing) existing.until_round = until;
+      else CHAR_POPUP.conditions.push({ key, until_round: until });
+      renderConditionsTab();
+      renderConditionsStrip();
+      renderTokens();
+      scheduleSavePlayer();
+    });
+
+    // Exhaustion pips
+    document.getElementById('exhaustion-row').addEventListener('click', (e) => {
+      const pip = e.target.closest('.exh-pip');
+      if (!pip) return;
+      const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) return;
+      const lv = parseInt(pip.dataset.level);
+      // Clicking the current level resets to 0; clicking a higher level sets to that level
+      CHAR_POPUP.exhaustionLevel = (lv === CHAR_POPUP.exhaustionLevel) ? lv - 1 : lv;
+      if (CHAR_POPUP.exhaustionLevel < 0) CHAR_POPUP.exhaustionLevel = 0;
+      renderConditionsTab();
+      renderConditionsStrip();
+      renderTokens();
+      scheduleSavePlayer();
+    });
+
     document.getElementById('attack-add-btn').addEventListener('click', () => {
       const name = document.getElementById('attack-add-name').value.trim();
       const bonus = document.getElementById('attack-add-bonus').value.trim();
@@ -4016,7 +5108,7 @@
       await sb.from('vtt_chat').delete().eq('session_id', sid);
       await sb.from('vtt_maps').delete().eq('session_id', sid);
       await sb.from('vtt_audio').delete().eq('session_id', sid);
-      await sb.from('vtt_sessions').update({ campaign_log: '', active_map_slot: 1 }).eq('id', sid);
+      await sb.from('vtt_sessions').update({ campaign_log: '', active_map_slot: 1, initiative: '{}' }).eq('id', sid);
       toast('Campaign wiped. Reloading...', 'success', 2000);
       setTimeout(() => location.reload(), 1500);
     } catch (e) {
@@ -5595,16 +6687,53 @@
     });
   }
 
+  // Returns conditions to display on a token. Combines plain conditions and
+  // exhaustion (with level). Auto-expired conditions are filtered out.
+  function getConditionsForToken(tok) {
+    if (!tok || !tok.owner_id) return [];
+    const player = STATE.persistedPlayers.find(p => p.id === tok.owner_id);
+    if (!player) return [];
+    const parsed = parseConditions(player.conditions);
+    const currentRound = (STATE.initiative && STATE.initiative.active) ? STATE.initiative.round : null;
+    const filtered = parsed.conditions.filter(c => c.until_round == null || (currentRound == null) || c.until_round >= currentRound);
+    const out = filtered.map(c => ({ key: c.key }));
+    if (parsed.exhaustionLevel > 0) out.push({ key: 'exhaustion', level: parsed.exhaustionLevel });
+    return out;
+  }
+
   async function rollDice(sides, count, mod, isPrivate) {
-    const advMode = STATE.advMode || 'normal';
+    let advMode = STATE.advMode || 'normal';
+    // 5.5e Heroic Inspiration: if the player has inspiration AND is rolling a
+    // single d20 with normal mode, automatically upgrade to advantage and
+    // consume the inspiration. (5.5e behavior - re-roll d20 once and keep higher)
+    let consumedInspiration = false;
+    const player = STATE.persistedPlayers.find(p => p.id === STATE.userId);
+    const playerHasInsp = player && parseInt(player.inspiration) === 1;
+    if (playerHasInsp && sides === 20 && count === 1 && advMode === 'normal') {
+      advMode = 'advantage';
+      consumedInspiration = true;
+    }
     const useAdv = (sides === 20 && count === 1 && advMode !== 'normal');
 
     // Apply active buffs - sum their flat modifiers into the roll total
     const activeBuffs = getActiveBuffsForUser();
     const buffMod = activeBuffs.reduce((s, b) => s + (parseInt(b.mod) || 0), 0);
-    const buffSummary = activeBuffs.length
+    let buffSummary = activeBuffs.length
       ? activeBuffs.map(b => `${b.name} ${b.mod>=0?'+':''}${b.mod}`).join(', ')
       : null;
+    if (consumedInspiration) {
+      buffSummary = (buffSummary ? buffSummary + '; ' : '') + 'Heroic Inspiration ★ (advantage)';
+      // Consume inspiration (set to 0)
+      try {
+        await sb.from('vtt_players').update({ inspiration: 0 }).eq('id', STATE.userId);
+        // Update local state too
+        if (player) player.inspiration = 0;
+        if (CHAR_POPUP.targetPlayerId === STATE.userId) {
+          CHAR_POPUP.inspiration = 0;
+          renderInspiration();
+        }
+      } catch (e) { /* ignore */ }
+    }
 
     let rolls = [];
     let total = 0;
