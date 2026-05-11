@@ -220,9 +220,12 @@
     width: 4000px; height: 4000px;
   }
   #maplayer { position: absolute; transform-origin: 0 0; }
-  #maplayer img { display: block; max-width: none; pointer-events: none; }
+  /* When the user zooms in on the map, browsers default to nearest-neighbor
+   * which makes everything look pixelated. We force high-quality interpolation
+   * so generated maps stay smooth even at high zoom. */
+  #maplayer img { display: block; max-width: none; pointer-events: none; image-rendering: auto; image-rendering: -webkit-optimize-contrast; }
   #tokenlayer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: 0 0; pointer-events: none; }
-  .map-token { position: absolute; width: 50px; height: 50px; border-radius: 50%; border: 3px solid var(--gold); background-size: cover; background-position: center; cursor: grab; box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3); pointer-events: auto; }
+  .map-token { position: absolute; width: 50px; height: 50px; border-radius: 50%; border: 3px solid var(--gold); background-size: cover; background-position: center; cursor: grab; box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3); pointer-events: auto; image-rendering: -webkit-optimize-contrast; }
   .map-token .token-x-btn { position: absolute; top: -7px; right: -7px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: white; border: 1.5px solid #1a1612; padding: 0; font-size: 12px; line-height: 1; cursor: pointer; opacity: 0; transition: opacity 0.12s, transform 0.12s; z-index: 3; box-shadow: 0 1px 4px rgba(0,0,0,0.6); }
   .map-token:hover .token-x-btn { opacity: 0.95; }
   .map-token .token-x-btn:hover { opacity: 1; transform: scale(1.18); }
@@ -817,6 +820,19 @@
   .chat-msg.private .priv-tag { color: var(--danger); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; }
   .chat-msg .ts { color: var(--muted); font-size: 11px; margin-left: 6px; }
   #chatinput { padding: 8px; border-top: 1px solid var(--border); display: flex; gap: 6px; }
+
+  /* DM whisper target picker - shown above chat input when host */
+  #chat-whisper-bar { display: flex; align-items: center; gap: 6px; padding: 5px 8px; background: rgba(212,165,116,0.08); border-top: 1px solid var(--gold-soft); font-size: 11px; }
+  #chat-whisper-bar.targeting { background: rgba(160,72,72,0.18); border-top-color: var(--danger); }
+  .cw-label { font-family: 'Cinzel', serif; color: var(--gold); letter-spacing: 0.06em; text-transform: uppercase; font-size: 10px; flex-shrink: 0; }
+  #chat-whisper-target { flex: 1; min-width: 0; padding: 3px 6px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; font-family: inherit; font-size: 11px; }
+  #chat-whisper-target:focus { outline: none; border-color: var(--gold); }
+  #chat-whisper-clear { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 1px 6px; border-radius: 3px; font-size: 12px; cursor: pointer; line-height: 1; }
+  #chat-whisper-clear:hover { color: var(--danger); border-color: var(--danger); }
+  /* Whispered messages style - private to/from a specific user, distinct from generic GM-private */
+  .chat-msg.whisper { background: rgba(160,72,72,0.10); border-left: 3px solid var(--danger); padding-left: 6px; }
+  .chat-msg.whisper .whisper-tag { color: var(--danger); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-family: 'Cinzel', serif; font-weight: 700; margin-right: 4px; }
+  .chat-msg.whisper .whisper-meta { color: var(--ember); font-style: italic; font-size: 11px; }
   #chatinput input { flex: 1; }
 
   /* DICE OVERLAY */
@@ -1223,6 +1239,13 @@
           </div>
         </div>
         <div id="chatlog"></div>
+        <div id="chat-whisper-bar" style="display:none">
+          <span class="cw-label">Send to:</span>
+          <select id="chat-whisper-target">
+            <option value="">Everyone (public)</option>
+          </select>
+          <button id="chat-whisper-clear" title="Reset to everyone">×</button>
+        </div>
         <div id="chatinput">
           <input type="text" id="chat-text" placeholder="Type a message...">
           <button id="chat-send">Send</button>
@@ -1517,10 +1540,18 @@
     <div class="field">
       <label>Type</label>
       <select id="imggen-type" style="width: 100%;">
-        <option value="map">Battle Map (1024×1024)</option>
-        <option value="character">Character Portrait (512×512)</option>
-        <option value="creature">Creature / Monster (512×512)</option>
-        <option value="item">Item / Object (512×512)</option>
+        <option value="map">Battle Map</option>
+        <option value="character">Character Portrait</option>
+        <option value="creature">Creature / Monster</option>
+        <option value="item">Item / Object</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Speed vs Quality</label>
+      <select id="imggen-mode" style="width: 100%;">
+        <option value="fast">Fast (Turbo · 4-8s, lower detail)</option>
+        <option value="balanced" selected>Balanced (Flux · 10-20s, sharp)</option>
+        <option value="hires">Hi-Res Map (Flux 2048 · 25-45s, very sharp)</option>
       </select>
     </div>
     <div class="field">
@@ -2124,8 +2155,12 @@
           const canvas = document.createElement('canvas');
           canvas.width = w; canvas.height = h;
           const ctx = canvas.getContext('2d');
+          // Enable high-quality interpolation - default browser smoothing can be coarse
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, w, h);
-          canvas.toBlob((blob) => resolve({ blob, width: w, height: h }), 'image/jpeg', 0.85);
+          // Higher JPEG quality (was 0.85, now 0.92) - small file size hit, much sharper
+          canvas.toBlob((blob) => resolve({ blob, width: w, height: h }), 'image/jpeg', 0.92);
         };
         img.onerror = reject;
         img.src = e.target.result;
@@ -2526,6 +2561,8 @@
     setupInitiativeControls();
     // Initial initiative render (in case combat is in progress from a previous session)
     renderInitiative();
+    // Whisper bar (DM only, but the function checks for that itself)
+    setupWhisperBar();
   }
 
   // ============ SIDE BAR RESIZERS ============
@@ -3436,8 +3473,9 @@
 
   function handleChatInsert(payload) {
     const msg = payload.new;
-    // Skip private messages for non-host (RLS would be better but we filter client-side)
-    if (msg.is_private && !STATE.isHost && msg.user_id !== STATE.userId) return;
+    // Privacy check: a private message is visible to (a) the DM, (b) its sender,
+    // (c) the target user if target_user_id is set. Everyone else skips it.
+    if (msg.is_private && !canSeePrivateMsg(msg)) return;
 
     if (msg.msg_type === 'roll') {
       // Roll: defer the chat row until the dice settle so the result isn't spoiled.
@@ -3645,32 +3683,59 @@
   }
 
   function renderChatMessage(msg, opts = {}) {
-    if (msg.is_private && !STATE.isHost && msg.user_id !== STATE.userId) return;
+    if (msg.is_private && !canSeePrivateMsg(msg)) return;
 
     const log = document.getElementById('chatlog');
     // Dedup: don't render the same message twice
     if (log.querySelector(`.chat-msg[data-id="${msg.id}"]`)) return;
 
+    const isWhisper = !!(msg.is_private && msg.target_user_id);
     const div = document.createElement('div');
-    div.className = 'chat-msg' + (msg.is_private ? ' private' : '');
+    div.className = 'chat-msg' + (msg.is_private ? ' private' : '') + (isWhisper ? ' whisper' : '');
     div.dataset.id = msg.id;
+
+    // For whispers, show a "to X" or "from X" badge based on who's viewing
+    let whisperBadge = '';
+    if (isWhisper) {
+      const target = STATE.persistedPlayers.find(p => p.id === msg.target_user_id);
+      const targetName = target ? target.name : 'someone';
+      if (msg.user_id === STATE.userId) {
+        // I sent it - show "to X"
+        whisperBadge = `<span class="whisper-tag">whisper to</span><span class="whisper-meta">${escapeHtml(targetName)}</span> `;
+      } else if (msg.target_user_id === STATE.userId) {
+        // I'm the recipient - show "from X"
+        whisperBadge = `<span class="whisper-tag">whisper from DM</span> `;
+      } else {
+        // DM looking at a third-party whisper
+        whisperBadge = `<span class="whisper-tag">whisper</span><span class="whisper-meta">${escapeHtml(msg.user_name)} → ${escapeHtml(targetName)}</span> `;
+      }
+    }
 
     if (msg.msg_type === 'system') {
       div.innerHTML = `<span style="color:var(--muted); font-style:italic">${escapeHtml(msg.text)}</span> <span class="ts">${msg.ts || ''}</span>`;
     } else if (msg.msg_type === 'roll') {
       const userCls = msg.is_host ? 'user host' : 'user';
-      const privTag = msg.is_private ? '<span class="priv-tag">[GM]</span> ' : '';
+      const privTag = (msg.is_private && !isWhisper) ? '<span class="priv-tag">[GM]</span> ' : '';
       const rolls = (msg.rolls || []).map(r => `<span class="roll-result">${r}</span>`).join('');
       const mod = msg.modifier || 0;
       const modText = mod !== 0 ? ` ${mod > 0 ? '+' : ''}${mod}` : '';
       const buffLine = msg.text ? `<div class="roll-buffs">${escapeHtml(msg.text)}</div>` : '';
-      div.innerHTML = `${privTag}<span class="${userCls}">${escapeHtml(msg.user_name)}</span> rolled <b>${msg.dice_count}d${msg.sides}${modText}</b> ${rolls} = <span class="roll-total">${msg.total}</span> <span class="ts">${msg.ts || ''}</span>${buffLine}`;
+      div.innerHTML = `${whisperBadge}${privTag}<span class="${userCls}">${escapeHtml(msg.user_name)}</span> rolled <b>${msg.dice_count}d${msg.sides}${modText}</b> ${rolls} = <span class="roll-total">${msg.total}</span> <span class="ts">${msg.ts || ''}</span>${buffLine}`;
     } else {
       const userCls = msg.is_host ? 'user host' : 'user';
-      div.innerHTML = `<span class="${userCls}">${escapeHtml(msg.user_name)}:</span> ${escapeHtml(msg.text)} <span class="ts">${msg.ts || ''}</span>`;
+      div.innerHTML = `${whisperBadge}<span class="${userCls}">${escapeHtml(msg.user_name)}:</span> ${escapeHtml(msg.text)} <span class="ts">${msg.ts || ''}</span>`;
     }
     log.appendChild(div);
     log.scrollTop = log.scrollHeight;
+  }
+
+  // Whisper visibility rule: visible to sender, recipient, and the DM.
+  function canSeePrivateMsg(msg) {
+    if (!msg.is_private) return true;
+    if (STATE.isHost) return true;
+    if (msg.user_id === STATE.userId) return true;
+    if (msg.target_user_id && msg.target_user_id === STATE.userId) return true;
+    return false;
   }
 
   function renderPlayers() {
@@ -3680,8 +3745,6 @@
       const online = STATE.onlinePlayers.has(p.id);
       const item = document.createElement('div');
       item.className = 'player-item' + (p.is_host ? ' host-item' : '') + (online ? '' : ' offline');
-      // Anyone can click a non-host player name to open their character sheet.
-      // For non-hosts, only their own name opens (others would be read-only anyway).
       const canOpen = !p.is_host && (STATE.isHost || p.id === STATE.userId);
       if (canOpen) {
         item.classList.add('clickable');
@@ -3693,6 +3756,38 @@
       }
       list.appendChild(item);
     });
+    // Refresh whisper target dropdown so DM can pick newly-joined players
+    refreshWhisperTargets();
+  }
+
+  // Rebuilds the whisper target <select>.
+  //   DM sees: every player by name as a whisper target.
+  //   Players see: only "Whisper to DM" (and public).
+  function refreshWhisperTargets() {
+    const sel = document.getElementById('chat-whisper-target');
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">Everyone (public)</option>';
+    if (STATE.isHost) {
+      STATE.persistedPlayers
+        .filter(p => !p.is_host && p.id !== STATE.userId)
+        .forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = `Whisper to ${p.name}`;
+          sel.appendChild(opt);
+        });
+    } else {
+      const host = STATE.persistedPlayers.find(p => p.is_host);
+      if (host) {
+        const opt = document.createElement('option');
+        opt.value = host.id;
+        opt.textContent = `Whisper to DM (${host.name})`;
+        sel.appendChild(opt);
+      }
+    }
+    if (prev && Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
+    sel.parentElement.classList.toggle('targeting', !!sel.value);
   }
 
   // ============ HP SYSTEM ============
@@ -6597,13 +6692,15 @@
 
   // ============ IMAGE GENERATION (Pollinations.ai) ============
   const IMG_GEN_PROMPTS = {
-    map: 'top-down dnd battle map, ',
-    character: 'fantasy character portrait, ',
-    creature: 'fantasy creature monster, full body, ',
-    item: 'fantasy item icon, transparent background, ',
+    // Map prompt is heavily tuned: top-down orthographic, high detail, sharp lines,
+    // square aspect ratio for grid use. The "no characters" tail keeps the map clean.
+    map: 'top-down orthographic dnd battle map, high detail, sharp lines, dungeon tiles, fantasy cartography, intricate textures, no characters, no tokens, no text, ',
+    character: 'fantasy character portrait, detailed face, high quality, ',
+    creature: 'fantasy creature monster, full body, dynamic pose, detailed, ',
+    item: 'fantasy item icon, transparent background, high detail, ',
   };
 
-  let imgGenState = { type: 'map', prompt: '', url: '', seed: 0 };
+  let imgGenState = { type: 'map', mode: 'balanced', prompt: '', url: '', seed: 0 };
 
   document.getElementById('imggen-btn').addEventListener('click', () => {
     document.getElementById('imggen-popup').classList.add('active');
@@ -6612,12 +6709,26 @@
   document.getElementById('imggen-close').addEventListener('click', () => {
     document.getElementById('imggen-popup').classList.remove('active');
   });
+  // When the user picks a type, suggest a sensible default speed mode.
+  // Characters/items/creatures lean fast; maps lean balanced.
+  document.getElementById('imggen-type').addEventListener('change', (e) => {
+    const modeSel = document.getElementById('imggen-mode');
+    if (!modeSel) return;
+    if (e.target.value === 'character' || e.target.value === 'item') {
+      modeSel.value = 'fast';
+    } else if (e.target.value === 'map') {
+      modeSel.value = 'balanced';
+    } else if (e.target.value === 'creature') {
+      modeSel.value = 'balanced';
+    }
+  });
 
   document.getElementById('imggen-go').addEventListener('click', () => {
     const type = document.getElementById('imggen-type').value;
+    const mode = document.getElementById('imggen-mode').value;
     const promptText = document.getElementById('imggen-prompt').value.trim();
     if (!promptText) { toast('Enter a prompt first', 'error'); return; }
-    imgGenState = { type, prompt: promptText, seed: Math.floor(Math.random() * 1000000) };
+    imgGenState = { type, mode, prompt: promptText, seed: Math.floor(Math.random() * 1000000) };
     runImgGen();
   });
   document.getElementById('imggen-regen').addEventListener('click', () => {
@@ -6627,13 +6738,35 @@
 
   function runImgGen() {
     const fullPrompt = IMG_GEN_PROMPTS[imgGenState.type] + imgGenState.prompt;
-    const dims = imgGenState.type === 'map' ? { w: 1024, h: 1024 } : { w: 512, h: 512 };
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=${dims.w}&height=${dims.h}&seed=${imgGenState.seed}&nologo=true`;
+    // Mode determines model + resolution. Turbo is much faster but lower fidelity,
+    // good for character portraits and quick iterations. Flux is the default for
+    // balanced quality. Hi-Res Map cranks size to 2048 with flux for sharp battlemaps.
+    const mode = imgGenState.mode || 'balanced';
+    let model = 'flux';
+    let w = 1024, h = 1024;
+    let loadingText = 'Generating (10-20s)...';
+    if (mode === 'fast') {
+      model = 'turbo';
+      w = h = (imgGenState.type === 'map') ? 1024 : 768;
+      loadingText = 'Generating (turbo, 4-8s)...';
+    } else if (mode === 'hires') {
+      model = 'flux';
+      w = h = (imgGenState.type === 'map') ? 2048 : 1024;
+      loadingText = 'Generating hi-res (25-45s)...';
+    } else {
+      // balanced
+      model = 'flux';
+      w = h = (imgGenState.type === 'map') ? 1536 : 1024;
+    }
+    // enhance=true rewrites prompts for better composition. Skip on turbo - it
+    // can slow turbo down and the gain is smaller at lower fidelity.
+    const enhanceParam = (mode === 'fast') ? '' : '&enhance=true';
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=${w}&height=${h}&seed=${imgGenState.seed}&model=${model}&nologo=true${enhanceParam}`;
     imgGenState.url = url;
     const img = document.getElementById('imggen-img');
     img.style.display = 'none';
     document.getElementById('imggen-loading').style.display = 'block';
-    document.getElementById('imggen-loading').textContent = 'Generating...';
+    document.getElementById('imggen-loading').textContent = loadingText;
     document.getElementById('imggen-preview').style.display = 'block';
     document.getElementById('imggen-actions').style.display = 'none';
     document.getElementById('imggen-status').style.display = 'none';
@@ -6641,7 +6774,6 @@
       img.style.display = 'block';
       document.getElementById('imggen-loading').style.display = 'none';
       document.getElementById('imggen-actions').style.display = 'flex';
-      // Save to library on successful generation
       libraryAdd({
         url: imgGenState.url,
         type: imgGenState.type,
@@ -6650,7 +6782,7 @@
       });
     };
     img.onerror = () => {
-      document.getElementById('imggen-loading').textContent = 'Generation failed. Try a different prompt.';
+      document.getElementById('imggen-loading').textContent = 'Generation failed. Try a different prompt or speed setting.';
     };
     img.src = url;
   }
@@ -7781,6 +7913,36 @@
     if (e.key === 'Enter') sendChat();
   });
 
+  // Whisper bar: DM gets a full player list. Players get a single "Whisper to DM"
+  // toggle so they can reply privately. The bar is hidden if neither applies
+  // (e.g. there's no DM online and the user is a player).
+  function setupWhisperBar() {
+    const bar = document.getElementById('chat-whisper-bar');
+    if (!bar) return;
+    bar.style.display = 'flex';
+    const sel = document.getElementById('chat-whisper-target');
+    const inp = document.getElementById('chat-text');
+    refreshWhisperTargets();
+    sel.addEventListener('change', () => {
+      const target = sel.value;
+      bar.classList.toggle('targeting', !!target);
+      if (target) {
+        if (STATE.isHost) {
+          const p = STATE.persistedPlayers.find(p => p.id === target);
+          inp.placeholder = `Whisper to ${p ? p.name : '...'}`;
+        } else {
+          inp.placeholder = 'Whisper to DM (private)';
+        }
+      } else {
+        inp.placeholder = 'Type a message...';
+      }
+    });
+    document.getElementById('chat-whisper-clear').addEventListener('click', () => {
+      sel.value = '';
+      sel.dispatchEvent(new Event('change'));
+    });
+  }
+
   async function sendChat() {
     const inp = document.getElementById('chat-text');
     const text = inp.value.trim();
@@ -7788,6 +7950,10 @@
     inp.value = '';
     const id = genId();
     STATE.myMsgIds.add(id);
+    // Whisper target: only the DM can pick a target. Players always send public.
+    const targetSel = document.getElementById('chat-whisper-target');
+    const targetUserId = (STATE.isHost && targetSel) ? targetSel.value : '';
+    const isWhisper = !!targetUserId;
     const msg = {
       id,
       session_id: STATE.sessionId,
@@ -7797,13 +7963,26 @@
       is_host: STATE.isHost,
       text,
       ts: nowTs(),
+      is_private: isWhisper,
+      target_user_id: targetUserId || null,
     };
     renderChatMessage(msg);
     const { error } = await sb.from('vtt_chat').insert(msg);
-    if (error) { console.error(error); toast('Message failed', 'error'); }
-    // DM rule check (after send so the message is logged anyway - the warning
-    // is a reminder, not a block). DM is exempted.
-    if (!STATE.isHost) scanForRuleViolation(text);
+    if (error) {
+      console.error(error);
+      // If the target_user_id column doesn't exist yet, retry without it
+      if (error.message && error.message.toLowerCase().includes('target_user_id')) {
+        delete msg.target_user_id;
+        msg.is_private = false;
+        const retry = await sb.from('vtt_chat').insert(msg);
+        if (retry.error) toast('Message failed', 'error');
+        else toast('Whisper sent as public (schema not migrated)', 'error');
+      } else {
+        toast('Message failed', 'error');
+      }
+    }
+    // DM rule check on public player messages only
+    if (!STATE.isHost && !isWhisper) scanForRuleViolation(text);
   }
 
   // Chat box drag - disabled because chatbox now lives inside the docked right
