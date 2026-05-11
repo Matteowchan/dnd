@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>D&D Virtual Tabletop</title>
+<title>Mert's D&D World</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
@@ -170,6 +170,30 @@
   .upload-box input { display: none; }
 
   /* DICE PANEL */
+  /* Decorative dice illustration above the buttons, plus the dice-set picker */
+  .dice-hero { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: -4px 0 10px; padding: 8px 10px; background: linear-gradient(135deg, rgba(212,165,116,0.07) 0%, transparent 100%); border: 1px solid var(--border); border-radius: 6px; }
+  .dice-hero-svg { flex: 0 0 100px; height: 50px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); }
+  .dice-set-btn { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 10px; background: var(--bg); border: 1px solid var(--gold-soft); color: var(--cream); cursor: pointer; border-radius: 4px; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; transition: background 0.15s, border-color 0.15s; }
+  .dice-set-btn:hover { background: var(--panel-light); border-color: var(--gold); }
+  .dice-set-current { color: var(--gold); font-weight: 700; }
+  .dice-set-arrow { color: var(--gold-soft); font-size: 10px; }
+
+  /* Dice set picker popup */
+  #dice-set-popup { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); width: 520px; max-width: 90vw; max-height: 82vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  #dice-set-popup.active { display: flex; }
+  #dice-set-popup .char-popup-body { padding: 14px; overflow-y: auto; }
+  .dice-set-hint { font-size: 11px; color: var(--muted); font-style: italic; margin-bottom: 10px; line-height: 1.5; }
+  .dice-set-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .dice-set-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; cursor: pointer; transition: border-color 0.15s, background 0.15s, transform 0.12s; }
+  .dice-set-card:hover { border-color: var(--gold-soft); background: var(--panel-light); transform: translateY(-2px); }
+  .dice-set-card.active { border-color: var(--gold); background: rgba(212,175,55,0.08); box-shadow: 0 0 12px rgba(212,175,55,0.18); }
+  .dice-set-preview { display: flex; gap: 4px; align-items: center; }
+  .dice-set-preview .dp { width: 24px; height: 24px; border-radius: 3px; border: 1px solid var(--border); }
+  .dice-set-preview .dp.d20 { width: 30px; height: 30px; border-radius: 50%; }
+  .dice-set-name { font-family: 'Cinzel', serif; font-size: 12px; color: var(--cream); letter-spacing: 0.05em; }
+  .dice-set-card.active .dice-set-name { color: var(--gold); }
+  .dice-set-desc { font-size: 10px; color: var(--muted); text-align: center; font-style: italic; line-height: 1.35; }
+
   .dice-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
   .dice-btn { padding: 10px 4px; font-size: 13px; font-family: 'Cinzel', serif; letter-spacing: 0.05em; }
   .dice-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
@@ -702,7 +726,7 @@
 
 <div id="login">
   <div class="login-card">
-    <h1>D&D Virtual Tabletop</h1>
+    <h1>Mert's D&D World</h1>
     <div class="sub">Choose your role to begin</div>
 
     <div class="role-tabs">
@@ -750,7 +774,7 @@
   <div id="demo-banner" style="display:none"><b>DEMO MODE</b> &nbsp;·&nbsp; Single user, no multiplayer sync. Configure Supabase to enable real-time.</div>
   <div id="topbar">
     <div class="topbar-left">
-      <div class="brand">D&D Virtual Tabletop</div>
+      <div class="brand">Mert's D&D World</div>
       <div class="session-info">Session: <b id="session-code-display" title="Click to copy"></b></div>
       <span class="role-badge" id="role-badge"></span>
       <span style="font-size: 13px; color: var(--muted)">|</span>
@@ -806,6 +830,35 @@
 
       <div class="panel-section">
         <h3>Roll Dice</h3>
+        <div class="dice-hero">
+          <svg viewBox="0 0 120 60" class="dice-hero-svg" aria-hidden="true">
+            <defs>
+              <linearGradient id="dh-d4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f4d590"/><stop offset="100%" stop-color="#8a6535"/></linearGradient>
+              <linearGradient id="dh-d6" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#e8dcc4"/><stop offset="100%" stop-color="#6b4a25"/></linearGradient>
+              <linearGradient id="dh-d20" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffd87a"/><stop offset="100%" stop-color="#8a6a2e"/></linearGradient>
+            </defs>
+            <!-- d20 (icosahedron silhouette) -->
+            <polygon points="60,8 78,22 78,42 60,56 42,42 42,22" fill="url(#dh-d20)" stroke="#6b4a25" stroke-width="1.5"/>
+            <polygon points="60,8 78,22 60,28 42,22" fill="rgba(255,255,255,0.18)"/>
+            <polygon points="60,56 78,42 60,36 42,42" fill="rgba(0,0,0,0.18)"/>
+            <text x="60" y="36" text-anchor="middle" font-family="Cinzel, serif" font-weight="700" font-size="14" fill="#1a1612">20</text>
+            <!-- d6 cube on left -->
+            <g transform="translate(20, 18)">
+              <polygon points="0,8 12,2 24,8 24,22 12,28 0,22" fill="url(#dh-d6)" stroke="#6b4a25" stroke-width="1.2"/>
+              <polygon points="0,8 12,2 24,8 12,14" fill="rgba(255,255,255,0.25)"/>
+              <text x="12" y="22" text-anchor="middle" font-family="Cinzel, serif" font-weight="700" font-size="9" fill="#1a1612">6</text>
+            </g>
+            <!-- d4 triangle on right -->
+            <g transform="translate(86, 28)">
+              <polygon points="10,0 20,18 0,18" fill="url(#dh-d4)" stroke="#6b4a25" stroke-width="1.2"/>
+              <text x="10" y="15" text-anchor="middle" font-family="Cinzel, serif" font-weight="700" font-size="8" fill="#1a1612">4</text>
+            </g>
+          </svg>
+          <button id="dice-set-btn" class="dice-set-btn" title="Choose your dice style">
+            <span class="dice-set-current" id="dice-set-current-label">Default</span>
+            <span class="dice-set-arrow">▾</span>
+          </button>
+        </div>
         <div class="dice-row">
           <label>Count</label>
           <input type="number" id="dice-count" value="1" min="1" max="20">
@@ -1192,6 +1245,17 @@
       <div id="imggen-library-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-height: 240px; overflow-y: auto;"></div>
       <div id="imggen-library-empty" style="font-size: 12px; color: var(--muted); text-align: center; padding: 10px;">No saved images yet. Generated images appear here.</div>
     </div>
+  </div>
+</div>
+
+<div id="dice-set-popup">
+  <div class="char-popup-header">
+    <span class="ttl">Choose Your Dice Set</span>
+    <button id="dice-set-close">×</button>
+  </div>
+  <div class="char-popup-body">
+    <div class="dice-set-hint">Each set restyles every die you roll. Inspired by real D&amp;D resin and metal sets.</div>
+    <div id="dice-set-grid" class="dice-set-grid"></div>
   </div>
 </div>
 
@@ -1587,10 +1651,45 @@
     }
     return rgbToHex(rgb);
   }
-  // Build a dice palette from a base color (or fall back to classic gold)
+  // ============ DICE SETS ============
+  // Players pick from a curated list of dice "sets" inspired by popular real-world
+  // resin and metal D&D dice. When a set is chosen, its palette is used instead
+  // of the class-based color.
+  const DICE_SETS = [
+    { id: 'classic',    name: 'Classic Ivory',   desc: 'Warm cream resin, traditional D&D feel',  light: '#fcefc7', mid: '#d8b56b', dark: '#7a5520', stroke: '#3d2c12' },
+    { id: 'obsidian',   name: 'Obsidian Gold',   desc: 'Jet black with luminous gold numerals',   light: '#6b6359', mid: '#2a2520', dark: '#0e0a06', stroke: '#d4a574' },
+    { id: 'crystal',    name: 'Crystal Sapphire',desc: 'Translucent blue, glints of magic',       light: '#9ad6ff', mid: '#3b87cf', dark: '#0e3b6a', stroke: '#062648' },
+    { id: 'bloodstone', name: 'Bloodstone',      desc: 'Deep crimson veined with dark iron',      light: '#f3a09a', mid: '#a02828', dark: '#5a0e0e', stroke: '#2e0606' },
+    { id: 'forest',     name: 'Forest Druid',    desc: 'Mossy greens, dappled woodland',          light: '#bce0a0', mid: '#5b8a3a', dark: '#274015', stroke: '#0e1e08' },
+    { id: 'arcane',     name: 'Arcane Geode',    desc: 'Mystic purple with crystalline shimmer',  light: '#d7b2ef', mid: '#7c3fbf', dark: '#3a1265', stroke: '#1a0438' },
+    { id: 'bone',       name: 'Bone Skull',      desc: 'Aged ivory with bone-pale highlights',    light: '#f5ecd6', mid: '#a89a72', dark: '#5d5031', stroke: '#2a200d' },
+    { id: 'gold',       name: 'Royal Gold',      desc: 'Polished metal, weighty and regal',       light: '#ffe89c', mid: '#c69a2e', dark: '#7a5612', stroke: '#3d2807' },
+    { id: 'silver',     name: 'Mithril Silver',  desc: 'Cool metallic, dwarven craftsmanship',    light: '#e4e6ea', mid: '#9aa3ad', dark: '#4b545e', stroke: '#21262c' },
+    { id: 'nocturne',   name: 'Nocturne',        desc: 'Midnight sky scattered with starlight',   light: '#7a86bf', mid: '#2d3358', dark: '#0c0e22', stroke: '#040515' },
+    { id: 'ember',      name: 'Ember Flame',     desc: 'Smoldering orange and ash',               light: '#ffc480', mid: '#e0651a', dark: '#7d2a05', stroke: '#3a1003' },
+    { id: 'aqua',       name: 'Cirrus Aqua',     desc: 'Ocean swirls of teal and white',          light: '#bfeae0', mid: '#3aa697', dark: '#0e4d44', stroke: '#062a23' },
+  ];
+  const DICE_SET_LS_KEY = 'vtt_dice_set_v1';
+  function getDiceSetById(id) { return DICE_SETS.find(s => s.id === id); }
+  // Map userId → diceSetId. Each player picks for themselves, and the choice is
+  // visible to the other clients via the in-memory STATE.persistedPlayers row.
+  function diceSetIdForUserId(userId) {
+    if (userId === STATE.userId) {
+      try { return localStorage.getItem(DICE_SET_LS_KEY); } catch (e) { return null; }
+    }
+    const p = STATE.persistedPlayers.find(p => p.id === userId);
+    return p && p.dice_set;
+  }
+
+  // Build a dice palette: prefer the user's explicit dice set, else fall back to
+  // their class color, else a classic gold.
   function dicePaletteForUserId(userId) {
+    const setId = diceSetIdForUserId(userId);
+    if (setId) {
+      const s = getDiceSetById(setId);
+      if (s) return { base: s.mid, light: s.light, mid: s.mid, dark: s.dark, stroke: s.stroke };
+    }
     let cls = null;
-    // Prefer the in-memory class for the current user (loaded faster than DB)
     if (userId === STATE.userId && STATE.playerClass) {
       cls = STATE.playerClass;
     } else {
@@ -1991,6 +2090,8 @@
     setupFontSizeSelector();
     // Hook up the light/dark theme toggle
     setupThemeToggle();
+    // Hook up the dice set picker (player-customizable dice palette)
+    setupDiceSetPicker();
   }
 
   // ============ SIDE BAR RESIZERS ============
@@ -2095,6 +2196,72 @@
         document.addEventListener('mouseup', onUp);
       });
     }
+  }
+
+  // ============ DICE SET PICKER ============
+  // Renders the picker grid and wires up selection. Persists the choice in
+  // localStorage AND on the player's DB row so others see the right palette.
+  function setupDiceSetPicker() {
+    const grid = document.getElementById('dice-set-grid');
+    if (!grid) return;
+    const current = (() => { try { return localStorage.getItem(DICE_SET_LS_KEY) || ''; } catch (e) { return ''; } })();
+    updateDiceSetLabel(current);
+    grid.innerHTML = '';
+    // Always-available "Default" card uses the class palette
+    const def = document.createElement('button');
+    def.className = 'dice-set-card' + (!current ? ' active' : '');
+    def.dataset.set = '';
+    def.innerHTML = `
+      <div class="dice-set-preview">
+        <span class="dp" style="background:linear-gradient(135deg,#f4d590,#8a6535)"></span>
+        <span class="dp d20" style="background:linear-gradient(135deg,#e8dcc4,#6b4a25)"></span>
+        <span class="dp" style="background:linear-gradient(135deg,#ffd87a,#7a5612)"></span>
+      </div>
+      <div class="dice-set-name">Default</div>
+      <div class="dice-set-desc">Matches your class color</div>
+    `;
+    grid.appendChild(def);
+    DICE_SETS.forEach(s => {
+      const card = document.createElement('button');
+      card.className = 'dice-set-card' + (current === s.id ? ' active' : '');
+      card.dataset.set = s.id;
+      card.innerHTML = `
+        <div class="dice-set-preview">
+          <span class="dp" style="background:linear-gradient(135deg,${s.light},${s.dark});border-color:${s.stroke};"></span>
+          <span class="dp d20" style="background:linear-gradient(135deg,${s.light},${s.mid} 60%,${s.dark});border-color:${s.stroke};"></span>
+          <span class="dp" style="background:linear-gradient(135deg,${s.mid},${s.dark});border-color:${s.stroke};"></span>
+        </div>
+        <div class="dice-set-name">${escapeHtml(s.name)}</div>
+        <div class="dice-set-desc">${escapeHtml(s.desc)}</div>
+      `;
+      grid.appendChild(card);
+    });
+    grid.addEventListener('click', async (e) => {
+      const card = e.target.closest('.dice-set-card');
+      if (!card) return;
+      const id = card.dataset.set;
+      try { id ? localStorage.setItem(DICE_SET_LS_KEY, id) : localStorage.removeItem(DICE_SET_LS_KEY); } catch (e) {}
+      grid.querySelectorAll('.dice-set-card').forEach(c => c.classList.toggle('active', c === card));
+      updateDiceSetLabel(id);
+      try {
+        await sb.from('vtt_players').update({ dice_set: id || null }).eq('id', STATE.userId);
+      } catch (err) { /* dice_set column might not exist on legacy DBs - ignore */ }
+      document.getElementById('dice-set-popup').classList.remove('active');
+      toast(id ? `Dice set: ${getDiceSetById(id).name}` : 'Dice set: Default');
+    });
+    document.getElementById('dice-set-btn').addEventListener('click', () => {
+      document.getElementById('dice-set-popup').classList.add('active');
+    });
+    document.getElementById('dice-set-close').addEventListener('click', () => {
+      document.getElementById('dice-set-popup').classList.remove('active');
+    });
+  }
+  function updateDiceSetLabel(id) {
+    const label = document.getElementById('dice-set-current-label');
+    if (!label) return;
+    if (!id) { label.textContent = 'Default'; return; }
+    const s = getDiceSetById(id);
+    label.textContent = s ? s.name : 'Default';
   }
 
   // ============ THEME TOGGLE ============
