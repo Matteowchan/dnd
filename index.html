@@ -26,6 +26,22 @@
     --rb-w: 380px;
     --side-scale: 1;
     --rb-scale: 1;
+    /* Global app font-size scale (Normal=1, Large=1.18, XLarge=1.38) */
+    --app-scale: 1;
+  }
+  /* Light theme - parchment style. Toggled by adding .light to <html>. */
+  html.light {
+    --bg: #f0e7d4;
+    --panel: #f8efd9;
+    --panel-light: #ebe0c4;
+    --border: #c8b48a;
+    --gold: #8a6a2e;
+    --gold-soft: #b89055;
+    --cream: #2a221a;
+    --muted: #7a6a52;
+    --danger: #9a3a3a;
+    --success: #4a7a3a;
+    --ember: #c46a1a;
   }
   /* Class themes override --gold and --gold-soft when applied to <html> */
   html.theme-barbarian   { --gold: #D35400; --gold-soft: #8B1E1E; }
@@ -94,10 +110,23 @@
   .role-host { background: rgba(212,165,116,0.2); color: var(--gold); border: 1px solid var(--gold-soft); }
   .role-player { background: rgba(107,138,74,0.2); color: #a8c878; border: 1px solid var(--success); }
 
+  /* Font size selector - applies a global scale to UI text */
+  .font-size-group { display: flex; gap: 2px; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .font-size-btn { padding: 4px 10px; background: transparent; border: none; color: var(--cream); font-family: 'Cinzel', serif; cursor: pointer; transition: background 0.15s; font-weight: 700; }
+  .font-size-btn:nth-child(1) { font-size: 11px; }
+  .font-size-btn:nth-child(2) { font-size: 13px; }
+  .font-size-btn:nth-child(3) { font-size: 15px; }
+  .font-size-btn:hover { background: var(--panel-light); color: var(--gold); }
+  .font-size-btn.active { background: var(--gold); color: #1a1612; }
+
+  /* Theme toggle button - sun / moon icon */
+  .theme-toggle { width: 30px; height: 30px; padding: 0; background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--cream); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; }
+  .theme-toggle:hover { background: var(--panel-light); color: var(--gold); border-color: var(--gold-soft); }
+
   #main { flex: 1; display: flex; overflow: hidden; transition: padding-right 0.18s ease; }
 
   /* SIDE PANEL */
-  #sidepanel { width: var(--side-w, 280px); background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; position: relative; font-size: calc(13px * var(--side-scale, 1)); }
+  #sidepanel { width: var(--side-w, 280px); background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; position: relative; font-size: calc(13px * var(--side-scale, 1) * var(--app-scale, 1)); }
   /* Resizer strip - drag to resize, font inside the bar scales proportionally */
   .resizer { width: 8px; flex-shrink: 0; cursor: ew-resize; background: linear-gradient(90deg, transparent 0%, var(--gold-soft) 100%); opacity: 0.5; transition: opacity 0.15s, background 0.15s; position: relative; user-select: none; }
   .resizer:hover, .resizer.dragging { opacity: 1; background: linear-gradient(90deg, transparent 0%, var(--gold-soft) 40%, var(--gold) 100%); }
@@ -107,10 +136,10 @@
   body.resizing * { cursor: ew-resize !important; user-select: none !important; }
 
   /* Scale-aware sizing for elements inside the side panel */
-  #sidepanel h3 { font-size: calc(11px * var(--side-scale, 1)); }
-  #sidepanel button, #sidepanel input, #sidepanel select, #sidepanel textarea { font-size: calc(12px * var(--side-scale, 1)); }
-  #sidepanel .dice-btn { font-size: calc(14px * var(--side-scale, 1)); }
-  #sidepanel .player-name { font-size: calc(13px * var(--side-scale, 1)); }
+  #sidepanel h3 { font-size: calc(11px * var(--side-scale, 1) * var(--app-scale, 1)); }
+  #sidepanel button, #sidepanel input, #sidepanel select, #sidepanel textarea { font-size: calc(12px * var(--side-scale, 1) * var(--app-scale, 1)); }
+  #sidepanel .dice-btn { font-size: calc(14px * var(--side-scale, 1) * var(--app-scale, 1)); }
+  #sidepanel .player-name { font-size: calc(13px * var(--side-scale, 1) * var(--app-scale, 1)); }
   .panel-section { padding: 16px; border-bottom: 1px solid var(--border); }
   .panel-section h3 { font-size: 12px; color: var(--gold); margin-bottom: 12px; text-transform: uppercase; }
   .map-slots { display: flex; gap: 4px; margin-bottom: 10px; }
@@ -196,7 +225,7 @@
   #char-popup .char-vitals { padding: 10px 14px; border-bottom: 1px solid var(--border); }
 
   /* RIGHT BAR - dockable column on the right with Tools, HP, Char Info, Chat */
-  #right-bar { position: fixed; top: 56px; right: 0; bottom: 0; width: var(--rb-w, 380px); background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; z-index: 50; transition: transform 0.18s; font-size: calc(13px * var(--rb-scale, 1)); }
+  #right-bar { position: fixed; top: 56px; right: 0; bottom: 0; width: var(--rb-w, 380px); background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; z-index: 50; transition: transform 0.18s; font-size: calc(13px * var(--rb-scale, 1) * var(--app-scale, 1)); }
   body.right-bar-open #main { padding-right: var(--rb-w, 380px); }
   body.right-bar-open.right-bar-collapsed #main { padding-right: 0; }
   #right-bar.collapsed { transform: translateX(var(--rb-w, 380px)); }
@@ -206,11 +235,11 @@
   #right-bar .rb-resizer::after { content: ''; position: absolute; top: 50%; left: 3px; transform: translateY(-50%); width: 2px; height: 36px; background: var(--gold); border-radius: 1px; pointer-events: none; box-shadow: 0 0 4px var(--gold); }
 
   /* Scale-aware sizing inside right-bar */
-  #right-bar .rb-section-head { font-size: calc(11px * var(--rb-scale, 1)); }
-  #right-bar .tool-btn-label { font-size: calc(9px * var(--rb-scale, 1)); }
-  #right-bar input, #right-bar select, #right-bar textarea, #right-bar button { font-size: calc(12px * var(--rb-scale, 1)); }
-  #right-bar .char-tab { font-size: calc(10px * var(--rb-scale, 1)); }
-  #right-bar #chatlog .msg { font-size: calc(12px * var(--rb-scale, 1)); }
+  #right-bar .rb-section-head { font-size: calc(11px * var(--rb-scale, 1) * var(--app-scale, 1)); }
+  #right-bar .tool-btn-label { font-size: calc(9px * var(--rb-scale, 1) * var(--app-scale, 1)); }
+  #right-bar input, #right-bar select, #right-bar textarea, #right-bar button { font-size: calc(12px * var(--rb-scale, 1) * var(--app-scale, 1)); }
+  #right-bar .char-tab { font-size: calc(10px * var(--rb-scale, 1) * var(--app-scale, 1)); }
+  #right-bar #chatlog .msg { font-size: calc(12px * var(--rb-scale, 1) * var(--app-scale, 1)); }
 
   /* Tools strip inside right-bar (horizontal compact row) */
   #right-bar #dm-toolbar { position: static; flex-direction: row; flex-wrap: wrap; padding: 8px; gap: 4px; border: none; border-bottom: 1px solid var(--border); border-radius: 0; backdrop-filter: none; background: var(--panel-light); flex-shrink: 0; }
@@ -233,15 +262,13 @@
   #right-bar #char-popup.collapsed { display: none; }
   #right-bar #char-popup .char-popup-header { padding: 6px 12px; }
 
-  /* Chatbox embedded at bottom of right bar */
-  #right-bar #chatbox { position: static; width: auto; left: auto; bottom: auto; right: auto; height: 240px; flex-shrink: 0; border-radius: 0; border: none; border-top: 1px solid var(--border); box-shadow: none; backdrop-filter: none; background: var(--panel); display: flex; flex-direction: column; }
-  /* When the character sheet is collapsed, chat expands to fill the space */
-  #right-bar #char-popup.collapsed + #chatbox { flex: 1; height: auto; }
+  /* Roll Log embedded at the bottom of the right bar (fixed compact height) */
+  #right-bar #chatbox { position: static; width: auto; left: auto; bottom: auto; right: auto; height: 200px; max-height: 200px; flex-shrink: 0; flex-grow: 0; margin-top: auto; border-radius: 0; border: none; border-top: 1px solid var(--border); box-shadow: none; backdrop-filter: none; background: var(--panel); display: flex; flex-direction: column; }
   #right-bar #chatbox-header { cursor: default; border-radius: 0; padding: 6px 12px; }
-  #right-bar #chatbox.minimized { height: auto; width: auto; }
+  #right-bar #chatbox.minimized { height: auto; max-height: none; }
   #right-bar #chatbox.minimized #chatlog,
   #right-bar #chatbox.minimized #chatinput { display: none; }
-  #right-bar #chatlog { flex: 1; min-height: 0; }
+  #right-bar #chatlog { flex: 1; min-height: 0; padding: 6px 10px; }
   #right-bar #chatinput { padding: 6px 8px; }
 
   /* Show "Character" reopen button only when right-bar is collapsed - currently unused */
@@ -323,6 +350,36 @@
   .char-gold-display input { width: 70px; padding: 3px 6px; background: var(--bg); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 3px; font-family: 'Cinzel', serif; font-weight: 700; text-align: center; }
   .char-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
   .char-portrait { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--gold); background-size: cover; background-position: center; background-color: var(--panel-light); flex-shrink: 0; }
+  .char-portrait-wrap { position: relative; cursor: pointer; display: inline-block; }
+  .char-portrait-wrap .char-portrait-hint { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); font-size: 9px; color: var(--cream); background: rgba(26,22,18,0.85); padding: 2px 7px; border-radius: 8px; opacity: 0; transition: opacity 0.15s; pointer-events: none; font-family: 'Cinzel', serif; letter-spacing: 0.06em; }
+  .char-portrait-wrap:hover .char-portrait-hint { opacity: 1; }
+  .race-traits { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.45; max-width: 100%; }
+  .race-traits b { color: var(--gold-soft); font-weight: 600; }
+
+  /* Currency row in Equipment tab */
+  .currency-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 6px; }
+  .currency-cell { display: flex; flex-direction: column; align-items: center; padding: 6px 4px; background: var(--panel-light); border: 1px solid var(--border); border-radius: 4px; }
+  .currency-cell label { font-family: 'Cinzel', serif; font-size: 10px; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 4px; }
+  .currency-cell input { width: 100%; text-align: center; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; padding: 4px 6px; font-family: 'Cinzel', serif; font-weight: 700; }
+
+  /* Spell slots */
+  .spell-slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px; }
+  .slot-cell { background: var(--panel-light); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; }
+  .slot-cell .slot-label { font-family: 'Cinzel', serif; font-size: 10px; color: var(--gold); letter-spacing: 0.08em; }
+  .slot-cell .slot-inputs { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+  .slot-cell input { width: 36px; text-align: center; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; padding: 3px 4px; font-size: 12px; }
+  .slot-cell .sep { color: var(--muted); }
+
+  /* Magic add rows and lists (attacks, cantrips, spells) */
+  .magic-add-row { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
+  .magic-add-row input, .magic-add-row select { padding: 5px 7px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; font-size: 12px; font-family: inherit; }
+  .magic-row { display: flex; gap: 6px; align-items: center; padding: 5px 6px; border-bottom: 1px solid rgba(58,47,36,0.4); font-size: 12px; }
+  .magic-row .name { flex: 1; color: var(--cream); }
+  .magic-row .name b { color: var(--gold); margin-right: 6px; font-family: 'Cinzel', serif; font-size: 10px; }
+  .magic-row .meta { color: var(--muted); font-size: 11px; }
+  .magic-row .del { background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 2px 6px; font-size: 15px; line-height: 1; }
+  .magic-row .del:hover { color: var(--danger); }
+  .magic-row input[type="checkbox"] { accent-color: var(--gold); }
   .char-head-info { flex: 1; }
   .char-head-info input.char-name { width: 100%; font-family: 'Cinzel', serif; font-size: 18px; color: var(--gold); background: transparent; border: 1px solid transparent; padding: 4px 6px; border-radius: 3px; }
   .char-head-info input.char-name:focus { background: var(--bg); border-color: var(--border); }
@@ -675,6 +732,15 @@
     </div>
     <div style="display: flex; align-items: center; gap: 12px;">
       <span id="conn-indicator">Connecting</span>
+      <div class="font-size-group" title="Adjust UI font size">
+        <button class="font-size-btn" data-fs="1">A</button>
+        <button class="font-size-btn" data-fs="1.18">A+</button>
+        <button class="font-size-btn" data-fs="1.38">A++</button>
+      </div>
+      <button id="theme-toggle" class="theme-toggle" title="Toggle light / dark theme">
+        <svg id="theme-icon-dark" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg id="theme-icon-light" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+      </button>
       <button id="recap-btn" title="Campaign Log / Recap">Recap</button>
       <button id="switch-role-btn" style="display:none;" title="Demo mode only">Switch Role</button>
       <button id="leave-btn" class="danger">Leave</button>
@@ -835,7 +901,7 @@
 
       <div id="chatbox">
         <div id="chatbox-header">
-          <span class="ttl">Chat</span>
+          <span class="ttl">Roll Log</span>
           <div class="ctrls">
             <button id="chat-minimize">−</button>
           </div>
@@ -858,7 +924,11 @@
   </div>
 
   <div class="char-head">
-    <div class="char-portrait" id="char-portrait"></div>
+    <label class="char-portrait-wrap" title="Upload character portrait">
+      <div class="char-portrait" id="char-portrait"></div>
+      <input type="file" id="char-portrait-upload" accept="image/*" style="display:none">
+      <span class="char-portrait-hint">Edit</span>
+    </label>
     <div class="char-head-info">
       <input type="text" class="char-name" id="char-name" placeholder="Character name">
       <div class="char-subline">
@@ -879,8 +949,23 @@
           <option value="warlock">Warlock</option>
           <option value="wizard">Wizard</option>
         </select>
-        <input type="text" class="char-race" id="char-race" placeholder="Race" maxlength="20">
+        <select id="char-race">
+          <option value="">— race —</option>
+          <option value="human">Human</option>
+          <option value="elf">Elf</option>
+          <option value="dwarf">Dwarf</option>
+          <option value="halfling">Halfling</option>
+          <option value="half-elf">Half-Elf</option>
+          <option value="half-orc">Half-Orc</option>
+          <option value="tiefling">Tiefling</option>
+          <option value="gnome">Gnome</option>
+          <option value="dragonborn">Dragonborn</option>
+          <option value="goliath">Goliath</option>
+          <option value="aasimar">Aasimar</option>
+          <option value="tabaxi">Tabaxi</option>
+        </select>
       </div>
+      <div id="race-traits" class="race-traits"></div>
     </div>
   </div>
 
@@ -914,6 +999,7 @@
     <button class="char-tab active" data-tab="stats">Stats</button>
     <button class="char-tab" data-tab="skills">Skills</button>
     <button class="char-tab" data-tab="equipment">Equipment</button>
+    <button class="char-tab" data-tab="spells">Spells</button>
     <button class="char-tab" data-tab="buffs">Buffs</button>
     <button class="char-tab" data-tab="notes">Notes</button>
   </div>
@@ -952,7 +1038,15 @@
         <div class="equipment-grid" id="equipment-grid"></div>
       </div>
       <div class="char-section">
-        <div class="char-section-head">Inventory <span class="char-gold-display">Gold: <input type="number" id="char-gold" value="0" min="0"></span></div>
+        <div class="char-section-head">Currency</div>
+        <div class="currency-row">
+          <div class="currency-cell"><label>GP</label><input type="number" id="char-gold" value="0" min="0"></div>
+          <div class="currency-cell"><label>SP</label><input type="number" id="char-silver" value="0" min="0"></div>
+          <div class="currency-cell"><label>CP</label><input type="number" id="char-copper" value="0" min="0"></div>
+        </div>
+      </div>
+      <div class="char-section">
+        <div class="char-section-head">Inventory</div>
         <div id="inventory-list"></div>
         <div class="inv-add-row">
           <input type="text" id="inv-add-name" placeholder="Item name" maxlength="40">
@@ -960,6 +1054,52 @@
           <button id="inv-add-btn" class="primary">Add</button>
         </div>
         <input type="text" id="inv-add-stats" placeholder="Item stats (e.g. +1 AC, heals 2d4)" maxlength="60" style="width:100%; margin-top: 4px; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; font-size:12px; font-family: inherit;">
+      </div>
+    </div>
+
+    <div class="char-tab-content" data-tab="spells">
+      <div class="char-section">
+        <div class="char-section-head">Spell Slots <span class="hint">(used / total)</span></div>
+        <div id="spell-slots-grid" class="spell-slots-grid"></div>
+      </div>
+      <div class="char-section">
+        <div class="char-section-head">Attacks <span class="hint">(weapon or spell attack)</span></div>
+        <div id="attacks-list"></div>
+        <div class="magic-add-row">
+          <input type="text" id="attack-add-name" placeholder="Attack name" maxlength="40">
+          <input type="text" id="attack-add-bonus" placeholder="+5 atk" maxlength="14" style="width:80px;">
+          <input type="text" id="attack-add-dmg" placeholder="1d8+3 slash" maxlength="30" style="width:130px;">
+          <button id="attack-add-btn" class="primary">Add</button>
+        </div>
+      </div>
+      <div class="char-section">
+        <div class="char-section-head">Cantrips <span class="hint">(at-will)</span></div>
+        <div id="cantrips-list"></div>
+        <div class="magic-add-row">
+          <input type="text" id="cantrip-add-name" placeholder="Cantrip name" maxlength="40">
+          <input type="text" id="cantrip-add-desc" placeholder="effect / damage" maxlength="60" style="flex:1;">
+          <button id="cantrip-add-btn" class="primary">Add</button>
+        </div>
+      </div>
+      <div class="char-section">
+        <div class="char-section-head">Spells <span class="hint">(check to mark prepared)</span></div>
+        <div id="spells-list"></div>
+        <div class="magic-add-row">
+          <input type="text" id="spell-add-name" placeholder="Spell name" maxlength="40">
+          <select id="spell-add-level" style="width:64px;">
+            <option value="1">Lv 1</option>
+            <option value="2">Lv 2</option>
+            <option value="3">Lv 3</option>
+            <option value="4">Lv 4</option>
+            <option value="5">Lv 5</option>
+            <option value="6">Lv 6</option>
+            <option value="7">Lv 7</option>
+            <option value="8">Lv 8</option>
+            <option value="9">Lv 9</option>
+          </select>
+          <input type="text" id="spell-add-desc" placeholder="effect / damage" maxlength="60" style="flex:1;">
+          <button id="spell-add-btn" class="primary">Add</button>
+        </div>
       </div>
     </div>
 
@@ -1821,6 +1961,10 @@
 
     // Hook up the side-bar resizers and restore saved widths
     setupResizers();
+    // Hook up the font-size selector in the topbar
+    setupFontSizeSelector();
+    // Hook up the light/dark theme toggle
+    setupThemeToggle();
   }
 
   // ============ SIDE BAR RESIZERS ============
@@ -1925,6 +2069,55 @@
         document.addEventListener('mouseup', onUp);
       });
     }
+  }
+
+  // ============ THEME TOGGLE ============
+  // Light / dark theme switcher. Persists across reloads.
+  const THEME_LS_KEY = 'vtt_theme_v1';
+  function applyTheme(name) {
+    const root = document.documentElement;
+    if (name === 'light') root.classList.add('light');
+    else root.classList.remove('light');
+    const moonIcon = document.getElementById('theme-icon-dark');
+    const sunIcon = document.getElementById('theme-icon-light');
+    if (moonIcon && sunIcon) {
+      moonIcon.style.display = name === 'light' ? 'none' : '';
+      sunIcon.style.display  = name === 'light' ? '' : 'none';
+    }
+    try { localStorage.setItem(THEME_LS_KEY, name); } catch (e) {}
+  }
+  function setupThemeToggle() {
+    const saved = localStorage.getItem(THEME_LS_KEY) || 'dark';
+    applyTheme(saved);
+    const btn = document.getElementById('theme-toggle');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        const cur = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+        applyTheme(cur === 'light' ? 'dark' : 'light');
+      });
+    }
+  }
+
+  // ============ GLOBAL FONT SIZE ============
+  // Lets the user scale the UI font with three preset levels. The selected
+  // scale is persisted across reloads.
+  const FONT_SIZE_LS_KEY = 'vtt_font_scale_v1';
+  function applyAppScale(scale) {
+    document.documentElement.style.setProperty('--app-scale', String(scale));
+    document.querySelectorAll('.font-size-btn').forEach(b => {
+      b.classList.toggle('active', Math.abs(parseFloat(b.dataset.fs) - scale) < 0.01);
+    });
+    try { localStorage.setItem(FONT_SIZE_LS_KEY, String(scale)); } catch (e) {}
+  }
+  function setupFontSizeSelector() {
+    const saved = parseFloat(localStorage.getItem(FONT_SIZE_LS_KEY) || '1');
+    applyAppScale(isFinite(saved) ? saved : 1);
+    document.querySelectorAll('.font-size-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const s = parseFloat(btn.dataset.fs);
+        if (isFinite(s)) applyAppScale(s);
+      });
+    });
   }
 
   function applyClassTheme(cls) {
@@ -2302,13 +2495,24 @@
         del.addEventListener('click', async (ev) => {
           ev.stopPropagation();
           if (!confirm('Delete this token?')) return;
+          // Local-first: remove from state and re-render immediately so the
+          // thumb disappears even if the realtime echo is delayed.
+          STATE.tokens.delete(tok.id);
+          renderTokens();
+          renderTokenTray();
+          renderHpTracker();
           // Delete from storage
           try {
             const path = `${STATE.sessionId}/tokens/${tok.id}.jpg`;
             await sb.storage.from(STORAGE_BUCKET).remove([path]);
           } catch (e) { console.warn('Storage delete failed', e); }
           // Delete row
-          await sb.from('vtt_tokens').delete().eq('id', tok.id);
+          try {
+            await sb.from('vtt_tokens').delete().eq('id', tok.id);
+          } catch (e) {
+            console.error('Token delete failed', e);
+            toast('Failed to delete token', 'error');
+          }
         });
         thumb.appendChild(del);
       }
@@ -2527,6 +2731,7 @@
     buffs: [],               // [{ name, mod, active }]
     inventory: [],           // [{ name, qty, stats }]
     equipment: {},           // { helmet: {name, stats}, ... }
+    magic: null,             // { cantrips, spells, attacks, slots } - set by openCharPopup
   };
 
   // Equipment slot definitions in display order
@@ -2565,6 +2770,49 @@
     { key: 'survival',        name: 'Survival',        stat: 'wis' },
   ];
   const SAVE_STATS = ['str','dex','con','int','wis','cha'];
+
+  // D&D 5e basic races with their key traits. Shown under the race dropdown.
+  const D5E_RACES = {
+    'human':      { name: 'Human',      size: 'Medium', speed: 30, asi: '+1 to all abilities',                    traits: 'Versatile and adaptable. Extra language.' },
+    'elf':        { name: 'Elf',        size: 'Medium', speed: 30, asi: '+2 DEX',                                  traits: 'Darkvision 60ft. Keen Senses (perception prof). Fey Ancestry (charm resistance, no magical sleep). Trance (4h instead of 8h rest).' },
+    'dwarf':      { name: 'Dwarf',      size: 'Medium', speed: 25, asi: '+2 CON',                                  traits: 'Darkvision 60ft. Dwarven Resilience (poison resist, advantage on saves vs poison). Stonecunning (history checks for stonework with proficiency).' },
+    'halfling':   { name: 'Halfling',   size: 'Small',  speed: 25, asi: '+2 DEX',                                  traits: 'Lucky (reroll 1s on d20). Brave (advantage on saves vs frightened). Halfling Nimbleness (move through larger creatures).' },
+    'half-elf':   { name: 'Half-Elf',   size: 'Medium', speed: 30, asi: '+2 CHA, +1 to two other abilities',       traits: 'Darkvision 60ft. Fey Ancestry. Skill Versatility (two skill proficiencies of your choice).' },
+    'half-orc':   { name: 'Half-Orc',   size: 'Medium', speed: 30, asi: '+2 STR, +1 CON',                          traits: 'Darkvision 60ft. Menacing (intimidation prof). Relentless Endurance (drop to 1 HP instead of 0, once/long rest). Savage Attacks (extra damage die on melee crits).' },
+    'tiefling':   { name: 'Tiefling',   size: 'Medium', speed: 30, asi: '+2 CHA, +1 INT',                          traits: 'Darkvision 60ft. Hellish Resistance (fire resist). Infernal Legacy (thaumaturgy cantrip; hellish rebuke at lv3; darkness at lv5).' },
+    'gnome':      { name: 'Gnome',      size: 'Small',  speed: 25, asi: '+2 INT',                                  traits: 'Darkvision 60ft. Gnome Cunning (advantage on INT, WIS, CHA saves vs magic).' },
+    'dragonborn': { name: 'Dragonborn', size: 'Medium', speed: 30, asi: '+2 STR, +1 CHA',                          traits: 'Draconic Ancestry (choose dragon type). Breath Weapon (cone or line, 2d6 of element type, dex/con save). Damage Resistance to ancestry element.' },
+    'goliath':    { name: 'Goliath',    size: 'Medium', speed: 30, asi: '+2 STR, +1 CON',                          traits: 'Natural Athlete (athletics prof). Stone\'s Endurance (reduce damage 1/short rest). Mountain Born (cold resist, no penalty up to 20,000 ft).' },
+    'aasimar':    { name: 'Aasimar',    size: 'Medium', speed: 30, asi: '+2 CHA',                                  traits: 'Darkvision 60ft. Celestial Resistance (necrotic and radiant). Healing Hands (1/long rest heal HP equal to level). Light cantrip.' },
+    'tabaxi':     { name: 'Tabaxi',     size: 'Medium', speed: 30, asi: '+2 DEX, +1 CHA',                          traits: 'Darkvision 60ft. Feline Agility (double speed for one turn). Cat\'s Claws (climb 20ft, claws are 1d4 slash). Cat\'s Talent (perception and stealth prof).' },
+  };
+
+  function setRaceTraits(raceKey) {
+    const el = document.getElementById('race-traits');
+    if (!el) return;
+    const r = D5E_RACES[raceKey];
+    if (!r) { el.innerHTML = ''; return; }
+    el.innerHTML = `<b>${r.name}</b> · ${r.size} · ${r.speed}ft · <b>${r.asi}</b><br>${r.traits}`;
+  }
+
+  // Default empty magic data structure used for new players.
+  // Spell slots indexed by level (1-9), each with cur/max counts.
+  function emptyMagicData() {
+    return {
+      cantrips: [],   // [{ name, desc }]
+      spells: [],     // [{ name, level, desc, prepared }]
+      attacks: [],    // [{ name, bonus, dmg }]
+      slots: { 1:{cur:0,max:0}, 2:{cur:0,max:0}, 3:{cur:0,max:0}, 4:{cur:0,max:0}, 5:{cur:0,max:0}, 6:{cur:0,max:0}, 7:{cur:0,max:0}, 8:{cur:0,max:0}, 9:{cur:0,max:0} },
+    };
+  }
+  function parseMagicData(raw) {
+    if (!raw || typeof raw !== 'string') return emptyMagicData();
+    try {
+      const m = JSON.parse(raw);
+      const base = emptyMagicData();
+      return Object.assign(base, m, { slots: Object.assign(base.slots, m.slots || {}) });
+    } catch (e) { return emptyMagicData(); }
+  }
 
   function profBonusForLevel(level) {
     const lv = Math.max(1, parseInt(level) || 1);
@@ -2708,6 +2956,81 @@
     });
   }
 
+  // ---------- Magic (spells, cantrips, attacks, spell slots) ----------
+  function renderMagic(magic) {
+    const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+    const m = magic || emptyMagicData();
+
+    // Spell slots grid: levels 1-9. Each shows current/max with quick adjusters.
+    const slotsGrid = document.getElementById('spell-slots-grid');
+    if (slotsGrid) {
+      slotsGrid.innerHTML = '';
+      for (let lv = 1; lv <= 9; lv++) {
+        const s = m.slots[lv] || { cur: 0, max: 0 };
+        const cell = document.createElement('div');
+        cell.className = 'slot-cell';
+        cell.innerHTML = `
+          <div class="slot-label">Lv ${lv}</div>
+          <div class="slot-inputs">
+            <input type="number" class="slot-cur" data-lv="${lv}" min="0" max="99" value="${s.cur}" ${canEdit ? '' : 'readonly'}>
+            <span class="sep">/</span>
+            <input type="number" class="slot-max" data-lv="${lv}" min="0" max="99" value="${s.max}" ${canEdit ? '' : 'readonly'}>
+          </div>
+        `;
+        slotsGrid.appendChild(cell);
+      }
+    }
+
+    // Attacks list
+    const attList = document.getElementById('attacks-list');
+    if (attList) {
+      attList.innerHTML = '';
+      m.attacks.forEach((a, i) => {
+        const row = document.createElement('div');
+        row.className = 'magic-row';
+        row.innerHTML = `
+          <div class="name">${escapeHtml(a.name)} <span class="meta">${escapeHtml(a.bonus || '')} · ${escapeHtml(a.dmg || '')}</span></div>
+          ${canEdit ? `<button class="del" data-i="${i}" data-kind="att" title="Remove">×</button>` : ''}
+        `;
+        attList.appendChild(row);
+      });
+    }
+
+    // Cantrips list
+    const cantList = document.getElementById('cantrips-list');
+    if (cantList) {
+      cantList.innerHTML = '';
+      m.cantrips.forEach((c, i) => {
+        const row = document.createElement('div');
+        row.className = 'magic-row';
+        row.innerHTML = `
+          <div class="name">${escapeHtml(c.name)} <span class="meta">${escapeHtml(c.desc || '')}</span></div>
+          ${canEdit ? `<button class="del" data-i="${i}" data-kind="cant" title="Remove">×</button>` : ''}
+        `;
+        cantList.appendChild(row);
+      });
+    }
+
+    // Spells list (grouped by level)
+    const spList = document.getElementById('spells-list');
+    if (spList) {
+      spList.innerHTML = '';
+      // Sort by level then name
+      const sorted = m.spells.slice().sort((a, b) => (a.level || 1) - (b.level || 1) || (a.name || '').localeCompare(b.name || ''));
+      sorted.forEach((sp) => {
+        const realIdx = m.spells.indexOf(sp);
+        const row = document.createElement('div');
+        row.className = 'magic-row';
+        row.innerHTML = `
+          <input type="checkbox" class="prep-check" data-i="${realIdx}" ${sp.prepared ? 'checked' : ''} ${canEdit ? '' : 'disabled'} title="Prepared">
+          <div class="name"><b>L${sp.level}</b>${escapeHtml(sp.name)} <span class="meta">${escapeHtml(sp.desc || '')}</span></div>
+          ${canEdit ? `<button class="del" data-i="${realIdx}" data-kind="sp" title="Remove">×</button>` : ''}
+        `;
+        spList.appendChild(row);
+      });
+    }
+  }
+
   // Re-render all derived sections whenever stats or level change
   function refreshDerivedSections() {
     const pb = getProfBonus();
@@ -2798,7 +3121,7 @@
 
     updateStatMods();
 
-    // Load character sheet extensions (skills, saves, buffs, inventory, gold)
+    // Load character sheet extensions (skills, saves, buffs, inventory, gold/silver/copper, magic)
     CHAR_POPUP.saveProfs = parseSet(player.save_profs);
     CHAR_POPUP.skillProfs = parseSet(player.skill_profs);
     CHAR_POPUP.buffs = parseJsonArray(player.buffs);
@@ -2807,28 +3130,41 @@
     try { CHAR_POPUP.equipment = JSON.parse(player.equipment || '{}') || {}; }
     catch (e) { CHAR_POPUP.equipment = {}; }
     if (typeof CHAR_POPUP.equipment !== 'object' || Array.isArray(CHAR_POPUP.equipment)) CHAR_POPUP.equipment = {};
+    CHAR_POPUP.magic = parseMagicData(player.magic_data);
     document.getElementById('char-gold').value = player.gold ?? 0;
+    document.getElementById('char-silver').value = player.silver ?? 0;
+    document.getElementById('char-copper').value = player.copper ?? 0;
+    // Portrait (separate from token image)
+    const portraitEl = document.getElementById('char-portrait');
+    if (player.portrait_url) {
+      portraitEl.style.backgroundImage = `url('${player.portrait_url}')`;
+    } else {
+      // Fallback to the player's first token thumbnail if no portrait set
+      const tok = Array.from(STATE.tokens.values()).find(t => t.owner_id === playerId);
+      portraitEl.style.backgroundImage = tok && tok.image_url ? `url('${tok.image_url}')` : '';
+    }
+    // Race traits panel
+    setRaceTraits(player.race);
     refreshDerivedSections();
     renderBuffs(CHAR_POPUP.buffs);
     renderInventory(CHAR_POPUP.inventory);
     renderEquipment(CHAR_POPUP.equipment);
+    renderMagic(CHAR_POPUP.magic);
 
-    // Set readonly state on all inputs based on permission
+    // Set readonly/disabled state on all inputs based on permission. The
+    // default behavior is "editable" - we only block when canEdit is false,
+    // or for HP fields when there is no token on the map.
     const allInputs = popup.querySelectorAll('input, select, textarea');
     allInputs.forEach(inp => {
-      if (inp.id === 'char-ac' || inp.id === 'char-speed' || inp.id === 'char-level' ||
-          inp.id === 'char-name' || inp.id === 'char-race' || inp.id === 'char-notes' ||
-          inp.id === 'char-class' ||
-          inp.id === 'char-hp-cur' || inp.id === 'char-hp-max' ||
-          inp.id.startsWith('char-str') || inp.id.startsWith('char-dex') ||
-          inp.id.startsWith('char-con') || inp.id.startsWith('char-int') ||
-          inp.id.startsWith('char-wis') || inp.id.startsWith('char-cha')) {
-        if (inp.tagName === 'SELECT') inp.disabled = !canEdit;
-        else if (inp.id === 'char-hp-cur' || inp.id === 'char-hp-max') {
-          // HP inputs: disable only if no token OR no edit permission
-          inp.readOnly = !canEdit || !hpTok;
-        }
-        else inp.readOnly = !canEdit;
+      if (inp.tagName === 'SELECT') {
+        inp.disabled = !canEdit;
+      } else if (inp.type === 'checkbox' || inp.type === 'radio') {
+        inp.disabled = !canEdit;
+      } else if (inp.id === 'char-hp-cur' || inp.id === 'char-hp-max') {
+        // HP inputs: only editable when there's a token on the map
+        inp.readOnly = !canEdit || !hpTok;
+      } else {
+        inp.readOnly = !canEdit;
       }
     });
     document.getElementById('char-readonly-note').style.display = canEdit ? 'none' : 'block';
@@ -2887,7 +3223,7 @@
       name: document.getElementById('char-name').value.trim() || 'Unnamed',
       level: parseInt(document.getElementById('char-level').value) || 1,
       class: document.getElementById('char-class').value,
-      race: document.getElementById('char-race').value.trim(),
+      race: document.getElementById('char-race').value,
       ac: parseInt(document.getElementById('char-ac').value) || 10,
       speed: parseInt(document.getElementById('char-speed').value) || 30,
       strength: parseInt(document.getElementById('char-str').value) || 10,
@@ -2899,11 +3235,14 @@
       notes: document.getElementById('char-notes').value,
       // Sheet extensions
       gold: parseInt(document.getElementById('char-gold').value) || 0,
+      silver: parseInt(document.getElementById('char-silver').value) || 0,
+      copper: parseInt(document.getElementById('char-copper').value) || 0,
       save_profs: setToCsv(CHAR_POPUP.saveProfs),
       skill_profs: setToCsv(CHAR_POPUP.skillProfs),
       buffs: JSON.stringify(CHAR_POPUP.buffs),
       inventory: JSON.stringify(CHAR_POPUP.inventory),
       equipment: JSON.stringify(CHAR_POPUP.equipment),
+      magic_data: JSON.stringify(CHAR_POPUP.magic || emptyMagicData()),
     };
 
     await sb.from('vtt_players').update(patch).eq('id', CHAR_POPUP.targetPlayerId);
@@ -2930,8 +3269,111 @@
         el.addEventListener('change', () => { updateStatMods(); refreshDerivedSections(); scheduleSavePlayer(); });
       });
 
-    // Gold input
+    // Gold/Silver/Copper inputs
     document.getElementById('char-gold').addEventListener('input', scheduleSavePlayer);
+    document.getElementById('char-silver').addEventListener('input', scheduleSavePlayer);
+    document.getElementById('char-copper').addEventListener('input', scheduleSavePlayer);
+
+    // Race dropdown also updates the traits panel below
+    document.getElementById('char-race').addEventListener('change', (e) => {
+      setRaceTraits(e.target.value);
+    });
+
+    // Portrait upload (separate from token image)
+    document.getElementById('char-portrait-upload').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) { toast('Cannot edit this character', 'error'); return; }
+      try {
+        const path = `${STATE.sessionId}/portraits/${CHAR_POPUP.targetPlayerId}-${Date.now()}.jpg`;
+        const up = await sb.storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true });
+        if (up.error) throw up.error;
+        const { data: pub } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+        const url = pub.publicUrl;
+        document.getElementById('char-portrait').style.backgroundImage = `url('${url}')`;
+        await sb.from('vtt_players').update({ portrait_url: url }).eq('id', CHAR_POPUP.targetPlayerId);
+        toast('Portrait updated');
+      } catch (err) {
+        console.error('Portrait upload failed', err);
+        toast('Portrait upload failed', 'error');
+      }
+      e.target.value = '';
+    });
+
+    // Spell slot inputs - delegated since the grid is rebuilt
+    document.getElementById('spell-slots-grid').addEventListener('input', (e) => {
+      const t = e.target;
+      if (!t.classList.contains('slot-cur') && !t.classList.contains('slot-max')) return;
+      if (!CHAR_POPUP.magic) CHAR_POPUP.magic = emptyMagicData();
+      const lv = parseInt(t.dataset.lv);
+      const v = Math.max(0, parseInt(t.value) || 0);
+      if (!CHAR_POPUP.magic.slots[lv]) CHAR_POPUP.magic.slots[lv] = { cur: 0, max: 0 };
+      if (t.classList.contains('slot-cur')) CHAR_POPUP.magic.slots[lv].cur = v;
+      else CHAR_POPUP.magic.slots[lv].max = v;
+      scheduleSavePlayer();
+    });
+
+    // Attack add
+    document.getElementById('attack-add-btn').addEventListener('click', () => {
+      const name = document.getElementById('attack-add-name').value.trim();
+      const bonus = document.getElementById('attack-add-bonus').value.trim();
+      const dmg = document.getElementById('attack-add-dmg').value.trim();
+      if (!name) { toast('Attack name required', 'error'); return; }
+      if (!CHAR_POPUP.magic) CHAR_POPUP.magic = emptyMagicData();
+      CHAR_POPUP.magic.attacks.push({ name, bonus, dmg });
+      ['attack-add-name','attack-add-bonus','attack-add-dmg'].forEach(id => document.getElementById(id).value = '');
+      renderMagic(CHAR_POPUP.magic);
+      scheduleSavePlayer();
+    });
+    // Cantrip add
+    document.getElementById('cantrip-add-btn').addEventListener('click', () => {
+      const name = document.getElementById('cantrip-add-name').value.trim();
+      const desc = document.getElementById('cantrip-add-desc').value.trim();
+      if (!name) { toast('Cantrip name required', 'error'); return; }
+      if (!CHAR_POPUP.magic) CHAR_POPUP.magic = emptyMagicData();
+      CHAR_POPUP.magic.cantrips.push({ name, desc });
+      ['cantrip-add-name','cantrip-add-desc'].forEach(id => document.getElementById(id).value = '');
+      renderMagic(CHAR_POPUP.magic);
+      scheduleSavePlayer();
+    });
+    // Spell add
+    document.getElementById('spell-add-btn').addEventListener('click', () => {
+      const name = document.getElementById('spell-add-name').value.trim();
+      const level = parseInt(document.getElementById('spell-add-level').value) || 1;
+      const desc = document.getElementById('spell-add-desc').value.trim();
+      if (!name) { toast('Spell name required', 'error'); return; }
+      if (!CHAR_POPUP.magic) CHAR_POPUP.magic = emptyMagicData();
+      CHAR_POPUP.magic.spells.push({ name, level, desc, prepared: false });
+      ['spell-add-name','spell-add-desc'].forEach(id => document.getElementById(id).value = '');
+      renderMagic(CHAR_POPUP.magic);
+      scheduleSavePlayer();
+    });
+
+    // Delegated delete and prepared toggle for attacks/cantrips/spells lists
+    ['attacks-list', 'cantrips-list', 'spells-list'].forEach(listId => {
+      document.getElementById(listId).addEventListener('click', (e) => {
+        const btn = e.target.closest('button.del');
+        if (!btn) return;
+        const i = parseInt(btn.dataset.i);
+        const kind = btn.dataset.kind;
+        if (!CHAR_POPUP.magic) return;
+        const arr = kind === 'att' ? CHAR_POPUP.magic.attacks
+                  : kind === 'cant' ? CHAR_POPUP.magic.cantrips
+                  : CHAR_POPUP.magic.spells;
+        if (!isNaN(i) && arr[i]) arr.splice(i, 1);
+        renderMagic(CHAR_POPUP.magic);
+        scheduleSavePlayer();
+      });
+    });
+    document.getElementById('spells-list').addEventListener('change', (e) => {
+      if (!e.target.classList.contains('prep-check')) return;
+      const i = parseInt(e.target.dataset.i);
+      if (CHAR_POPUP.magic && CHAR_POPUP.magic.spells[i]) {
+        CHAR_POPUP.magic.spells[i].prepared = e.target.checked;
+        scheduleSavePlayer();
+      }
+    });
 
     // Saving throw and skill proficiency toggles (delegated since the rows are rebuilt)
     document.getElementById('saves-grid').addEventListener('change', (e) => {
@@ -4593,8 +5035,8 @@
   }
 
   // Build a random bounce trajectory for a die. The die starts off-screen on
-  // one of eight directions (edges + corners), bounces toward the opposite
-  // side, ricochets twice with diminishing amplitude, and lands at center.
+  // one of eight directions, bounces 1-4 times with diminishing amplitude
+  // (random per die), and lands at center.
   function buildBouncePath() {
     const W = Math.max(window.innerWidth, 600);
     const H = Math.max(window.innerHeight, 400);
@@ -4609,15 +5051,19 @@
       { x:  W * 0.4, y:  H * 0.35 },
     ];
     const s = sides[Math.floor(Math.random() * sides.length)];
-    // Add a little jitter so multiple dice don't follow identical paths
     const jx = (Math.random() - 0.5) * 60;
     const jy = (Math.random() - 0.5) * 60;
-    return {
-      start: { x: s.x + jx, y: s.y + jy },
-      b1:    { x: -s.x * 0.55 + jx * 0.4, y: -s.y * 0.55 + jy * 0.4 },
-      b2:    { x:  s.x * 0.22 - jx * 0.3, y:  s.y * 0.22 - jy * 0.3 },
-      b3:    { x: -s.x * 0.07,             y: -s.y * 0.07 },
-    };
+    // Random bounce count: 1-4 ricochets after the initial fly. Each bounce
+    // has decreasing amplitude with alternating signs so the path zig-zags.
+    const bounceCount = 1 + Math.floor(Math.random() * 4); // 1..4
+    const amps = [0.55, 0.28, 0.12, 0.05].slice(0, bounceCount);
+    const points = [{ x: s.x + jx, y: s.y + jy }];
+    let sign = -1;
+    amps.forEach(a => {
+      points.push({ x: s.x * a * sign + jx * a * 0.6, y: s.y * a * sign + jy * a * 0.6 });
+      sign *= -1;
+    });
+    return { points, bounceCount };
   }
 
   function animateDiceRoll(msg) {
@@ -4639,23 +5085,37 @@
     // Build a class-colored palette for the player who rolled
     const palette = dicePaletteForUserId(msg.user_id);
 
-    // Bounce timing - each die takes ~1300ms to fully settle.
-    const T_FLY     = 380;  // cross from edge to opposite side
-    const T_BOUNCE1 = 320;  // ricochet back partially
-    const T_BOUNCE2 = 260;  // small bounce
-    const T_SETTLE  = 260;  // final settle at center
-    const ANIM_DURATION = T_FLY + T_BOUNCE1 + T_BOUNCE2 + T_SETTLE; // 1220ms
+    // Per-bounce timing
+    const T_FLY     = 380;
+    const T_BOUNCE  = 260;
+    const T_SETTLE  = 260;
     const STAGGER = 130;
-    const totalSettleTime = ANIM_DURATION + (msg.rolls.length - 1) * STAGGER;
+    // Compute the total time for the LONGEST die so the result reveals after
+    // every die has truly settled.
+    let maxDieDuration = 0;
+    const dieDurations = msg.rolls.map(() => {
+      const bc = 1 + Math.floor(Math.random() * 4);
+      const d = T_FLY + (bc - 1) * T_BOUNCE + T_SETTLE;
+      if (d > maxDieDuration) maxDieDuration = d;
+      return { bc, d };
+    });
+    const totalSettleTime = maxDieDuration + (msg.rolls.length - 1) * STAGGER;
 
     msg.rolls.forEach((val, i) => {
       const delay = i * STAGGER;
       const path = buildBouncePath();
+      // Use the pre-rolled bounce count so totalSettleTime matches.
+      const targetBounces = dieDurations[i].bc;
+      // Rebuild points to match the pre-rolled count
+      while (path.points.length - 1 > targetBounces) path.points.pop();
+      while (path.points.length - 1 < targetBounces) {
+        const last = path.points[path.points.length - 1];
+        path.points.push({ x: -last.x * 0.4, y: -last.y * 0.4 });
+      }
       let dieEl;
 
       if (msg.sides === 6) {
-        // True 3D cube. We animate translate + rotateX/Y together so the cube
-        // tumbles realistically as it bounces across the screen.
+        // 3D cube that tumbles realistically along the bounce path.
         dieEl = document.createElement('div');
         dieEl.className = 'die3d d6';
         dieEl.style.setProperty('--dice-light',  palette.light);
@@ -4681,59 +5141,63 @@
         const sign = Math.random() < 0.5 ? -1 : 1;
         const finalX = targetRot.x + sign * extraX;
         const finalY = targetRot.y + extraY;
+        const segments = targetBounces + 1; // fly + bounces (settle is last)
 
-        // Initial position - off-screen edge with random tilt
-        dieEl.style.transform = `translate(${path.start.x}px, ${path.start.y}px) rotateX(${Math.random()*60-30}deg) rotateY(${Math.random()*60-30}deg)`;
+        // Initial position
+        dieEl.style.transform = `translate(${path.points[0].x}px, ${path.points[0].y}px) rotateX(${Math.random()*60-30}deg) rotateY(${Math.random()*60-30}deg)`;
 
-        // Stage 1: cross the screen
-        scheduleDice(() => {
-          dieEl.style.transition = `transform ${T_FLY}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
-          dieEl.style.transform = `translate(${path.b1.x}px, ${path.b1.y}px) rotateX(${finalX * 0.4}deg) rotateY(${finalY * 0.4}deg)`;
-        }, 20 + delay);
-        // Stage 2: ricochet back
-        scheduleDice(() => {
-          dieEl.style.transition = `transform ${T_BOUNCE1}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
-          dieEl.style.transform = `translate(${path.b2.x}px, ${path.b2.y}px) rotateX(${finalX * 0.7}deg) rotateY(${finalY * 0.7}deg)`;
-        }, 20 + delay + T_FLY);
-        // Stage 3: small bounce
-        scheduleDice(() => {
-          dieEl.style.transition = `transform ${T_BOUNCE2}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
-          dieEl.style.transform = `translate(${path.b3.x}px, ${path.b3.y}px) rotateX(${finalX * 0.9}deg) rotateY(${finalY * 0.9}deg)`;
-        }, 20 + delay + T_FLY + T_BOUNCE1);
-        // Stage 4: settle at center with the final face up
+        let timeOffset = 20 + delay;
+        for (let seg = 1; seg < path.points.length; seg++) {
+          const dur = seg === 1 ? T_FLY : T_BOUNCE;
+          const progress = seg / segments;
+          const rotX = finalX * progress;
+          const rotY = finalY * progress;
+          const pt = path.points[seg];
+          ((duration, p, rx, ry) => {
+            scheduleDice(() => {
+              dieEl.style.transition = `transform ${duration}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+              dieEl.style.transform = `translate(${p.x}px, ${p.y}px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+            }, timeOffset);
+          })(dur, pt, rotX, rotY);
+          timeOffset += dur;
+        }
+        // Final settle to center with final face up
         scheduleDice(() => {
           dieEl.style.transition = `transform ${T_SETTLE}ms cubic-bezier(0.28, 1.05, 0.38, 1)`;
           dieEl.style.transform = `translate(0, 0) rotateX(${finalX}deg) rotateY(${finalY}deg)`;
-        }, 20 + delay + T_FLY + T_BOUNCE1 + T_BOUNCE2);
-        scheduleDice(() => { dieEl.classList.add('settled'); }, ANIM_DURATION + delay + 50);
+        }, timeOffset);
+        scheduleDice(() => { dieEl.classList.add('settled'); }, timeOffset + T_SETTLE + 30);
       } else {
-        // Polyhedron die (2D). Same bouncing path, with 2D rotation only.
+        // Polyhedron die (2D rotation).
         dieEl = document.createElement('div');
         dieEl.className = 'die-poly';
         dieEl.innerHTML = polyhedronSVG(msg.sides, palette) + `<div class="val">?</div>`;
         const finalRot = (Math.random() < 0.5 ? -1 : 1) * (540 + Math.floor(Math.random() * 540));
+        const segments = targetBounces + 1;
 
-        // Initial off-screen position
-        dieEl.style.transform = `translate(${path.start.x}px, ${path.start.y}px) rotate(${Math.random()*180-90}deg) scale(0.6)`;
+        dieEl.style.transform = `translate(${path.points[0].x}px, ${path.points[0].y}px) rotate(${Math.random()*180-90}deg) scale(0.6)`;
 
-        scheduleDice(() => {
-          dieEl.style.transition = `transform ${T_FLY}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
-          dieEl.style.transform = `translate(${path.b1.x}px, ${path.b1.y}px) rotate(${finalRot * 0.4}deg) scale(0.85)`;
-        }, 20 + delay);
-        scheduleDice(() => {
-          dieEl.style.transition = `transform ${T_BOUNCE1}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
-          dieEl.style.transform = `translate(${path.b2.x}px, ${path.b2.y}px) rotate(${finalRot * 0.7}deg) scale(0.95)`;
-        }, 20 + delay + T_FLY);
-        scheduleDice(() => {
-          dieEl.style.transition = `transform ${T_BOUNCE2}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
-          dieEl.style.transform = `translate(${path.b3.x}px, ${path.b3.y}px) rotate(${finalRot * 0.9}deg) scale(1)`;
-        }, 20 + delay + T_FLY + T_BOUNCE1);
+        let timeOffset = 20 + delay;
+        for (let seg = 1; seg < path.points.length; seg++) {
+          const dur = seg === 1 ? T_FLY : T_BOUNCE;
+          const progress = seg / segments;
+          const rot = finalRot * progress;
+          const scale = 0.6 + (1 - 0.6) * progress;
+          const pt = path.points[seg];
+          ((duration, p, r, sc) => {
+            scheduleDice(() => {
+              dieEl.style.transition = `transform ${duration}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+              dieEl.style.transform = `translate(${p.x}px, ${p.y}px) rotate(${r}deg) scale(${sc})`;
+            }, timeOffset);
+          })(dur, pt, rot, scale);
+          timeOffset += dur;
+        }
         scheduleDice(() => {
           dieEl.style.transition = `transform ${T_SETTLE}ms cubic-bezier(0.28, 1.05, 0.38, 1)`;
           dieEl.style.transform = `translate(0, 0) rotate(${finalRot}deg) scale(1)`;
-        }, 20 + delay + T_FLY + T_BOUNCE1 + T_BOUNCE2);
+        }, timeOffset);
 
-        // Cycle random numbers during the spin, settle on the final value
+        // Cycle random numbers during the spin
         const valEl = dieEl.querySelector('.val');
         const interval = setInterval(() => {
           valEl.textContent = Math.floor(Math.random() * msg.sides) + 1;
@@ -4745,7 +5209,7 @@
           if (idx >= 0) DICE_TIMERS.intervals.splice(idx, 1);
           valEl.textContent = val;
           dieEl.classList.add('settled');
-        }, ANIM_DURATION + delay);
+        }, timeOffset + T_SETTLE + 30);
       }
 
       stage.appendChild(dieEl);
