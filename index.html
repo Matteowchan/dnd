@@ -7092,94 +7092,98 @@
     runImgGen();
   });
 
-  // Models we try in order. If one fails (timeout, 5xx, blank response), we
-  // automatically try the next. Pollinations' free tier rotates which models
-  // are responsive, so this is more resilient than picking one.
-  const IMG_MODELS = ['turbo', 'flux', 'zimage'];
-
-  // Generation counter - bumped on each runImgGen so in-flight handlers from
-  // a previous run can detect they've been superseded and bail out. Without
-  // this, a stale onload from generation #1 would still fire after the user
-  // clicks Generate or Regenerate, leaving the UI in a confused state.
+  const IMG_MODELS = ['turbo', 'flux'];
   let imgGenSeq = 0;
+  let imgGenInFlight = false;
 
-  function runImgGen() {
+  async function runImgGen() {
+    if (imgGenInFlight) {
+      toast('A generation is already running, please wait', 'error');
+      return;
+    }
     const fullPrompt = IMG_GEN_PROMPTS[imgGenState.type] + imgGenState.prompt;
     const w = (imgGenState.type === 'map') ? 1024 : 768;
     const h = w;
-    // Bump the sequence so any stale handlers from a previous run will exit.
     imgGenSeq++;
     const mySeq = imgGenSeq;
+    imgGenInFlight = true;
+
     const img = document.getElementById('imggen-img');
-    // Detach the previous handlers and clear src so the browser definitely
-    // re-fires events for the new URL (re-assigning the same src is a no-op).
     img.onload = null;
     img.onerror = null;
+    if (img.src && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
     img.removeAttribute('src');
     img.style.display = 'none';
     document.getElementById('imggen-loading').style.display = 'block';
     document.getElementById('imggen-preview').style.display = 'block';
     document.getElementById('imggen-actions').style.display = 'none';
     document.getElementById('imggen-status').style.display = 'none';
-    tryGenerate(fullPrompt, w, h, 0, mySeq);
+
+    try {
+      await tryFetch(fullPrompt, w, h, 0, mySeq);
+    } finally {
+      if (mySeq === imgGenSeq) imgGenInFlight = false;
+    }
   }
 
-  function tryGenerate(prompt, w, h, modelIdx, mySeq) {
-    // If a newer generation has started, bail out of this one
+  async function tryFetch(prompt, w, h, modelIdx, mySeq) {
     if (mySeq !== imgGenSeq) return;
     if (modelIdx >= IMG_MODELS.length) {
-      document.getElementById('imggen-loading').textContent = 'Generation failed after multiple attempts. The service may be busy - please try again in a moment or change your prompt.';
+      document.getElementById('imggen-loading').textContent = 'Generation failed. The free image service may be rate-limited - wait 30 seconds and try again.';
       return;
     }
     const model = IMG_MODELS[modelIdx];
-    const loadingText = `Generating with ${model} (${modelIdx + 1}/${IMG_MODELS.length})...`;
-    document.getElementById('imggen-loading').textContent = loadingText;
+    document.getElementById('imggen-loading').textContent = `Generating with ${model} (${modelIdx + 1}/${IMG_MODELS.length})...`;
 
-    // Cache-bust: combine the user's seed with model index AND the sequence
-    // counter, so even back-to-back identical prompts produce different URLs
-    // (preventing image.src being a no-op when the browser thinks the URL
-    // hasn't changed).
     const cacheBust = imgGenState.seed + modelIdx * 1000 + mySeq * 7919;
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${cacheBust}&model=${model}&nologo=true`;
-    imgGenState.url = url;
-    const img = document.getElementById('imggen-img');
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${cacheBust}&model=${model}&nologo=true&safe=false`;
 
-    let resolved = false;
-    const TIMEOUT_MS = 30000;
-    const timer = setTimeout(() => {
-      if (resolved || mySeq !== imgGenSeq) return;
-      resolved = true;
-      console.warn(`Image gen timed out on ${model}, falling back`);
-      tryGenerate(prompt, w, h, modelIdx + 1, mySeq);
-    }, TIMEOUT_MS);
-
-    img.onload = () => {
-      if (resolved || mySeq !== imgGenSeq) return;
-      resolved = true;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 45000);
+    try {
+      const resp = await fetch(url, { signal: controller.signal, mode: 'cors' });
       clearTimeout(timer);
-      if (img.naturalWidth < 64 || img.naturalHeight < 64) {
-        console.warn(`Image gen returned tiny image on ${model} (${img.naturalWidth}×${img.naturalHeight}), falling back`);
-        tryGenerate(prompt, w, h, modelIdx + 1, mySeq);
-        return;
+      if (mySeq !== imgGenSeq) return;
+      if (!resp.ok) {
+        console.warn(`${model} returned HTTP ${resp.status}, falling back`);
+        return tryFetch(prompt, w, h, modelIdx + 1, mySeq);
       }
-      img.style.display = 'block';
-      document.getElementById('imggen-loading').style.display = 'none';
-      document.getElementById('imggen-actions').style.display = 'flex';
-      libraryAdd({
-        url: imgGenState.url,
-        type: imgGenState.type,
-        prompt: imgGenState.prompt,
-        ts: Date.now(),
-      });
-    };
-    img.onerror = () => {
-      if (resolved || mySeq !== imgGenSeq) return;
-      resolved = true;
+      const blob = await resp.blob();
+      if (mySeq !== imgGenSeq) return;
+      if (!blob || blob.size < 2000) {
+        // Anything under 2KB is almost certainly a tiny placeholder or error page
+        console.warn(`${model} returned suspiciously small blob (${blob.size}b), falling back`);
+        return tryFetch(prompt, w, h, modelIdx + 1, mySeq);
+      }
+      const objectUrl = URL.createObjectURL(blob);
+      imgGenState.url = url; // Keep the original URL so it can be shared / re-fetched later
+      imgGenState.objectUrl = objectUrl;
+      const img = document.getElementById('imggen-img');
+      img.onload = () => {
+        if (mySeq !== imgGenSeq) return;
+        img.style.display = 'block';
+        document.getElementById('imggen-loading').style.display = 'none';
+        document.getElementById('imggen-actions').style.display = 'flex';
+        libraryAdd({
+          url: imgGenState.url,
+          type: imgGenState.type,
+          prompt: imgGenState.prompt,
+          ts: Date.now(),
+        });
+      };
+      img.onerror = () => {
+        if (mySeq !== imgGenSeq) return;
+        console.warn(`${model} blob decoded as invalid, falling back`);
+        URL.revokeObjectURL(objectUrl);
+        tryFetch(prompt, w, h, modelIdx + 1, mySeq);
+      };
+      img.src = objectUrl;
+    } catch (err) {
       clearTimeout(timer);
-      console.warn(`Image gen errored on ${model}, falling back`);
-      tryGenerate(prompt, w, h, modelIdx + 1, mySeq);
-    };
-    img.src = url;
+      if (mySeq !== imgGenSeq) return;
+      console.warn(`${model} fetch failed:`, err && err.message, '- falling back');
+      tryFetch(prompt, w, h, modelIdx + 1, mySeq);
+    }
   }
 
   function showImggenStatus(text) {
@@ -7233,27 +7237,43 @@
   }
 
   // Common path: upload a generated image as the active map slot
+  // Helper: get the most recent generated image as a blob.
+  // Prefers the cached objectUrl (avoiding a redundant network round-trip
+  // and any rate-limit cliff Pollinations might hit).
+  async function getGeneratedBlob() {
+    if (imgGenState.objectUrl) {
+      try {
+        const r = await fetch(imgGenState.objectUrl);
+        return await r.blob();
+      } catch (e) { /* fall through to URL fetch */ }
+    }
+    const r = await fetch(imgGenState.url);
+    return await r.blob();
+  }
+
   async function imgGenSetAsMap() {
     if (!imgGenState.url) return;
     try {
       showImggenStatus('Uploading map...');
-      const res = await fetch(imgGenState.url);
-      const blob = await res.blob();
+      const blob = await getGeneratedBlob();
       const path = `${STATE.sessionId}/maps/slot-${STATE.activeMapSlot}-${Date.now()}.jpg`;
       const finalUrl = await uploadImage(blob, path);
       const cacheBuster = (DEMO_MODE || finalUrl.startsWith('data:') || finalUrl.startsWith('blob:')) ? finalUrl : finalUrl + '?t=' + Date.now();
-      const img = new Image();
+      // Read dimensions from the blob via an Image element
+      const dimImg = new Image();
+      const dimUrl = URL.createObjectURL(blob);
       await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = imgGenState.url;
+        dimImg.onload = resolve;
+        dimImg.onerror = reject;
+        dimImg.src = dimUrl;
       });
+      URL.revokeObjectURL(dimUrl);
       await sb.from('vtt_maps').upsert({
         session_id: STATE.sessionId,
         slot: STATE.activeMapSlot,
         image_url: cacheBuster,
-        width: img.width,
-        height: img.height,
+        width: dimImg.width,
+        height: dimImg.height,
         grid_ft: STATE.gridFt,
         offset_x: 0,
         offset_y: 0,
@@ -7272,8 +7292,7 @@
     if (!imgGenState.url) return;
     try {
       showImggenStatus('Adding token...');
-      const res = await fetch(imgGenState.url);
-      const blob = await res.blob();
+      const blob = await getGeneratedBlob();
       const tokenId = genId();
       const path = `${STATE.sessionId}/tokens/${tokenId}.jpg`;
       const url = await uploadImage(blob, path);
