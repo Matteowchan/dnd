@@ -98,7 +98,7 @@
   .map-slots { display: flex; gap: 4px; margin-bottom: 10px; }
   .map-slot { flex: 1; padding: 6px 4px; font-size: 11px; background: var(--panel-light); border: 1px solid var(--border); color: var(--cream); cursor: pointer; border-radius: 3px; position: relative; }
   .map-slot:hover { background: var(--bg); border-color: var(--gold-soft); }
-  .map-slot.active { background: var(--gold-soft); border-color: var(--gold); color: #1a1612; font-weight: 700; }
+  .map-slot.active { background: var(--gold); border-color: var(--gold); color: #1a1612; font-weight: 700; }
   .map-slot.has-content::after { content: ''; position: absolute; top: 3px; right: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
   .map-slot.active.has-content::after { background: #1a1612; }
   #audio-host-playback { display: flex; gap: 6px; }
@@ -115,8 +115,8 @@
   .token-thumb { width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--border); background-size: cover; background-position: center; cursor: grab; position: relative; transition: border-color 0.15s; }
   .token-thumb:hover { border-color: var(--gold); }
   .token-thumb.on-map { opacity: 0.4; cursor: default; }
-  .token-thumb .del-btn { position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: white; border: none; padding: 0; font-size: 11px; display: none; line-height: 1; }
-  .token-thumb:hover .del-btn { display: block; }
+  .token-thumb .del-btn { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: var(--danger); color: white; border: 1px solid #1a1612; padding: 0; font-size: 13px; line-height: 1; cursor: pointer; opacity: 0.7; transition: opacity 0.15s, transform 0.15s; z-index: 2; }
+  .token-thumb:hover .del-btn { opacity: 1; transform: scale(1.1); }
 
   .upload-box { border: 1px dashed var(--border); border-radius: 4px; padding: 14px; text-align: center; cursor: pointer; transition: all 0.15s; font-size: 13px; color: var(--muted); display: block; }
   .upload-box:hover { border-color: var(--gold); color: var(--gold); }
@@ -135,7 +135,7 @@
   .adv-row { display: flex; gap: 4px; margin-bottom: 10px; }
   .adv-btn { flex: 1; padding: 6px 4px; font-size: 11px; background: var(--panel-light); border: 1px solid var(--border); color: var(--cream); cursor: pointer; border-radius: 3px; }
   .adv-btn:hover { background: var(--bg); border-color: var(--gold-soft); }
-  .adv-btn.active { background: var(--gold-soft); border-color: var(--gold); color: #1a1612; font-weight: 700; }
+  .adv-btn.active { background: var(--gold); border-color: var(--gold); color: #1a1612; font-weight: 700; }
 
   /* MAP AREA */
   #mapcontainer { flex: 1; position: relative; overflow: hidden; background: #f4f0e8; cursor: grab; }
@@ -157,12 +157,66 @@
   .map-token .name-tag { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: var(--cream); padding: 2px 8px; border-radius: 3px; font-size: 11px; white-space: nowrap; font-family: 'Cinzel', serif; }
 
   /* CHARACTER POPUP */
-  #char-popup { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); width: 460px; max-height: 80vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  #char-popup { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); width: 560px; max-height: 88vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
   #char-popup.active { display: flex; }
   .char-popup-header { padding: 10px 14px; background: var(--panel-light); border-bottom: 1px solid var(--border); cursor: move; display: flex; align-items: center; justify-content: space-between; border-radius: 6px 6px 0 0; }
   .char-popup-header .ttl { font-family: 'Cinzel', serif; font-size: 14px; color: var(--gold); letter-spacing: 0.05em; }
   .char-popup-header button { padding: 2px 10px; font-size: 14px; }
   .char-popup-body { padding: 16px; overflow-y: auto; }
+
+  /* Character sheet sections */
+  .char-pbrow { display: flex; align-items: center; gap: 10px; padding: 8px 12px; margin-top: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; }
+  .pb-label { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; font-family: 'Cinzel', serif; }
+  .pb-value { font-size: 18px; color: var(--gold); font-weight: 700; font-family: 'Cinzel', serif; }
+  .pb-hint { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+  .char-section { margin-top: 14px; }
+  .char-section-head { font-family: 'Cinzel', serif; font-size: 12px; color: var(--gold); letter-spacing: 0.12em; text-transform: uppercase; padding-bottom: 4px; border-bottom: 1px solid var(--border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .char-section-head .hint { font-size: 9px; color: var(--muted); letter-spacing: 0.08em; text-transform: none; font-style: italic; font-family: inherit; }
+
+  /* Saving throws */
+  .saves-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .save-row { display: flex; align-items: center; gap: 6px; padding: 4px 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; font-size: 12px; }
+  .save-row .save-prof { width: 14px; height: 14px; cursor: pointer; accent-color: var(--gold); }
+  .save-row .save-stat { font-family: 'Cinzel', serif; color: var(--muted); font-size: 10px; letter-spacing: 0.1em; min-width: 26px; }
+  .save-row .save-bonus { margin-left: auto; color: var(--gold); font-weight: 700; }
+  .save-row:has(.save-prof:checked) .save-stat { color: var(--cream); }
+
+  /* Skills */
+  .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .skill-row { display: flex; align-items: center; gap: 6px; padding: 3px 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; font-size: 12px; }
+  .skill-row .skill-prof { width: 13px; height: 13px; cursor: pointer; accent-color: var(--gold); }
+  .skill-row .skill-stat { font-family: 'Cinzel', serif; color: var(--muted); font-size: 9px; letter-spacing: 0.1em; min-width: 22px; }
+  .skill-row .skill-name { flex: 1; color: var(--cream); }
+  .skill-row .skill-bonus { color: var(--gold); font-weight: 700; min-width: 26px; text-align: right; }
+  .skill-row:has(.skill-prof:checked) { background: rgba(212,175,55,0.06); }
+
+  /* Buffs */
+  #buffs-list { display: flex; flex-direction: column; gap: 4px; }
+  .buff-row { display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: var(--bg); border: 1px solid var(--gold-soft); border-radius: 3px; font-size: 12px; }
+  .buff-row.inactive { opacity: 0.45; border-color: var(--border); }
+  .buff-row .buff-toggle { width: 14px; height: 14px; cursor: pointer; accent-color: var(--gold); }
+  .buff-row .buff-name { flex: 1; color: var(--cream); font-weight: 600; }
+  .buff-row .buff-mod { color: var(--gold); font-weight: 700; font-family: 'Cinzel', serif; }
+  .buff-row .buff-del { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 1px 7px; font-size: 13px; line-height: 1; cursor: pointer; border-radius: 2px; }
+  .buff-row .buff-del:hover { color: var(--danger); border-color: var(--danger); }
+  .buff-add-row { display: flex; gap: 5px; margin-top: 8px; }
+  .buff-add-row input { flex: 1; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; font-family: inherit; font-size: 12px; }
+  .buff-add-row button { padding: 6px 12px; }
+
+  /* Inventory */
+  #inventory-list { display: flex; flex-direction: column; gap: 3px; }
+  .inv-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; font-size: 12px; }
+  .inv-row .inv-qty { color: var(--gold); font-weight: 700; min-width: 32px; }
+  .inv-row .inv-name { flex: 1; color: var(--cream); }
+  .inv-row .inv-del { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 1px 7px; font-size: 13px; line-height: 1; cursor: pointer; border-radius: 2px; }
+  .inv-row .inv-del:hover { color: var(--danger); border-color: var(--danger); }
+  .inv-add-row { display: flex; gap: 5px; margin-top: 8px; }
+  .inv-add-row input { flex: 1; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; font-family: inherit; font-size: 12px; }
+  .inv-add-row button { padding: 6px 12px; }
+
+  .char-gold-display { margin-left: auto; font-size: 11px; color: var(--muted); letter-spacing: 0.08em; display: inline-flex; align-items: center; gap: 6px; }
+  .char-gold-display input { width: 70px; padding: 3px 6px; background: var(--bg); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 3px; font-family: 'Cinzel', serif; font-weight: 700; text-align: center; }
   .char-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
   .char-portrait { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--gold); background-size: cover; background-position: center; background-color: var(--panel-light); flex-shrink: 0; }
   .char-head-info { flex: 1; }
@@ -213,7 +267,7 @@
   .tool-label { font-family: 'Cinzel', serif; font-size: 9px; color: var(--muted); text-align: center; letter-spacing: 0.15em; margin-bottom: 2px; }
   .tool-btn, .fx-btn { width: 36px; height: 36px; padding: 6px; background: transparent; border: 1px solid transparent; border-radius: 3px; color: var(--cream); cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .tool-btn:hover, .fx-btn:hover { background: var(--panel-light); border-color: var(--border); }
-  .tool-btn.active, .fx-btn.active { background: var(--gold-soft); color: #1a1612; border-color: var(--gold); }
+  .tool-btn.active, .fx-btn.active { background: var(--gold); color: #1a1612; border-color: var(--gold); }
   .tool-btn.active svg, .fx-btn.active svg { color: #1a1612; }
 
   /* FX COLOR PICKER */
@@ -234,53 +288,52 @@
   @keyframes rocket-burst { 0% { r: 5; opacity: 0.8; } 100% { r: 40; opacity: 0; } }
   @keyframes rocket-head { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
 
-  /* Per-effect-type loop animations (kept subtle so multiple effects don't overwhelm) */
-  g.fx-anim-breath { animation: fxa-flicker 1.6s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
-  @keyframes fxa-flicker { 0%, 100% { opacity: 1; } 30% { opacity: 0.78; } 60% { opacity: 0.92; } 80% { opacity: 0.82; } }
+  /* Per-effect-type animations - stepped timing for an 8-bit / pixel feel */
+  g.fx-anim-breath { animation: fxa-flicker 1s steps(4) infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes fxa-flicker { 0% { opacity: 1; } 25% { opacity: 0.7; } 50% { opacity: 0.95; } 75% { opacity: 0.82; } 100% { opacity: 1; } }
 
-  g.fx-anim-beam { animation: fxa-pulse-soft 1.5s ease-in-out infinite; }
-  @keyframes fxa-pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.75; } }
-  /* Lightning beams flicker rapidly with tiny jitter */
-  g.fx-anim-beam.fx-elem-lightning { animation: fxa-zap 0.18s linear infinite alternate; }
-  @keyframes fxa-zap { 0% { opacity: 0.7; transform: translate(0, 0); } 100% { opacity: 1; transform: translate(0.8px, -0.4px); } }
+  g.fx-anim-beam { animation: fxa-pulse-soft 0.9s steps(3) infinite; }
+  @keyframes fxa-pulse-soft { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+  g.fx-anim-beam.fx-elem-lightning { animation: fxa-zap 0.12s steps(2) infinite alternate; }
+  @keyframes fxa-zap { 0% { opacity: 0.6; transform: translate(0, 0); } 100% { opacity: 1; transform: translate(1px, -0.5px); } }
 
-  g.fx-anim-burn { animation: fxa-burn-glow 2.4s ease-in-out infinite; }
-  @keyframes fxa-burn-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.82; } }
+  g.fx-anim-burn { animation: fxa-burn-glow 1.2s steps(5) infinite; }
+  @keyframes fxa-burn-glow { 0% { opacity: 1; } 20% { opacity: 0.85; } 40% { opacity: 1; } 60% { opacity: 0.82; } 80% { opacity: 0.95; } 100% { opacity: 1; } }
 
-  g.fx-anim-shield { animation: fxa-shield-shimmer 3s ease-in-out infinite; }
-  @keyframes fxa-shield-shimmer { 0%, 100% { opacity: 1; } 50% { opacity: 0.78; } }
+  g.fx-anim-shield { animation: fxa-shield-shimmer 2s steps(3) infinite; }
+  @keyframes fxa-shield-shimmer { 0% { opacity: 1; } 50% { opacity: 0.78; } 100% { opacity: 1; } }
 
-  /* Sword slash sweeps along its arc by animating stroke-dashoffset */
-  g.fx-anim-sword path { stroke-dasharray: 280; animation: fxa-sword-trace 1.8s ease-out infinite; }
+  /* Sword slash sweeps along its arc */
+  g.fx-anim-sword path { stroke-dasharray: 280; animation: fxa-sword-trace 1.6s steps(8) infinite; }
   @keyframes fxa-sword-trace {
     0%   { stroke-dashoffset: 280; opacity: 0; }
-    18%  { opacity: 1; }
+    12%  { opacity: 1; }
     55%  { stroke-dashoffset: 0; opacity: 1; }
     85%  { opacity: 0.6; }
     100% { stroke-dashoffset: -280; opacity: 0; }
   }
 
-  /* Hit starburst grows then steadies */
-  g.fx-anim-hit { animation: fxa-hit-pop 0.55s cubic-bezier(0.25, 1.4, 0.45, 1) 1; transform-origin: center; transform-box: fill-box; }
+  /* Hit starburst grows in steps */
+  g.fx-anim-hit { animation: fxa-hit-pop 0.45s steps(4) 1; transform-origin: center; transform-box: fill-box; }
   @keyframes fxa-hit-pop {
     0% { transform: scale(0.4); opacity: 0; }
-    55% { transform: scale(1.12); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 1; }
     100% { transform: scale(1); opacity: 1; }
   }
 
-  /* Fist shockwaves expand subtly */
-  g.fx-anim-fist circle { animation: fxa-ring-out 1.6s ease-out infinite; }
-  g.fx-anim-fist circle:nth-child(2) { animation-delay: 0.2s; }
-  g.fx-anim-fist circle:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes fxa-ring-out { 0% { opacity: 1; } 100% { opacity: 0.6; } }
+  /* Fist shockwaves pulse in discrete steps */
+  g.fx-anim-fist circle { animation: fxa-ring-out 1.4s steps(4) infinite; }
+  g.fx-anim-fist circle:nth-child(2) { animation-delay: 0.18s; }
+  g.fx-anim-fist circle:nth-child(3) { animation-delay: 0.36s; }
+  @keyframes fxa-ring-out { 0% { opacity: 1; } 100% { opacity: 0.55; } }
 
-  /* Arrow has a slight wobble at the tip */
-  g.fx-anim-arrow polygon { animation: fxa-arrow-pulse 0.9s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
-  @keyframes fxa-arrow-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.85; } }
+  /* Arrow tip blinks */
+  g.fx-anim-arrow polygon { animation: fxa-arrow-pulse 0.6s steps(2) infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes fxa-arrow-pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
-  /* Rocket trail glints */
-  g.fx-anim-rocket circle { animation: fxa-glint 1.2s ease-in-out infinite; }
-  @keyframes fxa-glint { 0%, 100% { opacity: 1; } 50% { opacity: 0.75; } }
+  /* Rocket trail dots glint discretely */
+  g.fx-anim-rocket circle { animation: fxa-glint 0.9s steps(3) infinite; }
+  @keyframes fxa-glint { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
   /* REMOTE MEASUREMENTS */
   #remote-measurements { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 150; }
@@ -291,6 +344,25 @@
   #imggen-popup { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); width: 480px; max-height: 80vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
   #imggen-popup.active { display: flex; }
   #imggen-popup .char-popup-body { padding: 16px; overflow-y: auto; }
+
+  /* Spells popup */
+  #spells-popup { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); width: 460px; max-height: 82vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  #spells-popup.active { display: flex; }
+  #spells-popup .char-popup-body { padding: 14px; overflow-y: auto; }
+  .spells-cols { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
+  .spells-col-title { font-family: 'Cinzel', serif; font-size: 11px; color: var(--gold); letter-spacing: 0.15em; text-transform: uppercase; text-align: center; padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+  .spell-shape, .spell-element { width: 100%; display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: transparent; border: 1px solid transparent; border-radius: 3px; cursor: pointer; color: var(--cream); text-align: left; margin-bottom: 3px; }
+  .spell-shape:hover, .spell-element:hover { background: var(--panel-light); border-color: var(--border); }
+  .spell-shape.active, .spell-element.active { background: var(--gold); border-color: var(--gold); color: #1a1612; }
+  .spell-shape.active svg { color: #1a1612; }
+  .sp-info { display: flex; flex-direction: column; }
+  .sp-name { font-size: 13px; font-weight: 600; }
+  .sp-hint { font-size: 10px; opacity: 0.7; }
+  .sp-swatch { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.3); }
+  .spells-bottom { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .spells-current-row { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 10px; }
+  .spells-current-row strong { color: var(--gold); font-family: 'Cinzel', serif; letter-spacing: 0.05em; }
+  #spells-activate:disabled { opacity: 0.4; cursor: not-allowed; }
   .lib-thumb { position: relative; aspect-ratio: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; overflow: hidden; cursor: pointer; }
   .lib-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .lib-thumb:hover { border-color: var(--gold); }
@@ -314,6 +386,7 @@
   .chat-msg .user.host { color: var(--ember); }
   .chat-msg .roll-result { display: inline-block; background: var(--panel-light); border: 1px solid var(--gold-soft); padding: 2px 8px; border-radius: 3px; font-family: monospace; margin: 2px 4px 2px 0; }
   .chat-msg .roll-total { color: var(--gold); font-weight: 700; font-size: 16px; }
+  .chat-msg .roll-buffs { font-size: 10px; color: var(--gold); opacity: 0.75; margin-top: 2px; font-style: italic; letter-spacing: 0.03em; }
   .chat-msg.private { background: rgba(160,72,72,0.1); border-left: 2px solid var(--danger); padding: 6px 10px; border-radius: 3px; }
   .chat-msg.private .priv-tag { color: var(--danger); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; }
   .chat-msg .ts { color: var(--muted); font-size: 11px; margin-left: 6px; }
@@ -325,7 +398,7 @@
   #dice-overlay.active { display: flex; }
   .dice-stage { display: flex; gap: 36px; flex-wrap: wrap; justify-content: center; align-items: center; max-width: 80vw; perspective: 1000px; }
   .die3d { width: 120px; height: 120px; position: relative; transform-style: preserve-3d; }
-  .die3d .face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-weight: 700; color: #1a1612; font-size: 44px; background: linear-gradient(135deg, #f4d590 0%, #c89456 60%, #8a6535 100%); border: 2px solid #6b4a25; box-shadow: inset 0 0 20px rgba(0,0,0,0.4); }
+  .die3d .face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-weight: 700; color: #1a1612; font-size: 44px; background: linear-gradient(135deg, var(--dice-light, #f4d590) 0%, var(--dice-mid, #c89456) 60%, var(--dice-dark, #8a6535) 100%); border: 2px solid var(--dice-stroke, #6b4a25); box-shadow: inset 0 0 20px rgba(0,0,0,0.4); }
   .die3d.d6 .face.f1 { transform: rotateY(0deg) translateZ(60px); }
   .die3d.d6 .face.f2 { transform: rotateY(90deg) translateZ(60px); }
   .die3d.d6 .face.f3 { transform: rotateY(180deg) translateZ(60px); }
@@ -480,6 +553,7 @@
     </div>
 
     <button class="primary" id="enter-btn" style="width:100%; padding: 12px; margin-top: 10px;">Enter</button>
+    <button id="resume-btn" style="width:100%; padding: 10px; margin-top: 6px; display:none; background: transparent; color: var(--gold); border: 1px solid var(--gold-soft);">Continue last session</button>
     <div class="footer-note">Host opens a new session. Players enter the host's code to join.</div>
     <div class="conn-status" id="conn-status">Connecting...</div>
   </div>
@@ -618,6 +692,9 @@
           </button>
           <button class="tool-btn" id="imggen-btn" title="Generate image (AI)">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l1.5 4L11 8.5 6.5 10 5 14l-1.5-4L-1 8.5 3.5 7zM17 12l1 3 3 1-3 1-1 3-1-3-3-1 3-1zM16 3l.7 1.8L18.5 5.5l-1.8.7L16 8l-.7-1.8L13.5 5.5l1.8-.7z"/></svg>
+          </button>
+          <button class="tool-btn" id="spells-btn" title="Open Spells panel">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v6H4z M4 14h16v6H4z M8 7h2 M8 17h2"/></svg>
           </button>
         </div>
         <div class="tool-section">
@@ -767,6 +844,42 @@
       <div class="stat-box"><label>CHA</label><input type="number" id="char-cha" min="1" max="30" value="10"><div class="mod" id="mod-cha">+0</div></div>
     </div>
 
+    <div class="char-pbrow">
+      <div class="pb-label">Proficiency Bonus</div>
+      <div class="pb-value" id="char-prof-bonus">+2</div>
+      <div class="pb-hint" id="char-prof-hint">(auto from level)</div>
+    </div>
+
+    <div class="char-section">
+      <div class="char-section-head">Saving Throws</div>
+      <div class="saves-grid" id="saves-grid"></div>
+    </div>
+
+    <div class="char-section">
+      <div class="char-section-head">Skills</div>
+      <div class="skills-grid" id="skills-grid"></div>
+    </div>
+
+    <div class="char-section">
+      <div class="char-section-head">Active Buffs <span class="hint">(added to dice rolls)</span></div>
+      <div id="buffs-list"></div>
+      <div class="buff-add-row">
+        <input type="text" id="buff-add-name" placeholder="Buff name (e.g. Bless)" maxlength="30">
+        <input type="number" id="buff-add-mod" placeholder="+2" style="width:64px;">
+        <button id="buff-add-btn" class="primary">Add</button>
+      </div>
+    </div>
+
+    <div class="char-section">
+      <div class="char-section-head">Inventory <span class="char-gold-display">Gold: <input type="number" id="char-gold" value="0" min="0"></span></div>
+      <div id="inventory-list"></div>
+      <div class="inv-add-row">
+        <input type="text" id="inv-add-name" placeholder="Item name" maxlength="40">
+        <input type="number" id="inv-add-qty" placeholder="1" min="1" value="1" style="width:64px;">
+        <button id="inv-add-btn" class="primary">Add</button>
+      </div>
+    </div>
+
     <div class="char-notes">
       <label>Notes</label>
       <textarea id="char-notes" placeholder="Background, equipment, spells, anything you want to remember"></textarea>
@@ -801,6 +914,7 @@
       <div id="imggen-loading" style="text-align: center; color: var(--muted); padding: 40px;">Generating...</div>
     </div>
     <div id="imggen-actions" style="display:none; margin-top: 10px; gap: 6px; flex-wrap: wrap;">
+      <input type="text" id="imggen-name" placeholder="Name (optional)" style="flex-basis: 100%; padding: 7px 10px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; font-family: inherit; font-size: 13px;">
       <button id="imggen-as-map" class="primary" style="flex:1; min-width: 110px;">Use as Map</button>
       <button id="imggen-as-token" style="flex:1; min-width: 110px;">Add as Token</button>
       <button id="imggen-show-all" style="flex:1; min-width: 110px;">Show to All</button>
@@ -812,6 +926,81 @@
       <div style="font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px;">Maps · Characters · Items</div>
       <div id="imggen-library-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-height: 240px; overflow-y: auto;"></div>
       <div id="imggen-library-empty" style="font-size: 12px; color: var(--muted); text-align: center; padding: 10px;">No saved images yet. Generated images appear here.</div>
+    </div>
+  </div>
+</div>
+
+<div id="spells-popup">
+  <div class="char-popup-header">
+    <span class="ttl">Cast a Spell</span>
+    <button id="spells-close">×</button>
+  </div>
+  <div class="char-popup-body">
+    <div class="spells-cols">
+      <div class="spells-col">
+        <div class="spells-col-title">Shape</div>
+        <button class="spell-shape" data-fx="breath">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2 L4 20 L20 20 Z"/></svg>
+          <div class="sp-info"><div class="sp-name">Breath</div><div class="sp-hint">cone · aim</div></div>
+        </button>
+        <button class="spell-shape" data-fx="beam">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="4"><line x1="3" y1="3" x2="21" y2="21"/></svg>
+          <div class="sp-info"><div class="sp-name">Beam</div><div class="sp-hint">line · aim</div></div>
+        </button>
+        <button class="spell-shape" data-fx="rocket">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2 L18 12 L15 12 L15 22 L9 22 L9 12 L6 12 Z"/></svg>
+          <div class="sp-info"><div class="sp-name">Rocket</div><div class="sp-hint">projectile · aim</div></div>
+        </button>
+        <button class="spell-shape" data-fx="burn">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><circle cx="12" cy="12" r="9"/></svg>
+          <div class="sp-info"><div class="sp-name">Burn</div><div class="sp-hint">area · hold</div></div>
+        </button>
+        <button class="spell-shape" data-fx="glow">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
+          <div class="sp-info"><div class="sp-name">Glow</div><div class="sp-hint">aura · hold</div></div>
+        </button>
+        <button class="spell-shape" data-fx="sword">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 19 L17 7 L19 5 L18 8 L6 20 Z M5 19 L7 21 M14 10 L17 13"/></svg>
+          <div class="sp-info"><div class="sp-name">Sword Slash</div><div class="sp-hint">arc · aim</div></div>
+        </button>
+        <button class="spell-shape" data-fx="shield">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 L4 5 V12 C4 17 8 21 12 22 C16 21 20 17 20 12 V5 Z"/></svg>
+          <div class="sp-info"><div class="sp-name">Shield</div><div class="sp-hint">barrier · hold</div></div>
+        </button>
+        <button class="spell-shape" data-fx="hit">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 L12 22 M2 12 L22 12 M5 5 L19 19 M5 19 L19 5"/></svg>
+          <div class="sp-info"><div class="sp-name">Hit</div><div class="sp-hint">impact · hold</div></div>
+        </button>
+        <button class="spell-shape" data-fx="fist">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><circle cx="6" cy="10" r="2.2"/><circle cx="12" cy="9.5" r="2.4"/><circle cx="18" cy="10" r="2.2"/><rect x="3" y="13" width="18" height="7" rx="2"/></svg>
+          <div class="sp-info"><div class="sp-name">Fist</div><div class="sp-hint">punch · hold</div></div>
+        </button>
+        <button class="spell-shape" data-fx="arrow">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 12 L21 12 M15 6 L21 12 L15 18"/></svg>
+          <div class="sp-info"><div class="sp-name">Arrow</div><div class="sp-hint">ranged · aim</div></div>
+        </button>
+      </div>
+      <div class="spells-col">
+        <div class="spells-col-title">Element</div>
+        <button class="spell-element" data-color="fire"><span class="sp-swatch" style="background:#d44a26"></span><span class="sp-name">Fire</span></button>
+        <button class="spell-element" data-color="frost"><span class="sp-swatch" style="background:#6bb8e0"></span><span class="sp-name">Frost</span></button>
+        <button class="spell-element" data-color="acid"><span class="sp-swatch" style="background:#7bb838"></span><span class="sp-name">Acid</span></button>
+        <button class="spell-element" data-color="holy"><span class="sp-swatch" style="background:#e8c878"></span><span class="sp-name">Holy</span></button>
+        <button class="spell-element" data-color="blood"><span class="sp-swatch" style="background:#8b1e1e"></span><span class="sp-name">Blood</span></button>
+        <button class="spell-element" data-color="death"><span class="sp-swatch" style="background:#1a1a1a"></span><span class="sp-name">Death</span></button>
+        <button class="spell-element" data-color="magic"><span class="sp-swatch" style="background:#b026ff"></span><span class="sp-name">Magic</span></button>
+        <button class="spell-element" data-color="smoke"><span class="sp-swatch" style="background:#6a6a6a"></span><span class="sp-name">Smoke</span></button>
+        <button class="spell-element" data-color="charm"><span class="sp-swatch" style="background:#ff44cc"></span><span class="sp-name">Charm</span></button>
+        <button class="spell-element" data-color="slime"><span class="sp-swatch" style="background:#6dbf3a"></span><span class="sp-name">Slime</span></button>
+        <button class="spell-element" data-color="water"><span class="sp-swatch" style="background:#2070d8"></span><span class="sp-name">Water</span></button>
+        <button class="spell-element" data-color="lightning"><span class="sp-swatch" style="background:#a0d0ff"></span><span class="sp-name">Lightning</span></button>
+      </div>
+    </div>
+    <div class="spells-bottom">
+      <div class="spells-current-row">
+        Selected: <strong id="spells-current-name">Pick a shape and element</strong>
+      </div>
+      <button id="spells-activate" class="primary" style="width:100%; padding: 10px;" disabled>Activate</button>
     </div>
   </div>
 </div>
@@ -1000,6 +1189,9 @@
 
   if (DEMO_MODE) {
     console.log('Running in DEMO mode (no Supabase config set). UI works locally, no multiplayer sync.');
+    // Make the session field optional in demo mode by hinting at the auto-fallback
+    const sessInput = document.getElementById('session-input');
+    if (sessInput) sessInput.placeholder = 'Leave blank for DEMO';
   }
 
   // ============ STATE ============
@@ -1084,6 +1276,50 @@
   }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  // ============ COLOR HELPERS ============
+  function hexToRgb(hex) {
+    const c = (hex || '').replace('#', '').trim();
+    if (c.length !== 6) return { r: 200, g: 148, b: 86 };
+    return { r: parseInt(c.substr(0,2),16), g: parseInt(c.substr(2,2),16), b: parseInt(c.substr(4,2),16) };
+  }
+  function rgbToHex({r,g,b}) {
+    const h = n => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2,'0');
+    return '#' + h(r) + h(g) + h(b);
+  }
+  function tintColor(hex, amt) {
+    // amt > 0 lightens toward white, amt < 0 darkens toward black
+    const rgb = hexToRgb(hex);
+    if (amt > 0) {
+      rgb.r += (255 - rgb.r) * amt;
+      rgb.g += (255 - rgb.g) * amt;
+      rgb.b += (255 - rgb.b) * amt;
+    } else {
+      rgb.r *= (1 + amt);
+      rgb.g *= (1 + amt);
+      rgb.b *= (1 + amt);
+    }
+    return rgbToHex(rgb);
+  }
+  // Build a dice palette from a base color (or fall back to classic gold)
+  function dicePaletteForUserId(userId) {
+    let cls = null;
+    // Prefer the in-memory class for the current user (loaded faster than DB)
+    if (userId === STATE.userId && STATE.playerClass) {
+      cls = STATE.playerClass;
+    } else {
+      const player = STATE.persistedPlayers.find(p => p.id === userId);
+      cls = player && player.class;
+    }
+    const base = (cls && CLASS_COLORS[cls]) ? CLASS_COLORS[cls] : '#c89456';
+    return {
+      base,
+      light:  tintColor(base, 0.45),
+      mid:    base,
+      dark:   tintColor(base, -0.40),
+      stroke: tintColor(base, -0.60),
+    };
   }
 
   // ============ IMAGE PROCESSING ============
@@ -1214,7 +1450,9 @@
         });
       } else {
         // Join session
-        const code = document.getElementById('session-input').value.trim().toUpperCase();
+        let code = document.getElementById('session-input').value.trim().toUpperCase();
+        // In demo mode, no code needed - use a fixed DEMO session
+        if (DEMO_MODE && !code) code = 'DEMO';
         if (!code || code.length !== 4) {
           toast('Enter a valid 4-character code', 'error');
           btn.disabled = false; btn.textContent = 'Enter';
@@ -1222,13 +1460,18 @@
         }
         STATE.sessionId = code;
 
-        // Verify session exists
+        // Verify session exists. In demo mode, auto-create if missing so the
+        // preview works without first running through the Host flow.
         const { data: sess, error: sErr } = await sb.from('vtt_sessions').select('id').eq('id', code).maybeSingle();
         if (sErr) throw sErr;
         if (!sess) {
-          toast('Session not found. Check the code.', 'error');
-          btn.disabled = false; btn.textContent = 'Enter';
-          return;
+          if (DEMO_MODE) {
+            await sb.from('vtt_sessions').insert({ id: code, host_name: 'Demo Host' });
+          } else {
+            toast('Session not found. Check the code.', 'error');
+            btn.disabled = false; btn.textContent = 'Enter';
+            return;
+          }
         }
 
         // Add self as player with class
@@ -1257,6 +1500,8 @@
       }
 
       await enterApp();
+      // Persist login info so the player can return after closing the tab
+      saveSessionState();
     } catch (e) {
       console.error(e);
       toast('Failed: ' + (e.message || 'unknown error'), 'error', 4000);
@@ -1264,6 +1509,90 @@
       btn.textContent = 'Enter';
     }
   });
+
+  // ============ SESSION PERSISTENCE (localStorage) ============
+  const LS_KEY = 'vtt_session_state_v1';
+  function saveSessionState() {
+    try {
+      const data = {
+        sessionId: STATE.sessionId,
+        username: STATE.username,
+        userId: STATE.userId,
+        role: STATE.role,
+        isHost: STATE.isHost,
+        playerClass: STATE.playerClass,
+        savedAt: Date.now(),
+      };
+      localStorage.setItem(LS_KEY, JSON.stringify(data));
+    } catch (e) { /* ignore storage failures */ }
+  }
+  function loadSessionState() {
+    try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch (e) { return null; }
+  }
+  function clearSessionState() {
+    try { localStorage.removeItem(LS_KEY); } catch (e) { }
+  }
+
+  // On page load, if we have a saved session, offer a "Continue" button and
+  // pre-fill the login form so the player doesn't have to retype everything.
+  (function restoreLoginUi() {
+    const saved = loadSessionState();
+    if (!saved) return;
+    // Pre-fill name and class
+    if (saved.username) document.getElementById('username-input').value = saved.username;
+    if (saved.playerClass) {
+      const cl = document.getElementById('class-input');
+      if (cl) cl.value = saved.playerClass;
+    }
+    // Switch to the role the user was last using
+    if (saved.role === 'player') document.getElementById('role-player-btn').click();
+    // If session is < 7 days old, allow a one-click resume
+    const fresh = saved.savedAt && (Date.now() - saved.savedAt < 7 * 24 * 3600 * 1000);
+    if (!fresh) return;
+    const btn = document.getElementById('resume-btn');
+    btn.style.display = 'block';
+    btn.textContent = `Continue as ${saved.username} (${saved.sessionId})`;
+    btn.addEventListener('click', async () => {
+      btn.disabled = true; btn.textContent = 'Resuming...';
+      try {
+        // Verify the session still exists; if it does, jump straight in
+        const { data: sess } = await sb.from('vtt_sessions').select('id').eq('id', saved.sessionId).maybeSingle();
+        if (!sess) {
+          toast('Saved session no longer exists', 'error');
+          clearSessionState();
+          btn.style.display = 'none';
+          return;
+        }
+        Object.assign(STATE, {
+          sessionId: saved.sessionId,
+          username: saved.username,
+          userId: saved.userId,
+          role: saved.role,
+          isHost: saved.isHost,
+          playerClass: saved.playerClass,
+        });
+        // Make sure our player row still exists; if not, recreate it.
+        const { data: meRow } = await sb.from('vtt_players').select('id').eq('id', saved.userId).maybeSingle();
+        if (!meRow) {
+          await sb.from('vtt_players').insert({
+            id: saved.userId,
+            session_id: saved.sessionId,
+            name: saved.username,
+            is_host: saved.isHost,
+            class: saved.playerClass || null,
+            level: 1, ac: 10, speed: 30,
+            strength: 10, dexterity: 10, constitution: 10,
+            intelligence: 10, wisdom: 10, charisma: 10,
+          });
+        }
+        await enterApp();
+      } catch (e) {
+        console.error(e);
+        toast('Resume failed', 'error');
+        btn.disabled = false;
+      }
+    });
+  })();
 
   // ============ ENTER APP ============
   async function enterApp() {
@@ -1285,18 +1614,23 @@
       document.getElementById('switch-role-btn').style.display = 'inline-block';
     }
     const badge = document.getElementById('role-badge');
+    // Toolbar is visible to everyone so players can cast spells too.
+    document.getElementById('dm-toolbar').style.display = 'flex';
     if (STATE.isHost) {
       badge.textContent = 'HOST';
       badge.className = 'role-badge role-host';
       document.getElementById('host-section').style.display = 'block';
       document.getElementById('gm-roll-toggle').style.display = 'flex';
-      document.getElementById('dm-toolbar').style.display = 'flex';
-      // Host does not have a personal character. They click tokens to view player info.
       document.getElementById('open-char-info').style.display = 'none';
     } else {
       const cls = STATE.playerClass ? ' · ' + STATE.playerClass.toUpperCase() : '';
       badge.textContent = 'PLAYER' + cls;
       badge.className = 'role-badge role-player';
+      // Players don't get image generation or clear-effects (DM-only powers)
+      const imggenBtn = document.getElementById('imggen-btn');
+      const clearBtn = document.getElementById('clear-effects-btn');
+      if (imggenBtn) imggenBtn.style.display = 'none';
+      if (clearBtn) clearBtn.style.display = 'none';
     }
 
     await loadInitialState();
@@ -1675,7 +2009,8 @@
       const rolls = (msg.rolls || []).map(r => `<span class="roll-result">${r}</span>`).join('');
       const mod = msg.modifier || 0;
       const modText = mod !== 0 ? ` ${mod > 0 ? '+' : ''}${mod}` : '';
-      div.innerHTML = `${privTag}<span class="${userCls}">${escapeHtml(msg.user_name)}</span> rolled <b>${msg.dice_count}d${msg.sides}${modText}</b> ${rolls} = <span class="roll-total">${msg.total}</span> <span class="ts">${msg.ts || ''}</span>`;
+      const buffLine = msg.text ? `<div class="roll-buffs">${escapeHtml(msg.text)}</div>` : '';
+      div.innerHTML = `${privTag}<span class="${userCls}">${escapeHtml(msg.user_name)}</span> rolled <b>${msg.dice_count}d${msg.sides}${modText}</b> ${rolls} = <span class="roll-total">${msg.total}</span> <span class="ts">${msg.ts || ''}</span>${buffLine}`;
     } else {
       const userCls = msg.is_host ? 'user host' : 'user';
       div.innerHTML = `<span class="${userCls}">${escapeHtml(msg.user_name)}:</span> ${escapeHtml(msg.text)} <span class="ts">${msg.ts || ''}</span>`;
@@ -1719,12 +2054,16 @@
     const list = document.getElementById('hp-tracker-list');
     list.innerHTML = '';
 
-    // Host sees all tokens on map; players see only tokens they own
-    const visible = [];
-    STATE.tokens.forEach(tok => {
-      if (tok.x == null) return;
-      if (STATE.isHost || tok.owner_id === STATE.userId) visible.push(tok);
-    });
+    // Show every token in the session, on map or in tray. Visible to everyone
+    // so the party can track its members and any creatures the DM has placed.
+    const visible = Array.from(STATE.tokens.values())
+      .sort((a, b) => {
+        // On-map tokens first, then by name
+        const aOn = a.x != null ? 0 : 1;
+        const bOn = b.x != null ? 0 : 1;
+        if (aOn !== bOn) return aOn - bOn;
+        return (a.name || '').localeCompare(b.name || '');
+      });
 
     if (visible.length === 0) {
       section.style.display = 'none';
@@ -1823,7 +2162,167 @@
     targetPlayerId: null,    // whose character is shown
     targetTokenId: null,     // optional, which token's HP to show
     saveTimeout: null,
+    // Extended sheet state for the currently-open character
+    saveProfs: new Set(),    // 'str','dex',...
+    skillProfs: new Set(),   // 'acrobatics','stealth',...
+    buffs: [],               // [{ name, mod, active }]
+    inventory: [],           // [{ name, qty }]
   };
+
+  // ============ CHARACTER SHEET EXTENSIONS (skills, saves, buffs, inventory) ============
+  const SKILLS_DEF = [
+    { key: 'acrobatics',      name: 'Acrobatics',      stat: 'dex' },
+    { key: 'animal_handling', name: 'Animal Handling', stat: 'wis' },
+    { key: 'arcana',          name: 'Arcana',          stat: 'int' },
+    { key: 'athletics',       name: 'Athletics',       stat: 'str' },
+    { key: 'deception',       name: 'Deception',       stat: 'cha' },
+    { key: 'history',         name: 'History',         stat: 'int' },
+    { key: 'insight',         name: 'Insight',         stat: 'wis' },
+    { key: 'intimidation',    name: 'Intimidation',    stat: 'cha' },
+    { key: 'investigation',   name: 'Investigation',   stat: 'int' },
+    { key: 'medicine',        name: 'Medicine',        stat: 'wis' },
+    { key: 'nature',          name: 'Nature',          stat: 'int' },
+    { key: 'perception',      name: 'Perception',      stat: 'wis' },
+    { key: 'performance',     name: 'Performance',     stat: 'cha' },
+    { key: 'persuasion',      name: 'Persuasion',      stat: 'cha' },
+    { key: 'religion',        name: 'Religion',        stat: 'int' },
+    { key: 'sleight_of_hand', name: 'Sleight of Hand', stat: 'dex' },
+    { key: 'stealth',         name: 'Stealth',         stat: 'dex' },
+    { key: 'survival',        name: 'Survival',        stat: 'wis' },
+  ];
+  const SAVE_STATS = ['str','dex','con','int','wis','cha'];
+
+  function profBonusForLevel(level) {
+    const lv = Math.max(1, parseInt(level) || 1);
+    if (lv <= 4) return 2;
+    if (lv <= 8) return 3;
+    if (lv <= 12) return 4;
+    if (lv <= 16) return 5;
+    return 6;
+  }
+
+  // Parse helpers - tolerate missing/legacy fields gracefully
+  function parseSet(str) {
+    if (!str || typeof str !== 'string') return new Set();
+    return new Set(str.split(',').map(s => s.trim()).filter(Boolean));
+  }
+  function setToCsv(set) { return Array.from(set).join(','); }
+  function parseJsonArray(str) {
+    if (!str) return [];
+    if (Array.isArray(str)) return str;
+    try { const v = JSON.parse(str); return Array.isArray(v) ? v : []; }
+    catch (e) { return []; }
+  }
+
+  function getCharStat(statKey) {
+    return parseInt(document.getElementById('char-' + statKey).value) || 10;
+  }
+  function getProfBonus() {
+    const lv = parseInt(document.getElementById('char-level').value) || 1;
+    return profBonusForLevel(lv);
+  }
+
+  function renderSaves(saveProfs) {
+    const grid = document.getElementById('saves-grid');
+    grid.innerHTML = '';
+    const pb = getProfBonus();
+    SAVE_STATS.forEach(stat => {
+      const mod = statMod(getCharStat(stat));
+      const isProf = saveProfs.has(stat);
+      const total = mod + (isProf ? pb : 0);
+      const row = document.createElement('div');
+      row.className = 'save-row';
+      row.innerHTML = `
+        <input type="checkbox" class="save-prof" data-stat="${stat}" ${isProf ? 'checked' : ''}>
+        <span class="save-stat">${stat.toUpperCase()}</span>
+        <span class="save-bonus">${fmtMod(total)}</span>
+      `;
+      grid.appendChild(row);
+    });
+  }
+
+  function renderSkills(skillProfs) {
+    const grid = document.getElementById('skills-grid');
+    grid.innerHTML = '';
+    const pb = getProfBonus();
+    SKILLS_DEF.forEach(s => {
+      const mod = statMod(getCharStat(s.stat));
+      const isProf = skillProfs.has(s.key);
+      const total = mod + (isProf ? pb : 0);
+      const row = document.createElement('div');
+      row.className = 'skill-row';
+      row.innerHTML = `
+        <input type="checkbox" class="skill-prof" data-skill="${s.key}" ${isProf ? 'checked' : ''}>
+        <span class="skill-stat">${s.stat.toUpperCase()}</span>
+        <span class="skill-name">${s.name}</span>
+        <span class="skill-bonus">${fmtMod(total)}</span>
+      `;
+      grid.appendChild(row);
+    });
+  }
+
+  function renderBuffs(buffs) {
+    const list = document.getElementById('buffs-list');
+    list.innerHTML = '';
+    if (!buffs.length) {
+      list.innerHTML = '<div style="font-size: 11px; color: var(--muted); padding: 4px 0;">No active buffs. Bless, Bardic Inspiration, etc. go here.</div>';
+      return;
+    }
+    buffs.forEach((b, idx) => {
+      const row = document.createElement('div');
+      row.className = 'buff-row' + (b.active === false ? ' inactive' : '');
+      row.innerHTML = `
+        <input type="checkbox" class="buff-toggle" ${b.active !== false ? 'checked' : ''}>
+        <span class="buff-name">${escapeHtml(b.name)}</span>
+        <span class="buff-mod">${b.mod >= 0 ? '+' : ''}${b.mod}</span>
+        <button class="buff-del">×</button>
+      `;
+      row.querySelector('.buff-toggle').addEventListener('change', (e) => {
+        CHAR_POPUP.buffs[idx].active = e.target.checked;
+        row.classList.toggle('inactive', !e.target.checked);
+        scheduleSavePlayer();
+      });
+      row.querySelector('.buff-del').addEventListener('click', () => {
+        CHAR_POPUP.buffs.splice(idx, 1);
+        renderBuffs(CHAR_POPUP.buffs);
+        scheduleSavePlayer();
+      });
+      list.appendChild(row);
+    });
+  }
+
+  function renderInventory(items) {
+    const list = document.getElementById('inventory-list');
+    list.innerHTML = '';
+    if (!items.length) {
+      list.innerHTML = '<div style="font-size: 11px; color: var(--muted); padding: 4px 0;">Empty. Add items below.</div>';
+      return;
+    }
+    items.forEach((it, idx) => {
+      const row = document.createElement('div');
+      row.className = 'inv-row';
+      row.innerHTML = `
+        <span class="inv-qty">${it.qty}×</span>
+        <span class="inv-name">${escapeHtml(it.name)}</span>
+        <button class="inv-del">×</button>
+      `;
+      row.querySelector('.inv-del').addEventListener('click', () => {
+        CHAR_POPUP.inventory.splice(idx, 1);
+        renderInventory(CHAR_POPUP.inventory);
+        scheduleSavePlayer();
+      });
+      list.appendChild(row);
+    });
+  }
+
+  // Re-render all derived sections whenever stats or level change
+  function refreshDerivedSections() {
+    const pb = getProfBonus();
+    document.getElementById('char-prof-bonus').textContent = fmtMod(pb);
+    document.getElementById('char-prof-hint').textContent = `level ${document.getElementById('char-level').value}`;
+    renderSaves(CHAR_POPUP.saveProfs);
+    renderSkills(CHAR_POPUP.skillProfs);
+  }
 
   function openCharPopup(playerId, tokenId) {
     const player = STATE.persistedPlayers.find(p => p.id === playerId);
@@ -1888,6 +2387,16 @@
     }
 
     updateStatMods();
+
+    // Load character sheet extensions (skills, saves, buffs, inventory, gold)
+    CHAR_POPUP.saveProfs = parseSet(player.save_profs);
+    CHAR_POPUP.skillProfs = parseSet(player.skill_profs);
+    CHAR_POPUP.buffs = parseJsonArray(player.buffs);
+    CHAR_POPUP.inventory = parseJsonArray(player.inventory);
+    document.getElementById('char-gold').value = player.gold ?? 0;
+    refreshDerivedSections();
+    renderBuffs(CHAR_POPUP.buffs);
+    renderInventory(CHAR_POPUP.inventory);
 
     // Set readonly state on all inputs based on permission
     const allInputs = popup.querySelectorAll('input, select, textarea');
@@ -1972,6 +2481,12 @@
       wisdom: parseInt(document.getElementById('char-wis').value) || 10,
       charisma: parseInt(document.getElementById('char-cha').value) || 10,
       notes: document.getElementById('char-notes').value,
+      // Sheet extensions
+      gold: parseInt(document.getElementById('char-gold').value) || 0,
+      save_profs: setToCsv(CHAR_POPUP.saveProfs),
+      skill_profs: setToCsv(CHAR_POPUP.skillProfs),
+      buffs: JSON.stringify(CHAR_POPUP.buffs),
+      inventory: JSON.stringify(CHAR_POPUP.inventory),
     };
 
     await sb.from('vtt_players').update(patch).eq('id', CHAR_POPUP.targetPlayerId);
@@ -1980,6 +2495,7 @@
     if (CHAR_POPUP.targetPlayerId === STATE.userId && patch.class !== STATE.playerClass) {
       STATE.playerClass = patch.class;
       applyClassTheme(patch.class);
+      saveSessionState();
     }
   }
 
@@ -1993,9 +2509,52 @@
      'char-str', 'char-dex', 'char-con', 'char-int', 'char-wis', 'char-cha', 'char-notes']
       .forEach(id => {
         const el = document.getElementById(id);
-        el.addEventListener('input', () => { updateStatMods(); scheduleSavePlayer(); });
-        el.addEventListener('change', () => { updateStatMods(); scheduleSavePlayer(); });
+        el.addEventListener('input', () => { updateStatMods(); refreshDerivedSections(); scheduleSavePlayer(); });
+        el.addEventListener('change', () => { updateStatMods(); refreshDerivedSections(); scheduleSavePlayer(); });
       });
+
+    // Gold input
+    document.getElementById('char-gold').addEventListener('input', scheduleSavePlayer);
+
+    // Saving throw and skill proficiency toggles (delegated since the rows are rebuilt)
+    document.getElementById('saves-grid').addEventListener('change', (e) => {
+      if (!e.target.classList.contains('save-prof')) return;
+      const stat = e.target.dataset.stat;
+      if (e.target.checked) CHAR_POPUP.saveProfs.add(stat); else CHAR_POPUP.saveProfs.delete(stat);
+      renderSaves(CHAR_POPUP.saveProfs);
+      scheduleSavePlayer();
+    });
+    document.getElementById('skills-grid').addEventListener('change', (e) => {
+      if (!e.target.classList.contains('skill-prof')) return;
+      const skill = e.target.dataset.skill;
+      if (e.target.checked) CHAR_POPUP.skillProfs.add(skill); else CHAR_POPUP.skillProfs.delete(skill);
+      renderSkills(CHAR_POPUP.skillProfs);
+      scheduleSavePlayer();
+    });
+
+    // Buff add
+    document.getElementById('buff-add-btn').addEventListener('click', () => {
+      const name = document.getElementById('buff-add-name').value.trim();
+      const mod = parseInt(document.getElementById('buff-add-mod').value) || 0;
+      if (!name) { toast('Buff name required', 'error'); return; }
+      CHAR_POPUP.buffs.push({ name, mod, active: true });
+      document.getElementById('buff-add-name').value = '';
+      document.getElementById('buff-add-mod').value = '';
+      renderBuffs(CHAR_POPUP.buffs);
+      scheduleSavePlayer();
+    });
+
+    // Inventory add
+    document.getElementById('inv-add-btn').addEventListener('click', () => {
+      const name = document.getElementById('inv-add-name').value.trim();
+      const qty = Math.max(1, parseInt(document.getElementById('inv-add-qty').value) || 1);
+      if (!name) { toast('Item name required', 'error'); return; }
+      CHAR_POPUP.inventory.push({ name, qty });
+      document.getElementById('inv-add-name').value = '';
+      document.getElementById('inv-add-qty').value = '1';
+      renderInventory(CHAR_POPUP.inventory);
+      scheduleSavePlayer();
+    });
 
     // HP inputs save to the token, not the player
     const hpCur = document.getElementById('char-hp-cur');
@@ -2019,7 +2578,14 @@
     hpMax.addEventListener('input', saveHpToToken);
 
     // Drag popup
+    makePopupDraggable(popup);
+  }
+  setupCharPopupListeners();
+
+  // Generic drag-by-header for any popup with a .char-popup-header
+  function makePopupDraggable(popup) {
     const handle = popup.querySelector('.char-popup-header');
+    if (!handle) return;
     let dragging = false, sx, sy, sl, st;
     handle.addEventListener('mousedown', (e) => {
       if (e.target.tagName === 'BUTTON') return;
@@ -2038,7 +2604,72 @@
     });
     document.addEventListener('mouseup', () => dragging = false);
   }
-  setupCharPopupListeners();
+  // Apply drag to the image generation popup too
+  makePopupDraggable(document.getElementById('imggen-popup'));
+  makePopupDraggable(document.getElementById('spells-popup'));
+
+  // ============ SPELLS POPUP ============
+  const SPELL_DRAFT = { fx: null, color: null };
+  function spellNameFor(fx, color) {
+    if (!fx || !color) return null;
+    const shapeName = {
+      breath: 'Breath', beam: 'Beam', rocket: 'Rocket', burn: 'Burn', glow: 'Glow',
+      sword: 'Sword Slash', shield: 'Shield', hit: 'Hit', fist: 'Fist', arrow: 'Arrow',
+    }[fx] || fx;
+    const elemName = (color.charAt(0).toUpperCase() + color.slice(1));
+    return `${elemName} ${shapeName}`;
+  }
+  function updateSpellsPreview() {
+    const label = document.getElementById('spells-current-name');
+    const btn = document.getElementById('spells-activate');
+    const name = spellNameFor(SPELL_DRAFT.fx, SPELL_DRAFT.color);
+    if (name) {
+      label.textContent = name;
+      btn.disabled = false;
+      btn.textContent = 'Activate ' + name;
+    } else {
+      label.textContent = 'Pick a shape and element';
+      btn.disabled = true;
+      btn.textContent = 'Activate';
+    }
+  }
+  function spellsOpen() {
+    // Pre-select whatever the toolbar currently has
+    SPELL_DRAFT.fx = STATE.activeFx || STATE.activeFx;
+    SPELL_DRAFT.color = STATE.activeFxColor || null;
+    document.querySelectorAll('.spell-shape').forEach(b => b.classList.toggle('active', b.dataset.fx === SPELL_DRAFT.fx));
+    document.querySelectorAll('.spell-element').forEach(b => b.classList.toggle('active', b.dataset.color === SPELL_DRAFT.color));
+    updateSpellsPreview();
+    document.getElementById('spells-popup').classList.add('active');
+  }
+  document.getElementById('spells-btn').addEventListener('click', spellsOpen);
+  document.getElementById('spells-close').addEventListener('click', () => {
+    document.getElementById('spells-popup').classList.remove('active');
+  });
+  document.querySelectorAll('.spell-shape').forEach(btn => {
+    btn.addEventListener('click', () => {
+      SPELL_DRAFT.fx = btn.dataset.fx;
+      document.querySelectorAll('.spell-shape').forEach(b => b.classList.toggle('active', b === btn));
+      updateSpellsPreview();
+    });
+  });
+  document.querySelectorAll('.spell-element').forEach(btn => {
+    btn.addEventListener('click', () => {
+      SPELL_DRAFT.color = btn.dataset.color;
+      document.querySelectorAll('.spell-element').forEach(b => b.classList.toggle('active', b === btn));
+      updateSpellsPreview();
+    });
+  });
+  document.getElementById('spells-activate').addEventListener('click', () => {
+    if (!SPELL_DRAFT.fx || !SPELL_DRAFT.color) return;
+    // Apply selection: switch active tool to fx with chosen shape and element
+    STATE.activeFxColor = SPELL_DRAFT.color;
+    setActiveTool('fx', SPELL_DRAFT.fx);
+    // Reflect color choice in the legacy color picker too
+    document.querySelectorAll('.fx-color').forEach(b => b.classList.toggle('active', b.dataset.color === SPELL_DRAFT.color));
+    document.getElementById('spells-popup').classList.remove('active');
+    toast('Casting ' + spellNameFor(SPELL_DRAFT.fx, SPELL_DRAFT.color) + ' - drag on the map');
+  });
 
   // Wire the "Character Info" button
   document.getElementById('open-char-info').addEventListener('click', () => {
@@ -2163,22 +2794,35 @@
   });
 
   document.getElementById('clear-tokens-btn').addEventListener('click', async () => {
-    if (!confirm('Clear all tokens from the map? (Tokens stay in the tray, ready to re-place.)')) return;
-    // Set x,y to null for all tokens in this session
+    if (!confirm('Clear the map? Tokens return to the tray, all effects are removed.')) return;
+    // Update locally first so the screen reacts immediately
     const tokensOnMap = Array.from(STATE.tokens.values()).filter(t => t.x != null);
-    for (const tok of tokensOnMap) {
-      await sb.from('vtt_tokens').update({
-        x: null, y: null,
-        updated_at: new Date().toISOString(),
-      }).eq('id', tok.id);
+    tokensOnMap.forEach(t => { t.x = null; t.y = null; });
+    STATE.effects.clear();
+    renderTokens();
+    renderTokenTray();
+    renderEffects();
+    // Then persist to DB; realtime will sync other clients
+    try {
+      for (const tok of tokensOnMap) {
+        await sb.from('vtt_tokens').update({
+          x: null, y: null,
+          updated_at: new Date().toISOString(),
+        }).eq('id', tok.id);
+      }
+      await sb.from('vtt_effects').delete().eq('session_id', STATE.sessionId);
+      await sb.from('vtt_chat').insert({
+        id: genId(),
+        session_id: STATE.sessionId,
+        msg_type: 'system',
+        text: 'Host cleared the map.',
+        ts: nowTs(),
+      });
+      toast('Map cleared');
+    } catch (e) {
+      console.error(e);
+      toast('Some changes failed to sync', 'error');
     }
-    await sb.from('vtt_chat').insert({
-      id: genId(),
-      session_id: STATE.sessionId,
-      msg_type: 'system',
-      text: 'Host cleared all tokens from the map.',
-      ts: nowTs(),
-    });
   });
 
   // ============ DM TOOL SELECTION ============
@@ -2908,16 +3552,18 @@
       const path = `${STATE.sessionId}/tokens/${tokenId}.jpg`;
       const url = await uploadImage(blob, path);
       const labelMap = { character: 'NPC', creature: 'Creature', item: 'Item', map: 'Image' };
+      const customName = (document.getElementById('imggen-name').value || '').trim();
+      const tokenName = customName || labelMap[imgGenState.type] || 'Token';
       await sb.from('vtt_tokens').insert({
         id: tokenId,
         session_id: STATE.sessionId,
-        name: labelMap[imgGenState.type] || 'Token',
+        name: tokenName,
         image_url: url,
         x: null, y: null,
         owner_id: STATE.userId,
         current_hp: 10, max_hp: 10,
       });
-      showImggenStatus((labelMap[imgGenState.type] || 'Token') + ' added to tray');
+      showImggenStatus(`"${tokenName}" added to tray`);
     } catch (err) {
       console.error(err);
       toast('Failed to publish token', 'error');
@@ -3314,9 +3960,23 @@
     document.getElementById('gm-roll-toggle').classList.toggle('active', e.target.checked);
   });
 
+  // Get the current user's active buffs as an array, parsed from their player row
+  function getActiveBuffsForUser() {
+    const player = STATE.persistedPlayers.find(p => p.id === STATE.userId);
+    if (!player) return [];
+    return parseJsonArray(player.buffs).filter(b => b.active !== false);
+  }
+
   async function rollDice(sides, count, mod, isPrivate) {
     const advMode = STATE.advMode || 'normal';
     const useAdv = (sides === 20 && count === 1 && advMode !== 'normal');
+
+    // Apply active buffs - sum their flat modifiers into the roll total
+    const activeBuffs = getActiveBuffsForUser();
+    const buffMod = activeBuffs.reduce((s, b) => s + (parseInt(b.mod) || 0), 0);
+    const buffSummary = activeBuffs.length
+      ? activeBuffs.map(b => `${b.name} ${b.mod>=0?'+':''}${b.mod}`).join(', ')
+      : null;
 
     let rolls = [];
     let total = 0;
@@ -3327,10 +3987,10 @@
       const r2 = Math.floor(Math.random() * 20) + 1;
       rolls = [r1, r2];
       picked = (advMode === 'advantage') ? Math.max(r1, r2) : Math.min(r1, r2);
-      total = picked + mod;
+      total = picked + mod + buffMod;
     } else {
       for (let i = 0; i < count; i++) rolls.push(Math.floor(Math.random() * sides) + 1);
-      total = rolls.reduce((a,b) => a+b, 0) + mod;
+      total = rolls.reduce((a,b) => a+b, 0) + mod + buffMod;
     }
 
     const id = genId();
@@ -3345,13 +4005,15 @@
       is_host: STATE.isHost,
       sides,
       dice_count: useAdv ? 2 : count,
-      modifier: mod,
+      modifier: mod + buffMod,
       rolls,
       total,
       is_private: !!isPrivate,
       adv_mode: useAdv ? advMode : null,
       picked,
       ts: nowTs(),
+      // We reuse the text field to record what buffs were active at roll time
+      text: buffSummary ? `Buffs: ${buffSummary}` : null,
     };
 
     animateDiceRoll(msg);
@@ -3395,6 +4057,9 @@
     result.style.opacity = '0';
     result.className = 'dice-result-summary';
 
+    // Build a class-colored palette for the player who rolled
+    const palette = dicePaletteForUserId(msg.user_id);
+
     const ANIM_DURATION = 1400;
     const STAGGER = 110;
     const totalSettleTime = ANIM_DURATION + (msg.rolls.length - 1) * STAGGER;
@@ -3408,6 +4073,11 @@
         // (with extra full rotations layered in) so the cube never jumps.
         dieEl = document.createElement('div');
         dieEl.className = 'die3d d6';
+        // Apply class palette via CSS custom properties
+        dieEl.style.setProperty('--dice-light',  palette.light);
+        dieEl.style.setProperty('--dice-mid',    palette.mid);
+        dieEl.style.setProperty('--dice-dark',   palette.dark);
+        dieEl.style.setProperty('--dice-stroke', palette.stroke);
         for (let f = 1; f <= 6; f++) {
           const face = document.createElement('div');
           face.className = `face f${f}`;
@@ -3422,15 +4092,12 @@
           5: { x: -90, y: 0 },
           6: { x: 90,  y: 0 },
         }[val];
-        // Add randomized number of full rotations so each tumble looks different
-        const extraX = 360 * (2 + Math.floor(Math.random() * 3)); // 2-4 spins
+        const extraX = 360 * (2 + Math.floor(Math.random() * 3));
         const extraY = 360 * (2 + Math.floor(Math.random() * 3));
         const sign = Math.random() < 0.5 ? -1 : 1;
         const finalX = targetRot.x + sign * extraX;
         const finalY = targetRot.y + extraY;
-        // Initial position above and pre-rotation for visual interest
         dieEl.style.transform = `translateY(-260px) rotateX(${Math.random()*60-30}deg) rotateY(${Math.random()*60-30}deg)`;
-        // Animate after a tiny delay so the initial transform applies
         scheduleDice(() => {
           dieEl.style.transition = `transform ${ANIM_DURATION/1000}s cubic-bezier(0.28, 1.05, 0.38, 1)`;
           dieEl.style.transform = `translateY(0) rotateX(${finalX}deg) rotateY(${finalY}deg)`;
@@ -3440,8 +4107,7 @@
         // Polyhedron-style die for everything else. Cycle random numbers during spin.
         dieEl = document.createElement('div');
         dieEl.className = 'die-poly';
-        dieEl.innerHTML = polyhedronSVG(msg.sides) + `<div class="val">?</div>`;
-        // Apply a JS-driven tumble with randomized params so each roll looks unique
+        dieEl.innerHTML = polyhedronSVG(msg.sides, palette) + `<div class="val">?</div>`;
         dieEl.style.transform = `translateY(-260px) rotate(${Math.random()*120-60}deg) scale(0.5)`;
         const finalRot = (Math.random() < 0.5 ? -1 : 1) * (540 + Math.floor(Math.random() * 540));
         scheduleDice(() => {
@@ -3553,17 +4219,20 @@
     }, 1400);
   }
 
-  function polyhedronSVG(sides) {
-    const grad = `<defs><linearGradient id="g${sides}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4d590"/><stop offset="0.6" stop-color="#c89456"/><stop offset="1" stop-color="#8a6535"/></linearGradient></defs>`;
-    const fill = `fill="url(#g${sides})" stroke="#6b4a25" stroke-width="2" stroke-linejoin="round"`;
+  function polyhedronSVG(sides, palette) {
+    const p = palette || { light: '#f4d590', mid: '#c89456', dark: '#8a6535', stroke: '#6b4a25' };
+    const gid = `g${sides}_${Math.random().toString(36).slice(2,7)}`;
+    const grad = `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${p.light}"/><stop offset="0.6" stop-color="${p.mid}"/><stop offset="1" stop-color="${p.dark}"/></linearGradient></defs>`;
+    const fill = `fill="url(#${gid})" stroke="${p.stroke}" stroke-width="2" stroke-linejoin="round"`;
+    const innerStroke = `stroke="${p.stroke}" stroke-width="1.5"`;
     if (sides === 4) {
-      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,8 92,88 8,88" ${fill}/><polyline points="50,8 50,68 8,88" fill="none" stroke="#6b4a25" stroke-width="1.5"/><polyline points="50,68 92,88" fill="none" stroke="#6b4a25" stroke-width="1.5"/></svg>`;
+      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,8 92,88 8,88" ${fill}/><polyline points="50,8 50,68 8,88" fill="none" ${innerStroke}/><polyline points="50,68 92,88" fill="none" ${innerStroke}/></svg>`;
     }
     if (sides === 8) {
-      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,5 90,50 50,95 10,50" ${fill}/><line x1="10" y1="50" x2="90" y2="50" stroke="#6b4a25" stroke-width="1.5"/></svg>`;
+      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,5 90,50 50,95 10,50" ${fill}/><line x1="10" y1="50" x2="90" y2="50" ${innerStroke}/></svg>`;
     }
     if (sides === 10) {
-      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,5 88,32 88,68 50,95 12,68 12,32" ${fill}/><line x1="12" y1="32" x2="88" y2="68" stroke="#6b4a25" stroke-width="1.5"/><line x1="50" y1="5" x2="50" y2="95" stroke="#6b4a25" stroke-width="1.5"/></svg>`;
+      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,5 88,32 88,68 50,95 12,68 12,32" ${fill}/><line x1="12" y1="32" x2="88" y2="68" ${innerStroke}/><line x1="50" y1="5" x2="50" y2="95" ${innerStroke}/></svg>`;
     }
     if (sides === 12) {
       const pts = [];
@@ -3574,10 +4243,10 @@
       return `<svg viewBox="0 0 100 100">${grad}<polygon points="${pts.join(' ')}" ${fill}/></svg>`;
     }
     if (sides === 20) {
-      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,5 92,28 92,72 50,95 8,72 8,28" ${fill}/><polygon points="50,5 92,72 8,72" fill="none" stroke="#6b4a25" stroke-width="1.5"/><polygon points="50,95 8,28 92,28" fill="none" stroke="#6b4a25" stroke-width="1.5"/></svg>`;
+      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,5 92,28 92,72 50,95 8,72 8,28" ${fill}/><polygon points="50,5 92,72 8,72" fill="none" ${innerStroke}/><polygon points="50,95 8,28 92,28" fill="none" ${innerStroke}/></svg>`;
     }
     if (sides === 100) {
-      return `<svg viewBox="0 0 100 100">${grad}<circle cx="50" cy="50" r="42" ${fill}/><path d="M 20 30 Q 50 10 80 30" fill="none" stroke="#6b4a25" stroke-width="1.5"/><path d="M 20 70 Q 50 90 80 70" fill="none" stroke="#6b4a25" stroke-width="1.5"/></svg>`;
+      return `<svg viewBox="0 0 100 100">${grad}<circle cx="50" cy="50" r="42" ${fill}/><path d="M 20 30 Q 50 10 80 30" fill="none" ${innerStroke}/><path d="M 20 70 Q 50 90 80 70" fill="none" ${innerStroke}/></svg>`;
     }
     return `<svg viewBox="0 0 100 100">${grad}<rect x="15" y="15" width="70" height="70" rx="6" ${fill}/></svg>`;
   }
@@ -3676,7 +4345,8 @@
 
   // ============ LEAVE ============
   document.getElementById('leave-btn').addEventListener('click', async () => {
-    if (!confirm('Leave this session?')) return;
+    const choice = confirm('Leave this session?\n\nOK = leave but keep your "Continue last session" shortcut.\nCancel = stay.');
+    if (!choice) return;
     try {
       // Post leave message
       await sb.from('vtt_chat').insert({
@@ -3689,11 +4359,15 @@
       // Unsubscribe
       if (STATE.channel) await STATE.channel.unsubscribe();
     } catch (e) { console.warn(e); }
+    // Note: we deliberately do NOT clear localStorage so you can hit
+    // "Continue last session" on the login screen. Use Switch Role
+    // to forget the current identity instead.
     location.reload();
   });
 
   // Demo-only: switch between Host and Player view without leaving the session
   document.getElementById('switch-role-btn').addEventListener('click', () => {
+    clearSessionState();
     location.reload();
   });
 
