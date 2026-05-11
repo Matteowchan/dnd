@@ -565,6 +565,22 @@
   .spells-current-row strong { color: var(--gold); font-family: 'Cinzel', serif; letter-spacing: 0.05em; }
   #spells-activate:disabled { opacity: 0.4; cursor: not-allowed; }
 
+  /* Spell buff attachment - lets a caster apply a temporary buff to anyone hit by the spell area */
+  .spell-buff-row { margin: 8px 0; padding: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; }
+  .spell-buff-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: var(--cream); }
+  .spell-buff-toggle input { accent-color: var(--gold); }
+  .spell-buff-fields { display: none; gap: 6px; margin-top: 6px; }
+  .spell-buff-row.active .spell-buff-fields { display: flex; }
+  .spell-buff-fields input { flex: 1; padding: 5px 8px; background: var(--panel-light); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; font-size: 12px; font-family: inherit; }
+
+  /* Buff aura around tokens that have one or more active spell-applied buffs */
+  .map-token.has-buff { box-shadow: 0 0 0 2px var(--buff-color, #d4a574), 0 0 14px 4px var(--buff-color, #d4a574), 0 4px 12px rgba(0,0,0,0.6); animation: buff-pulse 2.4s ease-in-out infinite; }
+  .map-token .buff-badge { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); padding: 1px 7px; background: var(--buff-color, #d4a574); color: #1a1612; font-family: 'Cinzel', serif; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; border-radius: 8px; white-space: nowrap; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.5); border: 1px solid rgba(0,0,0,0.3); }
+  @keyframes buff-pulse {
+    0%, 100% { box-shadow: 0 0 0 2px var(--buff-color, #d4a574), 0 0 14px 4px var(--buff-color, #d4a574), 0 4px 12px rgba(0,0,0,0.6); }
+    50% { box-shadow: 0 0 0 2px var(--buff-color, #d4a574), 0 0 22px 8px var(--buff-color, #d4a574), 0 4px 12px rgba(0,0,0,0.6); }
+  }
+
   /* Campaign Log / Recap popup */
   #recap-popup { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); width: 620px; max-height: 86vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
   #recap-popup.active { display: flex; }
@@ -605,9 +621,26 @@
   /* DICE OVERLAY */
   #dice-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 800; pointer-events: none; }
   #dice-overlay.active { display: flex; }
-  .dice-stage { display: flex; gap: 36px; flex-wrap: wrap; justify-content: center; align-items: center; max-width: 80vw; perspective: 1000px; }
+  .dice-stage { display: flex; gap: 36px; flex-wrap: wrap; justify-content: center; align-items: center; max-width: 80vw; perspective: 1400px; }
   .die3d { width: 120px; height: 120px; position: relative; transform-style: preserve-3d; }
-  .die3d .face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-weight: 700; color: #1a1612; font-size: 44px; background: linear-gradient(135deg, var(--dice-light, #f4d590) 0%, var(--dice-mid, #c89456) 60%, var(--dice-dark, #8a6535) 100%); border: 2px solid var(--dice-stroke, #6b4a25); box-shadow: inset 0 0 20px rgba(0,0,0,0.4); }
+  /* More realistic resin/metal cube faces: layered radial highlight, inner darkness on edges, slightly translucent corners. */
+  .die3d .face {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cinzel', serif; font-weight: 700; color: var(--dice-stroke, #2a1a08);
+    font-size: 46px;
+    background:
+      radial-gradient(ellipse 70% 60% at 30% 25%, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.08) 40%, transparent 65%),
+      radial-gradient(ellipse 90% 85% at 70% 80%, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.12) 50%, transparent 75%),
+      linear-gradient(140deg, var(--dice-light, #f4d590) 0%, var(--dice-mid, #c89456) 50%, var(--dice-dark, #8a6535) 100%);
+    border: 1.5px solid var(--dice-stroke, #6b4a25);
+    border-radius: 9px;
+    box-shadow:
+      inset 0 2px 0 rgba(255,255,255,0.35),
+      inset 0 -3px 0 rgba(0,0,0,0.35),
+      inset 0 0 24px rgba(0,0,0,0.30);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.35), 0 -1px 0 rgba(0,0,0,0.25);
+  }
   .die3d.d6 .face.f1 { transform: rotateY(0deg) translateZ(60px); }
   .die3d.d6 .face.f2 { transform: rotateY(90deg) translateZ(60px); }
   .die3d.d6 .face.f3 { transform: rotateY(180deg) translateZ(60px); }
@@ -616,8 +649,8 @@
   .die3d.d6 .face.f6 { transform: rotateX(-90deg) translateZ(60px); }
 
   .die-poly { width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; position: relative; }
-  .die-poly svg { width: 100%; height: 100%; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6)); }
-  .die-poly .val { position: absolute; font-family: 'Cinzel', serif; font-weight: 700; color: #1a1612; font-size: 44px; pointer-events: none; }
+  .die-poly svg { width: 100%; height: 100%; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.55)) drop-shadow(0 0 1px rgba(0,0,0,0.4)); }
+  .die-poly .val { position: absolute; font-family: 'Cinzel', serif; font-weight: 700; color: var(--dice-stroke, #2a1a08); font-size: 46px; pointer-events: none; text-shadow: 0 1px 0 rgba(255,255,255,0.4), 0 -1px 0 rgba(0,0,0,0.3); }
 
   .dice-result-summary { position: absolute; bottom: 14%; left: 50%; transform: translateX(-50%); background: var(--panel); border: 2px solid var(--gold); padding: 14px 28px; border-radius: 4px; font-family: 'Cinzel', serif; color: var(--cream); font-size: 22px; text-align: center; opacity: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
   .dice-result-summary .total { color: var(--gold); font-size: 32px; font-weight: 700; }
@@ -625,6 +658,10 @@
   .dice-result-summary .breakdown .roll-pick { color: var(--gold); font-weight: 700; }
   .dice-result-summary .breakdown .roll-drop { color: var(--muted); text-decoration: line-through; opacity: 0.6; }
   .dice-result-summary .priv-label { font-size: 11px; color: var(--ember); letter-spacing: 0.15em; margin-bottom: 4px; }
+  .dice-result-summary .buff-reminder { margin-top: 10px; padding: 8px 12px; background: linear-gradient(135deg, rgba(212,165,116,0.18), rgba(212,165,116,0.06)); border: 1px solid var(--gold-soft); border-radius: 4px; font-family: 'Crimson Pro', serif; font-style: italic; font-size: 14px; color: var(--gold); }
+  .dice-result-summary .buff-reminder .br-title { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ember); font-style: normal; display: block; margin-bottom: 4px; }
+  .dice-result-summary .buff-reminder .br-list { color: var(--cream); font-size: 13px; }
+  .dice-result-summary .buff-reminder .br-list b { color: var(--gold); font-style: normal; font-family: 'Cinzel', serif; }
   .dice-result-summary.nat20 { border-color: gold; box-shadow: 0 0 40px gold, 0 10px 30px rgba(0,0,0,0.6); }
   .dice-result-summary.nat1 { border-color: var(--danger); box-shadow: 0 0 30px rgba(160,72,72,0.5), 0 10px 30px rgba(0,0,0,0.6); }
 
@@ -1328,6 +1365,16 @@
     <div class="spells-bottom">
       <div class="spells-current-row">
         Selected: <strong id="spells-current-name">Pick a shape and element</strong>
+      </div>
+      <div class="spell-buff-row" id="spell-buff-row">
+        <label class="spell-buff-toggle">
+          <input type="checkbox" id="spell-buff-check">
+          <span>Attach buff to targets in the spell area</span>
+        </label>
+        <div class="spell-buff-fields" id="spell-buff-fields">
+          <input type="text" id="spell-buff-name" placeholder="Buff name (e.g. Bless)" maxlength="30">
+          <input type="number" id="spell-buff-mod" placeholder="+2" style="width:64px;">
+        </div>
       </div>
       <button id="spells-activate" class="primary" style="width:100%; padding: 10px;" disabled>Activate</button>
     </div>
@@ -2551,11 +2598,16 @@
     // Skip private messages for non-host (RLS would be better but we filter client-side)
     if (msg.is_private && !STATE.isHost && msg.user_id !== STATE.userId) return;
 
-    renderChatMessage(msg);
-
-    // Animate dice rolls (but not our own - we already animated)
-    if (msg.msg_type === 'roll' && !STATE.myMsgIds.has(msg.id)) {
-      animateDiceRoll(msg);
+    if (msg.msg_type === 'roll') {
+      // Roll: defer the chat row until the dice settle so the result isn't spoiled.
+      // Our own rolls are already animated by rollDice(); skip the duplicate.
+      if (STATE.myMsgIds.has(msg.id)) {
+        // Already animated locally; the chat row was added by rollDice's callback.
+        return;
+      }
+      animateDiceRoll(msg, () => renderChatMessage(msg));
+    } else {
+      renderChatMessage(msg);
     }
   }
 
@@ -2623,6 +2675,21 @@
       el.style.top = (tok.y + oy - 25) + 'px';
       // Border color reflects the owner's class
       el.style.borderColor = getPlayerClassColor(tok.owner_id);
+
+      // Active buffs on this token's owner (filtered to ones that target this token)
+      const tokBuffs = getActiveBuffsForToken(tok);
+      if (tokBuffs.length > 0) {
+        el.classList.add('has-buff');
+        const auraColor = ELEMENT_COLORS[tokBuffs[0].color] || ELEMENT_COLORS.gold;
+        el.style.setProperty('--buff-color', auraColor);
+        const badge = document.createElement('div');
+        badge.className = 'buff-badge';
+        // If multiple buffs, show the count; otherwise show the name
+        badge.textContent = tokBuffs.length === 1
+          ? tokBuffs[0].name
+          : `${tokBuffs[0].name} +${tokBuffs.length - 1}`;
+        el.appendChild(badge);
+      }
 
       // HP bar above the token
       const hpBar = buildTokenHpBar(tok);
@@ -3959,7 +4026,10 @@
   });
 
   // ============ SPELLS POPUP ============
-  const SPELL_DRAFT = { fx: null, color: null };
+  const SPELL_DRAFT = { fx: null, color: null, buff: null };
+  // Pending buff attached to the currently-being-cast effect. Once the area
+  // is drawn, we read this to decide which buff to attach to each token in range.
+  // Format: { name, mod, color } or null.
   function spellNameFor(fx, color) {
     if (!fx || !color) return null;
     const shapeName = {
@@ -4012,11 +4082,24 @@
   });
   document.getElementById('spells-activate').addEventListener('click', () => {
     if (!SPELL_DRAFT.fx || !SPELL_DRAFT.color) return;
-    // Apply selection: switch active tool to fx with chosen shape and element
+    // Capture buff configuration if the caster ticked the buff checkbox
+    const buffCheck = document.getElementById('spell-buff-check');
+    if (buffCheck && buffCheck.checked) {
+      const name = (document.getElementById('spell-buff-name').value || '').trim();
+      const mod  = parseInt(document.getElementById('spell-buff-mod').value, 10) || 0;
+      SPELL_DRAFT.buff = name ? { name, mod, color: SPELL_DRAFT.color } : null;
+    } else {
+      SPELL_DRAFT.buff = null;
+    }
     STATE.activeFxColor = SPELL_DRAFT.color;
     setActiveTool('fx', SPELL_DRAFT.fx);
     document.getElementById('spells-popup').classList.remove('active');
-    toast('Casting ' + spellNameFor(SPELL_DRAFT.fx, SPELL_DRAFT.color) + ' - drag on the map');
+    const msg = 'Casting ' + spellNameFor(SPELL_DRAFT.fx, SPELL_DRAFT.color) + ' - drag on the map';
+    toast(SPELL_DRAFT.buff ? msg + ` (buff: ${SPELL_DRAFT.buff.name} ${fmtMod(SPELL_DRAFT.buff.mod)})` : msg);
+  });
+  // Toggle buff fields visibility
+  document.getElementById('spell-buff-check').addEventListener('change', (e) => {
+    document.getElementById('spell-buff-row').classList.toggle('active', e.target.checked);
   });
 
   // Wire the "Character Info" button
@@ -4252,6 +4335,132 @@
     // Re-attach the in-progress preview on top of the permanent effects
     if (livePreview) layer.appendChild(livePreview);
   }
+
+  // ============ SPELL AREA → TOKEN HIT TEST ============
+  // Given a finished FX cast (with origin and end points in world coords),
+  // returns the list of tokens whose center falls inside the area. Different
+  // FX shapes use different test geometries.
+  //   - breath / sword / fist / arrow / rocket: cone from origin toward end
+  //   - beam: thick line from origin to end
+  //   - burn / glow / hit / shield: circle centered at origin with radius = distance to end
+  function tokensWithinSpellArea(fx) {
+    if (!fx) return [];
+    const ox = fx.origin_x || 0;
+    const oy = fx.origin_y || 0;
+    const ex = fx.end_x || 0;
+    const ey = fx.end_y || 0;
+    const dx = ex - ox;
+    const dy = ey - oy;
+    const distSq = dx * dx + dy * dy;
+    if (distSq < 100) return []; // ignore zero-length casts
+    const tokenRadius = 30;
+    const hits = [];
+    STATE.tokens.forEach(tok => {
+      if (tok.x == null || tok.y == null) return; // tray tokens
+      const tx = (tok.x || 0) + tokenRadius;
+      const ty = (tok.y || 0) + tokenRadius;
+      const vx = tx - ox;
+      const vy = ty - oy;
+      // Branch by shape
+      switch (fx.type) {
+        case 'breath':
+        case 'sword':
+        case 'fist':
+        case 'arrow':
+        case 'rocket': {
+          // Cone: token is in if (a) within distance and (b) angle < ~30°
+          const tokDist = Math.sqrt(vx * vx + vy * vy);
+          if (tokDist > Math.sqrt(distSq) + tokenRadius) return;
+          if (tokDist < 10) { hits.push(tok); return; } // origin always hits
+          const dirLen = Math.sqrt(distSq);
+          const cosTheta = (vx * dx + vy * dy) / (tokDist * dirLen);
+          if (cosTheta > 0.78) hits.push(tok); // cosθ > 0.78 → θ < ~38°
+          return;
+        }
+        case 'beam': {
+          // Distance from point to line segment (origin → end)
+          const t = Math.max(0, Math.min(1, (vx * dx + vy * dy) / distSq));
+          const px = ox + t * dx;
+          const py = oy + t * dy;
+          const ddx = tx - px;
+          const ddy = ty - py;
+          if (ddx * ddx + ddy * ddy < (tokenRadius + 20) * (tokenRadius + 20)) hits.push(tok);
+          return;
+        }
+        default: {
+          // Burn, glow, hit, shield - radial area centered at origin
+          const r = Math.sqrt(distSq) + tokenRadius;
+          if (vx * vx + vy * vy < r * r) hits.push(tok);
+          return;
+        }
+      }
+    });
+    return hits;
+  }
+
+  // Append a buff entry to the target tokens' owners. The buff is stored on
+  // vtt_players.buffs (JSON array). Token aura is re-rendered immediately so
+  // the visual feedback is instant.
+  async function applyBuffToTokens(tokens, buff, effectId) {
+    if (!buff || !tokens || tokens.length === 0) return;
+    // Group affected tokens by their owner player so we make one update per player.
+    const playersByOwner = new Map();
+    tokens.forEach(tok => {
+      if (!tok.owner_id) return;
+      if (!playersByOwner.has(tok.owner_id)) playersByOwner.set(tok.owner_id, []);
+      playersByOwner.get(tok.owner_id).push(tok.id);
+    });
+    for (const [ownerId, tokenIds] of playersByOwner) {
+      const player = STATE.persistedPlayers.find(p => p.id === ownerId);
+      if (!player) continue;
+      let buffs = [];
+      try { buffs = JSON.parse(player.buffs || '[]') || []; } catch (e) { buffs = []; }
+      // If a buff with the same name is already active, refresh it (update
+      // tokenIds and source). Otherwise add a new entry.
+      const existing = buffs.find(b => b && b.name === buff.name && b.active !== false);
+      if (existing) {
+        existing.mod = buff.mod || existing.mod;
+        existing.color = buff.color || existing.color;
+        existing.source = effectId || existing.source;
+        // Merge new tokenIds with existing list (unique)
+        const prevIds = Array.isArray(existing.tokenIds) ? existing.tokenIds : [];
+        existing.tokenIds = Array.from(new Set([...prevIds, ...tokenIds]));
+      } else {
+        buffs.push({
+          name: buff.name,
+          mod: buff.mod || 0,
+          color: buff.color || 'gold',
+          active: true,
+          source: effectId,
+          tokenIds, // which of this owner's tokens are affected
+        });
+      }
+      player.buffs = JSON.stringify(buffs);
+      try {
+        await sb.from('vtt_players').update({ buffs: player.buffs }).eq('id', ownerId);
+      } catch (e) {
+        console.error('Buff save failed', e);
+      }
+    }
+    // Re-render tokens so the aura shows up immediately
+    renderTokens();
+    // If the affected player's sheet is open, refresh its buffs tab
+    if (CHAR_POPUP.targetPlayerId && playersByOwner.has(CHAR_POPUP.targetPlayerId)) {
+      const p = STATE.persistedPlayers.find(p => p.id === CHAR_POPUP.targetPlayerId);
+      if (p) {
+        try { CHAR_POPUP.buffs = JSON.parse(p.buffs || '[]'); } catch (e) { CHAR_POPUP.buffs = []; }
+        renderBuffs(CHAR_POPUP.buffs);
+      }
+    }
+  }
+
+  // Element-to-aura-color map used for the token glow
+  const ELEMENT_COLORS = {
+    fire: '#ff7a3a', frost: '#8ad6ff', acid: '#9bd860', holy: '#fff1a8',
+    blood: '#c83838', death: '#7d5cb0', magic: '#c47bff', smoke: '#a0a0a0',
+    charm: '#ff8fb4', slime: '#88c878', water: '#5fb8ff', lightning: '#fff066',
+    gold: '#d4a574',
+  };
 
   function effectToSVG(fx, ox, oy) {
     const elem = fx.color || 'fire';
@@ -5105,6 +5314,7 @@
     // Finish FX placement
     if (STATE.fxDrawing) {
       const fx = STATE.fxDrawing;
+      const pendingBuff = SPELL_DRAFT.buff; // captured at Activate
       STATE.fxDrawing = null;
       document.getElementById('effectslayer').querySelector('#fx-preview-group')?.remove();
       const id = genId();
@@ -5128,6 +5338,22 @@
         await sb.from('vtt_effects').insert(effect);
       } catch (e) {
         console.error('Effect persist failed:', e);
+      }
+      // If the caster attached a buff, apply it to every token whose center
+      // sits inside the spell area. Each affected token gets the buff added
+      // to its buffs JSON and re-rendered with an aura.
+      if (pendingBuff && pendingBuff.name) {
+        const targets = tokensWithinSpellArea(fx);
+        if (targets.length > 0) {
+          await applyBuffToTokens(targets, pendingBuff, id);
+          toast(`${pendingBuff.name} applied to ${targets.length} target${targets.length === 1 ? '' : 's'}`);
+        } else {
+          toast('No tokens in the spell area to buff', 'error');
+        }
+        // Clear the pending buff so the NEXT cast doesn't repeat it
+        SPELL_DRAFT.buff = null;
+        const cb = document.getElementById('spell-buff-check');
+        if (cb) { cb.checked = false; document.getElementById('spell-buff-row').classList.remove('active'); }
       }
       return;
     }
@@ -5355,6 +5581,20 @@
     return parseJsonArray(player.buffs).filter(b => b.active !== false);
   }
 
+  // Returns all active buffs that apply to a specific token. A buff applies to
+  // a token when its tokenIds list includes the token id, or when it has no
+  // tokenIds list at all (legacy buffs that apply to the whole character).
+  function getActiveBuffsForToken(tok) {
+    if (!tok || !tok.owner_id) return [];
+    const player = STATE.persistedPlayers.find(p => p.id === tok.owner_id);
+    if (!player) return [];
+    const all = parseJsonArray(player.buffs).filter(b => b.active !== false);
+    return all.filter(b => {
+      if (!b.tokenIds || !Array.isArray(b.tokenIds) || b.tokenIds.length === 0) return true;
+      return b.tokenIds.indexOf(tok.id) !== -1;
+    });
+  }
+
   async function rollDice(sides, count, mod, isPrivate) {
     const advMode = STATE.advMode || 'normal';
     const useAdv = (sides === 20 && count === 1 && advMode !== 'normal');
@@ -5404,8 +5644,10 @@
       text: buffSummary ? `Buffs: ${buffSummary}` : null,
     };
 
-    animateDiceRoll(msg);
-    renderChatMessage(msg);
+    // Animate the dice. The chat row is added only AFTER the dice settle so the
+    // log doesn't spoil the result. The DB insert happens immediately so other
+    // clients can start their own animation in parallel.
+    animateDiceRoll(msg, () => renderChatMessage(msg));
     const { error } = await sb.from('vtt_chat').insert(msg);
     if (error) { console.error(error); toast('Roll failed to sync', 'error'); }
   }
@@ -5452,8 +5694,8 @@
     else if (startSide === 2) start = { x: randRange(minX, maxX), y: minY - 160 };       // off top
     else                      start = { x: randRange(minX, maxX), y: maxY + 160 };       // off bottom
 
-    // Random bounce count (3-6) so each die feels different
-    const bounceCount = 3 + Math.floor(Math.random() * 4);
+    // Bounce count: 2-3 ricochets so the roll feels quick but lively
+    const bounceCount = 2 + Math.floor(Math.random() * 2);
 
     const points = [start];
     let lastEdge = startSide;
@@ -5472,7 +5714,7 @@
     return { points, bounceCount };
   }
 
-  function animateDiceRoll(msg) {
+  function animateDiceRoll(msg, onSettle) {
     // Cancel any in-flight animations from previous rolls so they cannot
     // overwrite the new roll's display
     clearDiceTimers();
@@ -5627,7 +5869,29 @@
       header = `<div>${escapeHtml(msg.user_name)} - ${msg.dice_count}d${msg.sides}${modText}</div>`;
       breakdown = `<div class="breakdown">${msg.rolls.join(' + ')}${modText} = ${msg.total}</div>`;
     }
-    result.innerHTML = `${privLabel}${header}<div class="total">${msg.total}</div>${breakdown}`;
+    // If this roll's user has any active buffs (or the message recorded them in
+    // its text field), build a "don't forget the buff" reminder beneath the
+    // result. The reminder is for the VIEWER's interpretation - if it's their
+    // own roll we already factored buffs into the total, but the reminder is
+    // still useful because some buffs apply conditionally (e.g. only vs prone).
+    let buffReminder = '';
+    const rollerPlayer = STATE.persistedPlayers.find(p => p.id === msg.user_id);
+    let rollerBuffs = [];
+    if (rollerPlayer) {
+      try {
+        rollerBuffs = (JSON.parse(rollerPlayer.buffs || '[]') || []).filter(b => b && b.active !== false);
+      } catch (e) { rollerBuffs = []; }
+    }
+    if (rollerBuffs.length > 0) {
+      const buffsText = rollerBuffs
+        .map(b => `<b>${escapeHtml(b.name)}</b> ${(parseInt(b.mod) || 0) >= 0 ? '+' : ''}${parseInt(b.mod) || 0}`)
+        .join(', ');
+      buffReminder = `<div class="buff-reminder">
+        <span class="br-title">Don't forget the buff</span>
+        <span class="br-list">${buffsText}</span>
+      </div>`;
+    }
+    result.innerHTML = `${privLabel}${header}<div class="total">${msg.total}</div>${breakdown}${buffReminder}`;
     overlay.classList.add('active');
 
     // Critical hit / fail effects for d20 only - check the kept die when adv/dis active
@@ -5639,12 +5903,17 @@
     if (hasNat20) result.classList.add('nat20');
     if (hasNat1) result.classList.add('nat1');
 
-    // Reveal result after dice settle, plus trigger crit effects
+    // Reveal result after dice settle, plus trigger crit effects. The onSettle
+    // callback runs at the same moment so the roll log row appears together
+    // with the centered result reveal.
     scheduleDice(() => {
       result.style.transition = 'opacity 0.6s ease';
       result.style.opacity = '1';
       if (hasNat20) triggerNat20();
       if (hasNat1) triggerNat1();
+      if (typeof onSettle === 'function') {
+        try { onSettle(); } catch (e) { console.error('dice onSettle callback failed', e); }
+      }
     }, totalSettleTime + 300);
 
     // Hide overlay (let the result linger before fading)
@@ -5700,33 +5969,125 @@
   function polyhedronSVG(sides, palette) {
     const p = palette || { light: '#f4d590', mid: '#c89456', dark: '#8a6535', stroke: '#6b4a25' };
     const gid = `g${sides}_${Math.random().toString(36).slice(2,7)}`;
-    const grad = `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${p.light}"/><stop offset="0.6" stop-color="${p.mid}"/><stop offset="1" stop-color="${p.dark}"/></linearGradient></defs>`;
-    const fill = `fill="url(#${gid})" stroke="${p.stroke}" stroke-width="2" stroke-linejoin="round"`;
-    const innerStroke = `stroke="${p.stroke}" stroke-width="1.5"`;
+    // Realistic resin/metal look: layered facets with light/mid/dark gradients,
+    // a glossy highlight overlay, and an inner shadow filter to deepen edges.
+    const defs = `<defs>
+      <linearGradient id="${gid}_main" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${p.light}"/>
+        <stop offset="0.5" stop-color="${p.mid}"/>
+        <stop offset="1" stop-color="${p.dark}"/>
+      </linearGradient>
+      <linearGradient id="${gid}_lit" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="${p.light}" stop-opacity="0.95"/>
+        <stop offset="1" stop-color="${p.mid}" stop-opacity="0.4"/>
+      </linearGradient>
+      <linearGradient id="${gid}_shade" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${p.mid}" stop-opacity="0.4"/>
+        <stop offset="1" stop-color="${p.dark}" stop-opacity="0.95"/>
+      </linearGradient>
+      <radialGradient id="${gid}_gloss" cx="0.35" cy="0.25" r="0.55">
+        <stop offset="0" stop-color="white" stop-opacity="0.45"/>
+        <stop offset="0.55" stop-color="white" stop-opacity="0.05"/>
+        <stop offset="1" stop-color="white" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="${gid}_shadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="1.2"/>
+        <feOffset dy="1"/>
+        <feComposite in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1"/>
+        <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0"/>
+        <feComposite in2="SourceGraphic" operator="in"/>
+        <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>`;
+    const mainFill   = `fill="url(#${gid}_main)"`;
+    const litFill    = `fill="url(#${gid}_lit)"`;
+    const shadeFill  = `fill="url(#${gid}_shade)"`;
+    const glossFill  = `fill="url(#${gid}_gloss)"`;
+    const stroke     = `stroke="${p.stroke}" stroke-width="2" stroke-linejoin="round"`;
+    const innerLine  = `stroke="${p.stroke}" stroke-width="1.2" stroke-opacity="0.7"`;
+
     if (sides === 4) {
-      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,8 92,88 8,88" ${fill}/><polyline points="50,8 50,68 8,88" fill="none" ${innerStroke}/><polyline points="50,68 92,88" fill="none" ${innerStroke}/></svg>`;
+      // Tetrahedron - 3 visible facets with distinct shading
+      return `<svg viewBox="0 0 100 100">${defs}
+        <polygon points="50,8 92,88 8,88" ${mainFill} ${stroke}/>
+        <polygon points="50,8 50,72 8,88" ${litFill} ${innerLine}/>
+        <polygon points="50,8 50,72 92,88" ${shadeFill} ${innerLine}/>
+        <polygon points="50,8 92,88 8,88" ${glossFill}/>
+      </svg>`;
     }
     if (sides === 8) {
-      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,5 90,50 50,95 10,50" ${fill}/><line x1="10" y1="50" x2="90" y2="50" ${innerStroke}/></svg>`;
+      // Octahedron - 4 visible triangular facets
+      return `<svg viewBox="0 0 100 100">${defs}
+        <polygon points="50,5 90,50 50,95 10,50" ${mainFill} ${stroke}/>
+        <polygon points="50,5 90,50 50,50" ${litFill} ${innerLine}/>
+        <polygon points="50,5 10,50 50,50" ${litFill} ${innerLine}/>
+        <polygon points="50,95 90,50 50,50" ${shadeFill} ${innerLine}/>
+        <polygon points="50,95 10,50 50,50" ${shadeFill} ${innerLine}/>
+        <polygon points="50,5 90,50 50,95 10,50" ${glossFill}/>
+      </svg>`;
     }
     if (sides === 10) {
-      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,5 88,32 88,68 50,95 12,68 12,32" ${fill}/><line x1="12" y1="32" x2="88" y2="68" ${innerStroke}/><line x1="50" y1="5" x2="50" y2="95" ${innerStroke}/></svg>`;
+      // Pentagonal trapezohedron (d10) - 5 visible kite facets
+      return `<svg viewBox="0 0 100 100">${defs}
+        <polygon points="50,5 88,32 88,68 50,95 12,68 12,32" ${mainFill} ${stroke}/>
+        <polygon points="50,5 88,32 50,50 12,32" ${litFill} ${innerLine}/>
+        <polygon points="12,32 50,50 12,68" ${shadeFill} ${innerLine}/>
+        <polygon points="88,32 88,68 50,50" ${shadeFill} ${innerLine}/>
+        <polygon points="50,95 88,68 50,50 12,68" ${shadeFill} ${innerLine}/>
+        <polygon points="50,5 88,32 88,68 50,95 12,68 12,32" ${glossFill}/>
+      </svg>`;
     }
     if (sides === 12) {
+      // Dodecahedron - pentagon outline with inner facets
       const pts = [];
       for (let i = 0; i < 5; i++) {
         const a = (i * 72 - 90) * Math.PI / 180;
-        pts.push(`${50 + 42 * Math.cos(a)},${50 + 42 * Math.sin(a)}`);
+        pts.push(`${(50 + 42 * Math.cos(a)).toFixed(1)},${(50 + 42 * Math.sin(a)).toFixed(1)}`);
       }
-      return `<svg viewBox="0 0 100 100">${grad}<polygon points="${pts.join(' ')}" ${fill}/></svg>`;
+      const innerPts = [];
+      for (let i = 0; i < 5; i++) {
+        const a = (i * 72 - 90) * Math.PI / 180;
+        innerPts.push(`${(50 + 18 * Math.cos(a)).toFixed(1)},${(50 + 18 * Math.sin(a)).toFixed(1)}`);
+      }
+      // Build the 5 trapezoidal side facets
+      let facets = '';
+      for (let i = 0; i < 5; i++) {
+        const j = (i + 1) % 5;
+        const isLit = i < 2; // top facets get the light gradient, lower ones get shade
+        facets += `<polygon points="${pts[i]} ${pts[j]} ${innerPts[j]} ${innerPts[i]}" ${isLit ? litFill : shadeFill} ${innerLine}/>`;
+      }
+      return `<svg viewBox="0 0 100 100">${defs}
+        <polygon points="${pts.join(' ')}" ${mainFill} ${stroke}/>
+        <polygon points="${innerPts.join(' ')}" ${litFill} ${innerLine}/>
+        ${facets}
+        <polygon points="${pts.join(' ')}" ${glossFill}/>
+      </svg>`;
     }
     if (sides === 20) {
-      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,5 92,28 92,72 50,95 8,72 8,28" ${fill}/><polygon points="50,5 92,72 8,72" fill="none" ${innerStroke}/><polygon points="50,95 8,28 92,28" fill="none" ${innerStroke}/></svg>`;
+      // Icosahedron - hexagonal outline with internal triangular facets
+      return `<svg viewBox="0 0 100 100">${defs}
+        <polygon points="50,5 92,28 92,72 50,95 8,72 8,28" ${mainFill} ${stroke}/>
+        <polygon points="50,5 92,28 50,50 8,28" ${litFill} ${innerLine}/>
+        <polygon points="50,5 50,50 30,28" ${litFill} ${innerLine}/>
+        <polygon points="50,5 50,50 70,28" ${litFill} ${innerLine}/>
+        <polygon points="8,28 50,50 8,72" ${mainFill} ${innerLine}/>
+        <polygon points="92,28 50,50 92,72" ${shadeFill} ${innerLine}/>
+        <polygon points="50,95 92,72 50,50 8,72" ${shadeFill} ${innerLine}/>
+        <polygon points="50,95 50,50 30,72" ${shadeFill} ${innerLine}/>
+        <polygon points="50,95 50,50 70,72" ${shadeFill} ${innerLine}/>
+        <polygon points="50,5 92,28 92,72 50,95 8,72 8,28" ${glossFill}/>
+      </svg>`;
     }
     if (sides === 100) {
-      return `<svg viewBox="0 0 100 100">${grad}<circle cx="50" cy="50" r="42" ${fill}/><path d="M 20 30 Q 50 10 80 30" fill="none" ${innerStroke}/><path d="M 20 70 Q 50 90 80 70" fill="none" ${innerStroke}/></svg>`;
+      return `<svg viewBox="0 0 100 100">${defs}
+        <circle cx="50" cy="50" r="42" ${mainFill} ${stroke}/>
+        <ellipse cx="50" cy="38" rx="32" ry="10" fill="white" fill-opacity="0.18"/>
+        <path d="M 20 30 Q 50 10 80 30" fill="none" ${innerLine}/>
+        <path d="M 20 70 Q 50 90 80 70" fill="none" ${innerLine}/>
+        <circle cx="50" cy="50" r="42" ${glossFill}/>
+      </svg>`;
     }
-    return `<svg viewBox="0 0 100 100">${grad}<rect x="15" y="15" width="70" height="70" rx="6" ${fill}/></svg>`;
+    return `<svg viewBox="0 0 100 100">${defs}<rect x="15" y="15" width="70" height="70" rx="6" ${mainFill} ${stroke}/></svg>`;
   }
 
   // ============ AUDIO EVENT HANDLERS ============
