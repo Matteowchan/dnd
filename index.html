@@ -95,6 +95,12 @@
   #sidepanel { width: 280px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
   .panel-section { padding: 16px; border-bottom: 1px solid var(--border); }
   .panel-section h3 { font-size: 12px; color: var(--gold); margin-bottom: 12px; text-transform: uppercase; }
+  .map-slots { display: flex; gap: 4px; margin-bottom: 10px; }
+  .map-slot { flex: 1; padding: 6px 4px; font-size: 11px; background: var(--panel-light); border: 1px solid var(--border); color: var(--cream); cursor: pointer; border-radius: 3px; position: relative; }
+  .map-slot:hover { background: var(--bg); border-color: var(--gold-soft); }
+  .map-slot.active { background: var(--gold-soft); border-color: var(--gold); color: #1a1612; font-weight: 700; }
+  .map-slot.has-content::after { content: ''; position: absolute; top: 3px; right: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+  .map-slot.active.has-content::after { background: #1a1612; }
   #audio-host-playback { display: flex; gap: 6px; }
   #audio-host-playback button { flex: 1; padding: 6px 8px; font-size: 12px; }
   #audio-volume { -webkit-appearance: none; appearance: none; background: var(--bg); height: 4px; border-radius: 2px; outline: none; }
@@ -126,6 +132,10 @@
   .gm-roll-toggle input { cursor: pointer; }
   .gm-roll-toggle.active { background: rgba(212,165,116,0.2); border-color: var(--gold); }
   .gm-roll-toggle .lbl { font-size: 13px; color: var(--cream); flex: 1; }
+  .adv-row { display: flex; gap: 4px; margin-bottom: 10px; }
+  .adv-btn { flex: 1; padding: 6px 4px; font-size: 11px; background: var(--panel-light); border: 1px solid var(--border); color: var(--cream); cursor: pointer; border-radius: 3px; }
+  .adv-btn:hover { background: var(--bg); border-color: var(--gold-soft); }
+  .adv-btn.active { background: var(--gold-soft); border-color: var(--gold); color: #1a1612; font-weight: 700; }
 
   /* MAP AREA */
   #mapcontainer { flex: 1; position: relative; overflow: hidden; background: #f4f0e8; cursor: grab; }
@@ -224,6 +234,54 @@
   @keyframes rocket-burst { 0% { r: 5; opacity: 0.8; } 100% { r: 40; opacity: 0; } }
   @keyframes rocket-head { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
 
+  /* Per-effect-type loop animations (kept subtle so multiple effects don't overwhelm) */
+  g.fx-anim-breath { animation: fxa-flicker 1.6s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes fxa-flicker { 0%, 100% { opacity: 1; } 30% { opacity: 0.78; } 60% { opacity: 0.92; } 80% { opacity: 0.82; } }
+
+  g.fx-anim-beam { animation: fxa-pulse-soft 1.5s ease-in-out infinite; }
+  @keyframes fxa-pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.75; } }
+  /* Lightning beams flicker rapidly with tiny jitter */
+  g.fx-anim-beam.fx-elem-lightning { animation: fxa-zap 0.18s linear infinite alternate; }
+  @keyframes fxa-zap { 0% { opacity: 0.7; transform: translate(0, 0); } 100% { opacity: 1; transform: translate(0.8px, -0.4px); } }
+
+  g.fx-anim-burn { animation: fxa-burn-glow 2.4s ease-in-out infinite; }
+  @keyframes fxa-burn-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.82; } }
+
+  g.fx-anim-shield { animation: fxa-shield-shimmer 3s ease-in-out infinite; }
+  @keyframes fxa-shield-shimmer { 0%, 100% { opacity: 1; } 50% { opacity: 0.78; } }
+
+  /* Sword slash sweeps along its arc by animating stroke-dashoffset */
+  g.fx-anim-sword path { stroke-dasharray: 280; animation: fxa-sword-trace 1.8s ease-out infinite; }
+  @keyframes fxa-sword-trace {
+    0%   { stroke-dashoffset: 280; opacity: 0; }
+    18%  { opacity: 1; }
+    55%  { stroke-dashoffset: 0; opacity: 1; }
+    85%  { opacity: 0.6; }
+    100% { stroke-dashoffset: -280; opacity: 0; }
+  }
+
+  /* Hit starburst grows then steadies */
+  g.fx-anim-hit { animation: fxa-hit-pop 0.55s cubic-bezier(0.25, 1.4, 0.45, 1) 1; transform-origin: center; transform-box: fill-box; }
+  @keyframes fxa-hit-pop {
+    0% { transform: scale(0.4); opacity: 0; }
+    55% { transform: scale(1.12); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Fist shockwaves expand subtly */
+  g.fx-anim-fist circle { animation: fxa-ring-out 1.6s ease-out infinite; }
+  g.fx-anim-fist circle:nth-child(2) { animation-delay: 0.2s; }
+  g.fx-anim-fist circle:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes fxa-ring-out { 0% { opacity: 1; } 100% { opacity: 0.6; } }
+
+  /* Arrow has a slight wobble at the tip */
+  g.fx-anim-arrow polygon { animation: fxa-arrow-pulse 0.9s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes fxa-arrow-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.85; } }
+
+  /* Rocket trail glints */
+  g.fx-anim-rocket circle { animation: fxa-glint 1.2s ease-in-out infinite; }
+  @keyframes fxa-glint { 0%, 100% { opacity: 1; } 50% { opacity: 0.75; } }
+
   /* REMOTE MEASUREMENTS */
   #remote-measurements { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 150; }
   .remote-measure line { stroke: var(--gold); stroke-width: 2; stroke-dasharray: 6 4; opacity: 0.8; }
@@ -233,10 +291,20 @@
   #imggen-popup { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); width: 480px; max-height: 80vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
   #imggen-popup.active { display: flex; }
   #imggen-popup .char-popup-body { padding: 16px; overflow-y: auto; }
+  .lib-thumb { position: relative; aspect-ratio: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; overflow: hidden; cursor: pointer; }
+  .lib-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .lib-thumb:hover { border-color: var(--gold); }
+  .lib-thumb .lib-type { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: var(--cream); font-size: 9px; text-align: center; padding: 1px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .lib-thumb .lib-del { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); color: var(--danger); border: none; width: 18px; height: 18px; border-radius: 50%; cursor: pointer; font-size: 12px; line-height: 1; padding: 0; opacity: 0; transition: opacity 0.15s; }
+  .lib-thumb:hover .lib-del { opacity: 1; }
+  .lib-thumb .lib-del:hover { background: var(--danger); color: var(--cream); }
 
   /* CHAT BOX */
-  #chatbox { position: absolute; bottom: 20px; left: 300px; width: 340px; height: 340px; background: rgba(26,22,18,0.95); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; z-index: 500; backdrop-filter: blur(6px); }
-  #chatbox.minimized { height: 38px; }
+  #chatbox { position: absolute; bottom: 20px; left: 300px; width: 340px; height: 340px; background: rgba(26,22,18,0.95); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; z-index: 500; backdrop-filter: blur(6px); overflow: hidden; }
+  #chatbox.minimized { height: auto; width: 200px; }
+  #chatbox.minimized #chatlog,
+  #chatbox.minimized #chatinput { display: none; }
+  #chatbox.minimized #chatbox-header { border-bottom: none; border-radius: 6px; }
   #chatbox-header { padding: 8px 12px; background: var(--panel-light); border-bottom: 1px solid var(--border); cursor: move; display: flex; align-items: center; justify-content: space-between; border-radius: 6px 6px 0 0; }
   #chatbox-header .ttl { font-family: 'Cinzel', serif; font-size: 13px; color: var(--gold); }
   #chatbox-header .ctrls button { padding: 2px 8px; font-size: 12px; }
@@ -272,6 +340,8 @@
   .dice-result-summary { position: absolute; bottom: 14%; left: 50%; transform: translateX(-50%); background: var(--panel); border: 2px solid var(--gold); padding: 14px 28px; border-radius: 4px; font-family: 'Cinzel', serif; color: var(--cream); font-size: 22px; text-align: center; opacity: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
   .dice-result-summary .total { color: var(--gold); font-size: 32px; font-weight: 700; }
   .dice-result-summary .breakdown { font-size: 13px; color: var(--muted); margin-top: 4px; font-family: 'Crimson Pro', serif; }
+  .dice-result-summary .breakdown .roll-pick { color: var(--gold); font-weight: 700; }
+  .dice-result-summary .breakdown .roll-drop { color: var(--muted); text-decoration: line-through; opacity: 0.6; }
   .dice-result-summary .priv-label { font-size: 11px; color: var(--ember); letter-spacing: 0.15em; margin-bottom: 4px; }
   .dice-result-summary.nat20 { border-color: gold; box-shadow: 0 0 40px gold, 0 10px 30px rgba(0,0,0,0.6); }
   .dice-result-summary.nat1 { border-color: var(--danger); box-shadow: 0 0 30px rgba(160,72,72,0.5), 0 10px 30px rgba(0,0,0,0.6); }
@@ -436,6 +506,11 @@
     <div id="sidepanel">
       <div class="panel-section" id="host-section" style="display:none">
         <h3>Map</h3>
+        <div class="map-slots">
+          <button class="map-slot active" data-slot="1">Map 1</button>
+          <button class="map-slot" data-slot="2">Map 2</button>
+          <button class="map-slot" data-slot="3">Map 3</button>
+        </div>
         <label class="upload-box" id="map-upload-label">
           <input type="file" id="map-upload" accept="image/*">
           <span id="map-upload-text">Upload map image</span>
@@ -470,6 +545,11 @@
           <input type="number" id="dice-count" value="1" min="1" max="20">
           <label style="flex: 0;">Mod</label>
           <input type="number" id="dice-mod" value="0" min="-20" max="20">
+        </div>
+        <div class="adv-row">
+          <button class="adv-btn active" data-adv="normal" title="Roll one die">Normal</button>
+          <button class="adv-btn" data-adv="advantage" title="Roll 2d20, take higher (d20 only)">Advantage</button>
+          <button class="adv-btn" data-adv="disadvantage" title="Roll 2d20, take lower (d20 only)">Disadvantage</button>
         </div>
         <div class="gm-roll-toggle" id="gm-roll-toggle" style="display:none">
           <input type="checkbox" id="gm-roll-check">
@@ -557,6 +637,21 @@
           <button class="fx-btn" data-fx="glow" title="Glow (pulsing)">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
           </button>
+          <button class="fx-btn" data-fx="sword" title="Sword slash">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 19 L17 7 L19 5 L18 8 L6 20 Z M5 19 L7 21 M14 10 L17 13"/></svg>
+          </button>
+          <button class="fx-btn" data-fx="shield" title="Shield barrier">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 L4 5 V12 C4 17 8 21 12 22 C16 21 20 17 20 12 V5 Z"/></svg>
+          </button>
+          <button class="fx-btn" data-fx="hit" title="Hit / impact">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 L12 22 M2 12 L22 12 M5 5 L19 19 M5 19 L19 5"/></svg>
+          </button>
+          <button class="fx-btn" data-fx="fist" title="Fist / punch">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="6" cy="10" r="2.2"/><circle cx="12" cy="9.5" r="2.4"/><circle cx="18" cy="10" r="2.2"/><rect x="3" y="13" width="18" height="7" rx="2"/></svg>
+          </button>
+          <button class="fx-btn" data-fx="arrow" title="Arrow (aim)">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 12 L21 12 M15 6 L21 12 L15 18"/></svg>
+          </button>
           <button class="tool-btn" id="clear-effects-btn" title="Clear all effects">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14"/></svg>
           </button>
@@ -577,6 +672,7 @@
           <button class="fx-color" data-color="charm" style="--c:#ff44cc" title="Charm"></button>
           <button class="fx-color" data-color="slime" style="--c:#6dbf3a" title="Slime"></button>
           <button class="fx-color" data-color="water" style="--c:#2070d8" title="Water"></button>
+          <button class="fx-color" data-color="lightning" style="--c:#a0d0ff" title="Lightning"></button>
         </div>
       </div>
 
@@ -705,8 +801,17 @@
       <div id="imggen-loading" style="text-align: center; color: var(--muted); padding: 40px;">Generating...</div>
     </div>
     <div id="imggen-actions" style="display:none; margin-top: 10px; gap: 6px; flex-wrap: wrap;">
-      <button id="imggen-use" class="primary" style="flex:1; min-width: 120px;">Show to All</button>
-      <button id="imggen-regen" style="flex:1; min-width: 120px;">Regenerate</button>
+      <button id="imggen-as-map" class="primary" style="flex:1; min-width: 110px;">Use as Map</button>
+      <button id="imggen-as-token" style="flex:1; min-width: 110px;">Add as Token</button>
+      <button id="imggen-show-all" style="flex:1; min-width: 110px;">Show to All</button>
+      <button id="imggen-regen" style="flex:1; min-width: 110px;">Regenerate</button>
+    </div>
+    <div id="imggen-status" style="display:none; margin-top: 8px; padding: 8px; background: rgba(107,138,74,0.15); border: 1px solid var(--success); border-radius: 3px; color: var(--success); font-size: 12px; text-align: center;"></div>
+
+    <div id="imggen-library" style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px;">
+      <div style="font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px;">Maps · Characters · Items</div>
+      <div id="imggen-library-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-height: 240px; overflow-y: auto;"></div>
+      <div id="imggen-library-empty" style="font-size: 12px; color: var(--muted); text-align: center; padding: 10px;">No saved images yet. Generated images appear here.</div>
     </div>
   </div>
 </div>
@@ -756,17 +861,24 @@
       vtt_maps: new Map(),
       vtt_tokens: new Map(),
       vtt_chat: [],
+      vtt_effects: new Map(),
+      vtt_audio: new Map(),
     };
-    // Some tables use a column other than 'id' as primary key
+    // PK definition. An array means composite PK.
     const PK = {
       vtt_sessions: 'id',
       vtt_players: 'id',
-      vtt_maps: 'session_id',
+      vtt_maps: ['session_id', 'slot'],
       vtt_tokens: 'id',
       vtt_chat: 'id',
       vtt_effects: 'id',
       vtt_audio: 'session_id',
     };
+    function mockKey(table, row) {
+      const pk = PK[table];
+      if (Array.isArray(pk)) return pk.map(c => row[c] != null ? row[c] : 1).join('|');
+      return row[pk];
+    }
     const handlers = {};
 
     function fireEvent(table, eventType, oldRow, newRow) {
@@ -799,9 +911,9 @@
         }
         if (this._action === 'insert' || this._action === 'upsert') {
           const row = this._row;
-          const pk = PK[this.table];
-          const oldRow = isMap ? store.get(row[pk]) : null;
-          if (isMap) store.set(row[pk], { ...oldRow, ...row });
+          const key = mockKey(this.table, row);
+          const oldRow = isMap ? store.get(key) : null;
+          if (isMap) store.set(key, { ...oldRow, ...row });
           else store.push(row);
           fireEvent(this.table, oldRow ? 'UPDATE' : 'INSERT', oldRow, { ...oldRow, ...row });
           return { data: [row], error: null };
@@ -819,9 +931,8 @@
         if (this._action === 'delete') {
           let rows = isMap ? Array.from(store.values()) : store.slice();
           rows = this._filter(rows);
-          const pk = PK[this.table];
           rows.forEach(row => {
-            if (isMap) store.delete(row[pk]);
+            if (isMap) store.delete(mockKey(this.table, row));
             else { const idx = store.indexOf(row); if (idx >= 0) store.splice(idx, 1); }
             fireEvent(this.table, 'DELETE', row, null);
           });
@@ -899,7 +1010,9 @@
     userId: null,
     isHost: false,
 
-    map: null,
+    map: null,             // active map (= maps.get(activeMapSlot))
+    maps: new Map(),       // slot (1|2|3) -> map data
+    activeMapSlot: 1,
     tokens: new Map(),     // id -> token data
     onlinePlayers: new Map(), // userId -> { name, isHost }
     persistedPlayers: [],   // from vtt_players table
@@ -925,14 +1038,30 @@
     effects: new Map(),     // id -> effect data
     remoteDrags: new Map(), // userId -> { tokenId, startX, startY, x, y, isMeasure, name }
 
-    audio: null,            // { audio_url, audio_name, is_playing } from vtt_audio table
-    audioVolume: 0.6,       // local volume (0..1)
+    audio: null,
+    audioVolume: 0.6,
+    advMode: 'normal',     // 'normal' | 'advantage' | 'disadvantage'
   };
 
   const FX_COLORS = {
     fire: '#d44a26', frost: '#6bb8e0', acid: '#7bb838', holy: '#e8c878',
     blood: '#8b1e1e', death: '#1a1a1a', magic: '#b026ff', smoke: '#6a6a6a',
-    charm: '#ff44cc', slime: '#6dbf3a', water: '#2070d8',
+    charm: '#ff44cc', slime: '#6dbf3a', water: '#2070d8', lightning: '#a0d0ff',
+  };
+  // Three-stop palettes for richer spell rendering: bright core -> mid -> dark edge
+  const FX_PALETTES = {
+    fire:      { core: '#fff5b0', mid: '#ff7a1a', edge: '#8a1f00' },
+    frost:     { core: '#ffffff', mid: '#8fd4f0', edge: '#1e5a8a' },
+    acid:      { core: '#e4ffa0', mid: '#5fb028', edge: '#2a4a10' },
+    holy:      { core: '#ffffff', mid: '#ffd97a', edge: '#a07a0a' },
+    blood:     { core: '#ff5050', mid: '#a01818', edge: '#3a0a0a' },
+    death:     { core: '#a060b0', mid: '#4a1a5a', edge: '#100020' },
+    magic:     { core: '#ffa0f0', mid: '#b026ff', edge: '#4a0070' },
+    smoke:     { core: '#e0e0e0', mid: '#808080', edge: '#202020' },
+    charm:     { core: '#ffd0f0', mid: '#ff44cc', edge: '#a01070' },
+    slime:     { core: '#c0ff60', mid: '#6dbf3a', edge: '#2a5010' },
+    water:     { core: '#a0d0ff', mid: '#2070d8', edge: '#0a2a5a' },
+    lightning: { core: '#ffffff', mid: '#a0d0ff', edge: '#3a60a0' },
   };
 
   // ============ UTILITIES ============
@@ -1183,15 +1312,29 @@
 
   // ============ INITIAL STATE LOAD ============
   async function loadInitialState() {
-    // Load map
-    const { data: mapData } = await sb.from('vtt_maps').select('*').eq('session_id', STATE.sessionId).maybeSingle();
-    if (mapData) {
-      STATE.map = mapData;
-      STATE.gridFt = mapData.grid_ft || 5;
-      STATE.tokensLocked = !!mapData.tokens_locked;
-      updateLockTokensButtonLabel();
-      renderMap();
+    // Load active map slot from session
+    const { data: session } = await sb.from('vtt_sessions').select('*').eq('id', STATE.sessionId).maybeSingle();
+    if (session && session.active_map_slot) {
+      STATE.activeMapSlot = session.active_map_slot;
     }
+
+    // Load all map slots (up to 3)
+    const { data: mapRows } = await sb.from('vtt_maps').select('*').eq('session_id', STATE.sessionId);
+    if (mapRows && mapRows.length) {
+      mapRows.forEach(m => {
+        const slot = m.slot || 1;
+        STATE.maps.set(slot, m);
+      });
+      const active = STATE.maps.get(STATE.activeMapSlot);
+      if (active) {
+        STATE.map = active;
+        STATE.gridFt = active.grid_ft || 5;
+        STATE.tokensLocked = !!active.tokens_locked;
+        updateLockTokensButtonLabel();
+      }
+    }
+    renderMapSlotButtons();
+    renderMap();
 
     // Load tokens
     const { data: tokens } = await sb.from('vtt_tokens').select('*').eq('session_id', STATE.sessionId);
@@ -1250,6 +1393,7 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_players', filter }, handlePlayerChange)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_effects', filter }, handleEffectChange)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_audio', filter }, handleAudioChange)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vtt_sessions', filter: `id=eq.${STATE.sessionId}` }, handleSessionChange)
       .on('broadcast', { event: 'drag' }, ({ payload }) => handleRemoteDrag(payload))
       .on('presence', { event: 'sync' }, handlePresenceSync)
       .subscribe(async (status) => {
@@ -1275,19 +1419,62 @@
 
   function handleMapChange(payload) {
     if (payload.eventType === 'DELETE') {
-      STATE.map = null;
-      STATE.tokensLocked = false;
-      updateLockTokensButtonLabel();
+      const slot = (payload.old && payload.old.slot) || 1;
+      STATE.maps.delete(slot);
+      if (slot === STATE.activeMapSlot) {
+        STATE.map = null;
+        STATE.tokensLocked = false;
+        updateLockTokensButtonLabel();
+      }
+      renderMapSlotButtons();
       renderMap();
       renderTokens();
       return;
     }
-    STATE.map = payload.new;
-    STATE.gridFt = payload.new.grid_ft || 5;
-    STATE.tokensLocked = !!payload.new.tokens_locked;
+    const m = payload.new;
+    const slot = m.slot || 1;
+    STATE.maps.set(slot, m);
+    if (slot === STATE.activeMapSlot) {
+      STATE.map = m;
+      STATE.gridFt = m.grid_ft || 5;
+      STATE.tokensLocked = !!m.tokens_locked;
+      updateLockTokensButtonLabel();
+      renderMap();
+      renderTokens();
+    }
+    renderMapSlotButtons();
+  }
+
+  function handleSessionChange(payload) {
+    if (payload.eventType !== 'UPDATE' || !payload.new) return;
+    const newSlot = payload.new.active_map_slot;
+    if (newSlot && newSlot !== STATE.activeMapSlot) {
+      switchToMapSlot(newSlot, false);
+    }
+  }
+
+  function switchToMapSlot(slot, persist) {
+    STATE.activeMapSlot = slot;
+    const m = STATE.maps.get(slot) || null;
+    STATE.map = m;
+    STATE.gridFt = m && m.grid_ft ? m.grid_ft : 5;
+    STATE.tokensLocked = !!(m && m.tokens_locked);
+    document.getElementById('grid-ft').value = STATE.gridFt;
     updateLockTokensButtonLabel();
+    renderMapSlotButtons();
     renderMap();
     renderTokens();
+    if (persist && STATE.isHost) {
+      sb.from('vtt_sessions').update({ active_map_slot: slot }).eq('id', STATE.sessionId);
+    }
+  }
+
+  function renderMapSlotButtons() {
+    document.querySelectorAll('.map-slot').forEach(btn => {
+      const slot = parseInt(btn.dataset.slot, 10);
+      btn.classList.toggle('active', slot === STATE.activeMapSlot);
+      btn.classList.toggle('has-content', STATE.maps.has(slot) && !!STATE.maps.get(slot).image_url);
+    });
   }
 
   function updateLockTokensButtonLabel() {
@@ -1864,23 +2051,27 @@
     const textEl = document.getElementById('map-upload-text');
     textEl.textContent = 'Uploading...';
     try {
+      const slot = STATE.activeMapSlot;
       const { blob, width, height } = await fileToResizedBlob(e.target.files[0], 1600);
-      const path = `${STATE.sessionId}/maps/map.jpg`;
+      const path = `${STATE.sessionId}/maps/slot-${slot}-${Date.now()}.jpg`;
       const url = await uploadImage(blob, path);
       const gridFt = parseInt(document.getElementById('grid-ft').value) || 5;
-      // Cache buster only needed for real Supabase URLs (storage may serve cached versions)
       const finalUrl = (DEMO_MODE || url.startsWith('data:') || url.startsWith('blob:')) ? url : url + '?t=' + Date.now();
       const { error } = await sb.from('vtt_maps').upsert({
         session_id: STATE.sessionId,
+        slot,
         image_url: finalUrl,
         width,
         height,
         grid_ft: gridFt,
+        offset_x: 0,
+        offset_y: 0,
+        tokens_locked: false,
         updated_at: new Date().toISOString(),
       });
       if (error) throw error;
       textEl.textContent = 'Upload map image';
-      toast('Map uploaded');
+      toast('Map ' + slot + ' uploaded');
     } catch (err) {
       console.error(err);
       textEl.textContent = 'Upload map image';
@@ -1889,10 +2080,20 @@
     e.target.value = '';
   });
 
+  // Slot switcher
+  document.querySelectorAll('.map-slot').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const slot = parseInt(btn.dataset.slot, 10);
+      if (!STATE.isHost) return;
+      switchToMapSlot(slot, true);
+    });
+  });
+
   document.getElementById('apply-grid').addEventListener('click', async () => {
     if (!STATE.map) { toast('Upload a map first', 'error'); return; }
     const gridFt = parseInt(document.getElementById('grid-ft').value) || 5;
-    const { error } = await sb.from('vtt_maps').update({ grid_ft: gridFt, updated_at: new Date().toISOString() }).eq('session_id', STATE.sessionId);
+    const { error } = await sb.from('vtt_maps').update({ grid_ft: gridFt, updated_at: new Date().toISOString() })
+      .eq('session_id', STATE.sessionId).eq('slot', STATE.activeMapSlot);
     if (error) toast('Failed to update grid', 'error');
     else toast(`Grid scale: 1 square = ${gridFt} ft`);
   });
@@ -1949,7 +2150,7 @@
     await sb.from('vtt_maps').update({
       tokens_locked: newState,
       updated_at: new Date().toISOString(),
-    }).eq('session_id', STATE.sessionId);
+    }).eq('session_id', STATE.sessionId).eq('slot', STATE.activeMapSlot);
     // Realtime will update local state and button label
     // System message
     await sb.from('vtt_chat').insert({
@@ -2015,8 +2216,15 @@
 
   document.getElementById('clear-effects-btn').addEventListener('click', async () => {
     if (!confirm('Clear all effects on the map?')) return;
-    // Delete all effects for this session
-    await sb.from('vtt_effects').delete().eq('session_id', STATE.sessionId);
+    // Local clear for immediate feedback; realtime DELETE events sync other clients
+    STATE.effects.clear();
+    renderEffects();
+    try {
+      await sb.from('vtt_effects').delete().eq('session_id', STATE.sessionId);
+    } catch (e) {
+      console.error('Effect delete failed:', e);
+      toast('Failed to clear effects', 'error');
+    }
   });
 
   // ============ EFFECTS RENDERING ============
@@ -2037,49 +2245,326 @@
   }
 
   function effectToSVG(fx, ox, oy) {
-    const color = FX_COLORS[fx.color] || FX_COLORS.fire;
+    const elem = fx.color || 'fire';
+    const p = FX_PALETTES[elem] || FX_PALETTES.fire;
     const x1 = (fx.origin_x || 0) + ox;
     const y1 = (fx.origin_y || 0) + oy;
     const x2 = (fx.end_x || 0) + ox;
     const y2 = (fx.end_y || 0) + oy;
     const dx = x2 - x1, dy = y2 - y1;
     const dist = Math.sqrt(dx*dx + dy*dy);
+    const gid = 'fxg_' + (fx.id || Math.random().toString(36).substr(2,6)).replace(/[^a-z0-9_]/gi,'').slice(0,12);
+    const rng = mulberry32(hashStr(fx.id || (x1+','+y1+','+x2+','+y2+','+elem+','+fx.type)));
 
-    if (fx.type === 'breath') {
-      // Cone: tip at origin, base perpendicular to direction at end. Half-angle ~30deg.
-      if (dist < 5) return '';
-      const angle = Math.atan2(dy, dx);
-      const halfWidth = dist * 0.5; // tan(~27deg) for a decent cone
-      const px = -Math.sin(angle) * halfWidth;
-      const py = Math.cos(angle) * halfWidth;
-      const p1 = `${x1},${y1}`;
-      const p2 = `${x2 + px},${y2 + py}`;
-      const p3 = `${x2 - px},${y2 - py}`;
-      return `<polygon class="fx-shape" points="${p1} ${p2} ${p3}" fill="${color}" style="color:${color}"/>`;
+    let inner = '';
+    if (fx.type === 'breath') inner = renderFxBreath(elem, p, gid, x1, y1, x2, y2, dx, dy, dist, rng);
+    else if (fx.type === 'beam')   inner = renderFxBeam(elem, p, gid, x1, y1, x2, y2, dx, dy, dist, rng);
+    else if (fx.type === 'rocket') inner = renderFxRocket(elem, p, gid, x1, y1, x2, y2, dx, dy, dist, rng);
+    else if (fx.type === 'burn')   inner = renderFxBurn(elem, p, gid, x1, y1, dist, rng);
+    else if (fx.type === 'glow')   inner = renderFxGlow(elem, p, gid, x1, y1, dist);
+    else if (fx.type === 'sword')  inner = renderFxSword(elem, p, gid, x1, y1, x2, y2, dx, dy, dist, rng);
+    else if (fx.type === 'shield') inner = renderFxShield(elem, p, gid, x1, y1, dist, rng);
+    else if (fx.type === 'hit')    inner = renderFxHit(elem, p, gid, x1, y1, dist, rng);
+    else if (fx.type === 'fist')   inner = renderFxFist(elem, p, gid, x1, y1, dist, rng);
+    else if (fx.type === 'arrow')  inner = renderFxArrow(elem, p, gid, x1, y1, x2, y2, dx, dy, dist, rng);
+    if (!inner) return '';
+    // Wrap so CSS can target type-specific animations
+    return `<g class="fx-anim fx-anim-${fx.type} fx-elem-${elem}">${inner}</g>`;
+  }
+
+  // Deterministic PRNG so a given effect renders identically each tick
+  function hashStr(s) {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function mulberry32(a) {
+    return function() {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = a;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // ---- BREATH (cone): layered gradient cones + element-specific particles
+  function renderFxBreath(elem, p, gid, ox, oy, tx, ty, dx, dy, dist, rng) {
+    if (dist < 5) return '';
+    const angle = Math.atan2(dy, dx);
+    const halfW = dist * 0.5;
+    const perpX = -Math.sin(angle), perpY = Math.cos(angle);
+    const poly = (w) => `${ox},${oy} ${tx + perpX*w},${ty + perpY*w} ${tx - perpX*w},${ty - perpY*w}`;
+
+    // Stack three cones with decreasing width & increasing opacity for a glowing core
+    const outer  = poly(halfW);
+    const middle = poly(halfW * 0.7);
+    const inner  = poly(halfW * 0.42);
+
+    // Sparkle / ember particles scattered through the cone
+    let particles = '';
+    const n = (elem === 'fire' || elem === 'holy' || elem === 'magic' || elem === 'lightning') ? 10 : 6;
+    for (let i = 0; i < n; i++) {
+      const t = 0.3 + rng() * 0.7;
+      const lateral = (rng() - 0.5) * halfW * t * 1.6;
+      const px = ox + dx * t + perpX * lateral;
+      const py = oy + dy * t + perpY * lateral;
+      const r = 2 + rng() * 4;
+      particles += `<circle class="fx-shape" cx="${px}" cy="${py}" r="${r}" fill="${p.core}" opacity="${0.5 + rng()*0.4}" style="color:${p.core}"/>`;
     }
-    if (fx.type === 'beam') {
-      // Line from origin to end with thickness
-      const w = 10;
-      return `<line class="fx-shape" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${w}" stroke-linecap="round" style="color:${color}"/>`;
+
+    // For lightning breath, add a few jagged arcs inside the cone
+    let arcs = '';
+    if (elem === 'lightning') {
+      for (let k = 0; k < 3; k++) {
+        const seg = 5;
+        let d = `M ${ox} ${oy}`;
+        for (let i = 1; i <= seg; i++) {
+          const t = i / seg;
+          const lateral = (rng() - 0.5) * halfW * t * 1.2;
+          const px = ox + dx * t + perpX * lateral;
+          const py = oy + dy * t + perpY * lateral;
+          d += ` L ${px} ${py}`;
+        }
+        arcs += `<path class="fx-shape" d="${d}" stroke="${p.core}" stroke-width="2" fill="none" opacity="0.7" style="color:${p.core}"/>`;
+      }
     }
-    if (fx.type === 'rocket') {
-      // Projectile that travels from origin to target with an explosion at the end
-      if (dist < 5) return '';
-      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-      const trail = `<line class="fx-shape" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="3" stroke-linecap="round" opacity="0.5" stroke-dasharray="4 4" style="color:${color}"/>`;
-      const head = `<circle class="fx-shape fx-rocket-head" cx="${x2}" cy="${y2}" r="10" fill="${color}" style="color:${color}"/>`;
-      const burst = `<circle class="fx-shape fx-rocket-burst" cx="${x2}" cy="${y2}" r="20" fill="${color}" fill-opacity="0.4" stroke="${color}" stroke-width="2" style="color:${color}"/>`;
-      return trail + burst + head;
+
+    return `
+      <defs>
+        <radialGradient id="${gid}" cx="${ox}" cy="${oy}" r="${dist}" gradientUnits="userSpaceOnUse">
+          <stop offset="0"   stop-color="${p.core}" stop-opacity="0.95"/>
+          <stop offset="0.45" stop-color="${p.mid}"  stop-opacity="0.75"/>
+          <stop offset="1"   stop-color="${p.edge}" stop-opacity="0.12"/>
+        </radialGradient>
+      </defs>
+      <polygon class="fx-shape" points="${outer}"  fill="url(#${gid})" style="color:${p.mid}"/>
+      <polygon class="fx-shape" points="${middle}" fill="${p.mid}" opacity="0.35" style="color:${p.mid}"/>
+      <polygon class="fx-shape" points="${inner}"  fill="${p.core}" opacity="0.55" style="color:${p.core}"/>
+      ${arcs}${particles}
+    `;
+  }
+
+  // ---- BEAM (line): triple-stroke for outer halo + mid + bright core. Lightning is jagged.
+  function renderFxBeam(elem, p, gid, ox, oy, tx, ty, dx, dy, dist, rng) {
+    if (dist < 5) return '';
+    if (elem === 'lightning') return renderFxLightningBeam(p, ox, oy, tx, ty, dx, dy, dist, rng);
+    // Standard beam
+    return `
+      <line class="fx-shape" x1="${ox}" y1="${oy}" x2="${tx}" y2="${ty}" stroke="${p.edge}" stroke-width="20" stroke-linecap="round" opacity="0.25" style="color:${p.mid}"/>
+      <line class="fx-shape" x1="${ox}" y1="${oy}" x2="${tx}" y2="${ty}" stroke="${p.mid}"  stroke-width="11" stroke-linecap="round" opacity="0.65" style="color:${p.mid}"/>
+      <line class="fx-shape" x1="${ox}" y1="${oy}" x2="${tx}" y2="${ty}" stroke="${p.core}" stroke-width="4"  stroke-linecap="round" opacity="1" style="color:${p.core}"/>
+    `;
+  }
+
+  function renderFxLightningBeam(p, ox, oy, tx, ty, dx, dy, dist, rng) {
+    const segments = Math.max(6, Math.floor(dist / 22));
+    const dirX = dx / dist, dirY = dy / dist;
+    const perpX = -dirY, perpY = dirX;
+    const points = [{x: ox, y: oy}];
+    for (let i = 1; i < segments; i++) {
+      const t = i / segments;
+      const jitter = (rng() - 0.5) * 28;
+      points.push({ x: ox + dx * t + perpX * jitter, y: oy + dy * t + perpY * jitter });
     }
-    if (fx.type === 'burn') {
-      const r = Math.max(10, dist);
-      return `<circle class="fx-shape" cx="${x1}" cy="${y1}" r="${r}" fill="${color}" style="color:${color}"/>`;
+    points.push({x: tx, y: ty});
+    const path = points.map((pt, i) => (i === 0 ? 'M' : 'L') + ' ' + pt.x + ' ' + pt.y).join(' ');
+
+    // Optional small fork branching off the middle
+    let fork = '';
+    if (segments > 4) {
+      const mid = points[Math.floor(points.length / 2)];
+      const forkAngle = Math.atan2(dy, dx) + (rng() < 0.5 ? -0.7 : 0.7);
+      const forkLen = dist * 0.18;
+      const fx = mid.x + Math.cos(forkAngle) * forkLen;
+      const fy = mid.y + Math.sin(forkAngle) * forkLen;
+      fork = `<path class="fx-shape" d="M ${mid.x} ${mid.y} L ${fx} ${fy}" stroke="${p.core}" stroke-width="2.5" fill="none" opacity="0.85" style="color:${p.core}"/>`;
     }
-    if (fx.type === 'glow') {
-      const r = Math.max(10, dist);
-      return `<circle class="fx-shape glow-pulse" cx="${x1}" cy="${y1}" r="${r}" fill="${color}" stroke="${color}" stroke-width="3" fill-opacity="0.3" style="color:${color}"/>`;
+
+    return `
+      <path class="fx-shape" d="${path}" stroke="${p.edge}" stroke-width="14" stroke-linecap="round" fill="none" opacity="0.35" style="color:${p.mid}"/>
+      <path class="fx-shape" d="${path}" stroke="${p.mid}"  stroke-width="7"  stroke-linecap="round" fill="none" opacity="0.7" style="color:${p.mid}"/>
+      <path class="fx-shape" d="${path}" stroke="${p.core}" stroke-width="3"  stroke-linecap="round" fill="none" opacity="1" style="color:${p.core}"/>
+      ${fork}
+    `;
+  }
+
+  // ---- ROCKET (projectile + impact): glowing orb at target, fading trail
+  function renderFxRocket(elem, p, gid, ox, oy, tx, ty, dx, dy, dist, rng) {
+    if (dist < 5) return '';
+    // Trail: dots from origin to target, growing and brightening toward target
+    let trail = '';
+    const TRAIL_N = 14;
+    for (let i = 0; i < TRAIL_N; i++) {
+      const t = i / (TRAIL_N - 1);
+      const px = ox + dx * t + (rng() - 0.5) * 4;
+      const py = oy + dy * t + (rng() - 0.5) * 4;
+      const r = 2 + t * 7;
+      const op = 0.1 + t * 0.75;
+      const fill = t > 0.6 ? p.core : p.mid;
+      trail += `<circle class="fx-shape" cx="${px}" cy="${py}" r="${r}" fill="${fill}" opacity="${op}" style="color:${p.mid}"/>`;
     }
-    return '';
+    // Impact orb at target with concentric rings
+    const impact = `
+      <defs>
+        <radialGradient id="${gid}" cx="${tx}" cy="${ty}" r="32" gradientUnits="userSpaceOnUse">
+          <stop offset="0"   stop-color="${p.core}" stop-opacity="1"/>
+          <stop offset="0.4" stop-color="${p.mid}"  stop-opacity="0.85"/>
+          <stop offset="1"   stop-color="${p.edge}" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <circle class="fx-shape" cx="${tx}" cy="${ty}" r="32" fill="url(#${gid})" style="color:${p.mid}"/>
+      <circle class="fx-shape" cx="${tx}" cy="${ty}" r="14" fill="${p.core}" opacity="0.9" style="color:${p.core}"/>
+    `;
+    return trail + impact;
+  }
+
+  // ---- BURN (area): radial gradient blast with debris/sparkle ring
+  function renderFxBurn(elem, p, gid, ox, oy, dist, rng) {
+    const r = Math.max(14, dist);
+    // Debris/ember ring at the edge
+    let ring = '';
+    const NDOTS = 14;
+    for (let i = 0; i < NDOTS; i++) {
+      const ang = (i / NDOTS) * Math.PI * 2 + rng() * 0.4;
+      const rad = r * (0.82 + rng() * 0.22);
+      const px = ox + Math.cos(ang) * rad;
+      const py = oy + Math.sin(ang) * rad;
+      const pr = 2 + rng() * 5;
+      const fill = i % 2 === 0 ? p.core : p.mid;
+      ring += `<circle class="fx-shape" cx="${px}" cy="${py}" r="${pr}" fill="${fill}" opacity="${0.6 + rng()*0.3}" style="color:${fill}"/>`;
+    }
+    return `
+      <defs>
+        <radialGradient id="${gid}" cx="${ox}" cy="${oy}" r="${r}" gradientUnits="userSpaceOnUse">
+          <stop offset="0"    stop-color="${p.core}" stop-opacity="0.9"/>
+          <stop offset="0.4"  stop-color="${p.mid}"  stop-opacity="0.7"/>
+          <stop offset="0.85" stop-color="${p.edge}" stop-opacity="0.3"/>
+          <stop offset="1"    stop-color="${p.edge}" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <circle class="fx-shape" cx="${ox}" cy="${oy}" r="${r}" fill="url(#${gid})" style="color:${p.mid}"/>
+      <circle class="fx-shape" cx="${ox}" cy="${oy}" r="${r * 0.45}" fill="${p.core}" opacity="0.4" style="color:${p.core}"/>
+      ${ring}
+    `;
+  }
+
+  // ---- GLOW (aura): pulsing concentric rings with translucent fill
+  function renderFxGlow(elem, p, gid, ox, oy, dist) {
+    const r = Math.max(14, dist);
+    return `
+      <defs>
+        <radialGradient id="${gid}" cx="${ox}" cy="${oy}" r="${r}" gradientUnits="userSpaceOnUse">
+          <stop offset="0"   stop-color="${p.core}" stop-opacity="0.35"/>
+          <stop offset="0.7" stop-color="${p.mid}"  stop-opacity="0.25"/>
+          <stop offset="1"   stop-color="${p.edge}" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <circle class="fx-shape glow-pulse" cx="${ox}" cy="${oy}" r="${r}" fill="url(#${gid})" stroke="${p.mid}" stroke-width="3" stroke-opacity="0.7" style="color:${p.mid}"/>
+      <circle class="fx-shape glow-pulse" cx="${ox}" cy="${oy}" r="${r * 0.6}" fill="none" stroke="${p.core}" stroke-width="2" stroke-opacity="0.55" style="color:${p.core}"/>
+    `;
+  }
+
+  // ---- SWORD (slash): curved bezier swing from origin toward target with tapered glow
+  function renderFxSword(elem, p, gid, ox, oy, tx, ty, dx, dy, dist, rng) {
+    if (dist < 10) return '';
+    const midX = (ox + tx) / 2;
+    const midY = (oy + ty) / 2;
+    const perpLen = Math.sqrt(dx*dx + dy*dy) || 1;
+    const perpX = -dy / perpLen, perpY = dx / perpLen;
+    const arcDepth = dist * 0.5;
+    const ctrlX = midX + perpX * arcDepth;
+    const ctrlY = midY + perpY * arcDepth;
+    const pathD = `M ${ox} ${oy} Q ${ctrlX} ${ctrlY} ${tx} ${ty}`;
+    return `
+      <path class="fx-shape" d="${pathD}" stroke="${p.edge}" stroke-width="22" fill="none" stroke-linecap="round" opacity="0.22" style="color:${p.mid}"/>
+      <path class="fx-shape" d="${pathD}" stroke="${p.mid}"  stroke-width="12" fill="none" stroke-linecap="round" opacity="0.55" style="color:${p.mid}"/>
+      <path class="fx-shape" d="${pathD}" stroke="${p.core}" stroke-width="4"  fill="none" stroke-linecap="round" opacity="1" style="color:${p.core}"/>
+      <circle class="fx-shape" cx="${tx}" cy="${ty}" r="7" fill="${p.core}" opacity="0.9" style="color:${p.core}"/>
+    `;
+  }
+
+  // ---- SHIELD (barrier): hexagonal ward with inner sigil ring
+  function renderFxShield(elem, p, gid, ox, oy, dist, rng) {
+    const r = Math.max(24, dist);
+    const sides = 6;
+    let outer = '', inner = '';
+    for (let i = 0; i < sides; i++) {
+      const a = (i / sides) * Math.PI * 2 - Math.PI / 2;
+      outer += `${ox + Math.cos(a) * r},${oy + Math.sin(a) * r} `;
+      inner += `${ox + Math.cos(a) * r * 0.62},${oy + Math.sin(a) * r * 0.62} `;
+    }
+    return `
+      <defs>
+        <radialGradient id="${gid}" cx="${ox}" cy="${oy}" r="${r}" gradientUnits="userSpaceOnUse">
+          <stop offset="0"   stop-color="${p.core}" stop-opacity="0.2"/>
+          <stop offset="0.7" stop-color="${p.mid}"  stop-opacity="0.18"/>
+          <stop offset="1"   stop-color="${p.edge}" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <polygon class="fx-shape" points="${outer}" fill="url(#${gid})" stroke="${p.mid}" stroke-width="5" opacity="0.85" style="color:${p.mid}"/>
+      <polygon class="fx-shape" points="${inner}" fill="none" stroke="${p.core}" stroke-width="2" opacity="0.65" style="color:${p.core}"/>
+      <circle class="fx-shape" cx="${ox}" cy="${oy}" r="${r * 0.18}" fill="none" stroke="${p.core}" stroke-width="2" opacity="0.75" style="color:${p.core}"/>
+    `;
+  }
+
+  // ---- HIT (impact starburst): 8 sharp rays + 8 short rays alternating
+  function renderFxHit(elem, p, gid, ox, oy, dist, rng) {
+    const r = Math.max(22, dist);
+    let rays = '';
+    const spikes = 8;
+    for (let i = 0; i < spikes; i++) {
+      const a = (i / spikes) * Math.PI * 2;
+      rays += `<line class="fx-shape" x1="${ox + Math.cos(a) * r*0.25}" y1="${oy + Math.sin(a) * r*0.25}" x2="${ox + Math.cos(a) * r}" y2="${oy + Math.sin(a) * r}" stroke="${p.core}" stroke-width="5" stroke-linecap="round" style="color:${p.core}"/>`;
+    }
+    for (let i = 0; i < spikes; i++) {
+      const a = (i / spikes) * Math.PI * 2 + (Math.PI / spikes);
+      rays += `<line class="fx-shape" x1="${ox + Math.cos(a) * r*0.18}" y1="${oy + Math.sin(a) * r*0.18}" x2="${ox + Math.cos(a) * r*0.6}" y2="${oy + Math.sin(a) * r*0.6}" stroke="${p.mid}" stroke-width="3" stroke-linecap="round" opacity="0.75" style="color:${p.mid}"/>`;
+    }
+    return `<circle class="fx-shape" cx="${ox}" cy="${oy}" r="${r*0.2}" fill="${p.core}" opacity="0.95" style="color:${p.core}"/>${rays}`;
+  }
+
+  // ---- FIST (punch impact): concentric shockwave rings + radiating bursts
+  function renderFxFist(elem, p, gid, ox, oy, dist, rng) {
+    const r = Math.max(28, dist);
+    let rings = '';
+    for (let i = 1; i <= 3; i++) {
+      const ringR = r * (i / 3);
+      rings += `<circle class="fx-shape" cx="${ox}" cy="${oy}" r="${ringR}" fill="none" stroke="${p.mid}" stroke-width="${4 - i*0.5}" stroke-dasharray="${10 - i*2} ${5}" opacity="${0.85 - i*0.2}" style="color:${p.mid}"/>`;
+    }
+    let bursts = '';
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 + rng() * 0.25;
+      const x = ox + Math.cos(a) * r * 0.55;
+      const y = oy + Math.sin(a) * r * 0.55;
+      bursts += `<line class="fx-shape" x1="${ox}" y1="${oy}" x2="${x}" y2="${y}" stroke="${p.core}" stroke-width="4" stroke-linecap="round" opacity="0.95" style="color:${p.core}"/>`;
+    }
+    return `${rings}${bursts}<circle class="fx-shape" cx="${ox}" cy="${oy}" r="${r*0.2}" fill="${p.core}" opacity="0.95" style="color:${p.core}"/>`;
+  }
+
+  // ---- ARROW (aim): shaft with arrowhead at target and fletching at origin
+  function renderFxArrow(elem, p, gid, ox, oy, tx, ty, dx, dy, dist, rng) {
+    if (dist < 10) return '';
+    const angle = Math.atan2(dy, dx);
+    const headSize = 16;
+    const tipX = tx, tipY = ty;
+    const shaftEndX = tx - Math.cos(angle) * headSize * 0.55;
+    const shaftEndY = ty - Math.sin(angle) * headSize * 0.55;
+    const ah1x = tipX - Math.cos(angle - 0.5) * headSize;
+    const ah1y = tipY - Math.sin(angle - 0.5) * headSize;
+    const ah2x = tipX - Math.cos(angle + 0.5) * headSize;
+    const ah2y = tipY - Math.sin(angle + 0.5) * headSize;
+    const flLen = 13;
+    const fl1x = ox - Math.cos(angle - 0.45) * flLen;
+    const fl1y = oy - Math.sin(angle - 0.45) * flLen;
+    const fl2x = ox - Math.cos(angle + 0.45) * flLen;
+    const fl2y = oy - Math.sin(angle + 0.45) * flLen;
+    return `
+      <line class="fx-shape" x1="${ox}" y1="${oy}" x2="${shaftEndX}" y2="${shaftEndY}" stroke="${p.edge}" stroke-width="4" stroke-linecap="round" opacity="0.95" style="color:${p.mid}"/>
+      <polygon class="fx-shape" points="${tipX},${tipY} ${ah1x},${ah1y} ${ah2x},${ah2y}" fill="${p.core}" stroke="${p.edge}" stroke-width="1.5" style="color:${p.core}"/>
+      <line class="fx-shape" x1="${ox}" y1="${oy}" x2="${fl1x}" y2="${fl1y}" stroke="${p.mid}" stroke-width="3" stroke-linecap="round" opacity="0.85" style="color:${p.mid}"/>
+      <line class="fx-shape" x1="${ox}" y1="${oy}" x2="${fl2x}" y2="${fl2y}" stroke="${p.mid}" stroke-width="3" stroke-linecap="round" opacity="0.85" style="color:${p.mid}"/>
+    `;
   }
 
   function handleEffectChange(payload) {
@@ -2279,6 +2764,7 @@
 
   document.getElementById('imggen-btn').addEventListener('click', () => {
     document.getElementById('imggen-popup').classList.add('active');
+    renderLibrary();
   });
   document.getElementById('imggen-close').addEventListener('click', () => {
     document.getElementById('imggen-popup').classList.remove('active');
@@ -2304,12 +2790,21 @@
     const img = document.getElementById('imggen-img');
     img.style.display = 'none';
     document.getElementById('imggen-loading').style.display = 'block';
+    document.getElementById('imggen-loading').textContent = 'Generating...';
     document.getElementById('imggen-preview').style.display = 'block';
     document.getElementById('imggen-actions').style.display = 'none';
+    document.getElementById('imggen-status').style.display = 'none';
     img.onload = () => {
       img.style.display = 'block';
       document.getElementById('imggen-loading').style.display = 'none';
       document.getElementById('imggen-actions').style.display = 'flex';
+      // Save to library on successful generation
+      libraryAdd({
+        url: imgGenState.url,
+        type: imgGenState.type,
+        prompt: imgGenState.prompt,
+        ts: Date.now(),
+      });
     };
     img.onerror = () => {
       document.getElementById('imggen-loading').textContent = 'Generation failed. Try a different prompt.';
@@ -2317,54 +2812,147 @@
     img.src = url;
   }
 
-  document.getElementById('imggen-use').addEventListener('click', async () => {
+  function showImggenStatus(text) {
+    const el = document.getElementById('imggen-status');
+    el.textContent = text;
+    el.style.display = 'block';
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.style.display = 'none'; }, 2400);
+  }
+
+  // ============ IMAGE LIBRARY (persisted per-session in localStorage) ============
+  function libraryKey() { return `vtt_library_${STATE.sessionId || 'demo'}`; }
+  function libraryLoad() {
+    try { return JSON.parse(localStorage.getItem(libraryKey()) || '[]'); } catch (e) { return []; }
+  }
+  function librarySave(arr) {
+    try { localStorage.setItem(libraryKey(), JSON.stringify(arr)); } catch (e) { /* quota full or private mode */ }
+  }
+  function libraryAdd(entry) {
+    const lib = libraryLoad();
+    // Dedupe by URL
+    if (lib.some(e => e.url === entry.url)) { renderLibrary(); return; }
+    lib.unshift(entry);
+    if (lib.length > 60) lib.length = 60;
+    librarySave(lib);
+    renderLibrary();
+  }
+  function libraryRemove(url) {
+    const lib = libraryLoad().filter(e => e.url !== url);
+    librarySave(lib);
+    renderLibrary();
+  }
+  function renderLibrary() {
+    const grid = document.getElementById('imggen-library-grid');
+    const empty = document.getElementById('imggen-library-empty');
+    if (!grid) return;
+    const lib = libraryLoad();
+    if (!lib.length) {
+      grid.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    grid.innerHTML = lib.map(e => `
+      <div class="lib-thumb" data-url="${escapeHtml(e.url)}" data-type="${escapeHtml(e.type)}" title="${escapeHtml(e.prompt || '')}">
+        <img src="${escapeHtml(e.url)}" alt="">
+        <button class="lib-del" title="Remove">×</button>
+        <div class="lib-type">${escapeHtml(e.type)}</div>
+      </div>
+    `).join('');
+  }
+
+  // Common path: upload a generated image as the active map slot
+  async function imgGenSetAsMap() {
     if (!imgGenState.url) return;
-    const type = imgGenState.type;
     try {
-      // Fetch the generated image and convert to a Blob for upload
+      showImggenStatus('Uploading map...');
       const res = await fetch(imgGenState.url);
       const blob = await res.blob();
-      if (type === 'map') {
-        // Resize-ish (server returned 1024x1024 so it's already sized)
-        const path = `${STATE.sessionId}/maps/map.jpg`;
-        const finalUrl = await uploadImage(blob, path);
-        const cacheBuster = (DEMO_MODE || finalUrl.startsWith('data:') || finalUrl.startsWith('blob:')) ? finalUrl : finalUrl + '?t=' + Date.now();
-        // Get dimensions via Image
-        const img = new Image();
-        img.onload = async () => {
-          await sb.from('vtt_maps').upsert({
-            session_id: STATE.sessionId,
-            image_url: cacheBuster,
-            width: img.width,
-            height: img.height,
-            grid_ft: STATE.gridFt,
-            updated_at: new Date().toISOString(),
-          });
-          toast('Map updated for everyone');
-        };
+      const path = `${STATE.sessionId}/maps/slot-${STATE.activeMapSlot}-${Date.now()}.jpg`;
+      const finalUrl = await uploadImage(blob, path);
+      const cacheBuster = (DEMO_MODE || finalUrl.startsWith('data:') || finalUrl.startsWith('blob:')) ? finalUrl : finalUrl + '?t=' + Date.now();
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
         img.src = imgGenState.url;
-      } else {
-        // Create a token with this image
-        const tokenId = genId();
-        const path = `${STATE.sessionId}/tokens/${tokenId}.jpg`;
-        const url = await uploadImage(blob, path);
-        const labelMap = { character: 'NPC', creature: 'Creature', item: 'Item' };
-        await sb.from('vtt_tokens').insert({
-          id: tokenId,
-          session_id: STATE.sessionId,
-          name: labelMap[type] || 'Token',
-          image_url: url,
-          x: null, y: null,
-          owner_id: STATE.userId,
-          current_hp: 10, max_hp: 10,
-        });
-        toast((labelMap[type] || 'Token') + ' added to tray');
-      }
-      document.getElementById('imggen-popup').classList.remove('active');
+      });
+      await sb.from('vtt_maps').upsert({
+        session_id: STATE.sessionId,
+        slot: STATE.activeMapSlot,
+        image_url: cacheBuster,
+        width: img.width,
+        height: img.height,
+        grid_ft: STATE.gridFt,
+        offset_x: 0,
+        offset_y: 0,
+        tokens_locked: false,
+        updated_at: new Date().toISOString(),
+      });
+      showImggenStatus(`Set as Map ${STATE.activeMapSlot} for everyone`);
     } catch (err) {
       console.error(err);
-      toast('Failed to publish image', 'error');
+      toast('Failed to publish map', 'error');
     }
+  }
+
+  // Common path: upload a generated image as a token in the tray
+  async function imgGenAddAsToken() {
+    if (!imgGenState.url) return;
+    try {
+      showImggenStatus('Adding token...');
+      const res = await fetch(imgGenState.url);
+      const blob = await res.blob();
+      const tokenId = genId();
+      const path = `${STATE.sessionId}/tokens/${tokenId}.jpg`;
+      const url = await uploadImage(blob, path);
+      const labelMap = { character: 'NPC', creature: 'Creature', item: 'Item', map: 'Image' };
+      await sb.from('vtt_tokens').insert({
+        id: tokenId,
+        session_id: STATE.sessionId,
+        name: labelMap[imgGenState.type] || 'Token',
+        image_url: url,
+        x: null, y: null,
+        owner_id: STATE.userId,
+        current_hp: 10, max_hp: 10,
+      });
+      showImggenStatus((labelMap[imgGenState.type] || 'Token') + ' added to tray');
+    } catch (err) {
+      console.error(err);
+      toast('Failed to publish token', 'error');
+    }
+  }
+
+  // Each button now keeps the popup open so DM can take multiple actions
+  document.getElementById('imggen-as-map').addEventListener('click', () => imgGenSetAsMap());
+  document.getElementById('imggen-as-token').addEventListener('click', () => imgGenAddAsToken());
+  // "Show to All" routes by type: map → map, others → token. Both keep popup open.
+  document.getElementById('imggen-show-all').addEventListener('click', async () => {
+    if (!imgGenState.url) return;
+    if (imgGenState.type === 'map') await imgGenSetAsMap();
+    else await imgGenAddAsToken();
+  });
+
+  // Library: click thumbnail to load it back into the preview
+  document.getElementById('imggen-library-grid').addEventListener('click', (e) => {
+    const del = e.target.closest('.lib-del');
+    if (del) {
+      e.stopPropagation();
+      const thumb = del.closest('.lib-thumb');
+      if (thumb && thumb.dataset.url) libraryRemove(thumb.dataset.url);
+      return;
+    }
+    const thumb = e.target.closest('.lib-thumb');
+    if (!thumb) return;
+    imgGenState = { type: thumb.dataset.type, prompt: '', seed: 0, url: thumb.dataset.url };
+    const img = document.getElementById('imggen-img');
+    img.style.display = 'block';
+    img.src = thumb.dataset.url;
+    document.getElementById('imggen-loading').style.display = 'none';
+    document.getElementById('imggen-preview').style.display = 'block';
+    document.getElementById('imggen-actions').style.display = 'flex';
+    document.getElementById('imggen-status').style.display = 'none';
   });
 
   document.getElementById('zoom-in').addEventListener('click', () => { STATE.view.zoom = Math.min(3, STATE.view.zoom * 1.2); applyTransform(); });
@@ -2494,7 +3082,7 @@
     if (STATE.fxDrawing) {
       const fx = STATE.fxDrawing;
       STATE.fxDrawing = null;
-      document.getElementById('effectslayer').querySelector('.fx-preview')?.remove();
+      document.getElementById('effectslayer').querySelector('#fx-preview-group')?.remove();
       // Persist
       const id = genId();
       await sb.from('vtt_effects').insert({
@@ -2516,7 +3104,7 @@
         offset_x: STATE.map.offset_x,
         offset_y: STATE.map.offset_y,
         updated_at: new Date().toISOString(),
-      }).eq('session_id', STATE.sessionId);
+      }).eq('session_id', STATE.sessionId).eq('slot', STATE.activeMapSlot);
       STATE.movingMap = null;
       document.getElementById('mapcontainer').classList.remove('panning');
       return;
@@ -2527,21 +3115,16 @@
 
   function renderFxPreview() {
     const layer = document.getElementById('effectslayer');
-    // Remove existing preview
-    layer.querySelector('.fx-preview')?.remove();
+    // Remove existing preview group
+    const old = layer.querySelector('#fx-preview-group');
+    if (old) old.remove();
     if (!STATE.fxDrawing) return;
     const ox = (STATE.map && STATE.map.offset_x) || 0;
     const oy = (STATE.map && STATE.map.offset_y) || 0;
     const svgStr = effectToSVG(STATE.fxDrawing, ox, oy);
     if (!svgStr) return;
-    // Inject as last child, marked as preview
-    const tmp = document.createElement('div');
-    tmp.innerHTML = `<svg>${svgStr}</svg>`;
-    const node = tmp.querySelector('*');
-    if (node) {
-      node.classList.add('fx-preview');
-      layer.appendChild(node);
-    }
+    // Wrap the entire multi-element output in a single <g> so we can remove it next time
+    layer.insertAdjacentHTML('beforeend', `<g id="fx-preview-group">${svgStr}</g>`);
   }
 
   // ============ TOKEN DRAG ============
@@ -2719,14 +3302,37 @@
     });
   });
 
+  // Adv/Dis pill buttons - applies to d20 only, single die
+  document.querySelectorAll('.adv-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      STATE.advMode = btn.dataset.adv;
+      document.querySelectorAll('.adv-btn').forEach(b => b.classList.toggle('active', b === btn));
+    });
+  });
+
   document.getElementById('gm-roll-check').addEventListener('change', (e) => {
     document.getElementById('gm-roll-toggle').classList.toggle('active', e.target.checked);
   });
 
   async function rollDice(sides, count, mod, isPrivate) {
-    const rolls = [];
-    for (let i = 0; i < count; i++) rolls.push(Math.floor(Math.random() * sides) + 1);
-    const total = rolls.reduce((a,b) => a+b, 0) + mod;
+    const advMode = STATE.advMode || 'normal';
+    const useAdv = (sides === 20 && count === 1 && advMode !== 'normal');
+
+    let rolls = [];
+    let total = 0;
+    let picked = null;
+    if (useAdv) {
+      // Roll 2d20 and pick higher (advantage) or lower (disadvantage)
+      const r1 = Math.floor(Math.random() * 20) + 1;
+      const r2 = Math.floor(Math.random() * 20) + 1;
+      rolls = [r1, r2];
+      picked = (advMode === 'advantage') ? Math.max(r1, r2) : Math.min(r1, r2);
+      total = picked + mod;
+    } else {
+      for (let i = 0; i < count; i++) rolls.push(Math.floor(Math.random() * sides) + 1);
+      total = rolls.reduce((a,b) => a+b, 0) + mod;
+    }
+
     const id = genId();
     STATE.myMsgIds.add(id);
 
@@ -2738,19 +3344,18 @@
       user_name: STATE.username,
       is_host: STATE.isHost,
       sides,
-      dice_count: count,
+      dice_count: useAdv ? 2 : count,
       modifier: mod,
       rolls,
       total,
       is_private: !!isPrivate,
+      adv_mode: useAdv ? advMode : null,
+      picked,
       ts: nowTs(),
     };
 
-    // Animate locally
     animateDiceRoll(msg);
-    // Render in chat locally
     renderChatMessage(msg);
-    // Persist (real-time fires back but we skip our own animation)
     const { error } = await sb.from('vtt_chat').insert(msg);
     if (error) { console.error(error); toast('Roll failed to sync', 'error'); }
   }
@@ -2864,13 +3469,29 @@
     const mod = msg.modifier || 0;
     const modText = mod !== 0 ? ` ${mod > 0 ? '+' : ''}${mod}` : '';
     const privLabel = msg.is_private ? `<div class="priv-label">PRIVATE ROLL - ${escapeHtml(msg.user_name)}</div>` : '';
-    result.innerHTML = `${privLabel}<div>${escapeHtml(msg.user_name)} - ${msg.dice_count}d${msg.sides}${modText}</div><div class="total">${msg.total}</div><div class="breakdown">${msg.rolls.join(' + ')}${modText} = ${msg.total}</div>`;
+    let header, breakdown;
+    if (msg.adv_mode === 'advantage' || msg.adv_mode === 'disadvantage') {
+      const advLabel = msg.adv_mode === 'advantage' ? 'ADVANTAGE' : 'DISADVANTAGE';
+      header = `<div>${escapeHtml(msg.user_name)} - d20 ${advLabel}${modText}</div>`;
+      // Mark which die was picked
+      const r1 = msg.rolls[0], r2 = msg.rolls[1];
+      const pickedIsFirst = msg.picked === r1 && (r1 !== r2 || msg.adv_mode === 'advantage');
+      const r1Cls = (r1 === msg.picked) ? 'roll-pick' : 'roll-drop';
+      const r2Cls = (r2 === msg.picked) ? 'roll-pick' : 'roll-drop';
+      breakdown = `<div class="breakdown"><span class="${r1Cls}">${r1}</span> | <span class="${r2Cls}">${r2}</span> → ${msg.picked}${modText} = ${msg.total}</div>`;
+    } else {
+      header = `<div>${escapeHtml(msg.user_name)} - ${msg.dice_count}d${msg.sides}${modText}</div>`;
+      breakdown = `<div class="breakdown">${msg.rolls.join(' + ')}${modText} = ${msg.total}</div>`;
+    }
+    result.innerHTML = `${privLabel}${header}<div class="total">${msg.total}</div>${breakdown}`;
     overlay.classList.add('active');
 
-    // Critical hit / fail effects for d20 only
-    const isD20Single = msg.sides === 20 && msg.dice_count === 1;
-    const hasNat20 = isD20Single && msg.rolls.includes(20);
-    const hasNat1 = isD20Single && msg.rolls.includes(1);
+    // Critical hit / fail effects for d20 only - check the kept die when adv/dis active
+    const isD20 = msg.sides === 20;
+    const checkRolls = (msg.adv_mode && msg.picked != null) ? [msg.picked] : msg.rolls;
+    const isSingleEffective = msg.adv_mode ? true : msg.dice_count === 1;
+    const hasNat20 = isD20 && isSingleEffective && checkRolls.includes(20);
+    const hasNat1 = isD20 && isSingleEffective && checkRolls.includes(1);
     if (hasNat20) result.classList.add('nat20');
     if (hasNat1) result.classList.add('nat1');
 
