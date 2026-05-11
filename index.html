@@ -1,0 +1,2040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D&D Virtual Tabletop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #0d0a08;
+    --panel: #1a1612;
+    --panel-light: #241e17;
+    --border: #3a2f24;
+    --gold: #d4a574;
+    --gold-soft: #a8845a;
+    --cream: #e8dcc4;
+    --muted: #8a7c66;
+    --danger: #a04848;
+    --success: #6b8a4a;
+    --ember: #e08c3a;
+  }
+  /* Class themes override --gold and --gold-soft when applied to <html> */
+  html.theme-barbarian   { --gold: #c25050; --gold-soft: #8a3838; }
+  html.theme-bard        { --gold: #c878d4; --gold-soft: #8a5494; }
+  html.theme-cleric      { --gold: #e8c878; --gold-soft: #b09554; }
+  html.theme-druid       { --gold: #7da848; --gold-soft: #557530; }
+  html.theme-fighter     { --gold: #c0c0d0; --gold-soft: #80808a; }
+  html.theme-monk        { --gold: #e08c5a; --gold-soft: #a8633c; }
+  html.theme-paladin     { --gold: #e8d890; --gold-soft: #b0a060; }
+  html.theme-ranger      { --gold: #5a9048; --gold-soft: #3a6030; }
+  html.theme-rogue       { --gold: #8a6db0; --gold-soft: #5a4080; }
+  html.theme-sorcerer    { --gold: #d4583a; --gold-soft: #983a25; }
+  html.theme-warlock     { --gold: #a868c8; --gold-soft: #74428a; }
+  html.theme-wizard      { --gold: #5a7bc8; --gold-soft: #3a548a; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; font-family: 'Crimson Pro', Georgia, serif; background: var(--bg); color: var(--cream); user-select: none; }
+  h1, h2, h3, .title { font-family: 'Cinzel', serif; letter-spacing: 0.05em; }
+  button { font-family: inherit; cursor: pointer; border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); padding: 8px 14px; border-radius: 3px; transition: all 0.15s; font-size: 14px; }
+  button:hover { background: var(--border); border-color: var(--gold-soft); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.primary { background: linear-gradient(180deg, #b88a4a, #8a6535); border-color: var(--gold); color: #1a1612; font-weight: 600; }
+  button.primary:hover { background: linear-gradient(180deg, #d4a574, #a8845a); }
+  button.danger { color: #e8a0a0; border-color: var(--danger); }
+  button.danger:hover { background: var(--danger); color: var(--cream); }
+  input[type="text"], input[type="number"], select { background: var(--bg); border: 1px solid var(--border); color: var(--cream); padding: 8px 10px; border-radius: 3px; font-family: inherit; font-size: 14px; outline: none; }
+  input:focus { border-color: var(--gold); }
+  label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* CONFIG ERROR */
+  #config-error { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 40px; }
+  #config-error .box { max-width: 600px; background: var(--panel); border: 1px solid var(--danger); border-radius: 6px; padding: 32px; }
+  #config-error h2 { color: var(--danger); margin-bottom: 16px; }
+  #config-error p { margin-bottom: 12px; line-height: 1.5; }
+  #config-error code { background: var(--bg); padding: 2px 6px; border-radius: 3px; color: var(--gold); font-family: monospace; }
+
+  /* LOGIN */
+  #login { position: fixed; inset: 0; background: radial-gradient(ellipse at center, #1a1612 0%, #0d0a08 70%); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+  .login-card { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 40px; width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(212,165,116,0.1); }
+  .login-card h1 { font-size: 28px; color: var(--gold); text-align: center; margin-bottom: 8px; }
+  .login-card .sub { text-align: center; color: var(--muted); font-style: italic; margin-bottom: 28px; }
+  .field { margin-bottom: 16px; }
+  .field input { width: 100%; }
+  .role-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .role-tabs button { flex: 1; padding: 12px; }
+  .role-tabs button.active { background: linear-gradient(180deg, #b88a4a, #8a6535); border-color: var(--gold); color: #1a1612; font-weight: 600; }
+  .login-card .footer-note { font-size: 12px; color: var(--muted); text-align: center; margin-top: 16px; font-style: italic; }
+  .conn-status { font-size: 11px; color: var(--muted); text-align: center; margin-top: 16px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .conn-status.connected { color: var(--success); }
+  .conn-status.error { color: var(--danger); }
+  .conn-status.demo { color: var(--ember); }
+
+  /* DEMO BANNER */
+  #demo-banner { background: linear-gradient(90deg, rgba(224,140,58,0.15), rgba(224,140,58,0.05)); border-bottom: 1px solid var(--ember); color: var(--ember); padding: 6px 18px; font-size: 12px; text-align: center; letter-spacing: 0.05em; flex-shrink: 0; }
+  #demo-banner b { font-family: 'Cinzel', serif; letter-spacing: 0.15em; }
+
+  /* APP LAYOUT */
+  #app { display: none; height: 100vh; flex-direction: column; }
+  #topbar { background: var(--panel); border-bottom: 1px solid var(--border); padding: 10px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-shrink: 0; }
+  .topbar-left { display: flex; align-items: center; gap: 18px; }
+  .topbar-left .brand { font-family: 'Cinzel', serif; color: var(--gold); font-size: 18px; letter-spacing: 0.1em; }
+  .topbar-left .session-info { font-size: 13px; color: var(--muted); }
+  .topbar-left .session-info b { color: var(--cream); font-family: monospace; letter-spacing: 0.1em; cursor: pointer; padding: 2px 6px; border-radius: 3px; transition: background 0.15s; }
+  .topbar-left .session-info b:hover { background: var(--panel-light); color: var(--gold); }
+  .role-badge { display: inline-block; padding: 3px 10px; border-radius: 3px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .role-host { background: rgba(212,165,116,0.2); color: var(--gold); border: 1px solid var(--gold-soft); }
+  .role-player { background: rgba(107,138,74,0.2); color: #a8c878; border: 1px solid var(--success); }
+
+  #main { flex: 1; display: flex; overflow: hidden; }
+
+  /* SIDE PANEL */
+  #sidepanel { width: 280px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+  .panel-section { padding: 16px; border-bottom: 1px solid var(--border); }
+  .panel-section h3 { font-size: 12px; color: var(--gold); margin-bottom: 12px; text-transform: uppercase; }
+
+  .token-tray { display: flex; flex-wrap: wrap; gap: 8px; }
+  .token-thumb { width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--border); background-size: cover; background-position: center; cursor: grab; position: relative; transition: border-color 0.15s; }
+  .token-thumb:hover { border-color: var(--gold); }
+  .token-thumb.on-map { opacity: 0.4; cursor: default; }
+  .token-thumb .del-btn { position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: white; border: none; padding: 0; font-size: 11px; display: none; line-height: 1; }
+  .token-thumb:hover .del-btn { display: block; }
+
+  .upload-box { border: 1px dashed var(--border); border-radius: 4px; padding: 14px; text-align: center; cursor: pointer; transition: all 0.15s; font-size: 13px; color: var(--muted); display: block; }
+  .upload-box:hover { border-color: var(--gold); color: var(--gold); }
+  .upload-box input { display: none; }
+
+  /* DICE PANEL */
+  .dice-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .dice-btn { padding: 10px 4px; font-size: 13px; font-family: 'Cinzel', serif; letter-spacing: 0.05em; }
+  .dice-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .dice-row label { margin: 0; flex: 1; }
+  .dice-row input { width: 60px; }
+  .gm-roll-toggle { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: rgba(212,165,116,0.08); border: 1px solid var(--border); border-radius: 3px; margin-bottom: 10px; cursor: pointer; }
+  .gm-roll-toggle input { cursor: pointer; }
+  .gm-roll-toggle.active { background: rgba(212,165,116,0.2); border-color: var(--gold); }
+  .gm-roll-toggle .lbl { font-size: 13px; color: var(--cream); flex: 1; }
+
+  /* MAP AREA */
+  #mapcontainer { flex: 1; position: relative; overflow: hidden; background: #f4f0e8; cursor: grab; }
+  #mapcontainer.panning { cursor: grabbing; }
+  #grid { position: absolute; top: 0; left: 0; background-image:
+    linear-gradient(rgba(140,120,90,0.25) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(140,120,90,0.25) 1px, transparent 1px);
+    background-size: 50px 50px;
+    background-color: #f4f0e8;
+    transform-origin: 0 0;
+    width: 4000px; height: 4000px;
+  }
+  #maplayer { position: absolute; transform-origin: 0 0; }
+  #maplayer img { display: block; max-width: none; pointer-events: none; }
+  #tokenlayer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: 0 0; pointer-events: none; }
+  .map-token { position: absolute; width: 50px; height: 50px; border-radius: 50%; border: 3px solid var(--gold); background-size: cover; background-position: center; cursor: grab; box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3); pointer-events: auto; }
+  .map-token.smooth-move { transition: left 0.25s ease, top 0.25s ease; }
+  .map-token.dragging { cursor: grabbing; z-index: 100; transform: scale(1.1); transition: none; }
+  .map-token .name-tag { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: var(--cream); padding: 2px 8px; border-radius: 3px; font-size: 11px; white-space: nowrap; font-family: 'Cinzel', serif; }
+
+  /* CHARACTER POPUP */
+  #char-popup { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); width: 460px; max-height: 80vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  #char-popup.active { display: flex; }
+  .char-popup-header { padding: 10px 14px; background: var(--panel-light); border-bottom: 1px solid var(--border); cursor: move; display: flex; align-items: center; justify-content: space-between; border-radius: 6px 6px 0 0; }
+  .char-popup-header .ttl { font-family: 'Cinzel', serif; font-size: 14px; color: var(--gold); letter-spacing: 0.05em; }
+  .char-popup-header button { padding: 2px 10px; font-size: 14px; }
+  .char-popup-body { padding: 16px; overflow-y: auto; }
+  .char-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .char-portrait { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--gold); background-size: cover; background-position: center; background-color: var(--panel-light); flex-shrink: 0; }
+  .char-head-info { flex: 1; }
+  .char-head-info input.char-name { width: 100%; font-family: 'Cinzel', serif; font-size: 18px; color: var(--gold); background: transparent; border: 1px solid transparent; padding: 4px 6px; border-radius: 3px; }
+  .char-head-info input.char-name:focus { background: var(--bg); border-color: var(--border); }
+  .char-head-info input.char-name:read-only { border-color: transparent; }
+  .char-head-info .char-subline { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 13px; color: var(--muted); padding: 0 6px; }
+  .char-head-info select, .char-head-info input.char-level, .char-head-info input.char-race { background: transparent; border: none; color: var(--cream); padding: 2px 4px; font-family: inherit; font-size: 13px; }
+  .char-head-info select { color: var(--gold); font-family: 'Cinzel', serif; text-transform: capitalize; }
+  .char-head-info input.char-level { width: 32px; text-align: center; }
+  .char-head-info input.char-race { width: 100px; }
+
+  .char-vitals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .vital-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 3px; padding: 8px 6px; text-align: center; }
+  .vital-box label { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .vital-box .vital-val { font-family: 'Cinzel', serif; font-size: 18px; color: var(--gold); font-weight: 600; }
+  .vital-box input { width: 100%; background: transparent; border: none; color: var(--gold); font-family: 'Cinzel', serif; font-size: 18px; font-weight: 600; text-align: center; padding: 0; }
+  .vital-box input:focus { background: var(--bg); }
+  .vital-box .vital-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  .char-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 16px; }
+  .stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 3px; padding: 6px 4px; text-align: center; }
+  .stat-box label { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat-box input { width: 100%; background: transparent; border: none; color: var(--cream); font-family: 'Cinzel', serif; font-size: 16px; font-weight: 600; text-align: center; padding: 2px 0; }
+  .stat-box input:focus { background: var(--bg); }
+  .stat-box .mod { font-size: 11px; color: var(--gold); margin-top: 2px; }
+
+  .char-notes label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .char-notes textarea { width: 100%; min-height: 70px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); font-family: inherit; font-size: 13px; padding: 8px; border-radius: 3px; resize: vertical; }
+  .char-notes textarea:focus { border-color: var(--gold); outline: none; }
+  .char-notes textarea:read-only { opacity: 0.85; }
+
+  .char-readonly-note { font-size: 11px; color: var(--muted); text-align: center; margin-top: 10px; font-style: italic; }
+  #measurement { position: absolute; pointer-events: none; z-index: 200; }
+  #measurement line { stroke: var(--ember); stroke-width: 3; stroke-dasharray: 8 6; filter: drop-shadow(0 0 4px rgba(224,140,58,0.6)); }
+  #measurement .dist-label { fill: white; font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; paint-order: stroke; stroke: #000; stroke-width: 4; }
+
+  #zoom-controls { position: absolute; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 4px; z-index: 50; }
+  #zoom-controls button { width: 36px; height: 36px; padding: 0; font-size: 18px; }
+
+  /* CHAT BOX */
+  #chatbox { position: absolute; bottom: 20px; left: 300px; width: 340px; height: 340px; background: rgba(26,22,18,0.95); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; z-index: 500; backdrop-filter: blur(6px); }
+  #chatbox.minimized { height: 38px; }
+  #chatbox-header { padding: 8px 12px; background: var(--panel-light); border-bottom: 1px solid var(--border); cursor: move; display: flex; align-items: center; justify-content: space-between; border-radius: 6px 6px 0 0; }
+  #chatbox-header .ttl { font-family: 'Cinzel', serif; font-size: 13px; color: var(--gold); }
+  #chatbox-header .ctrls button { padding: 2px 8px; font-size: 12px; }
+  #chatlog { flex: 1; overflow-y: auto; padding: 10px 12px; font-size: 14px; }
+  .chat-msg { margin-bottom: 8px; line-height: 1.4; }
+  .chat-msg .user { color: var(--gold); font-weight: 600; }
+  .chat-msg .user.host { color: var(--ember); }
+  .chat-msg .roll-result { display: inline-block; background: var(--panel-light); border: 1px solid var(--gold-soft); padding: 2px 8px; border-radius: 3px; font-family: monospace; margin: 2px 4px 2px 0; }
+  .chat-msg .roll-total { color: var(--gold); font-weight: 700; font-size: 16px; }
+  .chat-msg.private { background: rgba(160,72,72,0.1); border-left: 2px solid var(--danger); padding: 6px 10px; border-radius: 3px; }
+  .chat-msg.private .priv-tag { color: var(--danger); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .chat-msg .ts { color: var(--muted); font-size: 11px; margin-left: 6px; }
+  #chatinput { padding: 8px; border-top: 1px solid var(--border); display: flex; gap: 6px; }
+  #chatinput input { flex: 1; }
+
+  /* DICE OVERLAY */
+  #dice-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 800; pointer-events: none; }
+  #dice-overlay.active { display: flex; }
+  .dice-stage { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; align-items: center; max-width: 80vw; perspective: 800px; }
+  .die3d { width: 80px; height: 80px; position: relative; transform-style: preserve-3d; animation: tumble 1.2s cubic-bezier(.4,.1,.3,1) forwards; }
+  @keyframes tumble {
+    0% { transform: translateY(-200px) rotateX(0) rotateY(0) rotateZ(0); }
+    60% { transform: translateY(20px) rotateX(720deg) rotateY(540deg) rotateZ(360deg); }
+    75% { transform: translateY(-20px) rotateX(900deg) rotateY(720deg) rotateZ(420deg); }
+    100% { transform: translateY(0) rotateX(1080deg) rotateY(900deg) rotateZ(450deg); }
+  }
+  .die3d .face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-weight: 700; color: #1a1612; font-size: 28px; background: linear-gradient(135deg, #f4d590 0%, #c89456 60%, #8a6535 100%); border: 2px solid #6b4a25; box-shadow: inset 0 0 15px rgba(0,0,0,0.4); }
+  .die3d.d6 .face.f1 { transform: rotateY(0deg) translateZ(40px); }
+  .die3d.d6 .face.f2 { transform: rotateY(90deg) translateZ(40px); }
+  .die3d.d6 .face.f3 { transform: rotateY(180deg) translateZ(40px); }
+  .die3d.d6 .face.f4 { transform: rotateY(-90deg) translateZ(40px); }
+  .die3d.d6 .face.f5 { transform: rotateX(90deg) translateZ(40px); }
+  .die3d.d6 .face.f6 { transform: rotateX(-90deg) translateZ(40px); }
+
+  .die-poly { width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; position: relative; animation: tumble-flat 1.2s cubic-bezier(.4,.1,.3,1) forwards; }
+  @keyframes tumble-flat {
+    0% { transform: translateY(-200px) rotate(0deg) scale(0.5); opacity: 0; }
+    50% { transform: translateY(15px) rotate(540deg) scale(1.15); opacity: 1; }
+    75% { transform: translateY(-15px) rotate(720deg) scale(0.95); }
+    100% { transform: translateY(0) rotate(810deg) scale(1); }
+  }
+  .die-poly svg { width: 100%; height: 100%; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.6)); }
+  .die-poly .val { position: absolute; font-family: 'Cinzel', serif; font-weight: 700; color: #1a1612; font-size: 28px; pointer-events: none; }
+
+  .dice-result-summary { position: absolute; bottom: 18%; left: 50%; transform: translateX(-50%); background: var(--panel); border: 2px solid var(--gold); padding: 14px 28px; border-radius: 4px; font-family: 'Cinzel', serif; color: var(--cream); font-size: 22px; text-align: center; opacity: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+  .dice-result-summary .total { color: var(--gold); font-size: 32px; font-weight: 700; }
+  .dice-result-summary .breakdown { font-size: 13px; color: var(--muted); margin-top: 4px; font-family: 'Crimson Pro', serif; }
+  .dice-result-summary .priv-label { font-size: 11px; color: var(--ember); letter-spacing: 0.15em; margin-bottom: 4px; }
+
+  .die-poly.settled, .die3d.settled { filter: drop-shadow(0 0 12px rgba(224,140,58,0.7)); }
+  .die-poly.settled .val { color: #1a1612; text-shadow: 0 0 8px rgba(255,200,100,0.5); }
+
+  /* PLAYERS LIST */
+  .player-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 3px; font-size: 13px; }
+  .player-item .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; box-shadow: 0 0 6px rgba(107,138,74,0.6); }
+  .player-item.offline .dot { background: var(--muted); box-shadow: none; }
+  .player-item.host-item .dot { background: var(--gold); box-shadow: 0 0 6px rgba(212,165,116,0.6); }
+  .player-item .name { flex: 1; }
+  .player-item .role-tag { font-size: 11px; color: var(--muted); }
+
+  /* TOKEN HP BAR (on the map) */
+  .token-hp-bar { position: absolute; top: -10px; left: -3px; right: -3px; height: 5px; background: rgba(0,0,0,0.6); border-radius: 2px; overflow: hidden; pointer-events: none; }
+  .token-hp-fill { height: 100%; transition: width 0.3s ease, background 0.3s; }
+
+  /* HP TRACKER PANEL */
+  .hp-row { padding: 8px; border: 1px solid var(--border); border-radius: 3px; margin-bottom: 8px; background: rgba(0,0,0,0.25); }
+  .hp-row-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .hp-thumb { width: 32px; height: 32px; border-radius: 50%; background-size: cover; background-position: center; border: 1px solid var(--border); flex-shrink: 0; }
+  .hp-name { flex: 1; font-size: 13px; color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hp-vals { display: flex; align-items: center; gap: 4px; }
+  .hp-vals input { width: 42px; padding: 4px 6px; font-size: 12px; text-align: center; }
+  .hp-sep { color: var(--muted); font-size: 12px; }
+  .hp-bar { height: 6px; background: rgba(0,0,0,0.5); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+  .hp-bar-fill { height: 100%; transition: width 0.3s ease, background 0.3s; }
+  .hp-controls { display: flex; gap: 4px; align-items: center; }
+  .hp-controls .hp-amount { width: 48px; padding: 4px 6px; font-size: 12px; text-align: center; }
+  .hp-controls button { padding: 5px 8px; font-size: 11px; flex: 1; }
+  .hp-dmg-btn { color: #e8a0a0; border-color: var(--danger); }
+  .hp-dmg-btn:hover { background: var(--danger); color: var(--cream); border-color: var(--danger); }
+  .hp-heal-btn { color: #a8c878; border-color: var(--success); }
+  .hp-heal-btn:hover { background: var(--success); color: var(--cream); border-color: var(--success); }
+  .hp-row.downed { opacity: 0.6; }
+  .hp-row.downed .hp-name::after { content: ' (down)'; color: var(--danger); font-size: 11px; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--panel); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold-soft); }
+
+  /* TOAST */
+  #toast { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--gold); padding: 10px 18px; border-radius: 4px; color: var(--cream); font-size: 14px; z-index: 2000; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+  #toast.error { border-color: var(--danger); color: #e8a0a0; }
+
+  /* CONNECTION INDICATOR */
+  #conn-indicator { position: fixed; top: 14px; right: 14px; padding: 4px 10px; background: rgba(26,22,18,0.9); border: 1px solid var(--border); border-radius: 3px; font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; z-index: 1500; }
+  #conn-indicator.connected { color: var(--success); border-color: var(--success); }
+  #conn-indicator.disconnected { color: var(--danger); border-color: var(--danger); }
+</style>
+</head>
+<body>
+
+<div id="config-error">
+  <div class="box">
+    <h2>Configuration Required</h2>
+    <p>This app needs a Supabase backend to work. Open <code>index.html</code> and set:</p>
+    <p><code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code> at the top of the script section.</p>
+    <p>See <code>README.md</code> for full setup instructions.</p>
+  </div>
+</div>
+
+<div id="login">
+  <div class="login-card">
+    <h1>D&D Virtual Tabletop</h1>
+    <div class="sub">Choose your role to begin</div>
+
+    <div class="role-tabs">
+      <button id="role-host-btn" class="active">Host (DM)</button>
+      <button id="role-player-btn">Player</button>
+    </div>
+
+    <div class="field">
+      <label>Your Name</label>
+      <input type="text" id="username-input" placeholder="e.g. Mert" maxlength="20">
+    </div>
+
+    <div class="field" id="class-field" style="display:none">
+      <label>Class</label>
+      <select id="class-input" style="width:100%">
+        <option value="">— Select a class —</option>
+        <option value="barbarian">Barbarian</option>
+        <option value="bard">Bard</option>
+        <option value="cleric">Cleric</option>
+        <option value="druid">Druid</option>
+        <option value="fighter">Fighter</option>
+        <option value="monk">Monk</option>
+        <option value="paladin">Paladin</option>
+        <option value="ranger">Ranger</option>
+        <option value="rogue">Rogue</option>
+        <option value="sorcerer">Sorcerer</option>
+        <option value="warlock">Warlock</option>
+        <option value="wizard">Wizard</option>
+      </select>
+    </div>
+
+    <div class="field" id="session-field" style="display:none">
+      <label>Session Code</label>
+      <input type="text" id="session-input" placeholder="4-character code" maxlength="4" style="text-transform: uppercase; letter-spacing: 0.2em;">
+    </div>
+
+    <button class="primary" id="enter-btn" style="width:100%; padding: 12px; margin-top: 10px;">Enter</button>
+    <div class="footer-note">Host opens a new session. Players enter the host's code to join.</div>
+    <div class="conn-status" id="conn-status">Connecting...</div>
+  </div>
+</div>
+
+<div id="app">
+  <div id="demo-banner" style="display:none"><b>DEMO MODE</b> &nbsp;·&nbsp; Single user, no multiplayer sync. Configure Supabase to enable real-time.</div>
+  <div id="topbar">
+    <div class="topbar-left">
+      <div class="brand">D&D Virtual Tabletop</div>
+      <div class="session-info">Session: <b id="session-code-display" title="Click to copy"></b></div>
+      <span class="role-badge" id="role-badge"></span>
+      <span style="font-size: 13px; color: var(--muted)">|</span>
+      <span style="font-size: 13px;" id="username-display"></span>
+    </div>
+    <div>
+      <button id="leave-btn" class="danger">Leave</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="sidepanel">
+      <div class="panel-section" id="host-section" style="display:none">
+        <h3>Map</h3>
+        <label class="upload-box" id="map-upload-label">
+          <input type="file" id="map-upload" accept="image/*">
+          <span id="map-upload-text">Upload map image</span>
+        </label>
+        <div style="margin-top: 12px; display: flex; align-items: center; gap: 6px;">
+          <label style="margin: 0;">Ft per square</label>
+          <input type="number" id="grid-ft" value="5" min="1" max="50" style="width: 70px;">
+          <button id="apply-grid">Apply</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Character Tokens</h3>
+        <label class="upload-box" style="margin-bottom: 10px;">
+          <input type="file" id="token-upload" accept="image/*">
+          <span>Upload token image</span>
+        </label>
+        <div class="token-tray" id="token-tray"></div>
+        <div style="font-size: 12px; color: var(--muted); margin-top: 8px; font-style: italic;">Drag onto the map</div>
+        <button id="open-char-info" style="width: 100%; margin-top: 10px;" class="primary">Character Info</button>
+      </div>
+
+      <div class="panel-section">
+        <h3>Roll Dice</h3>
+        <div class="dice-row">
+          <label>Count</label>
+          <input type="number" id="dice-count" value="1" min="1" max="20">
+          <label style="flex: 0;">Mod</label>
+          <input type="number" id="dice-mod" value="0" min="-20" max="20">
+        </div>
+        <div class="gm-roll-toggle" id="gm-roll-toggle" style="display:none">
+          <input type="checkbox" id="gm-roll-check">
+          <span class="lbl">GM Roll (private)</span>
+        </div>
+        <div class="dice-grid">
+          <button class="dice-btn" data-sides="4">d4</button>
+          <button class="dice-btn" data-sides="6">d6</button>
+          <button class="dice-btn" data-sides="8">d8</button>
+          <button class="dice-btn" data-sides="10">d10</button>
+          <button class="dice-btn" data-sides="12">d12</button>
+          <button class="dice-btn" data-sides="20">d20</button>
+          <button class="dice-btn" data-sides="100">d100</button>
+        </div>
+      </div>
+
+      <div class="panel-section" id="hp-tracker-section" style="display:none">
+        <h3>HP Tracker</h3>
+        <div id="hp-tracker-list"></div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Players</h3>
+        <div id="players-list"></div>
+      </div>
+    </div>
+
+    <div id="mapcontainer">
+      <div id="grid"></div>
+      <div id="maplayer"></div>
+      <div id="tokenlayer"></div>
+      <svg id="measurement" style="display:none"></svg>
+
+      <div id="zoom-controls">
+        <button id="zoom-in">+</button>
+        <button id="zoom-out">−</button>
+        <button id="zoom-reset" style="font-size: 11px;">Reset</button>
+      </div>
+
+      <div id="chatbox">
+        <div id="chatbox-header">
+          <span class="ttl">Chat</span>
+          <div class="ctrls">
+            <button id="chat-minimize">−</button>
+          </div>
+        </div>
+        <div id="chatlog"></div>
+        <div id="chatinput">
+          <input type="text" id="chat-text" placeholder="Type a message...">
+          <button id="chat-send">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="char-popup">
+  <div class="char-popup-header">
+    <span class="ttl">Character</span>
+    <button id="char-popup-close">×</button>
+  </div>
+  <div class="char-popup-body">
+    <div class="char-head">
+      <div class="char-portrait" id="char-portrait"></div>
+      <div class="char-head-info">
+        <input type="text" class="char-name" id="char-name" placeholder="Character name">
+        <div class="char-subline">
+          <span>Lvl</span>
+          <input type="number" class="char-level" id="char-level" min="1" max="20" value="1">
+          <select id="char-class">
+            <option value="">— class —</option>
+            <option value="barbarian">Barbarian</option>
+            <option value="bard">Bard</option>
+            <option value="cleric">Cleric</option>
+            <option value="druid">Druid</option>
+            <option value="fighter">Fighter</option>
+            <option value="monk">Monk</option>
+            <option value="paladin">Paladin</option>
+            <option value="ranger">Ranger</option>
+            <option value="rogue">Rogue</option>
+            <option value="sorcerer">Sorcerer</option>
+            <option value="warlock">Warlock</option>
+            <option value="wizard">Wizard</option>
+          </select>
+          <input type="text" class="char-race" id="char-race" placeholder="Race" maxlength="20">
+        </div>
+      </div>
+    </div>
+
+    <div class="char-vitals">
+      <div class="vital-box">
+        <label>HP</label>
+        <div class="vital-val" id="char-hp-display">—</div>
+        <div class="vital-sub" id="char-hp-sub"></div>
+      </div>
+      <div class="vital-box">
+        <label>AC</label>
+        <input type="number" id="char-ac" min="0" max="40" value="10">
+      </div>
+      <div class="vital-box">
+        <label>Speed</label>
+        <input type="number" id="char-speed" min="0" max="120" value="30">
+        <div class="vital-sub">ft</div>
+      </div>
+      <div class="vital-box">
+        <label>Init</label>
+        <div class="vital-val" id="char-init">+0</div>
+        <div class="vital-sub">DEX mod</div>
+      </div>
+    </div>
+
+    <div class="char-stats">
+      <div class="stat-box"><label>STR</label><input type="number" id="char-str" min="1" max="30" value="10"><div class="mod" id="mod-str">+0</div></div>
+      <div class="stat-box"><label>DEX</label><input type="number" id="char-dex" min="1" max="30" value="10"><div class="mod" id="mod-dex">+0</div></div>
+      <div class="stat-box"><label>CON</label><input type="number" id="char-con" min="1" max="30" value="10"><div class="mod" id="mod-con">+0</div></div>
+      <div class="stat-box"><label>INT</label><input type="number" id="char-int" min="1" max="30" value="10"><div class="mod" id="mod-int">+0</div></div>
+      <div class="stat-box"><label>WIS</label><input type="number" id="char-wis" min="1" max="30" value="10"><div class="mod" id="mod-wis">+0</div></div>
+      <div class="stat-box"><label>CHA</label><input type="number" id="char-cha" min="1" max="30" value="10"><div class="mod" id="mod-cha">+0</div></div>
+    </div>
+
+    <div class="char-notes">
+      <label>Notes</label>
+      <textarea id="char-notes" placeholder="Background, equipment, spells, anything you want to remember"></textarea>
+    </div>
+
+    <div class="char-readonly-note" id="char-readonly-note" style="display:none">Read-only · Only the owner and the host can edit</div>
+  </div>
+</div>
+
+<div id="dice-overlay">
+  <div class="dice-stage" id="dice-stage"></div>
+  <div class="dice-result-summary" id="dice-result"></div>
+</div>
+
+<div id="conn-indicator" style="display:none">Connecting</div>
+<div id="toast"></div>
+
+<script>
+  // ============================================================
+  // CONFIGURATION - Edit these before deploying
+  // ============================================================
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+  // ============================================================
+
+  const STORAGE_BUCKET = 'vtt-images';
+
+  // Demo mode: activates when Supabase config is not set.
+  // Everything works locally in-memory with no multiplayer sync.
+  const DEMO_MODE = SUPABASE_URL.includes('YOUR_') || SUPABASE_ANON_KEY.includes('YOUR_');
+
+  // ----- MOCK SUPABASE (for demo mode) -----
+  function createMockSupabase() {
+    const data = {
+      vtt_sessions: new Map(),
+      vtt_players: new Map(),
+      vtt_maps: new Map(),
+      vtt_tokens: new Map(),
+      vtt_chat: [],
+    };
+    // Some tables use a column other than 'id' as primary key
+    const PK = {
+      vtt_sessions: 'id',
+      vtt_players: 'id',
+      vtt_maps: 'session_id',
+      vtt_tokens: 'id',
+      vtt_chat: 'id',
+    };
+    const handlers = {};
+
+    function fireEvent(table, eventType, oldRow, newRow) {
+      const list = handlers[table] || [];
+      list.forEach(h => h({ eventType, old: oldRow, new: newRow }));
+    }
+
+    class QB {
+      constructor(table) { this.table = table; this.filters = []; this._action = 'select'; }
+      select() { return this; }
+      insert(row) { this._action = 'insert'; this._row = row; return this; }
+      update(patch) { this._action = 'update'; this._patch = patch; return this; }
+      upsert(row) { this._action = 'upsert'; this._row = row; return this; }
+      delete() { this._action = 'delete'; return this; }
+      eq(col, val) { this.filters.push({ col, val }); return this; }
+      order() { return this; }
+      limit() { return this; }
+      single() { this._single = true; return this; }
+      maybeSingle() { this._maybe = true; return this; }
+      then(resolve) { try { resolve(this._exec()); } catch(e){ resolve({data:null,error:e}); } }
+      _filter(rows) { return rows.filter(r => this.filters.every(f => r[f.col] === f.val)); }
+      _exec() {
+        const store = data[this.table];
+        const isMap = store instanceof Map;
+        if (this._action === 'select') {
+          let rows = isMap ? Array.from(store.values()) : store.slice();
+          rows = this._filter(rows);
+          if (this._single || this._maybe) return { data: rows[0] || null, error: null };
+          return { data: rows, error: null };
+        }
+        if (this._action === 'insert' || this._action === 'upsert') {
+          const row = this._row;
+          const pk = PK[this.table];
+          const oldRow = isMap ? store.get(row[pk]) : null;
+          if (isMap) store.set(row[pk], { ...oldRow, ...row });
+          else store.push(row);
+          fireEvent(this.table, oldRow ? 'UPDATE' : 'INSERT', oldRow, { ...oldRow, ...row });
+          return { data: [row], error: null };
+        }
+        if (this._action === 'update') {
+          let rows = isMap ? Array.from(store.values()) : store;
+          rows = this._filter(rows);
+          rows.forEach(row => {
+            const oldRow = { ...row };
+            Object.assign(row, this._patch);
+            fireEvent(this.table, 'UPDATE', oldRow, row);
+          });
+          return { data: rows, error: null };
+        }
+        if (this._action === 'delete') {
+          let rows = isMap ? Array.from(store.values()) : store.slice();
+          rows = this._filter(rows);
+          const pk = PK[this.table];
+          rows.forEach(row => {
+            if (isMap) store.delete(row[pk]);
+            else { const idx = store.indexOf(row); if (idx >= 0) store.splice(idx, 1); }
+            fireEvent(this.table, 'DELETE', row, null);
+          });
+          return { data: rows, error: null };
+        }
+        return { data: null, error: null };
+      }
+    }
+
+    return {
+      from(table) { return new QB(table); },
+      storage: {
+        from() {
+          return {
+            async upload() { return { data: { path: 'mock' }, error: null }; },
+            getPublicUrl() { return { data: { publicUrl: '' } }; },
+            async remove() { return { error: null }; },
+          };
+        },
+      },
+      channel() {
+        let presenceHandler = null;
+        let myPresence = null;
+        const ch = {
+          on(event, opts, handler) {
+            if (event === 'postgres_changes' && opts.table) {
+              handlers[opts.table] = handlers[opts.table] || [];
+              handlers[opts.table].push(handler);
+            } else if (event === 'presence') {
+              presenceHandler = handler;
+            }
+            return ch;
+          },
+          subscribe(cb) {
+            setTimeout(() => {
+              cb && cb('SUBSCRIBED');
+              if (presenceHandler) presenceHandler();
+            }, 80);
+            return ch;
+          },
+          async track(d) {
+            myPresence = d;
+            if (presenceHandler) setTimeout(presenceHandler, 30);
+            return {};
+          },
+          presenceState() {
+            return myPresence ? { [myPresence.userId]: [myPresence] } : {};
+          },
+          async unsubscribe() { return {}; },
+        };
+        return ch;
+      },
+    };
+  }
+
+  // Init Supabase (real or mock)
+  const sb = DEMO_MODE ? createMockSupabase() : supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  if (DEMO_MODE) {
+    console.log('Running in DEMO mode (no Supabase config set). UI works locally, no multiplayer sync.');
+  }
+
+  // ============ STATE ============
+  const STATE = {
+    sessionId: null,
+    role: null,
+    username: null,
+    userId: null,
+    isHost: false,
+
+    map: null,
+    tokens: new Map(),     // id -> token data
+    onlinePlayers: new Map(), // userId -> { name, isHost }
+    persistedPlayers: [],   // from vtt_players table
+
+    view: { offsetX: 0, offsetY: 0, zoom: 1 },
+    gridSize: 50,
+    gridFt: 5,
+
+    dragging: null,
+    channel: null,
+    myMsgIds: new Set(),
+  };
+
+  // ============ UTILITIES ============
+  function genId() { return Math.random().toString(36).substr(2, 9) + Date.now().toString(36); }
+  function genSessionCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  }
+  function toast(msg, type = 'info', duration = 2500) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'show' + (type === 'error' ? ' error' : '');
+    setTimeout(() => t.classList.remove('show'), duration);
+  }
+  function nowTs() {
+    const d = new Date();
+    return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  // ============ IMAGE PROCESSING ============
+  async function fileToResizedBlob(file, maxDim) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width, h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) { h = h * (maxDim / w); w = maxDim; }
+            else { w = w * (maxDim / h); h = maxDim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          canvas.toBlob((blob) => resolve({ blob, width: w, height: h }), 'image/jpeg', 0.85);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadImage(blob, path) {
+    if (DEMO_MODE) {
+      // Use a data URL (base64) for robustness across browser sandboxes.
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+    const { error } = await sb.storage.from(STORAGE_BUCKET).upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+    if (error) throw error;
+    const { data } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  // ============ LOGIN FLOW ============
+  let chosenRole = 'host';
+  document.getElementById('role-host-btn').addEventListener('click', () => {
+    chosenRole = 'host';
+    document.getElementById('role-host-btn').classList.add('active');
+    document.getElementById('role-player-btn').classList.remove('active');
+    document.getElementById('session-field').style.display = 'none';
+    document.getElementById('class-field').style.display = 'none';
+  });
+  document.getElementById('role-player-btn').addEventListener('click', () => {
+    chosenRole = 'player';
+    document.getElementById('role-player-btn').classList.add('active');
+    document.getElementById('role-host-btn').classList.remove('active');
+    document.getElementById('session-field').style.display = 'block';
+    document.getElementById('class-field').style.display = 'block';
+  });
+
+  // Connection test
+  (async () => {
+    const status = document.getElementById('conn-status');
+    if (DEMO_MODE) {
+      status.textContent = 'Demo mode - no multiplayer sync';
+      status.className = 'conn-status demo';
+      return;
+    }
+    try {
+      const { error } = await sb.from('vtt_sessions').select('id').limit(1);
+      if (error) throw error;
+      status.textContent = 'Connected to server';
+      status.className = 'conn-status connected';
+    } catch (e) {
+      status.textContent = 'Cannot reach Supabase. Check config.';
+      status.className = 'conn-status error';
+      console.error(e);
+    }
+  })();
+
+  document.getElementById('enter-btn').addEventListener('click', async () => {
+    const name = document.getElementById('username-input').value.trim();
+    if (!name) { toast('Please enter a name', 'error'); return; }
+
+    let playerClass = '';
+    if (chosenRole === 'player') {
+      playerClass = document.getElementById('class-input').value;
+      if (!playerClass) { toast('Please choose a class', 'error'); return; }
+    }
+
+    const btn = document.getElementById('enter-btn');
+    btn.disabled = true;
+    btn.textContent = 'Loading...';
+
+    try {
+      STATE.username = name;
+      STATE.userId = genId();
+      STATE.role = chosenRole;
+      STATE.isHost = chosenRole === 'host';
+      STATE.playerClass = playerClass;
+
+      if (chosenRole === 'host') {
+        // Create session
+        STATE.sessionId = genSessionCode();
+        const { error: sErr } = await sb.from('vtt_sessions').insert({
+          id: STATE.sessionId,
+          host_name: name,
+        });
+        if (sErr) throw sErr;
+
+        // Add self as host player
+        const { error: pErr } = await sb.from('vtt_players').insert({
+          id: STATE.userId,
+          session_id: STATE.sessionId,
+          name,
+          is_host: true,
+        });
+        if (pErr) throw pErr;
+
+        // System message
+        await sb.from('vtt_chat').insert({
+          id: genId(),
+          session_id: STATE.sessionId,
+          msg_type: 'system',
+          text: `${name} opened the session.`,
+          ts: nowTs(),
+        });
+      } else {
+        // Join session
+        const code = document.getElementById('session-input').value.trim().toUpperCase();
+        if (!code || code.length !== 4) {
+          toast('Enter a valid 4-character code', 'error');
+          btn.disabled = false; btn.textContent = 'Enter';
+          return;
+        }
+        STATE.sessionId = code;
+
+        // Verify session exists
+        const { data: sess, error: sErr } = await sb.from('vtt_sessions').select('id').eq('id', code).maybeSingle();
+        if (sErr) throw sErr;
+        if (!sess) {
+          toast('Session not found. Check the code.', 'error');
+          btn.disabled = false; btn.textContent = 'Enter';
+          return;
+        }
+
+        // Add self as player with class
+        await sb.from('vtt_players').insert({
+          id: STATE.userId,
+          session_id: STATE.sessionId,
+          name,
+          is_host: false,
+          class: playerClass,
+          level: 1,
+          ac: 10,
+          speed: 30,
+          strength: 10, dexterity: 10, constitution: 10,
+          intelligence: 10, wisdom: 10, charisma: 10,
+        });
+
+        // System message with class
+        const className = playerClass.charAt(0).toUpperCase() + playerClass.slice(1);
+        await sb.from('vtt_chat').insert({
+          id: genId(),
+          session_id: STATE.sessionId,
+          msg_type: 'system',
+          text: `${name} the ${className} joined the session.`,
+          ts: nowTs(),
+        });
+          ts: nowTs(),
+        });
+      }
+
+      await enterApp();
+    } catch (e) {
+      console.error(e);
+      toast('Failed: ' + (e.message || 'unknown error'), 'error', 4000);
+      btn.disabled = false;
+      btn.textContent = 'Enter';
+    }
+  });
+
+  // ============ ENTER APP ============
+  async function enterApp() {
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('conn-indicator').style.display = 'block';
+    document.getElementById('session-code-display').textContent = STATE.sessionId;
+    document.getElementById('username-display').textContent = STATE.username;
+
+    // Apply class theme for players
+    if (STATE.playerClass) {
+      applyClassTheme(STATE.playerClass);
+    }
+
+    if (DEMO_MODE) {
+      document.getElementById('demo-banner').style.display = 'block';
+      document.getElementById('conn-indicator').textContent = 'Demo';
+      document.getElementById('conn-indicator').style.color = 'var(--ember)';
+      document.getElementById('conn-indicator').style.borderColor = 'var(--ember)';
+    }
+    const badge = document.getElementById('role-badge');
+    if (STATE.isHost) {
+      badge.textContent = 'HOST';
+      badge.className = 'role-badge role-host';
+      document.getElementById('host-section').style.display = 'block';
+      document.getElementById('gm-roll-toggle').style.display = 'flex';
+      // Host does not have a personal character. They click tokens to view player info.
+      document.getElementById('open-char-info').style.display = 'none';
+    } else {
+      const cls = STATE.playerClass ? ' · ' + STATE.playerClass.toUpperCase() : '';
+      badge.textContent = 'PLAYER' + cls;
+      badge.className = 'role-badge role-player';
+    }
+
+    await loadInitialState();
+    setupRealtime();
+  }
+
+  function applyClassTheme(cls) {
+    const root = document.documentElement;
+    // Remove any existing theme class
+    root.className = root.className.replace(/\btheme-\w+\b/g, '').trim();
+    if (cls) root.classList.add('theme-' + cls);
+  }
+
+  // ============ INITIAL STATE LOAD ============
+  async function loadInitialState() {
+    // Load map
+    const { data: mapData } = await sb.from('vtt_maps').select('*').eq('session_id', STATE.sessionId).maybeSingle();
+    if (mapData) {
+      STATE.map = mapData;
+      STATE.gridFt = mapData.grid_ft || 5;
+      renderMap();
+    }
+
+    // Load tokens
+    const { data: tokens } = await sb.from('vtt_tokens').select('*').eq('session_id', STATE.sessionId);
+    if (tokens) {
+      tokens.forEach(t => STATE.tokens.set(t.id, t));
+      renderTokens();
+      renderTokenTray();
+      renderHpTracker();
+    }
+
+    // Load persisted players
+    const { data: players } = await sb.from('vtt_players').select('*').eq('session_id', STATE.sessionId);
+    if (players) {
+      STATE.persistedPlayers = players;
+      renderPlayers();
+    }
+
+    // Load recent chat (last 200)
+    const { data: chat } = await sb.from('vtt_chat')
+      .select('*')
+      .eq('session_id', STATE.sessionId)
+      .order('created_at', { ascending: true })
+      .limit(200);
+    if (chat) {
+      chat.forEach(msg => renderChatMessage(msg, { skipAnimate: true }));
+    }
+  }
+
+  // ============ REAL-TIME SUBSCRIPTION ============
+  function setupRealtime() {
+    const filter = `session_id=eq.${STATE.sessionId}`;
+
+    STATE.channel = sb.channel(`vtt:${STATE.sessionId}`, {
+      config: { presence: { key: STATE.userId } }
+    });
+
+    STATE.channel
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_maps', filter }, handleMapChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_tokens', filter }, handleTokenChange)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vtt_chat', filter }, handleChatInsert)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_players', filter }, handlePlayerChange)
+      .on('presence', { event: 'sync' }, handlePresenceSync)
+      .subscribe(async (status) => {
+        const ind = document.getElementById('conn-indicator');
+        if (status === 'SUBSCRIBED') {
+          if (!DEMO_MODE) {
+            ind.textContent = 'Live';
+            ind.className = 'connected';
+          }
+          await STATE.channel.track({
+            userId: STATE.userId,
+            name: STATE.username,
+            isHost: STATE.isHost,
+          });
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (!DEMO_MODE) {
+            ind.textContent = 'Disconnected';
+            ind.className = 'disconnected';
+          }
+        }
+      });
+  }
+
+  function handleMapChange(payload) {
+    if (payload.eventType === 'DELETE') {
+      STATE.map = null;
+      renderMap();
+      return;
+    }
+    STATE.map = payload.new;
+    STATE.gridFt = payload.new.grid_ft || 5;
+    renderMap();
+  }
+
+  function handleTokenChange(payload) {
+    if (payload.eventType === 'DELETE') {
+      STATE.tokens.delete(payload.old.id);
+      const el = document.querySelector(`.map-token[data-id="${payload.old.id}"]`);
+      if (el) el.remove();
+      renderTokenTray();
+      renderHpTracker();
+      return;
+    }
+    const tok = payload.new;
+    const existed = STATE.tokens.has(tok.id);
+    STATE.tokens.set(tok.id, tok);
+
+    if (existed && payload.eventType === 'UPDATE') {
+      // Skip position rewrite if we are currently dragging this token
+      if (STATE.dragging && STATE.dragging.token.id === tok.id) {
+        renderHpTracker();
+        return;
+      }
+      const el = document.querySelector(`.map-token[data-id="${tok.id}"]`);
+      if (el && tok.x != null && tok.y != null) {
+        el.classList.add('smooth-move');
+        el.style.left = (tok.x - 25) + 'px';
+        el.style.top = (tok.y - 25) + 'px';
+        setTimeout(() => el.classList.remove('smooth-move'), 300);
+
+        // Refresh HP bar
+        const oldHp = el.querySelector('.token-hp-bar');
+        if (oldHp) oldHp.remove();
+        const newHp = buildTokenHpBar(tok);
+        if (newHp) el.appendChild(newHp);
+      } else {
+        renderTokens();
+      }
+    } else {
+      renderTokens();
+    }
+    renderTokenTray();
+    renderHpTracker();
+    refreshCharPopupHp();
+  }
+
+  function handleChatInsert(payload) {
+    const msg = payload.new;
+    // Skip private messages for non-host (RLS would be better but we filter client-side)
+    if (msg.is_private && !STATE.isHost && msg.user_id !== STATE.userId) return;
+
+    renderChatMessage(msg);
+
+    // Animate dice rolls (but not our own - we already animated)
+    if (msg.msg_type === 'roll' && !STATE.myMsgIds.has(msg.id)) {
+      animateDiceRoll(msg);
+    }
+  }
+
+  function handlePlayerChange(payload) {
+    // Refetch persisted players
+    sb.from('vtt_players').select('*').eq('session_id', STATE.sessionId).then(({ data }) => {
+      if (data) {
+        STATE.persistedPlayers = data;
+        renderPlayers();
+        // Re-render tokens so border colors reflect updated classes
+        renderTokens();
+        // If the open character popup is showing a player that just changed, refresh it
+        if (CHAR_POPUP.targetPlayerId) {
+          const inputsFocused = document.activeElement && document.activeElement.closest('#char-popup');
+          if (!inputsFocused) {
+            openCharPopup(CHAR_POPUP.targetPlayerId, CHAR_POPUP.targetTokenId);
+          }
+        }
+      }
+    });
+  }
+
+  function handlePresenceSync() {
+    const state = STATE.channel.presenceState();
+    STATE.onlinePlayers.clear();
+    Object.keys(state).forEach(key => {
+      const presences = state[key];
+      if (presences && presences.length > 0) {
+        const p = presences[0];
+        STATE.onlinePlayers.set(p.userId, p);
+      }
+    });
+    renderPlayers();
+  }
+
+  // ============ RENDERING ============
+  function renderMap() {
+    const layer = document.getElementById('maplayer');
+    layer.innerHTML = '';
+    if (STATE.map && STATE.map.image_url) {
+      const img = document.createElement('img');
+      img.src = STATE.map.image_url;
+      img.style.width = STATE.map.width + 'px';
+      img.style.height = STATE.map.height + 'px';
+      layer.appendChild(img);
+    }
+    applyTransform();
+  }
+
+  function renderTokens() {
+    const layer = document.getElementById('tokenlayer');
+    layer.innerHTML = '';
+    STATE.tokens.forEach(tok => {
+      if (tok.x == null || tok.y == null) return;
+      const el = document.createElement('div');
+      el.className = 'map-token';
+      el.dataset.id = tok.id;
+      el.style.backgroundImage = `url(${tok.image_url})`;
+      el.style.left = (tok.x - 25) + 'px';
+      el.style.top = (tok.y - 25) + 'px';
+      // Border color reflects the owner's class
+      el.style.borderColor = getPlayerClassColor(tok.owner_id);
+
+      // HP bar above the token
+      const hpBar = buildTokenHpBar(tok);
+      if (hpBar) el.appendChild(hpBar);
+
+      const nm = document.createElement('div');
+      nm.className = 'name-tag';
+      nm.textContent = tok.name;
+      el.appendChild(nm);
+      el.addEventListener('mousedown', (e) => startTokenDrag(e, tok));
+      el.addEventListener('touchstart', (e) => startTokenDrag(e, tok), { passive: false });
+      layer.appendChild(el);
+    });
+  }
+
+  function renderTokenTray() {
+    const tray = document.getElementById('token-tray');
+    tray.innerHTML = '';
+    STATE.tokens.forEach(tok => {
+      const onMap = tok.x != null && tok.y != null;
+      const thumb = document.createElement('div');
+      thumb.className = 'token-thumb' + (onMap ? ' on-map' : '');
+      thumb.style.backgroundImage = `url(${tok.image_url})`;
+      thumb.title = tok.name + (onMap ? ' (on map)' : ' - drag to place');
+      thumb.dataset.id = tok.id;
+      if (!onMap) {
+        thumb.draggable = true;
+        thumb.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', tok.id);
+        });
+      }
+      if (tok.owner_id === STATE.userId || STATE.isHost) {
+        const del = document.createElement('button');
+        del.className = 'del-btn';
+        del.textContent = '×';
+        del.title = 'Delete';
+        del.addEventListener('click', async (ev) => {
+          ev.stopPropagation();
+          if (!confirm('Delete this token?')) return;
+          // Delete from storage
+          try {
+            const path = `${STATE.sessionId}/tokens/${tok.id}.jpg`;
+            await sb.storage.from(STORAGE_BUCKET).remove([path]);
+          } catch (e) { console.warn('Storage delete failed', e); }
+          // Delete row
+          await sb.from('vtt_tokens').delete().eq('id', tok.id);
+        });
+        thumb.appendChild(del);
+      }
+      tray.appendChild(thumb);
+    });
+  }
+
+  function renderChatMessage(msg, opts = {}) {
+    if (msg.is_private && !STATE.isHost && msg.user_id !== STATE.userId) return;
+
+    const log = document.getElementById('chatlog');
+    // Dedup: don't render the same message twice
+    if (log.querySelector(`.chat-msg[data-id="${msg.id}"]`)) return;
+
+    const div = document.createElement('div');
+    div.className = 'chat-msg' + (msg.is_private ? ' private' : '');
+    div.dataset.id = msg.id;
+
+    if (msg.msg_type === 'system') {
+      div.innerHTML = `<span style="color:var(--muted); font-style:italic">${escapeHtml(msg.text)}</span> <span class="ts">${msg.ts || ''}</span>`;
+    } else if (msg.msg_type === 'roll') {
+      const userCls = msg.is_host ? 'user host' : 'user';
+      const privTag = msg.is_private ? '<span class="priv-tag">[GM]</span> ' : '';
+      const rolls = (msg.rolls || []).map(r => `<span class="roll-result">${r}</span>`).join('');
+      const mod = msg.modifier || 0;
+      const modText = mod !== 0 ? ` ${mod > 0 ? '+' : ''}${mod}` : '';
+      div.innerHTML = `${privTag}<span class="${userCls}">${escapeHtml(msg.user_name)}</span> rolled <b>${msg.dice_count}d${msg.sides}${modText}</b> ${rolls} = <span class="roll-total">${msg.total}</span> <span class="ts">${msg.ts || ''}</span>`;
+    } else {
+      const userCls = msg.is_host ? 'user host' : 'user';
+      div.innerHTML = `<span class="${userCls}">${escapeHtml(msg.user_name)}:</span> ${escapeHtml(msg.text)} <span class="ts">${msg.ts || ''}</span>`;
+    }
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function renderPlayers() {
+    const list = document.getElementById('players-list');
+    list.innerHTML = '';
+    STATE.persistedPlayers.forEach(p => {
+      const online = STATE.onlinePlayers.has(p.id);
+      const item = document.createElement('div');
+      item.className = 'player-item' + (p.is_host ? ' host-item' : '') + (online ? '' : ' offline');
+      item.innerHTML = `<div class="dot"></div><div class="name">${escapeHtml(p.name)}</div><div class="role-tag">${p.is_host ? 'Host' : 'Player'}</div>`;
+      list.appendChild(item);
+    });
+  }
+
+  // ============ HP SYSTEM ============
+  function hpColor(pct) {
+    if (pct < 25) return '#a04848';
+    if (pct < 50) return '#d4a574';
+    return '#6b8a4a';
+  }
+
+  function buildTokenHpBar(tok) {
+    const cur = tok.current_hp;
+    const max = tok.max_hp;
+    if (cur == null || max == null || max <= 0) return null;
+    const pct = Math.max(0, Math.min(100, (cur / max) * 100));
+    const bar = document.createElement('div');
+    bar.className = 'token-hp-bar';
+    bar.innerHTML = `<div class="token-hp-fill" style="width:${pct}%; background:${hpColor(pct)}"></div>`;
+    return bar;
+  }
+
+  function renderHpTracker() {
+    const section = document.getElementById('hp-tracker-section');
+    const list = document.getElementById('hp-tracker-list');
+    list.innerHTML = '';
+
+    // Host sees all tokens on map; players see only tokens they own
+    const visible = [];
+    STATE.tokens.forEach(tok => {
+      if (tok.x == null) return;
+      if (STATE.isHost || tok.owner_id === STATE.userId) visible.push(tok);
+    });
+
+    if (visible.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+    section.style.display = 'block';
+
+    visible.forEach(tok => list.appendChild(buildHpRow(tok)));
+  }
+
+  function buildHpRow(tok) {
+    const cur = tok.current_hp ?? 10;
+    const max = tok.max_hp ?? 10;
+    const pct = max > 0 ? Math.max(0, Math.min(100, (cur / max) * 100)) : 0;
+    const downed = cur <= 0;
+
+    const row = document.createElement('div');
+    row.className = 'hp-row' + (downed ? ' downed' : '');
+    row.innerHTML = `
+      <div class="hp-row-head">
+        <div class="hp-thumb" style="background-image:url(${tok.image_url})"></div>
+        <div class="hp-name">${escapeHtml(tok.name)}</div>
+        <div class="hp-vals">
+          <input type="number" class="hp-cur" value="${cur}" min="0">
+          <span class="hp-sep">/</span>
+          <input type="number" class="hp-max" value="${max}" min="1">
+        </div>
+      </div>
+      <div class="hp-bar"><div class="hp-bar-fill" style="width:${pct}%; background:${hpColor(pct)}"></div></div>
+      <div class="hp-controls">
+        <input type="number" class="hp-amount" value="1" min="1">
+        <button class="hp-dmg-btn">Damage</button>
+        <button class="hp-heal-btn">Heal</button>
+      </div>
+    `;
+
+    const curInp = row.querySelector('.hp-cur');
+    const maxInp = row.querySelector('.hp-max');
+    const amtInp = row.querySelector('.hp-amount');
+    curInp.addEventListener('change', () => setTokenHp(tok.id, { current_hp: parseInt(curInp.value) || 0 }));
+    maxInp.addEventListener('change', () => setTokenHp(tok.id, { max_hp: Math.max(1, parseInt(maxInp.value) || 1) }));
+    row.querySelector('.hp-dmg-btn').addEventListener('click', () => applyHpChange(tok.id, -(parseInt(amtInp.value) || 0)));
+    row.querySelector('.hp-heal-btn').addEventListener('click', () => applyHpChange(tok.id, +(parseInt(amtInp.value) || 0)));
+
+    return row;
+  }
+
+  async function setTokenHp(tokenId, patch) {
+    await sb.from('vtt_tokens').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', tokenId);
+  }
+
+  async function applyHpChange(tokenId, delta) {
+    const tok = STATE.tokens.get(tokenId);
+    if (!tok) return;
+    const cur = tok.current_hp ?? 10;
+    const max = tok.max_hp ?? 10;
+    const newHp = Math.max(0, Math.min(max, cur + delta));
+    await setTokenHp(tokenId, { current_hp: newHp });
+    // Optional: log to chat for visibility
+    if (delta !== 0) {
+      const action = delta < 0 ? 'took' : 'healed';
+      const amount = Math.abs(delta);
+      const text = `${tok.name} ${action} ${amount} ${delta < 0 ? 'damage' : 'HP'} (${newHp}/${max})`;
+      await sb.from('vtt_chat').insert({
+        id: genId(),
+        session_id: STATE.sessionId,
+        msg_type: 'system',
+        text,
+        ts: nowTs(),
+      });
+    }
+  }
+
+  // ============ CHARACTER INFO POPUP ============
+  const CLASS_COLORS = {
+    barbarian: '#c25050', bard: '#c878d4', cleric: '#e8c878', druid: '#7da848',
+    fighter: '#c0c0d0', monk: '#e08c5a', paladin: '#e8d890', ranger: '#5a9048',
+    rogue: '#8a6db0', sorcerer: '#d4583a', warlock: '#a868c8', wizard: '#5a7bc8',
+  };
+
+  function getPlayerClassColor(playerId) {
+    const p = STATE.persistedPlayers.find(p => p.id === playerId);
+    if (p && p.class && CLASS_COLORS[p.class]) return CLASS_COLORS[p.class];
+    return '#d4a574';
+  }
+
+  function statMod(score) {
+    return Math.floor((score - 10) / 2);
+  }
+  function fmtMod(mod) {
+    return (mod >= 0 ? '+' : '') + mod;
+  }
+
+  // State for currently open popup
+  const CHAR_POPUP = {
+    targetPlayerId: null,    // whose character is shown
+    targetTokenId: null,     // optional, which token's HP to show
+    saveTimeout: null,
+  };
+
+  function openCharPopup(playerId, tokenId) {
+    const player = STATE.persistedPlayers.find(p => p.id === playerId);
+    if (!player) { toast('Character not found', 'error'); return; }
+
+    CHAR_POPUP.targetPlayerId = playerId;
+    CHAR_POPUP.targetTokenId = tokenId || null;
+
+    const canEdit = (playerId === STATE.userId) || STATE.isHost;
+    const popup = document.getElementById('char-popup');
+    popup.classList.add('active');
+
+    // Title
+    popup.querySelector('.ttl').textContent = player.is_host ? 'Host' : 'Character';
+
+    // Portrait from a token owned by this player
+    let portraitUrl = '';
+    if (tokenId && STATE.tokens.has(tokenId)) {
+      portraitUrl = STATE.tokens.get(tokenId).image_url;
+    } else {
+      const ownedTok = Array.from(STATE.tokens.values()).find(t => t.owner_id === playerId);
+      if (ownedTok) portraitUrl = ownedTok.image_url;
+    }
+    const portrait = document.getElementById('char-portrait');
+    portrait.style.backgroundImage = portraitUrl ? `url(${portraitUrl})` : '';
+    portrait.style.borderColor = player.class ? CLASS_COLORS[player.class] || 'var(--gold)' : 'var(--gold)';
+
+    // Fields
+    document.getElementById('char-name').value = player.name || '';
+    document.getElementById('char-level').value = player.level || 1;
+    document.getElementById('char-class').value = player.class || '';
+    document.getElementById('char-race').value = player.race || '';
+    document.getElementById('char-ac').value = player.ac ?? 10;
+    document.getElementById('char-speed').value = player.speed ?? 30;
+    document.getElementById('char-str').value = player.strength ?? 10;
+    document.getElementById('char-dex').value = player.dexterity ?? 10;
+    document.getElementById('char-con').value = player.constitution ?? 10;
+    document.getElementById('char-int').value = player.intelligence ?? 10;
+    document.getElementById('char-wis').value = player.wisdom ?? 10;
+    document.getElementById('char-cha').value = player.charisma ?? 10;
+    document.getElementById('char-notes').value = player.notes || '';
+
+    // HP display (from the specific token, or first owned token, or hide)
+    let hpTok = null;
+    if (tokenId && STATE.tokens.has(tokenId)) hpTok = STATE.tokens.get(tokenId);
+    else hpTok = Array.from(STATE.tokens.values()).find(t => t.owner_id === playerId && t.x != null);
+    if (hpTok && hpTok.current_hp != null) {
+      document.getElementById('char-hp-display').textContent = `${hpTok.current_hp}/${hpTok.max_hp}`;
+      document.getElementById('char-hp-sub').textContent = hpTok.name;
+    } else {
+      document.getElementById('char-hp-display').textContent = '—';
+      document.getElementById('char-hp-sub').textContent = '';
+    }
+
+    updateStatMods();
+
+    // Set readonly state on all inputs based on permission
+    const allInputs = popup.querySelectorAll('input, select, textarea');
+    allInputs.forEach(inp => {
+      if (inp.id === 'char-ac' || inp.id === 'char-speed' || inp.id === 'char-level' ||
+          inp.id === 'char-name' || inp.id === 'char-race' || inp.id === 'char-notes' ||
+          inp.id === 'char-class' ||
+          inp.id.startsWith('char-str') || inp.id.startsWith('char-dex') ||
+          inp.id.startsWith('char-con') || inp.id.startsWith('char-int') ||
+          inp.id.startsWith('char-wis') || inp.id.startsWith('char-cha')) {
+        if (inp.tagName === 'SELECT') inp.disabled = !canEdit;
+        else inp.readOnly = !canEdit;
+      }
+    });
+    document.getElementById('char-readonly-note').style.display = canEdit ? 'none' : 'block';
+  }
+
+  function closeCharPopup() {
+    document.getElementById('char-popup').classList.remove('active');
+    CHAR_POPUP.targetPlayerId = null;
+    CHAR_POPUP.targetTokenId = null;
+  }
+
+  function refreshCharPopupHp() {
+    if (!CHAR_POPUP.targetPlayerId) return;
+    let hpTok = null;
+    if (CHAR_POPUP.targetTokenId && STATE.tokens.has(CHAR_POPUP.targetTokenId)) {
+      hpTok = STATE.tokens.get(CHAR_POPUP.targetTokenId);
+    } else {
+      hpTok = Array.from(STATE.tokens.values()).find(t => t.owner_id === CHAR_POPUP.targetPlayerId && t.x != null);
+    }
+    if (hpTok && hpTok.current_hp != null) {
+      document.getElementById('char-hp-display').textContent = `${hpTok.current_hp}/${hpTok.max_hp}`;
+      document.getElementById('char-hp-sub').textContent = hpTok.name;
+    } else {
+      document.getElementById('char-hp-display').textContent = '—';
+      document.getElementById('char-hp-sub').textContent = '';
+    }
+  }
+
+  function updateStatMods() {
+    ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(s => {
+      const score = parseInt(document.getElementById(`char-${s}`).value) || 10;
+      document.getElementById(`mod-${s}`).textContent = fmtMod(statMod(score));
+    });
+    const dexMod = statMod(parseInt(document.getElementById('char-dex').value) || 10);
+    document.getElementById('char-init').textContent = fmtMod(dexMod);
+  }
+
+  function scheduleSavePlayer() {
+    clearTimeout(CHAR_POPUP.saveTimeout);
+    CHAR_POPUP.saveTimeout = setTimeout(saveCharacterChanges, 400);
+  }
+
+  async function saveCharacterChanges() {
+    if (!CHAR_POPUP.targetPlayerId) return;
+    const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+    if (!canEdit) return;
+
+    const patch = {
+      name: document.getElementById('char-name').value.trim() || 'Unnamed',
+      level: parseInt(document.getElementById('char-level').value) || 1,
+      class: document.getElementById('char-class').value,
+      race: document.getElementById('char-race').value.trim(),
+      ac: parseInt(document.getElementById('char-ac').value) || 10,
+      speed: parseInt(document.getElementById('char-speed').value) || 30,
+      strength: parseInt(document.getElementById('char-str').value) || 10,
+      dexterity: parseInt(document.getElementById('char-dex').value) || 10,
+      constitution: parseInt(document.getElementById('char-con').value) || 10,
+      intelligence: parseInt(document.getElementById('char-int').value) || 10,
+      wisdom: parseInt(document.getElementById('char-wis').value) || 10,
+      charisma: parseInt(document.getElementById('char-cha').value) || 10,
+      notes: document.getElementById('char-notes').value,
+    };
+
+    await sb.from('vtt_players').update(patch).eq('id', CHAR_POPUP.targetPlayerId);
+
+    // If user changed their own class, re-apply theme
+    if (CHAR_POPUP.targetPlayerId === STATE.userId && patch.class !== STATE.playerClass) {
+      STATE.playerClass = patch.class;
+      applyClassTheme(patch.class);
+    }
+  }
+
+  // Wire popup inputs
+  function setupCharPopupListeners() {
+    const popup = document.getElementById('char-popup');
+    document.getElementById('char-popup-close').addEventListener('click', closeCharPopup);
+
+    // Auto-save on change for editable fields
+    ['char-name', 'char-level', 'char-class', 'char-race', 'char-ac', 'char-speed',
+     'char-str', 'char-dex', 'char-con', 'char-int', 'char-wis', 'char-cha', 'char-notes']
+      .forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('input', () => { updateStatMods(); scheduleSavePlayer(); });
+        el.addEventListener('change', () => { updateStatMods(); scheduleSavePlayer(); });
+      });
+
+    // Drag popup
+    const handle = popup.querySelector('.char-popup-header');
+    let dragging = false, sx, sy, sl, st;
+    handle.addEventListener('mousedown', (e) => {
+      if (e.target.tagName === 'BUTTON') return;
+      dragging = true;
+      sx = e.clientX; sy = e.clientY;
+      const r = popup.getBoundingClientRect();
+      sl = r.left; st = r.top;
+      popup.style.transform = 'none';
+      popup.style.left = sl + 'px';
+      popup.style.top = st + 'px';
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      popup.style.left = (sl + e.clientX - sx) + 'px';
+      popup.style.top = (st + e.clientY - sy) + 'px';
+    });
+    document.addEventListener('mouseup', () => dragging = false);
+  }
+  setupCharPopupListeners();
+
+  // Wire the "Character Info" button
+  document.getElementById('open-char-info').addEventListener('click', () => {
+    openCharPopup(STATE.userId);
+  });
+
+  // ============ MAP UPLOAD ============
+  document.getElementById('map-upload').addEventListener('change', async (e) => {
+    if (!e.target.files[0]) return;
+    const textEl = document.getElementById('map-upload-text');
+    textEl.textContent = 'Uploading...';
+    try {
+      const { blob, width, height } = await fileToResizedBlob(e.target.files[0], 1600);
+      const path = `${STATE.sessionId}/maps/map.jpg`;
+      const url = await uploadImage(blob, path);
+      const gridFt = parseInt(document.getElementById('grid-ft').value) || 5;
+      // Cache buster only needed for real Supabase URLs (storage may serve cached versions)
+      const finalUrl = (DEMO_MODE || url.startsWith('data:') || url.startsWith('blob:')) ? url : url + '?t=' + Date.now();
+      const { error } = await sb.from('vtt_maps').upsert({
+        session_id: STATE.sessionId,
+        image_url: finalUrl,
+        width,
+        height,
+        grid_ft: gridFt,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+      textEl.textContent = 'Upload map image';
+      toast('Map uploaded');
+    } catch (err) {
+      console.error(err);
+      textEl.textContent = 'Upload map image';
+      toast('Map upload failed: ' + (err.message || ''), 'error');
+    }
+    e.target.value = '';
+  });
+
+  document.getElementById('apply-grid').addEventListener('click', async () => {
+    if (!STATE.map) { toast('Upload a map first', 'error'); return; }
+    const gridFt = parseInt(document.getElementById('grid-ft').value) || 5;
+    const { error } = await sb.from('vtt_maps').update({ grid_ft: gridFt, updated_at: new Date().toISOString() }).eq('session_id', STATE.sessionId);
+    if (error) toast('Failed to update grid', 'error');
+    else toast(`Grid scale: 1 square = ${gridFt} ft`);
+  });
+
+  // ============ TOKEN UPLOAD ============
+  document.getElementById('token-upload').addEventListener('change', async (e) => {
+    if (!e.target.files[0]) return;
+    try {
+      const { blob } = await fileToResizedBlob(e.target.files[0], 200);
+      const tokenId = genId();
+      const path = `${STATE.sessionId}/tokens/${tokenId}.jpg`;
+      const url = await uploadImage(blob, path);
+      const { error } = await sb.from('vtt_tokens').insert({
+        id: tokenId,
+        session_id: STATE.sessionId,
+        name: STATE.username,
+        image_url: url,
+        x: null, y: null,
+        owner_id: STATE.userId,
+        current_hp: 10,
+        max_hp: 10,
+      });
+      if (error) throw error;
+      toast('Token added. Drag onto map.');
+    } catch (err) {
+      console.error(err);
+      toast('Token upload failed', 'error');
+    }
+    e.target.value = '';
+  });
+
+  // ============ MAP TRANSFORM ============
+  function applyTransform() {
+    const t = `translate(${STATE.view.offsetX}px, ${STATE.view.offsetY}px) scale(${STATE.view.zoom})`;
+    document.getElementById('grid').style.transform = t;
+    document.getElementById('maplayer').style.transform = t;
+    document.getElementById('tokenlayer').style.transform = t;
+  }
+
+  document.getElementById('zoom-in').addEventListener('click', () => { STATE.view.zoom = Math.min(3, STATE.view.zoom * 1.2); applyTransform(); });
+  document.getElementById('zoom-out').addEventListener('click', () => { STATE.view.zoom = Math.max(0.3, STATE.view.zoom / 1.2); applyTransform(); });
+  document.getElementById('zoom-reset').addEventListener('click', () => { STATE.view = { offsetX: 0, offsetY: 0, zoom: 1 }; applyTransform(); });
+
+  document.getElementById('mapcontainer').addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.1 : 1/1.1;
+    const newZoom = Math.max(0.3, Math.min(3, STATE.view.zoom * factor));
+    const rect = e.currentTarget.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+    STATE.view.offsetX = cx - (cx - STATE.view.offsetX) * (newZoom / STATE.view.zoom);
+    STATE.view.offsetY = cy - (cy - STATE.view.offsetY) * (newZoom / STATE.view.zoom);
+    STATE.view.zoom = newZoom;
+    applyTransform();
+  }, { passive: false });
+
+  let panStart = null;
+  document.getElementById('mapcontainer').addEventListener('mousedown', (e) => {
+    if (e.target.closest('.map-token') || e.target.closest('#chatbox') || e.target.closest('#zoom-controls')) return;
+    panStart = { x: e.clientX - STATE.view.offsetX, y: e.clientY - STATE.view.offsetY };
+    document.getElementById('mapcontainer').classList.add('panning');
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (panStart && !STATE.dragging) {
+      STATE.view.offsetX = e.clientX - panStart.x;
+      STATE.view.offsetY = e.clientY - panStart.y;
+      applyTransform();
+    }
+  });
+  document.addEventListener('mouseup', () => {
+    panStart = null;
+    document.getElementById('mapcontainer').classList.remove('panning');
+  });
+
+  // ============ TOKEN DRAG ============
+  function getEventPos(e) {
+    if (e.touches) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    return { x: e.clientX, y: e.clientY };
+  }
+  function screenToMap(sx, sy) {
+    const rect = document.getElementById('mapcontainer').getBoundingClientRect();
+    return {
+      x: (sx - rect.left - STATE.view.offsetX) / STATE.view.zoom,
+      y: (sy - rect.top - STATE.view.offsetY) / STATE.view.zoom,
+    };
+  }
+
+  function startTokenDrag(e, tok) {
+    e.preventDefault();
+    e.stopPropagation();
+    const pos = getEventPos(e);
+    const mp = screenToMap(pos.x, pos.y);
+    STATE.dragging = {
+      token: { ...tok },
+      startX: tok.x,
+      startY: tok.y,
+      offsetX: mp.x - tok.x,
+      offsetY: mp.y - tok.y,
+      initMouseX: pos.x,
+      initMouseY: pos.y,
+      moved: false,
+    };
+    document.querySelector(`.map-token[data-id="${tok.id}"]`)?.classList.add('dragging');
+    document.getElementById('measurement').style.display = 'block';
+  }
+
+  function updateTokenDrag(e) {
+    if (!STATE.dragging) return;
+    const pos = getEventPos(e);
+    // Check if movement passed click threshold
+    const dx = pos.x - STATE.dragging.initMouseX;
+    const dy = pos.y - STATE.dragging.initMouseY;
+    if (Math.sqrt(dx*dx + dy*dy) > 5) {
+      STATE.dragging.moved = true;
+    }
+    const mp = screenToMap(pos.x, pos.y);
+    const tok = STATE.dragging.token;
+    tok.x = mp.x - STATE.dragging.offsetX;
+    tok.y = mp.y - STATE.dragging.offsetY;
+    const el = document.querySelector(`.map-token[data-id="${tok.id}"]`);
+    if (el) {
+      el.style.left = (tok.x - 25) + 'px';
+      el.style.top = (tok.y - 25) + 'px';
+    }
+    updateMeasurement();
+  }
+
+  function updateMeasurement() {
+    if (!STATE.dragging) return;
+    const tok = STATE.dragging.token;
+    const sx = STATE.dragging.startX, sy = STATE.dragging.startY;
+    if (sx == null) { document.getElementById('measurement').style.display = 'none'; return; }
+    const dx = tok.x - sx, dy = tok.y - sy;
+    const squares = Math.max(Math.abs(dx), Math.abs(dy)) / STATE.gridSize;
+    const distFt = Math.round(squares) * STATE.gridFt;
+
+    const svg = document.getElementById('measurement');
+    const rect = document.getElementById('mapcontainer').getBoundingClientRect();
+    svg.setAttribute('width', rect.width);
+    svg.setAttribute('height', rect.height);
+    svg.style.position = 'absolute';
+    svg.style.top = '0';
+    svg.style.left = '0';
+
+    const sxScreen = sx * STATE.view.zoom + STATE.view.offsetX;
+    const syScreen = sy * STATE.view.zoom + STATE.view.offsetY;
+    const exScreen = tok.x * STATE.view.zoom + STATE.view.offsetX;
+    const eyScreen = tok.y * STATE.view.zoom + STATE.view.offsetY;
+    const midX = (sxScreen + exScreen) / 2;
+    const midY = (syScreen + eyScreen) / 2;
+
+    svg.innerHTML = `
+      <line x1="${sxScreen}" y1="${syScreen}" x2="${exScreen}" y2="${eyScreen}" />
+      <circle cx="${exScreen}" cy="${eyScreen}" r="6" fill="#e08c3a"/>
+      <text x="${midX}" y="${midY - 12}" text-anchor="middle" class="dist-label">${distFt} ft</text>
+    `;
+  }
+
+  async function endTokenDrag() {
+    if (!STATE.dragging) return;
+    const tok = STATE.dragging.token;
+    const wasMoved = STATE.dragging.moved;
+    document.querySelector(`.map-token[data-id="${tok.id}"]`)?.classList.remove('dragging');
+    document.getElementById('measurement').style.display = 'none';
+    const finalX = tok.x, finalY = tok.y, id = tok.id;
+    STATE.dragging = null;
+
+    // If the user did not move the mouse, treat it as a click and open character info
+    if (!wasMoved) {
+      openCharPopup(tok.owner_id, id);
+      return;
+    }
+
+    // Update local state immediately
+    const existing = STATE.tokens.get(id);
+    if (existing) {
+      existing.x = finalX;
+      existing.y = finalY;
+    }
+
+    // Persist
+    await sb.from('vtt_tokens').update({
+      x: finalX,
+      y: finalY,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id);
+  }
+
+  document.addEventListener('mousemove', updateTokenDrag);
+  document.addEventListener('touchmove', updateTokenDrag, { passive: false });
+  document.addEventListener('mouseup', endTokenDrag);
+  document.addEventListener('touchend', endTokenDrag);
+
+  // ============ DROP TOKEN ONTO MAP ============
+  const mapContainer = document.getElementById('mapcontainer');
+  mapContainer.addEventListener('dragover', (e) => e.preventDefault());
+  mapContainer.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain');
+    if (!id) return;
+    const mp = screenToMap(e.clientX, e.clientY);
+    await sb.from('vtt_tokens').update({
+      x: mp.x,
+      y: mp.y,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id);
+  });
+
+  // ============ DICE ROLLING ============
+  document.querySelectorAll('.dice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sides = parseInt(btn.dataset.sides);
+      const count = Math.max(1, parseInt(document.getElementById('dice-count').value) || 1);
+      const mod = parseInt(document.getElementById('dice-mod').value) || 0;
+      const gm = STATE.isHost && document.getElementById('gm-roll-check').checked;
+      rollDice(sides, count, mod, gm);
+    });
+  });
+
+  document.getElementById('gm-roll-check').addEventListener('change', (e) => {
+    document.getElementById('gm-roll-toggle').classList.toggle('active', e.target.checked);
+  });
+
+  async function rollDice(sides, count, mod, isPrivate) {
+    const rolls = [];
+    for (let i = 0; i < count; i++) rolls.push(Math.floor(Math.random() * sides) + 1);
+    const total = rolls.reduce((a,b) => a+b, 0) + mod;
+    const id = genId();
+    STATE.myMsgIds.add(id);
+
+    const msg = {
+      id,
+      session_id: STATE.sessionId,
+      msg_type: 'roll',
+      user_id: STATE.userId,
+      user_name: STATE.username,
+      is_host: STATE.isHost,
+      sides,
+      dice_count: count,
+      modifier: mod,
+      rolls,
+      total,
+      is_private: !!isPrivate,
+      ts: nowTs(),
+    };
+
+    // Animate locally
+    animateDiceRoll(msg);
+    // Render in chat locally
+    renderChatMessage(msg);
+    // Persist (real-time fires back but we skip our own animation)
+    const { error } = await sb.from('vtt_chat').insert(msg);
+    if (error) { console.error(error); toast('Roll failed to sync', 'error'); }
+  }
+
+  function animateDiceRoll(msg) {
+    const overlay = document.getElementById('dice-overlay');
+    const stage = document.getElementById('dice-stage');
+    const result = document.getElementById('dice-result');
+    stage.innerHTML = '';
+    result.innerHTML = '';
+
+    const ANIM_DURATION = 1400;
+    const STAGGER = 100;
+    const totalSettleTime = ANIM_DURATION + (msg.rolls.length - 1) * STAGGER;
+    const cycleIntervals = [];
+
+    msg.rolls.forEach((val, i) => {
+      const delay = i * STAGGER;
+      let dieEl;
+
+      if (msg.sides === 6) {
+        // 3D cube with visible faces
+        dieEl = document.createElement('div');
+        dieEl.className = 'die3d d6';
+        dieEl.style.animationDelay = (delay / 1000) + 's';
+        for (let f = 1; f <= 6; f++) {
+          const face = document.createElement('div');
+          face.className = `face f${f}`;
+          face.textContent = f;
+          dieEl.appendChild(face);
+        }
+        const finalRotations = {
+          1: 'rotateX(0deg) rotateY(0deg)',
+          2: 'rotateX(0deg) rotateY(-90deg)',
+          3: 'rotateX(0deg) rotateY(180deg)',
+          4: 'rotateX(0deg) rotateY(90deg)',
+          5: 'rotateX(-90deg) rotateY(0deg)',
+          6: 'rotateX(90deg) rotateY(0deg)',
+        };
+        // Snap to final face after animation completes
+        setTimeout(() => {
+          dieEl.style.animation = 'none';
+          dieEl.style.transform = finalRotations[val];
+          dieEl.style.transition = 'transform 0.3s';
+          // Highlight effect on settle
+          dieEl.classList.add('settled');
+        }, ANIM_DURATION + delay);
+      } else {
+        dieEl = document.createElement('div');
+        dieEl.className = 'die-poly';
+        dieEl.style.animationDelay = (delay / 1000) + 's';
+        dieEl.innerHTML = polyhedronSVG(msg.sides) + `<div class="val">?</div>`;
+
+        // Cycle random numbers during the spin
+        const valEl = dieEl.querySelector('.val');
+        const interval = setInterval(() => {
+          valEl.textContent = Math.floor(Math.random() * msg.sides) + 1;
+        }, 80);
+        cycleIntervals.push(interval);
+
+        // Settle on final value
+        setTimeout(() => {
+          clearInterval(interval);
+          valEl.textContent = val;
+          dieEl.classList.add('settled');
+        }, ANIM_DURATION + delay);
+      }
+
+      stage.appendChild(dieEl);
+    });
+
+    // Build but hide the result summary; reveal after all dice settle
+    const mod = msg.modifier || 0;
+    const modText = mod !== 0 ? ` ${mod > 0 ? '+' : ''}${mod}` : '';
+    const privLabel = msg.is_private ? `<div class="priv-label">PRIVATE ROLL - ${escapeHtml(msg.user_name)}</div>` : '';
+    result.innerHTML = `${privLabel}<div>${escapeHtml(msg.user_name)} - ${msg.dice_count}d${msg.sides}${modText}</div><div class="total">${msg.total}</div><div class="breakdown">${msg.rolls.join(' + ')}${modText} = ${msg.total}</div>`;
+    result.style.opacity = '0';
+
+    overlay.classList.add('active');
+
+    // Reveal result after dice settle
+    setTimeout(() => {
+      result.style.transition = 'opacity 0.3s';
+      result.style.opacity = '1';
+    }, totalSettleTime + 100);
+
+    clearTimeout(window._diceTimeout);
+    window._diceTimeout = setTimeout(() => {
+      overlay.classList.remove('active');
+      cycleIntervals.forEach(clearInterval);
+    }, totalSettleTime + 2200);
+  }
+
+  function polyhedronSVG(sides) {
+    const grad = `<defs><linearGradient id="g${sides}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4d590"/><stop offset="0.6" stop-color="#c89456"/><stop offset="1" stop-color="#8a6535"/></linearGradient></defs>`;
+    const fill = `fill="url(#g${sides})" stroke="#6b4a25" stroke-width="2" stroke-linejoin="round"`;
+    if (sides === 4) {
+      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,8 92,88 8,88" ${fill}/><polyline points="50,8 50,68 8,88" fill="none" stroke="#6b4a25" stroke-width="1.5"/><polyline points="50,68 92,88" fill="none" stroke="#6b4a25" stroke-width="1.5"/></svg>`;
+    }
+    if (sides === 8) {
+      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,5 90,50 50,95 10,50" ${fill}/><line x1="10" y1="50" x2="90" y2="50" stroke="#6b4a25" stroke-width="1.5"/></svg>`;
+    }
+    if (sides === 10) {
+      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,5 88,32 88,68 50,95 12,68 12,32" ${fill}/><line x1="12" y1="32" x2="88" y2="68" stroke="#6b4a25" stroke-width="1.5"/><line x1="50" y1="5" x2="50" y2="95" stroke="#6b4a25" stroke-width="1.5"/></svg>`;
+    }
+    if (sides === 12) {
+      const pts = [];
+      for (let i = 0; i < 5; i++) {
+        const a = (i * 72 - 90) * Math.PI / 180;
+        pts.push(`${50 + 42 * Math.cos(a)},${50 + 42 * Math.sin(a)}`);
+      }
+      return `<svg viewBox="0 0 100 100">${grad}<polygon points="${pts.join(' ')}" ${fill}/></svg>`;
+    }
+    if (sides === 20) {
+      return `<svg viewBox="0 0 100 100">${grad}<polygon points="50,5 92,28 92,72 50,95 8,72 8,28" ${fill}/><polygon points="50,5 92,72 8,72" fill="none" stroke="#6b4a25" stroke-width="1.5"/><polygon points="50,95 8,28 92,28" fill="none" stroke="#6b4a25" stroke-width="1.5"/></svg>`;
+    }
+    if (sides === 100) {
+      return `<svg viewBox="0 0 100 100">${grad}<circle cx="50" cy="50" r="42" ${fill}/><path d="M 20 30 Q 50 10 80 30" fill="none" stroke="#6b4a25" stroke-width="1.5"/><path d="M 20 70 Q 50 90 80 70" fill="none" stroke="#6b4a25" stroke-width="1.5"/></svg>`;
+    }
+    return `<svg viewBox="0 0 100 100">${grad}<rect x="15" y="15" width="70" height="70" rx="6" ${fill}/></svg>`;
+  }
+
+  // ============ CHAT ============
+  document.getElementById('chat-send').addEventListener('click', sendChat);
+  document.getElementById('chat-text').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendChat();
+  });
+
+  async function sendChat() {
+    const inp = document.getElementById('chat-text');
+    const text = inp.value.trim();
+    if (!text) return;
+    inp.value = '';
+    const id = genId();
+    STATE.myMsgIds.add(id);
+    const msg = {
+      id,
+      session_id: STATE.sessionId,
+      msg_type: 'text',
+      user_id: STATE.userId,
+      user_name: STATE.username,
+      is_host: STATE.isHost,
+      text,
+      ts: nowTs(),
+    };
+    renderChatMessage(msg);
+    const { error } = await sb.from('vtt_chat').insert(msg);
+    if (error) { console.error(error); toast('Message failed', 'error'); }
+  }
+
+  // Chat box drag
+  (function setupChatDrag() {
+    const box = document.getElementById('chatbox');
+    const handle = document.getElementById('chatbox-header');
+    let dragging = false, sx, sy, sl, st;
+    handle.addEventListener('mousedown', (e) => {
+      if (e.target.tagName === 'BUTTON') return;
+      dragging = true;
+      sx = e.clientX; sy = e.clientY;
+      const r = box.getBoundingClientRect();
+      sl = r.left; st = r.top;
+      box.style.right = 'auto'; box.style.bottom = 'auto';
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      box.style.left = (sl + e.clientX - sx) + 'px';
+      box.style.top = (st + e.clientY - sy) + 'px';
+    });
+    document.addEventListener('mouseup', () => dragging = false);
+  })();
+
+  document.getElementById('chat-minimize').addEventListener('click', () => {
+    document.getElementById('chatbox').classList.toggle('minimized');
+    document.getElementById('chat-minimize').textContent =
+      document.getElementById('chatbox').classList.contains('minimized') ? '+' : '−';
+  });
+
+  // ============ COPY SESSION CODE ============
+  document.getElementById('session-code-display').addEventListener('click', () => {
+    navigator.clipboard.writeText(STATE.sessionId).then(() => toast('Code copied'));
+  });
+
+  // ============ LEAVE ============
+  document.getElementById('leave-btn').addEventListener('click', async () => {
+    if (!confirm('Leave this session?')) return;
+    try {
+      // Post leave message
+      await sb.from('vtt_chat').insert({
+        id: genId(),
+        session_id: STATE.sessionId,
+        msg_type: 'system',
+        text: `${STATE.username} left.`,
+        ts: nowTs(),
+      });
+      // Unsubscribe
+      if (STATE.channel) await STATE.channel.unsubscribe();
+    } catch (e) { console.warn(e); }
+    location.reload();
+  });
+
+  // Clean up presence on unload
+  window.addEventListener('beforeunload', () => {
+    if (STATE.channel) STATE.channel.unsubscribe();
+  });
+
+</script>
+</body>
+</html>
