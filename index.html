@@ -313,6 +313,16 @@
   .save-row .save-bonus { margin-left: auto; color: var(--gold); font-weight: 700; }
   .save-row.state-prof .save-stat, .save-row.state-exp .save-stat { color: var(--cream); }
 
+  /* Editable bonus value (manual override) */
+  .bonus-input { width: 40px; text-align: right; background: transparent; border: 1px solid transparent; color: var(--gold); font-weight: 700; font-family: inherit; padding: 2px 4px; border-radius: 3px; margin-left: auto; -moz-appearance: textfield; }
+  .bonus-input::-webkit-outer-spin-button, .bonus-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .bonus-input:hover:not([readonly]) { border-color: var(--gold-soft); }
+  .bonus-input:focus { outline: none; border-color: var(--gold); background: var(--panel-light); }
+  .overridden .bonus-input { color: #ffc77a; font-style: italic; border-color: var(--gold-soft); background: rgba(212,175,55,0.06); }
+  .state-exp .bonus-input { color: #ffd87a; text-shadow: 0 0 6px rgba(255,216,122,0.5); }
+  .bonus-reset { background: transparent; border: none; color: var(--muted); font-size: 12px; cursor: pointer; padding: 2px 4px; margin-left: 2px; }
+  .bonus-reset:hover { color: var(--gold); }
+
   /* Tri-state proficiency toggle: empty / proficient (✓) / expertise (★) */
   .prof-toggle { width: 16px; height: 16px; padding: 0; background: var(--bg); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 3px; cursor: pointer; font-size: 11px; line-height: 1; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: background 0.12s, border-color 0.12s; flex-shrink: 0; }
   .prof-toggle:hover { border-color: var(--gold); }
@@ -2747,6 +2757,9 @@
     skillProfs: new Set(),   // 'acrobatics','stealth',...
     saveExpertise: new Set(),
     skillExpertise: new Set(),
+    // Manual overrides for skill/save bonus values (when set, takes precedence over auto calc)
+    saveOverrides: {},       // { 'str': 5, ... }
+    skillOverrides: {},      // { 'acrobatics': 7, ... }
     buffs: [],               // [{ name, mod, active }]
     inventory: [],           // [{ name, qty, stats }]
     equipment: {},           // { helmet: {name, stats}, ... }
@@ -2867,20 +2880,25 @@
     const grid = document.getElementById('saves-grid');
     grid.innerHTML = '';
     const pb = getProfBonus();
+    const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
     SAVE_STATS.forEach(stat => {
       const mod = statMod(getCharStat(stat));
       const isExp = CHAR_POPUP.saveExpertise && CHAR_POPUP.saveExpertise.has(stat);
       const isProf = saveProfs.has(stat) || isExp;
       const bonus = isExp ? pb * 2 : (isProf ? pb : 0);
-      const total = mod + bonus;
+      const autoTotal = mod + bonus;
+      const override = CHAR_POPUP.saveOverrides && CHAR_POPUP.saveOverrides[stat];
+      const hasOverride = (override != null && override !== '');
+      const total = hasOverride ? parseInt(override) : autoTotal;
       const state = isExp ? 'exp' : (isProf ? 'prof' : 'none');
       const row = document.createElement('div');
-      row.className = 'save-row state-' + state;
+      row.className = 'save-row state-' + state + (hasOverride ? ' overridden' : '');
       row.dataset.stat = stat;
       row.innerHTML = `
         <button class="prof-toggle" data-kind="save" data-key="${stat}" title="None → Proficient → Expertise">${state === 'exp' ? '★' : (state === 'prof' ? '✓' : '')}</button>
         <span class="save-stat">${stat.toUpperCase()}</span>
-        <span class="save-bonus">${fmtMod(total)}</span>
+        <input type="text" inputmode="numeric" pattern="[+\-0-9]*" class="bonus-input" data-kind="save" data-key="${stat}" value="${fmtMod(total)}" title="${hasOverride ? 'Manual override · click ↺ to reset' : 'Auto-calculated · type to override'}" ${canEdit ? '' : 'readonly'}>
+        ${hasOverride ? `<button class="bonus-reset" data-kind="save" data-key="${stat}" title="Reset to auto">↺</button>` : ''}
       `;
       grid.appendChild(row);
     });
@@ -2890,21 +2908,26 @@
     const grid = document.getElementById('skills-grid');
     grid.innerHTML = '';
     const pb = getProfBonus();
+    const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
     SKILLS_DEF.forEach(s => {
       const mod = statMod(getCharStat(s.stat));
       const isExp = CHAR_POPUP.skillExpertise && CHAR_POPUP.skillExpertise.has(s.key);
       const isProf = skillProfs.has(s.key) || isExp;
       const bonus = isExp ? pb * 2 : (isProf ? pb : 0);
-      const total = mod + bonus;
+      const autoTotal = mod + bonus;
+      const override = CHAR_POPUP.skillOverrides && CHAR_POPUP.skillOverrides[s.key];
+      const hasOverride = (override != null && override !== '');
+      const total = hasOverride ? parseInt(override) : autoTotal;
       const state = isExp ? 'exp' : (isProf ? 'prof' : 'none');
       const row = document.createElement('div');
-      row.className = 'skill-row state-' + state;
+      row.className = 'skill-row state-' + state + (hasOverride ? ' overridden' : '');
       row.dataset.skill = s.key;
       row.innerHTML = `
         <button class="prof-toggle" data-kind="skill" data-key="${s.key}" title="None → Proficient → Expertise">${state === 'exp' ? '★' : (state === 'prof' ? '✓' : '')}</button>
         <span class="skill-stat">${s.stat.toUpperCase()}</span>
         <span class="skill-name">${s.name}</span>
-        <span class="skill-bonus">${fmtMod(total)}</span>
+        <input type="text" inputmode="numeric" pattern="[+\-0-9]*" class="bonus-input" data-kind="skill" data-key="${s.key}" value="${fmtMod(total)}" title="${hasOverride ? 'Manual override · click ↺ to reset' : 'Auto-calculated · type to override'}" ${canEdit ? '' : 'readonly'}>
+        ${hasOverride ? `<button class="bonus-reset" data-kind="skill" data-key="${s.key}" title="Reset to auto">↺</button>` : ''}
       `;
       grid.appendChild(row);
     });
@@ -3181,6 +3204,11 @@
     CHAR_POPUP.skillProfs = parseSet(player.skill_profs);
     CHAR_POPUP.saveExpertise = parseSet(player.save_expertise);
     CHAR_POPUP.skillExpertise = parseSet(player.skill_expertise);
+    // Manual overrides: parse JSON, fall back to empty object on any error
+    try { CHAR_POPUP.skillOverrides = JSON.parse(player.skill_overrides || '{}') || {}; }
+    catch (e) { CHAR_POPUP.skillOverrides = {}; }
+    try { CHAR_POPUP.saveOverrides = JSON.parse(player.save_overrides || '{}') || {}; }
+    catch (e) { CHAR_POPUP.saveOverrides = {}; }
     CHAR_POPUP.buffs = parseJsonArray(player.buffs);
     CHAR_POPUP.inventory = parseJsonArray(player.inventory);
     // Equipment is a JSON object keyed by slot
@@ -3298,6 +3326,8 @@
       skill_profs: setToCsv(CHAR_POPUP.skillProfs),
       save_expertise: setToCsv(CHAR_POPUP.saveExpertise),
       skill_expertise: setToCsv(CHAR_POPUP.skillExpertise),
+      skill_overrides: JSON.stringify(CHAR_POPUP.skillOverrides || {}),
+      save_overrides: JSON.stringify(CHAR_POPUP.saveOverrides || {}),
       buffs: JSON.stringify(CHAR_POPUP.buffs),
       inventory: JSON.stringify(CHAR_POPUP.inventory),
       equipment: JSON.stringify(CHAR_POPUP.equipment),
@@ -3521,13 +3551,60 @@
     }
     document.getElementById('saves-grid').addEventListener('click', (e) => {
       const btn = e.target.closest('.prof-toggle');
-      if (!btn) return;
-      cycleProfState('save', btn.dataset.key);
+      if (btn) { cycleProfState('save', btn.dataset.key); return; }
+      const reset = e.target.closest('.bonus-reset');
+      if (reset) {
+        const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+        if (!canEdit) return;
+        delete CHAR_POPUP.saveOverrides[reset.dataset.key];
+        renderSaves(CHAR_POPUP.saveProfs);
+        scheduleSavePlayer();
+      }
     });
     document.getElementById('skills-grid').addEventListener('click', (e) => {
       const btn = e.target.closest('.prof-toggle');
-      if (!btn) return;
-      cycleProfState('skill', btn.dataset.key);
+      if (btn) { cycleProfState('skill', btn.dataset.key); return; }
+      const reset = e.target.closest('.bonus-reset');
+      if (reset) {
+        const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+        if (!canEdit) return;
+        delete CHAR_POPUP.skillOverrides[reset.dataset.key];
+        renderSkills(CHAR_POPUP.skillProfs);
+        scheduleSavePlayer();
+      }
+    });
+
+    // Manual bonus override: user types a number into the bonus input. Saves on
+    // blur. Empty input clears the override and resumes auto calculation.
+    function handleBonusOverride(e) {
+      const inp = e.target.closest('.bonus-input');
+      if (!inp) return;
+      const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) return;
+      const kind = inp.dataset.kind;
+      const key = inp.dataset.key;
+      const raw = inp.value.trim();
+      const store = kind === 'save' ? CHAR_POPUP.saveOverrides : CHAR_POPUP.skillOverrides;
+      if (raw === '' || raw === '+' || raw === '-') {
+        delete store[key];
+      } else {
+        // Tolerate "+5", "-1", "5"
+        const n = parseInt(raw.replace(/^\+/, ''));
+        if (isNaN(n)) { delete store[key]; }
+        else store[key] = n;
+      }
+      if (kind === 'save') renderSaves(CHAR_POPUP.saveProfs);
+      else renderSkills(CHAR_POPUP.skillProfs);
+      scheduleSavePlayer();
+    }
+    document.getElementById('saves-grid').addEventListener('change', handleBonusOverride);
+    document.getElementById('skills-grid').addEventListener('change', handleBonusOverride);
+    // Also re-render and save on Enter so users get instant feedback
+    document.getElementById('saves-grid').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.classList.contains('bonus-input')) { e.target.blur(); }
+    });
+    document.getElementById('skills-grid').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.classList.contains('bonus-input')) { e.target.blur(); }
     });
 
     // Buff add
@@ -5247,11 +5324,11 @@
     // Build a class-colored palette for the player who rolled
     const palette = dicePaletteForUserId(msg.user_id);
 
-    // Slower per-bounce timing so the roll feels weighty
-    const T_FLY    = 520;   // initial cross from edge
-    const T_BOUNCE = 380;   // each ricochet
-    const T_SETTLE = 460;   // final landing
-    const STAGGER  = 180;
+    // Per-bounce timing (15% faster than before for snappier feel)
+    const T_FLY    = 442;   // initial cross from edge
+    const T_BOUNCE = 323;   // each ricochet
+    const T_SETTLE = 391;   // final landing
+    const STAGGER  = 153;
 
     // Pre-compute each die's path so we can derive an accurate maxDuration.
     const dieData = msg.rolls.map(() => {
@@ -5395,16 +5472,16 @@
     if (hasNat20) result.classList.add('nat20');
     if (hasNat1) result.classList.add('nat1');
 
-    // Reveal result after dice settle, plus trigger crit effects (slower for drama)
+    // Reveal result after dice settle, plus trigger crit effects
     scheduleDice(() => {
-      result.style.transition = 'opacity 0.7s ease';
+      result.style.transition = 'opacity 0.6s ease';
       result.style.opacity = '1';
       if (hasNat20) triggerNat20();
       if (hasNat1) triggerNat1();
-    }, totalSettleTime + 350);
+    }, totalSettleTime + 300);
 
-    // Hide overlay (longer so the result lingers)
-    scheduleDice(() => { overlay.classList.remove('active'); }, totalSettleTime + 3600);
+    // Hide overlay (let the result linger before fading)
+    scheduleDice(() => { overlay.classList.remove('active'); }, totalSettleTime + 3060);
   }
 
   function triggerNat20() {
