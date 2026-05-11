@@ -641,8 +641,8 @@
   .char-head-info input.char-race { width: 100px; }
 
   /* Char vitals - 5 columns so HP/AC/Speed/Init/Inspiration all fit on one row */
-  .char-vitals { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 12px; }
-  .vital-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 3px; padding: 5px 4px; text-align: center; min-width: 0; position: relative; overflow: hidden; }
+  .char-vitals { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 12px; align-items: stretch; }
+  .vital-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 3px; padding: 5px 4px; text-align: center; min-width: 0; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; }
   .vital-box label { display: block; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
   .vital-box .vital-val { font-family: 'Cinzel', serif; font-size: 16px; color: var(--gold); font-weight: 600; }
   .vital-box input { width: 100%; background: transparent; border: none; color: var(--gold); font-family: 'Cinzel', serif; font-size: 15px; font-weight: 600; text-align: center; padding: 0; }
@@ -651,34 +651,46 @@
   .vital-box .hp-edit-inline { display: flex; align-items: center; justify-content: center; gap: 1px; }
   .vital-box .hp-edit-inline input { width: 26px; font-size: 13px; padding: 1px 0; }
   .vital-box .hp-edit-inline .hp-sep { color: var(--muted); font-size: 12px; }
-  /* HP vital - heart shape with red theme. The big heart SVG is a background
-   * image that fills the box; the inputs sit on top of it. */
+  /* HP vital - small decorative heart on top, HP values BELOW the heart
+   * on clean dark background so they're always readable. The heart is
+   * pure decoration and is not behind the numbers. */
   .vital-box.vital-hp {
-    background:
-      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cdefs%3E%3CradialGradient id='g' cx='35%25' cy='30%25' r='75%25'%3E%3Cstop offset='0%25' stop-color='%23ff5252' stop-opacity='0.55'/%3E%3Cstop offset='60%25' stop-color='%23a02828' stop-opacity='0.35'/%3E%3Cstop offset='100%25' stop-color='%234a0e0e' stop-opacity='0.55'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath d='M50 88 C 18 65, 6 45, 6 28 C 6 14, 17 6, 28 6 C 38 6, 46 12, 50 22 C 54 12, 62 6, 72 6 C 83 6, 94 14, 94 28 C 94 45, 82 65, 50 88 Z' fill='url(%23g)' stroke='%23c44848' stroke-width='2.5'/%3E%3C/svg%3E") no-repeat center / contain,
-      transparent;
-    border: none;
-    padding: 8px 6px 10px;
-    position: relative;
+    background: linear-gradient(180deg, rgba(160,72,72,0.15), rgba(40,10,10,0.35));
+    border: 1px solid rgba(196,104,104,0.5);
+    padding: 4px 4px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
   }
-  .vital-box.vital-hp label { color: #ffd0d0; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.7); position: relative; z-index: 1; margin-top: 4px; }
-  .vital-box.vital-hp .hp-edit-inline { position: relative; z-index: 1; margin-top: 2px; }
+  .vital-box.vital-hp .hp-heart-graphic {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
+  }
+  .vital-box.vital-hp .hp-heart-graphic svg { width: 100%; height: 100%; display: block; }
+  .vital-box.vital-hp label { color: #ffd0d0; font-weight: 700; font-size: 9px; margin: 0; }
+  .vital-box.vital-hp .hp-edit-inline {
+    display: flex; align-items: center; justify-content: center; gap: 1px;
+    width: 100%;
+    padding-top: 2px;
+    border-top: 1px solid rgba(196,104,104,0.4);
+  }
   .vital-box.vital-hp input,
-  .vital-box.vital-hp .hp-sep { color: #fff; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,0.8), 0 0 8px rgba(255,122,122,0.7); }
-  .vital-box.vital-hp input:focus { background: rgba(0,0,0,0.4); border-radius: 3px; }
-  .vital-box.vital-hp .vital-sub { color: rgba(255,210,210,0.85); text-shadow: 0 1px 2px rgba(0,0,0,0.7); position: relative; z-index: 1; }
-  /* Hide the old small corner heart now that the whole box is a heart */
-  .vital-box.vital-hp .hp-heart { display: none; }
-  /* HP states */
-  .vital-box.vital-hp.low { animation: hp-low-pulse 1.6s ease-in-out infinite; }
-  .vital-box.vital-hp.zero {
-    background:
-      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cdefs%3E%3CradialGradient id='g' cx='35%25' cy='30%25' r='75%25'%3E%3Cstop offset='0%25' stop-color='%23802020' stop-opacity='0.7'/%3E%3Cstop offset='100%25' stop-color='%23200505' stop-opacity='0.85'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath d='M50 88 C 18 65, 6 45, 6 28 C 6 14, 17 6, 28 6 C 38 6, 46 12, 50 22 C 54 12, 62 6, 72 6 C 83 6, 94 14, 94 28 C 94 45, 82 65, 50 88 Z' fill='url(%23g)' stroke='%23ff4040' stroke-width='3'/%3E%3C/svg%3E") no-repeat center / contain;
+  .vital-box.vital-hp .hp-sep {
+    color: #fff; font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.7);
   }
+  .vital-box.vital-hp input:focus { background: rgba(0,0,0,0.5); border-radius: 3px; }
+  /* Low HP - pulse the heart graphic */
+  .vital-box.vital-hp.low .hp-heart-graphic { animation: hp-low-pulse 1.4s ease-in-out infinite; }
+  .vital-box.vital-hp.zero { border-color: var(--danger); background: linear-gradient(180deg, rgba(80,15,15,0.55), rgba(20,5,5,0.65)); }
   .vital-box.vital-hp.zero input { color: #ff8a8a; }
+  .vital-box.vital-hp.zero .hp-heart-graphic { filter: grayscale(0.5) drop-shadow(0 0 8px rgba(255,40,40,0.8)); animation: hp-low-pulse 0.9s ease-in-out infinite; }
   @keyframes hp-low-pulse {
-    0%, 100% { filter: drop-shadow(0 0 0 rgba(160,72,72,0)); }
-    50% { filter: drop-shadow(0 0 8px rgba(255,80,80,0.7)); }
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5)); }
+    50% { transform: scale(1.12); filter: drop-shadow(0 0 10px rgba(255,80,80,0.9)); }
   }
 
   .char-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 16px; }
@@ -1345,14 +1357,25 @@
 
   <div class="char-vitals">
     <div class="vital-box vital-hp" id="char-hp-box">
-      <svg class="hp-heart" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      <div class="hp-heart-graphic" aria-hidden="true">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <radialGradient id="hp-grad" cx="35%" cy="30%" r="75%">
+              <stop offset="0%" stop-color="#ff5252" stop-opacity="0.95"/>
+              <stop offset="60%" stop-color="#a02828" stop-opacity="0.85"/>
+              <stop offset="100%" stop-color="#4a0e0e" stop-opacity="0.95"/>
+            </radialGradient>
+          </defs>
+          <path d="M50 88 C 18 65, 6 45, 6 28 C 6 14, 17 6, 28 6 C 38 6, 46 12, 50 22 C 54 12, 62 6, 72 6 C 83 6, 94 14, 94 28 C 94 45, 82 65, 50 88 Z" fill="url(#hp-grad)" stroke="#c44848" stroke-width="2.5"/>
+        </svg>
+      </div>
       <label>HP</label>
       <div class="hp-edit-inline">
         <input type="number" id="char-hp-cur" min="0" placeholder="—">
         <span class="hp-sep">/</span>
         <input type="number" id="char-hp-max" min="1" placeholder="—">
       </div>
-      <div class="vital-sub" id="char-hp-sub"></div>
+      <div class="vital-sub" id="char-hp-sub" style="display:none"></div>
     </div>
     <div class="vital-box">
       <label>AC</label>
@@ -7685,11 +7708,12 @@
           5: { x: -90, y: 0 },
           6: { x: 90,  y: 0 },
         }[val];
-        // Add a small permanent tilt to the resting position so the cube always
-        // looks three-dimensional (not edge-on). 18° on X and 25° on Y reveals
-        // two additional faces while keeping the rolled face clearly readable.
-        const RESTING_TILT_X = 18;
-        const RESTING_TILT_Y = 25;
+        // Tiny resting tilt - just enough so the cube never lands edge-on,
+        // but small enough that the face stays mostly perpendicular to camera.
+        // 8°+12° shows a sliver of 2 side faces while keeping the rolled
+        // number clearly readable in the foreground.
+        const RESTING_TILT_X = 8;
+        const RESTING_TILT_Y = 12;
         const extraX = 360 * (3 + Math.floor(Math.random() * 4));
         const extraY = 360 * (3 + Math.floor(Math.random() * 4));
         const sign = Math.random() < 0.5 ? -1 : 1;
