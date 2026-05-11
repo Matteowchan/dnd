@@ -7097,21 +7097,37 @@
   // are responsive, so this is more resilient than picking one.
   const IMG_MODELS = ['turbo', 'flux', 'zimage'];
 
+  // Generation counter - bumped on each runImgGen so in-flight handlers from
+  // a previous run can detect they've been superseded and bail out. Without
+  // this, a stale onload from generation #1 would still fire after the user
+  // clicks Generate or Regenerate, leaving the UI in a confused state.
+  let imgGenSeq = 0;
+
   function runImgGen() {
     const fullPrompt = IMG_GEN_PROMPTS[imgGenState.type] + imgGenState.prompt;
     const w = (imgGenState.type === 'map') ? 1024 : 768;
     const h = w;
-    document.getElementById('imggen-img').style.display = 'none';
+    // Bump the sequence so any stale handlers from a previous run will exit.
+    imgGenSeq++;
+    const mySeq = imgGenSeq;
+    const img = document.getElementById('imggen-img');
+    // Detach the previous handlers and clear src so the browser definitely
+    // re-fires events for the new URL (re-assigning the same src is a no-op).
+    img.onload = null;
+    img.onerror = null;
+    img.removeAttribute('src');
+    img.style.display = 'none';
     document.getElementById('imggen-loading').style.display = 'block';
     document.getElementById('imggen-preview').style.display = 'block';
     document.getElementById('imggen-actions').style.display = 'none';
     document.getElementById('imggen-status').style.display = 'none';
-    tryGenerate(fullPrompt, w, h, 0);
+    tryGenerate(fullPrompt, w, h, 0, mySeq);
   }
 
-  function tryGenerate(prompt, w, h, modelIdx) {
+  function tryGenerate(prompt, w, h, modelIdx, mySeq) {
+    // If a newer generation has started, bail out of this one
+    if (mySeq !== imgGenSeq) return;
     if (modelIdx >= IMG_MODELS.length) {
-      // All fallbacks exhausted
       document.getElementById('imggen-loading').textContent = 'Generation failed after multiple attempts. The service may be busy - please try again in a moment or change your prompt.';
       return;
     }
@@ -7119,31 +7135,31 @@
     const loadingText = `Generating with ${model} (${modelIdx + 1}/${IMG_MODELS.length})...`;
     document.getElementById('imggen-loading').textContent = loadingText;
 
-    // Use a fresh seed-bumped URL each time so we don't hit Cloudflare's
-    // cached error response from a previous attempt.
-    const cacheBust = imgGenState.seed + modelIdx * 1000;
+    // Cache-bust: combine the user's seed with model index AND the sequence
+    // counter, so even back-to-back identical prompts produce different URLs
+    // (preventing image.src being a no-op when the browser thinks the URL
+    // hasn't changed).
+    const cacheBust = imgGenState.seed + modelIdx * 1000 + mySeq * 7919;
     const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${cacheBust}&model=${model}&nologo=true`;
     imgGenState.url = url;
     const img = document.getElementById('imggen-img');
 
-    // Detect both "load with broken/blank image" and load timeout
     let resolved = false;
     const TIMEOUT_MS = 30000;
     const timer = setTimeout(() => {
-      if (resolved) return;
+      if (resolved || mySeq !== imgGenSeq) return;
       resolved = true;
       console.warn(`Image gen timed out on ${model}, falling back`);
-      tryGenerate(prompt, w, h, modelIdx + 1);
+      tryGenerate(prompt, w, h, modelIdx + 1, mySeq);
     }, TIMEOUT_MS);
 
     img.onload = () => {
-      if (resolved) return;
+      if (resolved || mySeq !== imgGenSeq) return;
       resolved = true;
       clearTimeout(timer);
-      // Sanity check: a truly broken response sometimes returns a 1×1 placeholder
       if (img.naturalWidth < 64 || img.naturalHeight < 64) {
         console.warn(`Image gen returned tiny image on ${model} (${img.naturalWidth}×${img.naturalHeight}), falling back`);
-        tryGenerate(prompt, w, h, modelIdx + 1);
+        tryGenerate(prompt, w, h, modelIdx + 1, mySeq);
         return;
       }
       img.style.display = 'block';
@@ -7157,11 +7173,11 @@
       });
     };
     img.onerror = () => {
-      if (resolved) return;
+      if (resolved || mySeq !== imgGenSeq) return;
       resolved = true;
       clearTimeout(timer);
       console.warn(`Image gen errored on ${model}, falling back`);
-      tryGenerate(prompt, w, h, modelIdx + 1);
+      tryGenerate(prompt, w, h, modelIdx + 1, mySeq);
     };
     img.src = url;
   }
