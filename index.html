@@ -2450,19 +2450,44 @@
           }
         }
 
-        // Add self as player with class
-        await sb.from('vtt_players').insert({
-          id: STATE.userId,
-          session_id: STATE.sessionId,
-          name,
-          is_host: false,
-          class: playerClass,
-          level: 1,
-          ac: 10,
-          speed: 30,
-          strength: 10, dexterity: 10, constitution: 10,
-          intelligence: 10, wisdom: 10, charisma: 10,
-        });
+        // Reuse an existing player row if one with this name (case-insensitive,
+        // trimmed) already exists in the session. Otherwise the same user
+        // rejoining from a new tab / cleared storage / different device gets
+        // a fresh row and the player list shows duplicates.
+        const normalizedName = name.trim().toLowerCase();
+        const { data: existing } = await sb
+          .from('vtt_players')
+          .select('id, name, is_host')
+          .eq('session_id', STATE.sessionId)
+          .eq('is_host', false);
+        const match = (existing || []).find(p => (p.name || '').trim().toLowerCase() === normalizedName);
+        if (match) {
+          // Take over the existing row. Adopt that userId so all downstream
+          // saves (HP, stats, etc.) land on the correct character.
+          STATE.userId = match.id;
+          saveSessionState();
+          // Only fill in class if the existing row has none. This preserves
+          // a level-5 Fighter from being silently demoted if the user picks
+          // a different class on the join screen by mistake.
+          const { data: rowFull } = await sb.from('vtt_players').select('class').eq('id', match.id).maybeSingle();
+          if (playerClass && rowFull && !rowFull.class) {
+            await sb.from('vtt_players').update({ class: playerClass }).eq('id', match.id);
+          }
+        } else {
+          // Brand new player - insert a row with the current userId
+          await sb.from('vtt_players').insert({
+            id: STATE.userId,
+            session_id: STATE.sessionId,
+            name,
+            is_host: false,
+            class: playerClass,
+            level: 1,
+            ac: 10,
+            speed: 30,
+            strength: 10, dexterity: 10, constitution: 10,
+            intelligence: 10, wisdom: 10, charisma: 10,
+          });
+        }
 
         // System message with class
         const className = playerClass.charAt(0).toUpperCase() + playerClass.slice(1);
