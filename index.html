@@ -822,6 +822,21 @@
   #imggen-popup { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); width: 480px; max-height: 80vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
   #imggen-popup.active { display: flex; }
   #imggen-popup .char-popup-body { padding: 16px; overflow-y: auto; }
+  /* Icon library (game-icons.net) - for Item type, instant offline picker */
+  .icon-library { display: flex; flex-direction: column; gap: 8px; }
+  .icon-library .search-row { display: flex; gap: 6px; }
+  .icon-library #icon-search { flex: 1; padding: 6px 10px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; font-family: inherit; font-size: 12px; }
+  .icon-library #icon-search:focus { outline: none; border-color: var(--gold); }
+  .icon-library .cat-chips { display: flex; gap: 3px; flex-wrap: wrap; }
+  .icon-library .cat-chip { padding: 3px 9px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); border-radius: 12px; font-size: 10px; cursor: pointer; text-transform: capitalize; transition: all 0.15s; user-select: none; }
+  .icon-library .cat-chip:hover { color: var(--cream); }
+  .icon-library .cat-chip.active { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
+  .icon-library .icon-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; max-height: 280px; overflow-y: auto; padding: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; }
+  .icon-library .icon-cell { aspect-ratio: 1; background: #1a1208; border: 1px solid var(--border); border-radius: 3px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: all 0.15s; }
+  .icon-library .icon-cell:hover { border-color: var(--gold); background: #2a1a08; transform: scale(1.05); }
+  .icon-library .icon-cell.selected { border-color: var(--gold); box-shadow: 0 0 8px rgba(212,165,116,0.6); background: #3a2a08; }
+  .icon-library .icon-cell img { width: 85%; height: 85%; filter: brightness(0) saturate(100%) invert(76%) sepia(35%) saturate(450%) hue-rotate(2deg) brightness(95%) contrast(85%); pointer-events: none; }
+  .icon-library .icon-empty { padding: 20px; text-align: center; color: var(--muted); font-style: italic; font-size: 12px; grid-column: 1 / -1; }
 
   /* Spells popup */
   #spells-popup { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); width: 460px; max-height: 82vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
@@ -867,6 +882,9 @@
   #recap-textarea:read-only { background: rgba(20,16,12,0.4); cursor: default; }
   .lib-thumb { position: relative; aspect-ratio: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; overflow: hidden; cursor: pointer; }
   .lib-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* When the saved item is a game-icon (SVG), recolor it gold and pad it */
+  .lib-thumb.lib-thumb-icon { background: radial-gradient(circle at 50% 40%, #2a1a08, #0a0604); }
+  .lib-thumb.lib-thumb-icon img { object-fit: contain; padding: 8px; filter: brightness(0) saturate(100%) invert(76%) sepia(35%) saturate(450%) hue-rotate(2deg) brightness(95%) contrast(85%); }
   .lib-thumb:hover { border-color: var(--gold); }
   .lib-thumb .lib-type { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: var(--cream); font-size: 9px; text-align: center; padding: 1px; letter-spacing: 0.05em; text-transform: uppercase; }
   .lib-thumb .lib-del { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); color: var(--danger); border: none; width: 18px; height: 18px; border-radius: 50%; cursor: pointer; font-size: 12px; line-height: 1; padding: 0; opacity: 0; transition: opacity 0.15s; }
@@ -1672,11 +1690,29 @@
         <option value="item">Item / Object</option>
       </select>
     </div>
-    <div class="field">
-      <label>Prompt</label>
-      <textarea id="imggen-prompt" rows="3" style="width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--cream); font-family: inherit; padding: 8px; border-radius: 3px; resize: vertical;" placeholder="A dimly lit dungeon with stone walls and torches..."></textarea>
+
+    <!-- AI Generation flow: shown for map / character / creature -->
+    <div id="imggen-ai-section">
+      <div class="field">
+        <label>Prompt</label>
+        <textarea id="imggen-prompt" rows="3" style="width:100%; background: var(--bg); border: 1px solid var(--border); color: var(--cream); font-family: inherit; padding: 8px; border-radius: 3px; resize: vertical;" placeholder="A dimly lit dungeon with stone walls and torches..."></textarea>
+      </div>
+      <button id="imggen-go" class="primary" style="width:100%; padding: 10px;">Generate</button>
+      <div id="imggen-cooldown-msg" style="display:none; text-align: center; font-size: 11px; color: var(--muted); margin-top: 6px; font-style: italic;"></div>
     </div>
-    <button id="imggen-go" class="primary" style="width:100%; padding: 10px;">Generate</button>
+
+    <!-- Icon library: shown for item type, no AI needed -->
+    <div id="imggen-icon-section" style="display:none;">
+      <div class="icon-library">
+        <div class="search-row">
+          <input type="text" id="icon-search" placeholder="Search icons (sword, ring, potion...)">
+        </div>
+        <div class="cat-chips" id="icon-cats"></div>
+        <div class="icon-grid" id="icon-grid"></div>
+        <div style="font-size: 10px; color: var(--muted); text-align: center; font-style: italic;">Icons from game-icons.net (CC BY 3.0)</div>
+      </div>
+    </div>
+
     <div id="imggen-preview" style="display:none; margin-top: 14px;">
       <img id="imggen-img" style="width:100%; border: 1px solid var(--border); border-radius: 4px; display: block;">
       <div id="imggen-loading" style="text-align: center; color: var(--muted); padding: 40px;">Generating...</div>
@@ -7068,28 +7104,293 @@
     item: 'fantasy item icon, transparent background, high detail, ',
   };
 
+  // ============ GAME-ICONS.NET LIBRARY (offline fantasy icons for items) ============
+  // Free CC BY 3.0 icons from game-icons.net, served via jsdelivr CDN.
+  // Items use this picker instead of AI generation - instant, no rate limits.
+  const GAME_ICONS = [
+    // Weapons
+    { cat: 'weapons', a: 'lorc', n: 'broadsword', label: 'Broadsword' },
+    { cat: 'weapons', a: 'lorc', n: 'plain-dagger', label: 'Dagger' },
+    { cat: 'weapons', a: 'delapouite', n: 'sword', label: 'Sword' },
+    { cat: 'weapons', a: 'lorc', n: 'wood-axe', label: 'Axe' },
+    { cat: 'weapons', a: 'lorc', n: 'bow-arrow', label: 'Bow' },
+    { cat: 'weapons', a: 'delapouite', n: 'crossbow', label: 'Crossbow' },
+    { cat: 'weapons', a: 'lorc', n: 'war-hammer', label: 'War Hammer' },
+    { cat: 'weapons', a: 'lorc', n: 'flanged-mace', label: 'Mace' },
+    { cat: 'weapons', a: 'lorc', n: 'spear-feather', label: 'Spear' },
+    { cat: 'weapons', a: 'lorc', n: 'dripping-knife', label: 'Bloody Knife' },
+    // Armor
+    { cat: 'armor', a: 'lorc', n: 'round-shield', label: 'Round Shield' },
+    { cat: 'armor', a: 'delapouite', n: 'round-shield', label: 'Steel Shield' },
+    { cat: 'armor', a: 'lorc', n: 'full-helmet', label: 'Helmet' },
+    { cat: 'armor', a: 'delapouite', n: 'leather-armor', label: 'Leather Armor' },
+    { cat: 'armor', a: 'delapouite', n: 'breastplate', label: 'Breastplate' },
+    { cat: 'armor', a: 'delapouite', n: 'gauntlet', label: 'Gauntlet' },
+    { cat: 'armor', a: 'delapouite', n: 'boots', label: 'Boots' },
+    // Magic
+    { cat: 'magic', a: 'delapouite', n: 'ring', label: 'Ring' },
+    { cat: 'magic', a: 'delapouite', n: 'amulet', label: 'Amulet' },
+    { cat: 'magic', a: 'delapouite', n: 'wand', label: 'Wand' },
+    { cat: 'magic', a: 'lorc', n: 'orb-wand', label: 'Orb Wand' },
+    { cat: 'magic', a: 'lorc', n: 'crystal-ball', label: 'Crystal Ball' },
+    { cat: 'magic', a: 'delapouite', n: 'staff-head', label: 'Staff' },
+    { cat: 'magic', a: 'lorc', n: 'magic-portal', label: 'Portal' },
+    { cat: 'magic', a: 'lorc', n: 'magic-swirl', label: 'Magic Swirl' },
+    { cat: 'magic', a: 'lorc', n: 'crystal-cluster', label: 'Crystal Cluster' },
+    // Potions & Books
+    { cat: 'potions', a: 'delapouite', n: 'potion', label: 'Potion' },
+    { cat: 'potions', a: 'lorc', n: 'scroll', label: 'Scroll' },
+    { cat: 'potions', a: 'lorc', n: 'scroll-unfurled', label: 'Unfurled Scroll' },
+    { cat: 'potions', a: 'lorc', n: 'spell-book', label: 'Spellbook' },
+    { cat: 'potions', a: 'lorc', n: 'open-book', label: 'Book' },
+    { cat: 'potions', a: 'lorc', n: 'wax-tablet', label: 'Tablet' },
+    // Tools
+    { cat: 'tools', a: 'delapouite', n: 'key', label: 'Key' },
+    { cat: 'tools', a: 'delapouite', n: 'torch', label: 'Torch' },
+    { cat: 'tools', a: 'lorc', n: 'rope-coil', label: 'Rope' },
+    { cat: 'tools', a: 'lorc', n: 'oil-lamp', label: 'Oil Lamp' },
+    { cat: 'tools', a: 'lorc', n: 'compass', label: 'Compass' },
+    { cat: 'tools', a: 'delapouite', n: 'spyglass', label: 'Spyglass' },
+    { cat: 'tools', a: 'delapouite', n: 'padlock', label: 'Padlock' },
+    // Treasure
+    { cat: 'treasure', a: 'delapouite', n: 'treasure-chest', label: 'Chest' },
+    { cat: 'treasure', a: 'lorc', n: 'open-chest', label: 'Open Chest' },
+    { cat: 'treasure', a: 'lorc', n: 'two-coins', label: 'Coins' },
+    { cat: 'treasure', a: 'delapouite', n: 'cut-diamond', label: 'Diamond' },
+    { cat: 'treasure', a: 'delapouite', n: 'crown', label: 'Crown' },
+    { cat: 'treasure', a: 'lorc', n: 'gold-bar', label: 'Gold Bar' },
+    // Misc
+    { cat: 'misc', a: 'lorc', n: 'death-skull', label: 'Skull' },
+    { cat: 'misc', a: 'lorc', n: 'animal-skull', label: 'Animal Skull' },
+    { cat: 'misc', a: 'delapouite', n: 'raven', label: 'Raven' },
+    { cat: 'misc', a: 'lorc', n: 'feather-wing', label: 'Feather' },
+    { cat: 'misc', a: 'lorc', n: 'cooked-meat', label: 'Meat' },
+    { cat: 'misc', a: 'delapouite', n: 'bread', label: 'Bread' },
+    { cat: 'misc', a: 'delapouite', n: 'medical-pack', label: 'Med Pack' },
+    { cat: 'misc', a: 'lorc', n: 'candle-flame', label: 'Candle' },
+  ];
+  const ICON_CATS = ['all', 'weapons', 'armor', 'magic', 'potions', 'tools', 'treasure', 'misc'];
+  const iconUrl = (icon) => `https://cdn.jsdelivr.net/gh/game-icons/icons@master/${icon.a}/${icon.n}.svg`;
+
+  let iconLibState = { cat: 'all', search: '', selected: null };
+
+  function renderIconCats() {
+    const el = document.getElementById('icon-cats');
+    if (!el) return;
+    el.innerHTML = ICON_CATS.map(c => `<span class="cat-chip ${c === iconLibState.cat ? 'active' : ''}" data-cat="${c}">${c}</span>`).join('');
+    el.querySelectorAll('.cat-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        iconLibState.cat = chip.dataset.cat;
+        renderIconCats();
+        renderIconGrid();
+      });
+    });
+  }
+
+  function renderIconGrid() {
+    const grid = document.getElementById('icon-grid');
+    if (!grid) return;
+    const search = iconLibState.search.toLowerCase();
+    const filtered = GAME_ICONS.filter(ic => {
+      if (iconLibState.cat !== 'all' && ic.cat !== iconLibState.cat) return false;
+      if (search && !ic.label.toLowerCase().includes(search) && !ic.n.includes(search)) return false;
+      return true;
+    });
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div class="icon-empty">No icons match that search.</div>';
+      return;
+    }
+    grid.innerHTML = filtered.map(ic => `<div class="icon-cell" data-icon="${ic.a}/${ic.n}" title="${escapeHtml(ic.label)}"><img src="${iconUrl(ic)}" alt="${escapeHtml(ic.label)}" loading="lazy"></div>`).join('');
+    grid.querySelectorAll('.icon-cell').forEach(cell => {
+      cell.addEventListener('click', async () => {
+        grid.querySelectorAll('.icon-cell').forEach(c => c.classList.remove('selected'));
+        cell.classList.add('selected');
+        const [a, n] = cell.dataset.icon.split('/');
+        const icon = GAME_ICONS.find(ic => ic.a === a && ic.n === n);
+        iconLibState.selected = icon;
+        await showIconAsPreview(icon);
+      });
+    });
+  }
+
+  // Convert a game-icon SVG into a 256×256 dark-circle token PNG and put it
+  // into the preview slot so the user can confirm + Add as Token / Show All.
+  async function showIconAsPreview(icon) {
+    document.getElementById('imggen-preview').style.display = 'block';
+    document.getElementById('imggen-loading').style.display = 'block';
+    document.getElementById('imggen-loading').textContent = 'Preparing icon...';
+    document.getElementById('imggen-img').style.display = 'none';
+    document.getElementById('imggen-actions').style.display = 'none';
+    try {
+      const svgUrl = iconUrl(icon);
+      // Fetch SVG text so we can recolor it
+      const resp = await fetch(svgUrl);
+      if (!resp.ok) throw new Error('Icon fetch failed');
+      let svgText = await resp.text();
+      // Recolor: game-icons are black silhouettes. Replace fills with gold.
+      const gold = '#d4a574';
+      svgText = svgText.replace(/fill="(?!none)[^"]*"/g, `fill="${gold}"`);
+      if (!/<svg[^>]*fill=/.test(svgText)) {
+        svgText = svgText.replace(/<svg /, `<svg fill="${gold}" `);
+      }
+      const blob = new Blob([svgText], { type: 'image/svg+xml' });
+      const svgObjUrl = URL.createObjectURL(blob);
+      const svgImg = new Image();
+      await new Promise((resolve, reject) => {
+        svgImg.onload = resolve;
+        svgImg.onerror = reject;
+        svgImg.src = svgObjUrl;
+      });
+      // Render into a 256×256 canvas with a dark circular background
+      const canvas = document.createElement('canvas');
+      canvas.width = 256; canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      // Dark background circle with subtle gradient
+      const grad = ctx.createRadialGradient(128, 100, 20, 128, 128, 128);
+      grad.addColorStop(0, '#2a1a08');
+      grad.addColorStop(1, '#0a0604');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(128, 128, 126, 0, Math.PI * 2);
+      ctx.fill();
+      // Gold border ring
+      ctx.strokeStyle = gold;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(128, 128, 124, 0, Math.PI * 2);
+      ctx.stroke();
+      // Draw icon centered with padding
+      const pad = 44;
+      ctx.drawImage(svgImg, pad, pad, 256 - pad * 2, 256 - pad * 2);
+      URL.revokeObjectURL(svgObjUrl);
+      // Export as JPEG blob
+      const tokenBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+      const previewUrl = URL.createObjectURL(tokenBlob);
+      // Store blob + a stable identifier-style "url" for library tracking
+      imgGenState.type = 'item';
+      imgGenState.prompt = icon.label;
+      imgGenState.url = `icon:${icon.a}/${icon.n}`;
+      imgGenState.objectUrl = previewUrl;
+      imgGenState.iconBlob = tokenBlob;
+      // Show preview
+      const img = document.getElementById('imggen-img');
+      img.src = previewUrl;
+      img.style.display = 'block';
+      document.getElementById('imggen-loading').style.display = 'none';
+      document.getElementById('imggen-actions').style.display = 'flex';
+      // Hide map button for icons - icons aren't suitable maps
+      const mapBtn = document.getElementById('imggen-as-map');
+      if (mapBtn) mapBtn.style.display = 'none';
+      const regenBtn = document.getElementById('imggen-regen');
+      if (regenBtn) regenBtn.style.display = 'none';
+      // Save to library so it's one click next time
+      libraryAdd({
+        url: imgGenState.url,
+        type: 'item',
+        prompt: icon.label,
+        ts: Date.now(),
+      });
+    } catch (e) {
+      console.error('Icon preview failed', e);
+      document.getElementById('imggen-loading').textContent = 'Icon failed to load. Try another.';
+    }
+  }
+
+  function showImggenForType(type) {
+    const isItem = type === 'item';
+    document.getElementById('imggen-ai-section').style.display = isItem ? 'none' : 'block';
+    document.getElementById('imggen-icon-section').style.display = isItem ? 'block' : 'none';
+    // Reset preview when switching types
+    document.getElementById('imggen-preview').style.display = 'none';
+    document.getElementById('imggen-actions').style.display = 'none';
+    // Restore map button (gets hidden when an icon is picked)
+    const mapBtn = document.getElementById('imggen-as-map');
+    if (mapBtn) mapBtn.style.display = (type === 'map') ? 'block' : 'none';
+    const regenBtn = document.getElementById('imggen-regen');
+    if (regenBtn) regenBtn.style.display = isItem ? 'none' : 'block';
+    if (isItem) {
+      renderIconCats();
+      renderIconGrid();
+    }
+  }
+
+  // ============ AI GEN COOLDOWN ============
+  // Pollinations rate-limits free tier; a visible cooldown stops users from
+  // hammering it and getting 429s. Stored in localStorage so it persists
+  // across popup closes and page refreshes.
+  const COOLDOWN_MS = 25000;
+  let cooldownTimer = null;
+
+  function getCooldownRemaining() {
+    const until = parseInt(localStorage.getItem('vtt_imggen_cooldown_until') || '0');
+    return Math.max(0, until - Date.now());
+  }
+
+  function startCooldown() {
+    localStorage.setItem('vtt_imggen_cooldown_until', String(Date.now() + COOLDOWN_MS));
+    updateCooldownUI();
+  }
+
+  function updateCooldownUI() {
+    const goBtn = document.getElementById('imggen-go');
+    const msg = document.getElementById('imggen-cooldown-msg');
+    if (!goBtn || !msg) return;
+    const remaining = getCooldownRemaining();
+    if (remaining <= 0) {
+      goBtn.disabled = false;
+      goBtn.textContent = 'Generate';
+      msg.style.display = 'none';
+      if (cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null; }
+      return;
+    }
+    goBtn.disabled = true;
+    const sec = Math.ceil(remaining / 1000);
+    goBtn.textContent = `Wait ${sec}s`;
+    msg.style.display = 'block';
+    msg.textContent = `Rate-limited by free service. Please wait ${sec}s before generating again.`;
+    if (!cooldownTimer) {
+      cooldownTimer = setInterval(updateCooldownUI, 250);
+    }
+  }
+
+  // ============ IMAGE GEN MAIN FLOW ============
   let imgGenState = { type: 'map', prompt: '', url: '', seed: 0 };
 
   document.getElementById('imggen-btn').addEventListener('click', () => {
     document.getElementById('imggen-popup').classList.add('active');
     renderLibrary();
+    showImggenForType(document.getElementById('imggen-type').value);
+    updateCooldownUI();
   });
   document.getElementById('imggen-close').addEventListener('click', () => {
     document.getElementById('imggen-popup').classList.remove('active');
   });
-  // Type listener no longer needed (no mode selector); kept as no-op for safety.
-  document.getElementById('imggen-type').addEventListener('change', () => {});
+  document.getElementById('imggen-type').addEventListener('change', (e) => {
+    showImggenForType(e.target.value);
+  });
+  // Icon search input
+  document.getElementById('icon-search').addEventListener('input', (e) => {
+    iconLibState.search = e.target.value;
+    renderIconGrid();
+  });
 
   document.getElementById('imggen-go').addEventListener('click', () => {
+    if (getCooldownRemaining() > 0) return; // button is disabled but be safe
     const type = document.getElementById('imggen-type').value;
     const promptText = document.getElementById('imggen-prompt').value.trim();
     if (!promptText) { toast('Enter a prompt first', 'error'); return; }
     imgGenState = { type, prompt: promptText, seed: Math.floor(Math.random() * 1000000) };
     runImgGen();
+    startCooldown();
   });
   document.getElementById('imggen-regen').addEventListener('click', () => {
+    if (getCooldownRemaining() > 0) {
+      toast(`Wait ${Math.ceil(getCooldownRemaining() / 1000)}s before regenerating`, 'error');
+      return;
+    }
     imgGenState.seed = Math.floor(Math.random() * 1000000);
     runImgGen();
+    startCooldown();
   });
 
   const IMG_MODELS = ['turbo', 'flux'];
@@ -7227,25 +7528,36 @@
       return;
     }
     empty.style.display = 'none';
-    grid.innerHTML = lib.map(e => `
-      <div class="lib-thumb" data-url="${escapeHtml(e.url)}" data-type="${escapeHtml(e.type)}" title="${escapeHtml(e.prompt || '')}">
-        <img src="${escapeHtml(e.url)}" alt="">
-        <button class="lib-del" title="Remove">×</button>
-        <div class="lib-type">${escapeHtml(e.type)}</div>
-      </div>
-    `).join('');
+    grid.innerHTML = lib.map(e => {
+      // Library entries with url="icon:author/name" are game-icons entries.
+      // Display the raw SVG for the thumbnail (with gold filter via CSS).
+      let displayUrl = e.url;
+      let iconClass = '';
+      if (typeof e.url === 'string' && e.url.startsWith('icon:')) {
+        const path = e.url.slice(5);
+        displayUrl = `https://cdn.jsdelivr.net/gh/game-icons/icons@master/${path}.svg`;
+        iconClass = 'lib-thumb-icon';
+      }
+      return `
+        <div class="lib-thumb ${iconClass}" data-url="${escapeHtml(e.url)}" data-type="${escapeHtml(e.type)}" title="${escapeHtml(e.prompt || '')}">
+          <img src="${escapeHtml(displayUrl)}" alt="">
+          <button class="lib-del" title="Remove">×</button>
+          <div class="lib-type">${escapeHtml(e.type)}</div>
+        </div>
+      `;
+    }).join('');
   }
 
   // Common path: upload a generated image as the active map slot
   // Helper: get the most recent generated image as a blob.
-  // Prefers the cached objectUrl (avoiding a redundant network round-trip
-  // and any rate-limit cliff Pollinations might hit).
+  // Order of preference: pre-built icon blob > cached blob URL > re-fetch URL.
   async function getGeneratedBlob() {
+    if (imgGenState.iconBlob) return imgGenState.iconBlob;
     if (imgGenState.objectUrl) {
       try {
         const r = await fetch(imgGenState.objectUrl);
         return await r.blob();
-      } catch (e) { /* fall through to URL fetch */ }
+      } catch (e) { /* fall through */ }
     }
     const r = await fetch(imgGenState.url);
     return await r.blob();
@@ -7326,7 +7638,7 @@
   });
 
   // Library: click thumbnail to load it back into the preview
-  document.getElementById('imggen-library-grid').addEventListener('click', (e) => {
+  document.getElementById('imggen-library-grid').addEventListener('click', async (e) => {
     const del = e.target.closest('.lib-del');
     if (del) {
       e.stopPropagation();
@@ -7336,10 +7648,24 @@
     }
     const thumb = e.target.closest('.lib-thumb');
     if (!thumb) return;
-    imgGenState = { type: thumb.dataset.type, prompt: '', seed: 0, url: thumb.dataset.url };
+    const url = thumb.dataset.url;
+    const type = thumb.dataset.type;
+    // Saved game-icon entry - rebuild the token blob from the SVG so the user
+    // can immediately Add as Token / Show All without re-picking from the grid.
+    if (typeof url === 'string' && url.startsWith('icon:')) {
+      const [a, n] = url.slice(5).split('/');
+      const icon = GAME_ICONS.find(ic => ic.a === a && ic.n === n) || { a, n, label: n.replace(/-/g, ' ') };
+      // Switch the popup to item mode visually
+      document.getElementById('imggen-type').value = 'item';
+      showImggenForType('item');
+      await showIconAsPreview(icon);
+      return;
+    }
+    // Regular AI-generated image (URL)
+    imgGenState = { type, prompt: '', seed: 0, url };
     const img = document.getElementById('imggen-img');
     img.style.display = 'block';
-    img.src = thumb.dataset.url;
+    img.src = url;
     document.getElementById('imggen-loading').style.display = 'none';
     document.getElementById('imggen-preview').style.display = 'block';
     document.getElementById('imggen-actions').style.display = 'flex';
@@ -7574,15 +7900,16 @@
     e.preventDefault();
     e.stopPropagation();
     const pos = getEventPos(e);
-    const mp = screenToMap(pos.x, pos.y);
-    const ox = (STATE.map && STATE.map.offset_x) || 0;
-    const oy = (STATE.map && STATE.map.offset_y) || 0;
+    // Snap-to-cursor: the token's center will track the mouse exactly. This
+    // is how Roll20 and most VTTs behave - it feels more predictable than
+    // preserving the click offset (which makes the token appear to "lag"
+    // when you grab an edge).
     STATE.dragging = {
       token: { ...tok },
       startX: tok.x,
       startY: tok.y,
-      offsetX: mp.x - tok.x - ox,
-      offsetY: mp.y - tok.y - oy,
+      offsetX: 0,
+      offsetY: 0,
       initMouseX: pos.x,
       initMouseY: pos.y,
       moved: false,
