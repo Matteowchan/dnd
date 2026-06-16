@@ -2334,7 +2334,7 @@
         reader.readAsDataURL(blob);
       });
     }
-    const { error } = await sb.storage.from(STORAGE_BUCKET).upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+    const { error } = await sb.storage.from(STORAGE_BUCKET).upload(path, blob, { upsert: true, contentType: blob.type || 'image/jpeg' });
     if (error) throw error;
     const { data } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
     return data.publicUrl;
@@ -7322,21 +7322,18 @@
   }
 
   function showImggenForType(type) {
-    const isItem = type === 'item';
-    document.getElementById('imggen-ai-section').style.display = isItem ? 'none' : 'block';
-    document.getElementById('imggen-icon-section').style.display = isItem ? 'block' : 'none';
+    // Tum tipler AI uretimi kullanir. Icon kutuphanesi devre disi.
+    document.getElementById('imggen-ai-section').style.display = 'block';
+    const iconSec = document.getElementById('imggen-icon-section');
+    if (iconSec) iconSec.style.display = 'none';
     // Reset preview when switching types
     document.getElementById('imggen-preview').style.display = 'none';
     document.getElementById('imggen-actions').style.display = 'none';
-    // Restore map button (gets hidden when an icon is picked)
+    // Set as Map sadece harita tipinde mantikli
     const mapBtn = document.getElementById('imggen-as-map');
     if (mapBtn) mapBtn.style.display = (type === 'map') ? 'block' : 'none';
     const regenBtn = document.getElementById('imggen-regen');
-    if (regenBtn) regenBtn.style.display = isItem ? 'none' : 'block';
-    if (isItem) {
-      renderIconCats();
-      renderIconGrid();
-    }
+    if (regenBtn) regenBtn.style.display = 'block';
   }
 
   // ============ AI GEN COOLDOWN ============
@@ -7372,7 +7369,7 @@
     const sec = Math.ceil(remaining / 1000);
     goBtn.textContent = `Wait ${sec}s`;
     msg.style.display = 'block';
-    msg.textContent = `Rate-limited by free service. Please wait ${sec}s before generating again.`;
+    msg.textContent = `Please wait ${sec}s before generating again.`;
     if (!cooldownTimer) {
       cooldownTimer = setInterval(updateCooldownUI, 250);
     }
@@ -7418,97 +7415,97 @@
     startCooldown();
   });
 
-  const IMG_MODELS = ['turbo', 'flux'];
+  // ============ IMAGE GEN MAIN FLOW (Supabase Edge Function -> OpenAI) ============
   let imgGenSeq = 0;
   let imgGenInFlight = false;
 
+  const IMGGEN_FN_URL = `${SUPABASE_URL}/functions/v1/generate-image`;
+  const GEN_MIME_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+
   async function runImgGen() {
-    if (imgGenInFlight) {
-      toast('A generation is already running, please wait', 'error');
-      return;
-    }
-    const fullPrompt = IMG_GEN_PROMPTS[imgGenState.type] + imgGenState.prompt;
-    const w = (imgGenState.type === 'map') ? 1024 : 768;
-    const h = w;
+    if (imgGenInFlight) { toast('A generation is already running, please wait', 'error'); return; }
+
     imgGenSeq++;
     const mySeq = imgGenSeq;
     imgGenInFlight = true;
 
     const img = document.getElementById('imggen-img');
-    img.onload = null;
-    img.onerror = null;
+    img.onload = null; img.onerror = null;
     if (img.src && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
     img.removeAttribute('src');
     img.style.display = 'none';
+    document.getElementById('imggen-loading').textContent = 'Generating...';
     document.getElementById('imggen-loading').style.display = 'block';
     document.getElementById('imggen-preview').style.display = 'block';
     document.getElementById('imggen-actions').style.display = 'none';
     document.getElementById('imggen-status').style.display = 'none';
 
     try {
-      await tryFetch(fullPrompt, w, h, 0, mySeq);
-    } finally {
-      if (mySeq === imgGenSeq) imgGenInFlight = false;
-    }
-  }
-
-  async function tryFetch(prompt, w, h, modelIdx, mySeq) {
-    if (mySeq !== imgGenSeq) return;
-    if (modelIdx >= IMG_MODELS.length) {
-      document.getElementById('imggen-loading').textContent = 'Generation failed. The free image service may be rate-limited - wait 30 seconds and try again.';
-      return;
-    }
-    const model = IMG_MODELS[modelIdx];
-    document.getElementById('imggen-loading').textContent = `Generating with ${model} (${modelIdx + 1}/${IMG_MODELS.length})...`;
-
-    const cacheBust = imgGenState.seed + modelIdx * 1000 + mySeq * 7919;
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${cacheBust}&model=${model}&nologo=true&safe=false`;
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 45000);
-    try {
-      const resp = await fetch(url, { signal: controller.signal, mode: 'cors' });
-      clearTimeout(timer);
-      if (mySeq !== imgGenSeq) return;
-      if (!resp.ok) {
-        console.warn(`${model} returned HTTP ${resp.status}, falling back`);
-        return tryFetch(prompt, w, h, modelIdx + 1, mySeq);
+      if (DEMO_MODE) {
+        document.getElementById('imggen-loading').textContent =
+          'Image generation runs on the live site only (needs the backend).';
+        return;
       }
-      const blob = await resp.blob();
+
+      // DM nin serbest prompt'u + tip, OpenAI anahtari sunucuda kalir
+      const resp = await fetch(IMGGEN_FN_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'apikey': SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ type: imgGenState.type, prompt: imgGenState.prompt }),
+      });
+      const data = await resp.json().catch(() => ({}));
       if (mySeq !== imgGenSeq) return;
-      if (!blob || blob.size < 2000) {
-        // Anything under 2KB is almost certainly a tiny placeholder or error page
-        console.warn(`${model} returned suspiciously small blob (${blob.size}b), falling back`);
-        return tryFetch(prompt, w, h, modelIdx + 1, mySeq);
+
+      if (!resp.ok || !data.ok) {
+        const detail = (data && (data.detail || data.error)) || `HTTP ${resp.status}`;
+        document.getElementById('imggen-loading').textContent = `Generation failed: ${detail}`;
+        return;
       }
-      const objectUrl = URL.createObjectURL(blob);
-      imgGenState.url = url; // Keep the original URL so it can be shared / re-fetched later
-      imgGenState.objectUrl = objectUrl;
-      const img = document.getElementById('imggen-img');
-      img.onload = () => {
+
+      const dataUri = data.image_data_uri || data.image_url;
+      if (!dataUri) {
+        document.getElementById('imggen-loading').textContent = 'Generation failed: empty response';
+        return;
+      }
+
+      img.onload = async () => {
         if (mySeq !== imgGenSeq) return;
         img.style.display = 'block';
         document.getElementById('imggen-loading').style.display = 'none';
         document.getElementById('imggen-actions').style.display = 'flex';
-        libraryAdd({
-          url: imgGenState.url,
-          type: imgGenState.type,
-          prompt: imgGenState.prompt,
-          ts: Date.now(),
-        });
+        // Butonlar hemen calissin diye anlik fallback
+        imgGenState.url = dataUri;
+        imgGenState.objectUrl = dataUri;
+        imgGenState.iconBlob = null;
+        // Kalici depolama: vtt-images bucket'ina yukle, library buna isaret etsin
+        try {
+          const blob = await (await fetch(dataUri)).blob();
+          if (mySeq !== imgGenSeq) return;
+          const ext = GEN_MIME_EXT[data.mime] || 'png';
+          const path = `${STATE.sessionId}/generated/${genId()}.${ext}`;
+          const storageUrl = await uploadImage(blob, path);
+          imgGenState.url = storageUrl;
+          libraryAdd({ url: storageUrl, type: imgGenState.type, prompt: imgGenState.prompt, ts: Date.now() });
+        } catch (e) {
+          console.error('persist failed, keeping data uri', e);
+          libraryAdd({ url: dataUri, type: imgGenState.type, prompt: imgGenState.prompt, ts: Date.now() });
+        }
       };
       img.onerror = () => {
         if (mySeq !== imgGenSeq) return;
-        console.warn(`${model} blob decoded as invalid, falling back`);
-        URL.revokeObjectURL(objectUrl);
-        tryFetch(prompt, w, h, modelIdx + 1, mySeq);
+        document.getElementById('imggen-loading').textContent = 'Image failed to decode. Try again.';
       };
-      img.src = objectUrl;
+      img.src = dataUri;
     } catch (err) {
-      clearTimeout(timer);
       if (mySeq !== imgGenSeq) return;
-      console.warn(`${model} fetch failed:`, err && err.message, '- falling back');
-      tryFetch(prompt, w, h, modelIdx + 1, mySeq);
+      console.error('imggen error', err);
+      document.getElementById('imggen-loading').textContent = 'Generation failed. Check the function logs.';
+    } finally {
+      if (mySeq === imgGenSeq) imgGenInFlight = false;
     }
   }
 
