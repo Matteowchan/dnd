@@ -735,6 +735,18 @@
   .stat-box input { width: 100%; background: transparent; border: none; color: var(--cream); font-family: 'Cinzel', serif; font-size: 16px; font-weight: 600; text-align: center; padding: 2px 0; }
   .stat-box input:focus { background: var(--bg); }
   .stat-box .mod { font-size: 11px; color: var(--gold); margin-top: 2px; }
+  /* Auto-roll affordances (item 1) */
+  .stat-box { cursor: pointer; }
+  .stat-box:hover { border-color: var(--gold-soft); }
+  .stat-box input { cursor: text; }
+  .skill-row, .save-row { cursor: pointer; }
+  .skill-row:hover, .save-row:hover { background: rgba(212,165,116,0.08); }
+  .skill-row .bonus-extra, .save-row .bonus-extra, .skill-row .prof-toggle, .save-row .prof-toggle { cursor: pointer; }
+  .skill-row .bonus-extra, .save-row .bonus-extra { cursor: text; }
+  #char-init:hover { color: var(--gold); }
+  .magic-roll-btns { display: inline-flex; gap: 4px; margin-left: auto; }
+  .magic-roll-btns button { font-size: 10px; padding: 2px 7px; border: 1px solid var(--gold-soft); background: var(--panel-light); color: var(--gold); border-radius: 3px; cursor: pointer; font-family: 'Cinzel', serif; letter-spacing: 0.03em; }
+  .magic-roll-btns button:hover { background: var(--gold); color: #1a1612; }
 
   .char-notes label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
   .char-notes textarea { width: 100%; min-height: 70px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); font-family: inherit; font-size: 13px; padding: 8px; border-radius: 3px; resize: vertical; }
@@ -3617,6 +3629,7 @@
       .on('broadcast', { event: 'effect-clear' }, ({ payload }) => handleRemoteEffectClear(payload))
       .on('broadcast', { event: 'show-image' }, ({ payload }) => showSharedImagePopup(payload))
       .on('broadcast', { event: 'rtc-signal' }, ({ payload }) => handleRtcSignal(payload))
+      .on('broadcast', { event: 'init-roll' }, ({ payload }) => { if (STATE.isHost) hostApplyInitRoll(payload); })
       .on('presence', { event: 'sync' }, handlePresenceSync)
       .subscribe(async (status) => {
         const ind = document.getElementById('conn-indicator');
@@ -4602,6 +4615,167 @@
     return profBonusForLevel(lv);
   }
 
+  // ============ SHEET AUTO-ROLLS (item 1) ============
+  // All of these route through rollDice so advantage/disadvantage, buffs and
+  // Heroic Inspiration are applied consistently, and they post labeled to chat.
+  function skillTotalFromSheet(key) {
+    const s = SKILLS_DEF.find(x => x.key === key);
+    if (!s) return 0;
+    const pb = getProfBonus();
+    const mod = statMod(getCharStat(s.stat));
+    const isExp = CHAR_POPUP.skillExpertise && CHAR_POPUP.skillExpertise.has(key);
+    const isProf = (CHAR_POPUP.skillProfs && CHAR_POPUP.skillProfs.has(key)) || isExp;
+    const profPart = isExp ? pb * 2 : (isProf ? pb : 0);
+    const extra = parseInt(CHAR_POPUP.skillOverrides && CHAR_POPUP.skillOverrides[key]) || 0;
+    return mod + profPart + extra;
+  }
+  function saveTotalFromSheet(stat) {
+    const pb = getProfBonus();
+    const mod = statMod(getCharStat(stat));
+    const isExp = CHAR_POPUP.saveExpertise && CHAR_POPUP.saveExpertise.has(stat);
+    const isProf = (CHAR_POPUP.saveProfs && CHAR_POPUP.saveProfs.has(stat)) || isExp;
+    const profPart = isExp ? pb * 2 : (isProf ? pb : 0);
+    const extra = parseInt(CHAR_POPUP.saveOverrides && CHAR_POPUP.saveOverrides[stat]) || 0;
+    return mod + profPart + extra;
+  }
+  function parseAttackBonus(str) {
+    if (str == null) return 0;
+    const m = String(str).match(/-?\d+/);
+    return m ? parseInt(m[0]) : 0;
+  }
+  // Parse a damage string like "1d8+3 slashing" or "2d6 + 1d4 + 2".
+  // Returns the dice terms and the summed flat modifier. Words are ignored.
+  function parseDamageExpr(expr) {
+    const s = String(expr || '');
+    const dice = [];
+    const diceRe = /(\d*)d(\d+)/gi;
+    let mt;
+    while ((mt = diceRe.exec(s)) !== null) {
+      dice.push({ count: parseInt(mt[1] || '1'), sides: parseInt(mt[2]) });
+    }
+    let flat = 0;
+    const noDice = s.replace(/(\d*)d(\d+)/gi, ' ');
+    const flatRe = /[+-]?\d+/g;
+    let fm;
+    while ((fm = flatRe.exec(noDice)) !== null) flat += parseInt(fm[0]);
+    return { dice, flat };
+  }
+  async function rollDamage(expr, label) {
+    const { dice, flat } = parseDamageExpr(expr);
+    if (dice.length === 0 && flat === 0) { toast('No damage dice to roll', 'error'); return; }
+    // Single die type plus flat -> reuse the dice engine and its animation.
+    if (dice.length <= 1) {
+      const d = dice[0] || { count: 0, sides: 0 };
+      if (d.count > 0) { await rollDice(d.sides, d.count, flat, false, label); return; }
+    }
+    // Mixed dice -> roll manually and post a chat line.
+    let total = 0;
+    const parts = [];
+    dice.forEach(d => {
+      const rolls = [];
+      for (let i = 0; i < d.count; i++) { const r = Math.floor(Math.random() * d.sides) + 1; rolls.push(r); total += r; }
+      parts.push(`${d.count}d${d.sides}[${rolls.join(',')}]`);
+    });
+    total += flat;
+    const txt = `${label}: ${parts.join(' + ')}${flat ? (flat >= 0 ? ' +' : ' ') + flat : ''} = ${total}`;
+    await sb.from('vtt_chat').insert({
+      id: genId(), session_id: STATE.sessionId, user_id: STATE.userId,
+      user_name: STATE.username, is_host: STATE.isHost, msg_type: 'system',
+      text: txt, ts: nowTs(),
+    });
+  }
+  function rollInitiativeFromSheet() {
+    const dexMod = statMod(getCharStat('dex'));
+    rollDice(20, 1, dexMod, false, 'Initiative').then(res => {
+      if (!res) return;
+      const pid = CHAR_POPUP.targetPlayerId;
+      const player = STATE.persistedPlayers.find(p => p.id === pid);
+      const name = (player && player.name) || STATE.username;
+      const tok = pid ? Array.from(STATE.tokens.values()).find(t => t.owner_id === pid) : null;
+      const payload = {
+        ownerId: pid || null,
+        tokenId: tok ? tok.id : null,
+        name,
+        init: res.total,
+        dex: dexMod,
+        hp: tok && tok.current_hp != null ? tok.current_hp : null,
+        maxHp: tok && tok.max_hp != null ? tok.max_hp : null,
+        portrait: tok ? (tok.image_url || '') : '',
+      };
+      if (STATE.isHost) hostApplyInitRoll(payload);
+      else if (STATE.channel) STATE.channel.send({ type: 'broadcast', event: 'init-roll', payload });
+    });
+  }
+  // Host folds a player's rolled initiative into the shared tracker.
+  async function hostApplyInitRoll(p) {
+    if (!STATE.isHost || !p) return;
+    if (!STATE.initiative.active) STATE.initiative = { active: true, round: 1, turn: 0, entries: [] };
+    const entries = STATE.initiative.entries;
+    let e = entries.find(x => (p.ownerId && x.ownerId === p.ownerId) || (p.tokenId && x.tokenId === p.tokenId));
+    if (e) { e.init = p.init; e.dex = p.dex; if (p.name) e.name = p.name; }
+    else {
+      entries.push({
+        tokenId: p.tokenId || null, ownerId: p.ownerId || null, name: p.name || 'Player',
+        init: p.init, dex: p.dex || 0,
+        hp: p.hp != null ? p.hp : null, maxHp: p.maxHp != null ? p.maxHp : null,
+        portrait: p.portrait || '', isNpc: false, downed: false,
+      });
+    }
+    STATE.initiative.entries = sortInitiativeEntries(STATE.initiative.entries);
+    renderInitiative();
+    if (typeof renderTokens === 'function') renderTokens();
+    await saveInitiative();
+    toast(`${p.name} initiative ${p.init}`);
+  }
+
+  // Wire the clickable sheet elements once (containers are static in the DOM).
+  function setupSheetRolls() {
+    const savesGrid = document.getElementById('saves-grid');
+    if (savesGrid) savesGrid.addEventListener('click', (e) => {
+      if (e.target.closest('.prof-toggle') || e.target.tagName === 'INPUT') return;
+      const row = e.target.closest('.save-row');
+      if (!row) return;
+      const stat = row.dataset.stat;
+      rollDice(20, 1, saveTotalFromSheet(stat), false, `${stat.toUpperCase()} save`);
+    });
+    const skillsGrid = document.getElementById('skills-grid');
+    if (skillsGrid) skillsGrid.addEventListener('click', (e) => {
+      if (e.target.closest('.prof-toggle') || e.target.tagName === 'INPUT') return;
+      const row = e.target.closest('.skill-row');
+      if (!row) return;
+      const key = row.dataset.skill;
+      const s = SKILLS_DEF.find(x => x.key === key);
+      rollDice(20, 1, skillTotalFromSheet(key), false, `${s ? s.name : key} check`);
+    });
+    const stats = document.querySelector('.char-stats');
+    if (stats) stats.addEventListener('click', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      const box = e.target.closest('.stat-box');
+      if (!box) return;
+      const input = box.querySelector('input');
+      if (!input) return;
+      const stat = input.id.replace('char-', '');
+      rollDice(20, 1, statMod(getCharStat(stat)), false, `${stat.toUpperCase()} check`);
+    });
+    const initBox = document.getElementById('char-init');
+    if (initBox) {
+      initBox.style.cursor = 'pointer';
+      initBox.title = 'Roll initiative';
+      initBox.addEventListener('click', rollInitiativeFromSheet);
+    }
+    const attList = document.getElementById('attacks-list');
+    if (attList) attList.addEventListener('click', (e) => {
+      const atk = e.target.closest('.atk-roll');
+      const dmg = e.target.closest('.dmg-roll');
+      if (!atk && !dmg) return;
+      const i = parseInt((atk || dmg).dataset.i);
+      const a = CHAR_POPUP.magic && CHAR_POPUP.magic.attacks && CHAR_POPUP.magic.attacks[i];
+      if (!a) return;
+      if (atk) rollDice(20, 1, parseAttackBonus(a.bonus), false, `Attack: ${a.name}`);
+      else rollDamage(a.dmg, `Damage: ${a.name}`);
+    });
+  }
+
   function renderSaves(saveProfs) {
     const grid = document.getElementById('saves-grid');
     grid.innerHTML = '';
@@ -4838,6 +5012,10 @@
         row.className = 'magic-row';
         row.innerHTML = `
           <div class="name">${escapeHtml(a.name)} <span class="meta">${escapeHtml(a.bonus || '')} · ${escapeHtml(a.dmg || '')}</span></div>
+          <span class="magic-roll-btns">
+            <button class="atk-roll" data-i="${i}" title="Attack roll: d20 + bonus">Atk</button>
+            <button class="dmg-roll" data-i="${i}" title="Roll damage">Dmg</button>
+          </span>
           ${canEdit ? `<button class="del" data-i="${i}" data-kind="att" title="Remove">×</button>` : ''}
         `;
         attList.appendChild(row);
@@ -5097,6 +5275,10 @@
     const popup = document.getElementById('char-popup');
     popup.classList.add('active');
     popup.classList.remove('collapsed');
+    // Players must not be able to close their own panel (it had no reopen path).
+    // Only the host gets the hide button; the host reopens via token / HP row.
+    const closeBtn = document.getElementById('char-popup-close');
+    if (closeBtn) closeBtn.style.display = STATE.isHost ? '' : 'none';
     document.body.classList.remove('right-bar-collapsed');
     const rb = document.getElementById('right-bar');
     if (rb) rb.classList.remove('collapsed');
@@ -5546,6 +5728,7 @@
   function setupCharPopupListeners() {
     const popup = document.getElementById('char-popup');
     document.getElementById('char-popup-close').addEventListener('click', closeCharPopup);
+    setupSheetRolls();
 
     // Character file import/export (4a)
     document.getElementById('char-export-btn').addEventListener('click', exportCharacter);
@@ -8721,7 +8904,7 @@
     return out;
   }
 
-  async function rollDice(sides, count, mod, isPrivate) {
+  async function rollDice(sides, count, mod, isPrivate, label) {
     let advMode = STATE.advMode || 'normal';
     // 5.5e Heroic Inspiration: if the player has inspiration AND is rolling a
     // single d20 with normal mode, automatically upgrade to advantage and
@@ -8789,8 +8972,13 @@
       adv_mode: useAdv ? advMode : null,
       picked,
       ts: nowTs(),
-      // We reuse the text field to record what buffs were active at roll time
-      text: buffSummary ? `Buffs: ${buffSummary}` : null,
+      // text shows the optional roll label and any buffs active at roll time
+      text: (() => {
+        const parts = [];
+        if (label) parts.push(label);
+        if (buffSummary) parts.push(`Buffs: ${buffSummary}`);
+        return parts.length ? parts.join(' · ') : null;
+      })(),
     };
 
     // Animate the dice. The chat row is added only AFTER the dice settle so the
@@ -8799,6 +8987,7 @@
     animateDiceRoll(msg, () => renderChatMessage(msg));
     const { error } = await sb.from('vtt_chat').insert(msg);
     if (error) { console.error(error); toast('Roll failed to sync', 'error'); }
+    return { total, rolls, picked, sides, count: useAdv ? 2 : count, mod: mod + buffMod };
   }
 
   // Track all active dice animation timers so we can cancel previous ones
