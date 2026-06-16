@@ -148,6 +148,11 @@
   .map-slot.active { background: var(--gold); border-color: var(--gold); color: #1a1612; font-weight: 700; }
   .map-slot.has-content::after { content: ''; position: absolute; top: 3px; right: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
   .map-slot.active.has-content::after { background: #1a1612; }
+  .map-qslot { flex: 1; padding: 6px 0; font-size: 12px; background: var(--panel-light); border: 1px solid var(--border); color: var(--cream); cursor: pointer; border-radius: 3px; font-family: 'Cinzel', serif; }
+  .map-qslot:hover:not(:disabled) { border-color: var(--gold-soft); }
+  .map-qslot:disabled { opacity: 0.35; cursor: default; }
+  .map-qslot.viewing { background: var(--gold); border-color: var(--gold); color: #1a1612; font-weight: 700; }
+  .map-qslot.live { box-shadow: inset 0 0 0 2px var(--success); }
   #audio-host-playback { display: flex; gap: 6px; }
   #audio-host-playback button { flex: 1; padding: 6px 8px; font-size: 12px; }
   #audio-volume { -webkit-appearance: none; appearance: none; background: var(--bg); height: 4px; border-radius: 2px; outline: none; }
@@ -832,6 +837,10 @@
   .maps-thumb-del { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); color: var(--danger); border: none; width: 18px; height: 18px; border-radius: 50%; cursor: pointer; font-size: 12px; line-height: 1; padding: 0; opacity: 0; transition: opacity 0.15s; }
   .maps-thumb:hover .maps-thumb-del { opacity: 1; }
   .maps-thumb-del:hover { background: var(--danger); color: var(--cream); }
+  .lib-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .lib-tab { flex: 1; padding: 6px 0; font-size: 12px; background: var(--panel-light); border: 1px solid var(--border); color: var(--cream); cursor: pointer; border-radius: 3px; font-family: 'Cinzel', serif; letter-spacing: 0.05em; }
+  .lib-tab:hover { border-color: var(--gold-soft); }
+  .lib-tab.active { background: var(--gold); border-color: var(--gold); color: #1a1612; font-weight: 700; }
   #imggen-popup .char-popup-body { padding: 16px; overflow-y: auto; }
   /* Icon library (game-icons.net) - for Item type, instant offline picker */
   .icon-library { display: flex; flex-direction: column; gap: 8px; }
@@ -1165,8 +1174,10 @@
     <div id="sidepanel">
       <div class="panel-section" id="host-section" style="display:none">
         <h3>Map</h3>
-        <button id="map-library-btn" style="width:100%; margin-bottom:6px;">Map Library</button>
+        <div id="map-quick-slots" style="display:flex; gap:4px; margin-bottom:6px;"></div>
+        <button id="map-library-btn" style="width:100%; margin-bottom:6px;">Library</button>
         <div id="active-map-name" style="font-size:11px; color:var(--muted); margin-bottom:8px; text-align:center;">No map active</div>
+        <button id="reveal-map-btn" class="primary" style="width:100%; margin-bottom:4px;">Reveal Map to Players</button>
         <label class="upload-box" id="map-upload-label">
           <input type="file" id="map-upload" accept="image/*">
           <span id="map-upload-text">Upload map image</span>
@@ -1878,13 +1889,35 @@
 <!-- Map Library popup (DM only): synced thumbnails of all session maps -->
 <div id="maps-popup">
   <div class="char-popup-header">
-    <span class="ttl">Map Library</span>
+    <span class="ttl">Library</span>
     <button id="maps-popup-close">×</button>
   </div>
   <div class="char-popup-body">
-    <button id="maps-upload-btn" class="primary" style="width:100%; margin-bottom:12px;">Upload New Map</button>
-    <div id="maps-library-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;"></div>
-    <div id="maps-library-empty" style="font-size:12px; color:var(--muted); text-align:center; padding:16px;">No maps yet. Generate one or upload an image, it will appear here.</div>
+    <div class="lib-tabs">
+      <button class="lib-tab active" data-tab="maps">Maps</button>
+      <button class="lib-tab" data-tab="npcs">NPCs</button>
+      <button class="lib-tab" data-tab="tokens">Tokens</button>
+    </div>
+
+    <div class="lib-tab-content" data-tab="maps">
+      <button id="maps-upload-btn" class="primary" style="width:100%; margin-bottom:12px;">Upload New Map</button>
+      <div id="maps-library-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;"></div>
+      <div id="maps-library-empty" style="font-size:12px; color:var(--muted); text-align:center; padding:16px;">No maps yet. Generate one or upload an image, it will appear here.</div>
+    </div>
+
+    <div class="lib-tab-content" data-tab="npcs" style="display:none;">
+      <button id="npc-upload-btn" class="primary" style="width:100%; margin-bottom:12px;">Upload NPC</button>
+      <div id="npc-library-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;"></div>
+      <div id="npc-library-empty" style="font-size:12px; color:var(--muted); text-align:center; padding:16px;">No NPCs yet. Generated characters and creatures land here. Drag one onto the map to place it.</div>
+    </div>
+
+    <div class="lib-tab-content" data-tab="tokens" style="display:none;">
+      <button id="token-upload-btn" class="primary" style="width:100%; margin-bottom:12px;">Upload Token</button>
+      <div id="token-library-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;"></div>
+      <div id="token-library-empty" style="font-size:12px; color:var(--muted); text-align:center; padding:16px;">No tokens yet. Generated items land here. Drag one onto the map to place it.</div>
+    </div>
+
+    <input type="file" id="asset-upload-input" accept="image/*" style="display:none">
   </div>
 </div>
 
@@ -2168,6 +2201,8 @@
     map: null,             // active map (= maps.get(activeMapSlot))
     maps: new Map(),       // slot (1|2|3) -> map data
     activeMapSlot: 1,
+    publishedSlot: 1,    // oyuncularin gordugu slot (session.active_map_slot)
+    _centerPending: false,
     tokens: new Map(),     // id -> token data
     onlinePlayers: new Map(), // userId -> { name, isHost }
     persistedPlayers: [],   // from vtt_players table
@@ -3424,7 +3459,7 @@
     const { data: session } = await sb.from('vtt_sessions').select('*').eq('id', STATE.sessionId).maybeSingle();
     if (session) {
       STATE.session = session;
-      if (session.active_map_slot) STATE.activeMapSlot = session.active_map_slot;
+      if (session.active_map_slot) { STATE.activeMapSlot = session.active_map_slot; STATE.publishedSlot = session.active_map_slot; }
       // Restore initiative state
       try {
         const ini = JSON.parse(session.initiative || '{}');
@@ -3455,8 +3490,8 @@
       }
     }
     renderMapSlotButtons();
+    if (STATE.map) STATE._centerPending = true;
     renderMap();
-    if (STATE.map) centerViewOnMap();
     const { data: tokens } = await sb.from('vtt_tokens').select('*').eq('session_id', STATE.sessionId);
     if (tokens) {
       tokens.forEach(t => STATE.tokens.set(t.id, t));
@@ -3562,9 +3597,9 @@
       STATE.gridFt = m.grid_ft || 5;
       STATE.tokensLocked = !!m.tokens_locked;
       updateLockTokensButtonLabel();
+      if (m.image_url && m.image_url !== prevUrl) STATE._centerPending = true;
       renderMap();
       renderTokens();
-      if (m.image_url && m.image_url !== prevUrl) centerViewOnMap();
     }
     renderMapSlotButtons();
   }
@@ -3573,8 +3608,11 @@
     if (payload.eventType !== 'UPDATE' || !payload.new) return;
     STATE.session = payload.new;
     const newSlot = payload.new.active_map_slot;
-    if (newSlot && newSlot !== STATE.activeMapSlot) {
+    if (newSlot) STATE.publishedSlot = newSlot;
+    if (newSlot && newSlot !== STATE.activeMapSlot && !STATE.isHost) {
       switchToMapSlot(newSlot, false);
+    } else {
+      renderMapSlotButtons(); // refresh live indicator
     }
     // Reflect campaign log if the popup is open and we're not the editor
     const popup = document.getElementById('recap-popup');
@@ -3608,9 +3646,9 @@
     document.getElementById('grid-ft').value = STATE.gridFt;
     updateLockTokensButtonLabel();
     renderMapSlotButtons();
+    if (STATE.map) STATE._centerPending = true;
     renderMap();
     renderTokens();
-    if (STATE.map) centerViewOnMap();
     if (persist && STATE.isHost) {
       sb.from('vtt_sessions').update({ active_map_slot: slot }).eq('id', STATE.sessionId);
     }
@@ -3620,9 +3658,40 @@
     const nameEl = document.getElementById('active-map-name');
     if (nameEl) {
       const m = STATE.map;
-      nameEl.textContent = (m && m.image_url) ? `Active: Map ${STATE.activeMapSlot}` : 'No map active';
+      const viewing = (m && m.image_url) ? `Map ${STATE.activeMapSlot}` : 'none';
+      nameEl.textContent = STATE.isHost
+        ? `You see: ${viewing}  |  Players see: Map ${STATE.publishedSlot || 1}`
+        : (m && m.image_url ? `Map ${STATE.activeMapSlot}` : 'No map active');
     }
+    renderQuickSlots();
     renderMapsLibrary();
+  }
+
+  // DM hizli slotlari (1-5). Tiklayinca DM kendi gorunumunu degistirir, oyunculara
+  // YANSIMAZ. Oyunculara gostermek icin Reveal Map to Players butonu kullanilir.
+  function renderQuickSlots() {
+    const wrap = document.getElementById('map-quick-slots');
+    if (!wrap) return;
+    let html = '';
+    for (let s = 1; s <= 5; s++) {
+      const mm = STATE.maps.get(s);
+      const has = !!(mm && mm.image_url);
+      const viewing = s === STATE.activeMapSlot;
+      const live = s === STATE.publishedSlot;
+      html += `<button class="map-qslot${viewing ? ' viewing' : ''}${live ? ' live' : ''}" data-slot="${s}" ${has ? '' : 'disabled'} title="${has ? ('Map ' + s + (live ? ' (players see this)' : '')) : ('Empty slot ' + s)}">${s}</button>`;
+    }
+    wrap.innerHTML = html;
+  }
+
+  async function publishMapToPlayers() {
+    if (!STATE.isHost) return;
+    if (!STATE.map || !STATE.map.image_url) { toast('No map to reveal', 'error'); return; }
+    STATE.publishedSlot = STATE.activeMapSlot;
+    try {
+      await sb.from('vtt_sessions').update({ active_map_slot: STATE.activeMapSlot }).eq('id', STATE.sessionId);
+    } catch (e) { console.error('publish map failed', e); }
+    toast(`Map ${STATE.activeMapSlot} revealed to players`);
+    renderMapSlotButtons();
   }
 
   // En dusuk bos slot numarasini bulur (1, 2, 3, ...). Kutuphane buyudukce slot artar.
@@ -3657,6 +3726,38 @@
     }).join('');
   }
 
+  // NPC ve Token raflari DM'in makinesinde (gen library, localStorage) tutulur.
+  // Haritaya birakilinca senkron bir token olusur.
+  function renderAssetGrid(gridId, emptyId, types) {
+    const grid = document.getElementById(gridId);
+    if (!grid) return;
+    const empty = document.getElementById(emptyId);
+    const lib = libraryLoad().filter(e =>
+      e && types.includes(e.type) && typeof e.url === 'string' && !e.url.startsWith('icon:'));
+    if (!lib.length) {
+      grid.innerHTML = '';
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+    grid.innerHTML = lib.map(e => {
+      const label = (e.prompt || e.type || '').slice(0, 16);
+      return `
+        <div class="maps-thumb asset-thumb" draggable="true" data-url="${escapeHtml(e.url)}" data-name="${escapeHtml(e.prompt || '')}" title="${escapeHtml(e.prompt || '')} - drag onto the map">
+          <img src="${escapeHtml(e.url)}" alt="">
+          <div class="maps-thumb-label">${escapeHtml(label)}</div>
+          <button class="maps-thumb-del" title="Remove">×</button>
+        </div>`;
+    }).join('');
+  }
+  function renderNpcLibrary() { renderAssetGrid('npc-library-grid', 'npc-library-empty', ['character', 'creature', 'npc']); }
+  function renderTokenLibrary() { renderAssetGrid('token-library-grid', 'token-library-empty', ['item', 'token']); }
+  function renderLibraryTab(tab) {
+    if (tab === 'npcs') renderNpcLibrary();
+    else if (tab === 'tokens') renderTokenLibrary();
+    else renderMapsLibrary();
+  }
+
   async function deleteMapSlot(slot) {
     if (!STATE.isHost) return;
     try {
@@ -3668,7 +3769,7 @@
         .filter(s => { const m = STATE.maps.get(s); return m && m.image_url; })
         .sort((a, b) => a - b);
       if (remaining.length) {
-        switchToMapSlot(remaining[0], true);
+        switchToMapSlot(remaining[0], false);
       } else {
         STATE.map = null;
         renderMap();
@@ -3796,6 +3897,9 @@
     layer.innerHTML = '';
     if (STATE.map && STATE.map.image_url) {
       const img = document.createElement('img');
+      img.onload = () => {
+        if (STATE._centerPending) { STATE._centerPending = false; centerViewOnMap(); }
+      };
       img.src = STATE.map.image_url;
       img.style.width = STATE.map.width + 'px';
       img.style.height = STATE.map.height + 'px';
@@ -6326,7 +6430,7 @@
       const { error } = await sb.from('vtt_maps').upsert(row);
       if (error) throw error;
       STATE.maps.set(slot, row);
-      switchToMapSlot(slot, true);
+      switchToMapSlot(slot, false);
       textEl.textContent = 'Upload map image';
       toast('Map ' + slot + ' added to library');
     } catch (err) {
@@ -6337,11 +6441,21 @@
     e.target.value = '';
   });
 
+  // DM quick map slots (1-5): local view switch, does not affect players
+  document.getElementById('map-quick-slots').addEventListener('click', (e) => {
+    const btn = e.target.closest('.map-qslot');
+    if (!btn || btn.disabled || !STATE.isHost) return;
+    switchToMapSlot(parseInt(btn.dataset.slot, 10), false);
+  });
+  document.getElementById('reveal-map-btn').addEventListener('click', () => publishMapToPlayers());
+
   // Map Library popup (DM)
   document.getElementById('map-library-btn').addEventListener('click', () => {
     if (!STATE.isHost) return;
     document.getElementById('maps-popup').classList.add('active');
     renderMapsLibrary();
+    renderNpcLibrary();
+    renderTokenLibrary();
   });
   document.getElementById('maps-popup-close').addEventListener('click', () => {
     document.getElementById('maps-popup').classList.remove('active');
@@ -6359,8 +6473,71 @@
     }
     const thumb = e.target.closest('.maps-thumb');
     if (!thumb || !STATE.isHost) return;
-    switchToMapSlot(parseInt(thumb.dataset.slot, 10), true);
+    switchToMapSlot(parseInt(thumb.dataset.slot, 10), false);
     renderMapsLibrary();
+  });
+
+  // Library tab switching
+  document.querySelectorAll('.lib-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const name = tab.dataset.tab;
+      document.querySelectorAll('.lib-tab').forEach(x => x.classList.toggle('active', x === tab));
+      document.querySelectorAll('.lib-tab-content').forEach(c => {
+        c.style.display = (c.dataset.tab === name) ? 'block' : 'none';
+      });
+      renderLibraryTab(name);
+    });
+  });
+
+  // NPC / Token asset grids: delete (remove from shelf) and drag onto the map
+  ['npc-library-grid', 'token-library-grid'].forEach(gid => {
+    const g = document.getElementById(gid);
+    if (!g) return;
+    g.addEventListener('click', (e) => {
+      const del = e.target.closest('.maps-thumb-del');
+      if (!del) return;
+      e.stopPropagation();
+      const t = del.closest('.asset-thumb');
+      if (t) { libraryRemove(t.dataset.url); renderNpcLibrary(); renderTokenLibrary(); }
+    });
+    g.addEventListener('dragstart', (e) => {
+      const t = e.target.closest('.asset-thumb');
+      if (!t) return;
+      e.dataTransfer.setData('application/x-vtt-asset', JSON.stringify({ url: t.dataset.url, name: t.dataset.name || 'Token' }));
+      e.dataTransfer.effectAllowed = 'copy';
+      // Haritayi gormek icin popup'i kapat (drag baslayinca, gecikmeyle)
+      setTimeout(() => document.getElementById('maps-popup').classList.remove('active'), 0);
+    });
+  });
+
+  // NPC / Token upload (DM makinesine, gen library'ye eklenir)
+  let assetUploadKind = null;
+  document.getElementById('npc-upload-btn').addEventListener('click', () => {
+    assetUploadKind = 'npc';
+    document.getElementById('asset-upload-input').click();
+  });
+  document.getElementById('token-upload-btn').addEventListener('click', () => {
+    assetUploadKind = 'token';
+    document.getElementById('asset-upload-input').click();
+  });
+  document.getElementById('asset-upload-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file || !assetUploadKind) { e.target.value = ''; return; }
+    const kind = assetUploadKind;
+    try {
+      const { blob } = await fileToResizedBlob(file, 768);
+      const path = `${STATE.sessionId}/assets/${kind}-${genId()}.jpg`;
+      const url = await uploadImage(blob, path);
+      libraryAdd({ url, type: kind, prompt: file.name.replace(/\.[^.]+$/, ''), ts: Date.now() });
+      renderNpcLibrary();
+      renderTokenLibrary();
+      toast((kind === 'npc' ? 'NPC' : 'Token') + ' added to library');
+    } catch (err) {
+      console.error('asset upload failed', err);
+      toast('Upload failed', 'error');
+    }
+    e.target.value = '';
+    assetUploadKind = null;
   });
 
   document.getElementById('apply-grid').addEventListener('click', async () => {
@@ -7738,8 +7915,8 @@
       };
       await sb.from('vtt_maps').upsert(row);
       STATE.maps.set(slot, row);
-      switchToMapSlot(slot, true);
-      showImggenStatus(`Added as Map ${slot} and shown to everyone`);
+      switchToMapSlot(slot, false);
+      showImggenStatus(`Added as Map ${slot}. Use Reveal to show players.`);
     } catch (err) {
       console.error(err);
       toast('Failed to publish map', 'error');
@@ -8216,14 +8393,37 @@
   mapContainer.addEventListener('dragover', (e) => e.preventDefault());
   mapContainer.addEventListener('drop', async (e) => {
     e.preventDefault();
-    const id = e.dataTransfer.getData('text/plain');
-    if (!id) return;
     const mp = screenToMap(e.clientX, e.clientY);
     const ox = (STATE.map && STATE.map.offset_x) || 0;
     const oy = (STATE.map && STATE.map.offset_y) || 0;
+    const x = mp.x - ox, y = mp.y - oy;
+
+    // Kutuphaneden surukленen NPC/token: haritada yeni token olustur
+    const assetRaw = e.dataTransfer.getData('application/x-vtt-asset');
+    if (assetRaw) {
+      let asset;
+      try { asset = JSON.parse(assetRaw); } catch (err) { return; }
+      if (!asset || !asset.url) return;
+      try {
+        await sb.from('vtt_tokens').insert({
+          id: genId(),
+          session_id: STATE.sessionId,
+          name: asset.name || 'Token',
+          image_url: asset.url,
+          x, y,
+          owner_id: STATE.userId,
+          current_hp: 10,
+          max_hp: 10,
+        });
+      } catch (err) { console.error('place asset failed', err); toast('Could not place token', 'error'); }
+      return;
+    }
+
+    // Mevcut tepsi token'i: konumunu guncelle
+    const id = e.dataTransfer.getData('text/plain');
+    if (!id) return;
     await sb.from('vtt_tokens').update({
-      x: mp.x - ox,
-      y: mp.y - oy,
+      x, y,
       updated_at: new Date().toISOString(),
     }).eq('id', id);
   });
