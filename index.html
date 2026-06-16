@@ -587,6 +587,14 @@
 
   /* Inventory */
   #inventory-list { display: flex; flex-direction: column; gap: 3px; }
+  #features-list { display: flex; flex-direction: column; gap: 4px; }
+  .feat-row { display: flex; align-items: flex-start; gap: 6px; padding: 5px 7px; background: var(--panel-light); border: 1px solid var(--border); border-radius: 4px; }
+  .feat-row .feat-body { flex: 1; min-width: 0; }
+  .feat-row .feat-name { color: var(--cream); font-weight: 600; font-size: 13px; }
+  .feat-row .feat-desc { color: var(--muted); font-size: 11px; margin-top: 2px; white-space: pre-wrap; word-break: break-word; }
+  .feat-row .feat-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 2px; }
+  .feat-row .feat-del:hover { color: var(--danger); }
+  #features-list:empty + .inv-add-row::before { content: 'No features yet —'; color: var(--muted); font-size: 11px; font-style: italic; margin-right: 6px; align-self: center; }
   .inv-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; font-size: 12px; }
   .inv-row .inv-qty { color: var(--gold); font-weight: 700; min-width: 32px; }
   .inv-row .inv-name { flex: 1; color: var(--cream); }
@@ -614,6 +622,15 @@
 
   /* Spell slots */
   .spell-slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px; }
+  .spellcast-row { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .spellcast-row label { font-size: 11px; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+  .spellcast-row select, .spellcast-row input { background: var(--panel-light); border: 1px solid var(--border); color: var(--cream); border-radius: 4px; padding: 4px 6px; font-size: 13px; }
+  .spellcast-row #spell-misc-bonus { width: 54px; }
+  .spellcast-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 6px; min-width: 60px; }
+  .spellcast-stat .lbl { font-size: 9px; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
+  .spellcast-stat span:not(.lbl) { font-size: 17px; color: var(--gold); font-weight: 700; }
+  .spellcast-roll { cursor: pointer; }
+  .spellcast-roll:hover { border-color: var(--gold-soft); background: rgba(212,165,116,0.08); }
   .slot-cell { background: var(--panel-light); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; position: relative; }
   .slot-cell .slot-label { font-family: 'Cinzel', serif; font-size: 10px; color: var(--gold); letter-spacing: 0.08em; }
   .slot-cell .slot-inputs { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
@@ -719,6 +736,24 @@
   }
   .vital-box.vital-hp .hp-edit-inline input.auto-calc { color: #ffd0d0; opacity: 0.85; }
   .vital-box.vital-hp .hp-sep { font-size: 14px; color: #d28a8a; }
+  .vital-box.vital-hp .hp-temp-badge { font-size: 11px; font-weight: 700; color: #7fc7ff; text-shadow: 0 1px 2px rgba(0,0,0,0.7); }
+  #char-hp-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+  #char-hp-controls .hpc-temp { font-size: 11px; color: #7fc7ff; display: inline-flex; align-items: center; gap: 4px; }
+  #char-hp-controls .hpc-temp input { width: 46px; background: rgba(0,0,0,0.3); border: 1px solid rgba(127,199,255,0.4); border-radius: 4px; color: #cfe8ff; text-align: center; padding: 3px 2px; font-size: 12px; }
+  #char-hp-controls .hpc-apply { display: inline-flex; align-items: center; gap: 4px; }
+  #char-hp-controls .hpc-apply input { width: 48px; background: var(--panel-light); border: 1px solid var(--border); border-radius: 4px; color: var(--cream); text-align: center; padding: 3px 2px; font-size: 12px; }
+  #char-hp-controls .hpc-apply button { border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); border-radius: 4px; padding: 4px 9px; font-size: 11px; cursor: pointer; }
+  #char-hp-controls .hpc-dmg:hover { border-color: var(--danger); color: #ff8a8a; }
+  #char-hp-controls .hpc-heal:hover { border-color: #6fbf73; color: #9fe0a0; }
+  #char-hp-controls.disabled { opacity: 0.4; pointer-events: none; }
+  #char-hitdice { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+  #char-hitdice .hd-label { letter-spacing: 0.04em; }
+  #char-hitdice .hd-pool { color: var(--cream); }
+  #char-hitdice .hd-pool b { color: var(--gold); font-size: 14px; }
+  #char-hitdice .hd-spend { margin-left: auto; border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer; }
+  #char-hitdice .hd-spend:hover { border-color: var(--gold-soft); color: var(--gold); }
+  #char-hitdice .hd-spend:disabled { opacity: 0.45; cursor: default; }
+  #char-hitdice.disabled { opacity: 0.4; pointer-events: none; }
   /* Low HP - pulse the heart graphic */
   .vital-box.vital-hp.low .hp-heart-graphic { animation: hp-low-pulse 1.4s ease-in-out infinite; }
   .vital-box.vital-hp.zero { border-color: var(--danger); background: linear-gradient(180deg, rgba(80,15,15,0.55), rgba(20,5,5,0.65)); }
@@ -1495,6 +1530,7 @@
         <input type="number" id="char-hp-cur" min="0" placeholder="—">
         <span class="hp-sep">/</span>
         <input type="number" id="char-hp-max" min="1" placeholder="—">
+        <span class="hp-temp-badge" id="char-hp-temp-badge" style="display:none" title="Temporary HP"></span>
       </div>
       <div class="vital-sub" id="char-hp-sub" style="display:none"></div>
     </div>
@@ -1519,6 +1555,21 @@
       </div>
       <div class="vital-sub">Heroic</div>
     </div>
+  </div>
+
+  <div class="hp-controls" id="char-hp-controls" title="Damage hits Temporary HP first. Heal restores Current up to Max.">
+    <span class="hpc-temp">Temp HP <input type="number" id="char-hp-temp" min="0" value="0"></span>
+    <span class="hpc-apply">
+      <input type="number" id="char-hp-amount" min="0" value="1" title="Amount">
+      <button type="button" id="char-hp-dmg" class="hpc-dmg">Damage</button>
+      <button type="button" id="char-hp-heal" class="hpc-heal">Heal</button>
+    </span>
+  </div>
+
+  <div class="hp-hitdice" id="char-hitdice" title="Spend a Hit Die: roll the die + CON mod to regain HP. A short-rest resource.">
+    <span class="hd-label">Hit Dice</span>
+    <span class="hd-pool"><b id="char-hd-cur">0</b> / <span id="char-hd-max">0</span> <span id="char-hd-die">d8</span></span>
+    <button type="button" id="char-hd-spend" class="hd-spend">Spend</button>
   </div>
 
   <!-- Death Saves panel: only visible when current HP is 0 and the character has a token -->
@@ -1553,6 +1604,7 @@
     <button class="char-tab" data-tab="spells">Spells</button>
     <button class="char-tab" data-tab="buffs">Buffs</button>
     <button class="char-tab" data-tab="conditions">Conditions</button>
+    <button class="char-tab" data-tab="features">Features</button>
     <button class="char-tab" data-tab="notes">Notes</button>
   </div>
 
@@ -1637,6 +1689,25 @@
     </div>
 
     <div class="char-tab-content" data-tab="spells">
+      <div class="char-section">
+        <div class="char-section-head">Spellcasting</div>
+        <div class="spellcast-row">
+          <label class="spellcast-ab">Ability
+            <select id="spell-ability">
+              <option value="">—</option>
+              <option value="str">STR</option>
+              <option value="dex">DEX</option>
+              <option value="con">CON</option>
+              <option value="int">INT</option>
+              <option value="wis">WIS</option>
+              <option value="cha">CHA</option>
+            </select>
+          </label>
+          <div class="spellcast-stat"><span class="lbl">Save DC</span><span id="spell-save-dc">—</span></div>
+          <div class="spellcast-stat spellcast-roll" id="spell-attack-roll" title="Roll spell attack"><span class="lbl">Spell Atk</span><span id="spell-atk-bonus">—</span></div>
+          <label class="spellcast-bonus">+Bonus <input type="number" id="spell-misc-bonus" value="0"></label>
+        </div>
+      </div>
       <div class="char-section">
         <div class="char-section-head">Spell Slots <span class="hint">(used / total)</span></div>
         <div id="spell-slots-grid" class="spell-slots-grid"></div>
@@ -1724,9 +1795,23 @@
       </div>
     </div>
 
+    <div class="char-tab-content" data-tab="features">
+      <div class="char-section">
+        <div class="char-section-head">Features &amp; Traits <span class="hint">(class, species, feats)</span></div>
+        <div id="features-list"></div>
+        <div class="inv-add-row" id="feature-add-row">
+          <input type="text" id="feature-add-name" placeholder="Feature name" maxlength="50">
+          <input type="text" id="feature-add-desc" placeholder="What it does" maxlength="240">
+          <button id="feature-add-btn" class="primary">Add</button>
+        </div>
+      </div>
+    </div>
+
     <div class="char-tab-content" data-tab="notes">
       <div class="char-notes">
-        <label>Notes</label>
+        <label>Other Proficiencies &amp; Languages</label>
+        <textarea id="char-proficiencies" placeholder="Armor, weapons, tools, and languages (e.g. Light armor, Simple weapons, Thieves' tools, Common, Elvish)"></textarea>
+        <label style="margin-top:10px;">Notes</label>
         <textarea id="char-notes" placeholder="Background, equipment notes, spells, anything you want to remember"></textarea>
       </div>
       <div class="char-section" id="char-file-section" style="margin-top:12px;">
@@ -1735,8 +1820,10 @@
           <button id="char-export-btn" style="flex:1;">Export JSON</button>
           <button id="char-import-btn" class="primary" style="flex:1;">Import JSON</button>
         </div>
+        <button id="char-import-pdf-btn" class="primary" style="width:100%; margin-top:8px;">Import from D&D Beyond PDF</button>
         <input type="file" id="char-import-input" accept="application/json,.json" style="display:none">
-        <div class="hint" style="margin-top:6px; font-size:11px; color:var(--muted);">Export saves this sheet as a file. Import overwrites the open sheet.</div>
+        <input type="file" id="char-import-pdf-input" accept="application/pdf,.pdf" style="display:none">
+        <div class="hint" style="margin-top:6px; font-size:11px; color:var(--muted);">Export saves this sheet as a file. Import overwrites the open sheet. PDF import reads a D&D Beyond character sheet export.</div>
       </div>
     </div>
 
@@ -4344,8 +4431,25 @@
     return row;
   }
 
+  let TEMP_HP_OK = true;  // flips false if vtt_tokens has no temp_hp column yet
   async function setTokenHp(tokenId, patch) {
-    await sb.from('vtt_tokens').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', tokenId);
+    let p = { ...patch };
+    if (!TEMP_HP_OK && ('temp_hp' in p)) delete p.temp_hp;
+    const { error } = await sb.from('vtt_tokens').update({ ...p, updated_at: new Date().toISOString() }).eq('id', tokenId);
+    if (error && ('temp_hp' in p) && /temp_hp/i.test(error.message || '')) {
+      TEMP_HP_OK = false;
+      const { temp_hp, ...rest } = p;
+      await sb.from('vtt_tokens').update({ ...rest, updated_at: new Date().toISOString() }).eq('id', tokenId);
+    }
+  }
+
+  async function setTempHp(tokenId, val) {
+    const tok = STATE.tokens.get(tokenId);
+    if (!tok) return;
+    const v = Math.max(0, parseInt(val) || 0);
+    tok.temp_hp = v;
+    await setTokenHp(tokenId, { temp_hp: v });
+    refreshCharPopupHp();
   }
 
   async function applyHpChange(tokenId, delta) {
@@ -4353,13 +4457,28 @@
     if (!tok) return;
     const cur = tok.current_hp ?? 10;
     const max = tok.max_hp ?? 10;
-    const newHp = Math.max(0, Math.min(max, cur + delta));
-    await setTokenHp(tokenId, { current_hp: newHp });
+    const temp = tok.temp_hp ?? 0;
+    let newHp = cur, newTemp = temp;
+    if (delta < 0) {
+      // Damage is absorbed by Temporary HP first, remainder hits Current
+      let dmg = -delta;
+      const absorbed = Math.min(temp, dmg);
+      newTemp = temp - absorbed;
+      newHp = Math.max(0, cur - (dmg - absorbed));
+    } else {
+      // Healing restores Current up to Max, Temp is untouched
+      newHp = Math.min(max, cur + delta);
+    }
+    tok.current_hp = newHp; tok.temp_hp = newTemp;
+    const patch = { current_hp: newHp };
+    if (newTemp !== temp) patch.temp_hp = newTemp;
+    await setTokenHp(tokenId, patch);
+    refreshCharPopupHp();
     // Optional: log to chat for visibility
     if (delta !== 0) {
       const action = delta < 0 ? 'took' : 'healed';
       const amount = Math.abs(delta);
-      const text = `${tok.name} ${action} ${amount} ${delta < 0 ? 'damage' : 'HP'} (${newHp}/${max})`;
+      const text = `${tok.name} ${action} ${amount} ${delta < 0 ? 'damage' : 'HP'} (${newHp}/${max}${newTemp > 0 ? ' +' + newTemp + ' temp' : ''})`;
       await sb.from('vtt_chat').insert({
         id: genId(),
         session_id: STATE.sessionId,
@@ -4404,6 +4523,8 @@
     saveOverrides: {},       // { 'str': 5, ... }
     skillOverrides: {},      // { 'acrobatics': 7, ... }
     passiveOverrides: { perception: 0, investigation: 0, insight: 0 }, // manual + modifiers
+    hitDiceUsed: 0,          // spent Hit Dice (total is derived from level)
+    profile: {},             // narrative/reference fields (proficiencies, languages, bio...)
     hpMaxManual: false,      // true once the user types in max HP themselves
     hpCurManual: false,      // true once the user types in current HP
     buffs: [],               // [{ name, mod, active }]
@@ -4532,6 +4653,7 @@
       spells: [],     // [{ name, level, desc, prepared }]
       attacks: [],    // [{ name, bonus, dmg }]
       slots: { 1:{cur:0,max:0}, 2:{cur:0,max:0}, 3:{cur:0,max:0}, 4:{cur:0,max:0}, 5:{cur:0,max:0}, 6:{cur:0,max:0}, 7:{cur:0,max:0}, 8:{cur:0,max:0}, 9:{cur:0,max:0} },
+      spellcasting: { ability: '', bonus: 0 },  // DC and attack are derived from this
     };
   }
   function parseMagicData(raw) {
@@ -4907,6 +5029,34 @@
     });
   }
 
+  function renderFeatures() {
+    const list = document.getElementById('features-list');
+    if (!list) return;
+    const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+    const feats = (CHAR_POPUP.profile && Array.isArray(CHAR_POPUP.profile.features)) ? CHAR_POPUP.profile.features : [];
+    list.innerHTML = '';
+    feats.forEach((f, idx) => {
+      const row = document.createElement('div');
+      row.className = 'feat-row';
+      row.innerHTML = `
+        <div class="feat-body">
+          <div class="feat-name">${escapeHtml(f.name || '')}</div>
+          ${f.desc ? `<div class="feat-desc">${escapeHtml(f.desc)}</div>` : ''}
+        </div>
+        ${canEdit ? '<button class="feat-del" title="Remove">×</button>' : ''}
+      `;
+      const del = row.querySelector('.feat-del');
+      if (del) del.addEventListener('click', () => {
+        CHAR_POPUP.profile.features.splice(idx, 1);
+        renderFeatures();
+        scheduleSaveProfile();
+      });
+      list.appendChild(row);
+    });
+    const addRow = document.getElementById('feature-add-row');
+    if (addRow) addRow.style.display = canEdit ? '' : 'none';
+  }
+
   function renderInventory(items) {
     const list = document.getElementById('inventory-list');
     list.innerHTML = '';
@@ -4951,9 +5101,78 @@
   }
 
   // ---------- Magic (spells, cantrips, attacks, spell slots) ----------
+  let PROFILE_OK = true;  // flips false if vtt_players has no profile column yet
+  let _profileTimer = null;
+  function scheduleSaveProfile() {
+    const pid = CHAR_POPUP.targetPlayerId || STATE.userId;
+    if (_profileTimer) clearTimeout(_profileTimer);
+    _profileTimer = setTimeout(() => saveProfile(pid), 500);
+  }
+  async function saveProfile(playerId) {
+    if (!PROFILE_OK || !playerId) return;
+    const pl = STATE.persistedPlayers.find(p => p.id === playerId);
+    const json = JSON.stringify(CHAR_POPUP.profile || {});
+    if (pl) pl.profile = json;
+    const { error } = await sb.from('vtt_players').update({ profile: json }).eq('id', playerId);
+    if (error && /profile/i.test(error.message || '')) PROFILE_OK = false;
+  }
+
+  let HD_OK = true;  // flips false if vtt_players has no hit_dice_used column yet
+  async function setHitDiceUsed(playerId, used) {
+    used = Math.max(0, parseInt(used) || 0);
+    if (CHAR_POPUP.targetPlayerId === playerId) CHAR_POPUP.hitDiceUsed = used;
+    const pl = STATE.persistedPlayers.find(p => p.id === playerId);
+    if (pl) pl.hit_dice_used = used;
+    if (!HD_OK) return;
+    const { error } = await sb.from('vtt_players').update({ hit_dice_used: used }).eq('id', playerId);
+    if (error && /hit_dice_used/i.test(error.message || '')) HD_OK = false;
+  }
+  function renderHitDice() {
+    const wrap = document.getElementById('char-hitdice');
+    if (!wrap) return;
+    const level = parseInt(document.getElementById('char-level').value) || 0;
+    const die = hitDieForClass(document.getElementById('char-class').value);
+    const total = Math.max(0, level);
+    const remaining = Math.max(0, total - (CHAR_POPUP.hitDiceUsed || 0));
+    document.getElementById('char-hd-cur').textContent = remaining;
+    document.getElementById('char-hd-max').textContent = total;
+    document.getElementById('char-hd-die').textContent = 'd' + die;
+    const t = getSheetToken();
+    const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+    const atFull = t && (t.current_hp ?? 0) >= (t.max_hp ?? 0);
+    wrap.classList.toggle('disabled', !canEdit);
+    const spendBtn = document.getElementById('char-hd-spend');
+    if (spendBtn) spendBtn.disabled = remaining <= 0 || !t || atFull;
+  }
+
+  function computeSpellcasting() {
+    const sc = (CHAR_POPUP.magic && CHAR_POPUP.magic.spellcasting) || { ability: '', bonus: 0 };
+    if (!sc.ability) return { ability: '', dc: null, atk: null, bonus: parseInt(sc.bonus) || 0 };
+    const mod = statMod(getCharStat(sc.ability));
+    const pb = getProfBonus();
+    const bonus = parseInt(sc.bonus) || 0;
+    return { ability: sc.ability, dc: 8 + pb + mod + bonus, atk: pb + mod + bonus, bonus };
+  }
+  function renderSpellcasting() {
+    if (!CHAR_POPUP.magic) CHAR_POPUP.magic = emptyMagicData();
+    if (!CHAR_POPUP.magic.spellcasting) CHAR_POPUP.magic.spellcasting = { ability: '', bonus: 0 };
+    const sc = CHAR_POPUP.magic.spellcasting;
+    const sel = document.getElementById('spell-ability');
+    const bonusInp = document.getElementById('spell-misc-bonus');
+    const dcEl = document.getElementById('spell-save-dc');
+    const atkEl = document.getElementById('spell-atk-bonus');
+    if (!sel || !dcEl || !atkEl) return;
+    sel.value = sc.ability || '';
+    if (bonusInp && document.activeElement !== bonusInp) bonusInp.value = (parseInt(sc.bonus) || 0);
+    const c = computeSpellcasting();
+    dcEl.textContent = c.dc == null ? '—' : c.dc;
+    atkEl.textContent = c.atk == null ? '—' : fmtMod(c.atk);
+  }
+
   function renderMagic(magic) {
     const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
     const m = magic || emptyMagicData();
+    renderSpellcasting();
 
     // Spell slots grid: only render levels the user has activated. Default
     // state has no levels - the user clicks "+ Add slot level" to add one.
@@ -5065,6 +5284,8 @@
     renderSaves(CHAR_POPUP.saveProfs);
     renderSkills(CHAR_POPUP.skillProfs);
     renderPassiveSenses();
+    renderSpellcasting();
+    renderHitDice();
     refreshHpAutoCalc();
   }
 
@@ -5326,6 +5547,9 @@
     document.getElementById('char-wis').value = player.wisdom ?? 10;
     document.getElementById('char-cha').value = player.charisma ?? 10;
     document.getElementById('char-notes').value = player.notes || '';
+    try { CHAR_POPUP.profile = JSON.parse(player.profile || '{}') || {}; } catch (e) { CHAR_POPUP.profile = {}; }
+    if (typeof CHAR_POPUP.profile !== 'object' || Array.isArray(CHAR_POPUP.profile)) CHAR_POPUP.profile = {};
+    document.getElementById('char-proficiencies').value = CHAR_POPUP.profile.proficiencies || '';
 
     // HP display (from the specific token, or first owned token, or auto-suggest if no token)
     let hpTok = null;
@@ -5397,6 +5621,7 @@
     CHAR_POPUP.magic = parseMagicData(player.magic_data);
     // 5.5e: Inspiration, death saves, conditions, exhaustion
     CHAR_POPUP.inspiration = parseInt(player.inspiration) || 0;
+    CHAR_POPUP.hitDiceUsed = parseInt(player.hit_dice_used) || 0;
     CHAR_POPUP.deathSaves = parseDeathSaves(player.death_saves);
     const condData = parseConditions(player.conditions);
     CHAR_POPUP.conditions = condData.conditions;
@@ -5419,6 +5644,7 @@
     renderBuffs(CHAR_POPUP.buffs);
     renderInventory(CHAR_POPUP.inventory);
     renderEquipment(CHAR_POPUP.equipment);
+    renderFeatures();
     renderMagic(CHAR_POPUP.magic);
     // 5.5e renderers
     renderInspiration();
@@ -5447,6 +5673,8 @@
     document.getElementById('char-readonly-note').style.display = canEdit ? 'none' : 'block';
     const importBtn = document.getElementById('char-import-btn');
     if (importBtn) importBtn.style.display = canEdit ? '' : 'none';
+    const importPdfBtn = document.getElementById('char-import-pdf-btn');
+    if (importPdfBtn) importPdfBtn.style.display = canEdit ? '' : 'none';
     // Population complete - re-enable auto-save. Use a microtask delay so any
     // pending synthetic events from setting .value get processed first.
     setTimeout(() => { CHAR_POPUP.loading = false; }, 50);
@@ -5457,6 +5685,12 @@
     const popup = document.getElementById('char-popup');
     popup.classList.add('collapsed');
     document.querySelectorAll('#hp-tracker-list-right .hp-row').forEach(r => r.classList.remove('viewing'));
+  }
+
+  function getSheetToken() {
+    if (!CHAR_POPUP.targetPlayerId) return null;
+    if (CHAR_POPUP.targetTokenId && STATE.tokens.has(CHAR_POPUP.targetTokenId)) return STATE.tokens.get(CHAR_POPUP.targetTokenId);
+    return Array.from(STATE.tokens.values()).find(t => t.owner_id === CHAR_POPUP.targetPlayerId && t.x != null) || null;
   }
 
   function refreshCharPopupHp() {
@@ -5490,6 +5724,21 @@
       document.getElementById('char-hp-sub').textContent = 'No token on map';
       if (hpBox) { hpBox.classList.remove('low', 'zero'); }
     }
+    // Temporary HP display + controls gating
+    const tempInp = document.getElementById('char-hp-temp');
+    const tempBadge = document.getElementById('char-hp-temp-badge');
+    const hpControls = document.getElementById('char-hp-controls');
+    const temp = hpTok ? (hpTok.temp_hp ?? 0) : 0;
+    if (tempInp && document.activeElement !== tempInp) tempInp.value = temp;
+    if (tempBadge) {
+      if (temp > 0) { tempBadge.style.display = ''; tempBadge.textContent = '+' + temp; }
+      else { tempBadge.style.display = 'none'; }
+    }
+    if (hpControls) {
+      const canEditHp = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      hpControls.classList.toggle('disabled', !hpTok || !canEditHp);
+    }
+    renderHitDice();
     // Death saves panel visibility depends on HP - refresh it
     renderDeathSaves();
   }
@@ -5644,7 +5893,12 @@
     const ch = (parsed && parsed.character) ? parsed.character : parsed;
     if (!ch || typeof ch !== 'object' || Array.isArray(ch)) { toast('Unrecognized character file', 'error'); return; }
     if (!confirm('Import will overwrite this character sheet. Continue?')) return;
+    await applyCharacterObject(ch);
+  }
 
+  // Apply a character object (from JSON or PDF import) to the open sheet.
+  async function applyCharacterObject(ch) {
+    if (!CHAR_POPUP.targetPlayerId) return;
     const num = (v, d) => { const n = parseInt(v); return isNaN(n) ? d : n; };
     const str = (v) => (typeof v === 'string') ? v : (v == null ? '' : String(v));
     const jstr = (v, d) => {
@@ -5687,10 +5941,11 @@
       conditions: str(ch.conditions),
     };
     if (ch.portrait_url) patch.portrait_url = str(ch.portrait_url);
+    if (ch.profile != null) patch.profile = jstr(ch.profile, '{}');
 
     let { error } = await sb.from('vtt_players').update(patch).eq('id', CHAR_POPUP.targetPlayerId);
-    if (error && error.message && /subclass|passive_overrides|portrait_url/i.test(error.message)) {
-      const { subclass, passive_overrides, portrait_url, ...minimal } = patch;
+    if (error && error.message && /subclass|passive_overrides|portrait_url|profile/i.test(error.message)) {
+      const { subclass, passive_overrides, portrait_url, profile, ...minimal } = patch;
       ({ error } = await sb.from('vtt_players').update(minimal).eq('id', CHAR_POPUP.targetPlayerId));
     }
     if (error) { console.error('import failed', error); toast('Import failed', 'error'); return; }
@@ -5724,11 +5979,462 @@
     toast('Character imported');
   }
 
+  // ============ D&D BEYOND PDF IMPORT (phase 1) ============
+  const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  let pdfjsLoading = null;
+  function loadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if (pdfjsLoading) return pdfjsLoading;
+    pdfjsLoading = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = PDFJS_URL;
+      s.onload = () => {
+        if (window.pdfjsLib) { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER; resolve(window.pdfjsLib); }
+        else reject(new Error('pdf.js missing'));
+      };
+      s.onerror = () => reject(new Error('pdf.js load failed'));
+      document.head.appendChild(s);
+    });
+    return pdfjsLoading;
+  }
+
+  // Pull text items, group them into lines (by y), each line carries its items.
+  async function pdfExtractLines(arrayBuffer) {
+    const lib = await loadPdfJs();
+    const doc = await lib.getDocument({ data: arrayBuffer }).promise;
+    const all = [];
+    for (let p = 1; p <= doc.numPages; p++) {
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      const items = content.items
+        .map(it => ({ str: it.str, x: it.transform[4], y: it.transform[5] }))
+        .filter(it => it.str && it.str.trim() !== '');
+      items.sort((a, b) => (b.y - a.y) || (a.x - b.x));
+      const lines = [];
+      let cur = null;
+      items.forEach(it => {
+        if (!cur || Math.abs(cur.y - it.y) > 4) { cur = { y: it.y, page: p, items: [it] }; lines.push(cur); }
+        else cur.items.push(it);
+      });
+      lines.forEach(l => {
+        l.items.sort((a, b) => a.x - b.x);
+        l.text = l.items.map(i => i.str).join(' ').replace(/\s+/g, ' ').trim();
+        all.push(l);
+      });
+    }
+    return all;
+  }
+
+  function parseDndBeyondPdf(all) {
+    const ch = {};
+    const joined = all.map(l => l.text);
+    // Flat item list (each carries its page) for coordinate-based lookups.
+    const items = [];
+    all.forEach(l => l.items.forEach(it => items.push({ x: it.x, y: it.y, str: it.str, page: l.page })));
+    function nearestInt(labelMatches, lo, hi, dxm, dym, digits) {
+      let best = null, bestD = 1e9;
+      const re = new RegExp('^\\d{1,' + digits + '}$');
+      labelMatches.forEach(li => {
+        items.forEach(it => {
+          if (it.page !== li.page || !re.test(it.str)) return;
+          const v = parseInt(it.str);
+          if (v < lo || v > hi) return;
+          const dy = Math.abs(it.y - li.y), dx = Math.abs(it.x - li.x);
+          if (dy < dym && dx < dxm) { const d = dy + dx; if (d < bestD) { bestD = d; best = v; } }
+        });
+      });
+      return best;
+    }
+
+    // value on the line just above a label, x-aligned to the label
+    function valueAboveLabel(labelText) {
+      const LT = labelText.toUpperCase();
+      let labelLine = all.find(l => l.text.toUpperCase() === LT) || all.find(l => l.text.toUpperCase().includes(LT));
+      if (!labelLine) return '';
+      const labelItem = labelLine.items.find(i => LT.startsWith(i.str.toUpperCase().slice(0, 3))) || labelLine.items[0];
+      const lx = labelItem.x;
+      let above = null, bestDy = 1e9;
+      all.forEach(l => {
+        if (l.page !== labelLine.page) return;
+        const dy = l.y - labelLine.y;
+        if (dy > 2 && dy < 46 && dy < bestDy) { bestDy = dy; above = l; }
+      });
+      if (!above) return '';
+      const near = above.items.filter(i => Math.abs(i.x - lx) < 130).sort((a, b) => a.x - b.x);
+      return (near.length ? near : above.items).map(i => i.str).join(' ').trim();
+    }
+
+    // Class & level (supports multiclass: first class, summed levels)
+    const CLASSES = 'Barbarian|Bard|Cleric|Druid|Fighter|Monk|Paladin|Ranger|Rogue|Sorcerer|Warlock|Wizard|Artificer';
+    let level = 0, klass = '';
+    const clsRe = new RegExp('\\b(' + CLASSES + ')\\b\\s+(\\d+)', 'gi');
+    let cm;
+    const clsLine = (all.find(l => clsRe.test(l.text)) || {}).text || '';
+    clsRe.lastIndex = 0;
+    while ((cm = clsRe.exec(clsLine)) !== null) { if (!klass) klass = cm[1]; level += parseInt(cm[2]); }
+    if (klass) { ch.class = klass; ch.level = level || 1; }
+
+    ch.name = valueAboveLabel('CHARACTER NAME') || '';
+    ch.race = valueAboveLabel('SPECIES') || '';
+    const bg = valueAboveLabel('BACKGROUND') || '';
+
+    // Ability scores: nearest plain 1..30 integer to each (uppercase) ability label
+    const ABILS = [['strength', 'STRENGTH'], ['dexterity', 'DEXTERITY'], ['constitution', 'CONSTITUTION'], ['intelligence', 'INTELLIGENCE'], ['wisdom', 'WISDOM'], ['charisma', 'CHARISMA']];
+    ABILS.forEach(([key, label]) => {
+      const v = nearestInt(items.filter(it => it.str === label), 1, 30, 60, 70, 2);
+      if (v != null) ch[key] = v;
+    });
+
+    // Saving throws: Title-Case ability name with a mod; proficient if a bullet precedes it
+    const SAVE_MAP = { Strength: 'str', Dexterity: 'dex', Constitution: 'con', Intelligence: 'int', Wisdom: 'wis', Charisma: 'cha' };
+    const profSaves = [];
+    Object.keys(SAVE_MAP).forEach(full => {
+      const re = new RegExp('([•·∙●⚫])?\\s*[+\\-]\\d+\\s+' + full + '\\b');
+      for (const l of all) { const m = l.text.match(re); if (m) { if (m[1]) profSaves.push(SAVE_MAP[full]); break; } }
+    });
+    ch.save_profs = profSaves.join(',');
+
+    // Skills: per-skill search so a merged ability label before the row does not break it.
+    const profSkills = [], expSkills = [];
+    SKILLS_DEF.forEach(s => {
+      const esc = s.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp('([PE])?\\s*[+\\-]\\d+\\s+' + esc + '\\s+' + s.stat.toUpperCase() + '\\b', 'i');
+      for (const l of all) {
+        const m = l.text.match(re);
+        if (m) {
+          const mk = (m[1] || '').toUpperCase();
+          if (mk === 'E') { expSkills.push(s.key); profSkills.push(s.key); }
+          else if (mk === 'P') profSkills.push(s.key);
+          break;
+        }
+      }
+    });
+    ch.skill_profs = profSkills.join(',');
+    ch.skill_expertise = expSkills.join(',');
+
+    // Speed
+    const speedM = joined.join(' ').match(/(\d+)\s*ft\.?\s*\(?\s*walking/i) || joined.join(' ').match(/(\d+)\s*ft/i);
+    if (speedM) ch.speed = parseInt(speedM[1]);
+
+    // Max HP: integer just below the "Max" label of the HP box
+    { const v = nearestInt(items.filter(it => it.str === 'Max'), 1, 999, 60, 60, 3); if (v != null) { ch.hp_max = v; ch.hp_current = v; } }
+
+    // AC: integer near the "ARMOR" shield label
+    { const v = nearestInt(items.filter(it => it.str === 'ARMOR'), 1, 30, 70, 70, 2); if (v != null) ch.ac = v; }
+
+    // Attacks (page 1): "Name +N <damage> <type...>"
+    const attacks = [];
+    const atkRe = /^(.+?)\s+([+\-]\d+)\s+((?:\d*d\d+(?:\s*[+\-]\s*\d+)?)|\d+)\s+([A-Za-z]+)/;
+    all.forEach(l => {
+      if (l.page !== 1) return;
+      const m = l.text.match(atkRe);
+      if (!m) return;
+      const name = m[1].trim();
+      // Skip obvious non-attack lines
+      if (!name || name.length > 28) return;
+      if (/^(STR|DEX|CON|INT|WIS|CHA|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma|Total|Max|Current|Temp)$/i.test(name)) return;
+      attacks.push({ name, bonus: m[2], dmg: (m[3] + ' ' + m[4]).replace(/\s+/g, ' ').trim() });
+    });
+
+    // ---- Phase 2: currency, equipment, spells ----
+    function coinVal(code) {
+      let best = null, bestDx = 1e9;
+      items.filter(it => it.str === code).forEach(ci => {
+        items.forEach(it => {
+          if (it.page !== ci.page || !/^\d{1,6}$/.test(it.str)) return;
+          const dy = Math.abs(it.y - ci.y), dx = it.x - ci.x;
+          if (dy < 6 && dx > 0 && dx < 60 && dx < bestDx) { bestDx = dx; best = parseInt(it.str); }
+        });
+      });
+      return best;
+    }
+    ch.gold = coinVal('GP') || 0;
+    ch.silver = coinVal('SP') || 0;
+    ch.copper = coinVal('CP') || 0;
+
+    // Equipment (page 2): "Name Qty (-- | N lb.)", up to two per line
+    const inventory = [];
+    const eqRe = /([A-Za-z][A-Za-z'’.\- ]+?)\s+(\d+)\s+(?:--|\d+\s*lb)/g;
+    all.forEach(l => {
+      if (l.page !== 2) return;
+      if (/\b(QTY|WEIGHT|EQUIPMENT|FEATURES|TRAITS|CARRIED|ENCUMBERED|ATTUNED)\b/.test(l.text)) return;
+      let m; eqRe.lastIndex = 0;
+      while ((m = eqRe.exec(l.text)) !== null) {
+        let nm = m[1].trim().replace(/^lb\.?\s+/i, '').replace(/^[A-Z\/]{2,}\s+/, '').trim();
+        if (nm.length < 2 || /^(CP|SP|EP|GP|PP)$/i.test(nm)) continue;
+        inventory.push({ name: nm, qty: parseInt(m[2]) || 1, stats: '' });
+      }
+    });
+    ch._inventory = inventory;
+
+    // Spells (page 4): track level header, capture names by leading prep marker
+    const cantrips = [], spells = [], slots = {};
+    let curLevel = null;
+    const srcRe = /^[O○●Oo]\s+(.+?)\s+(Cleric|Druid|Wizard|Bard|Sorcerer|Warlock|Paladin|Ranger|Artificer|Divine Order|Elven Lineage Spells|Elven Lineage)\b/;
+    all.forEach(l => {
+      if (l.page !== 4) return;
+      const t = l.text;
+      if (/CANTRIPS/i.test(t)) curLevel = 0;
+      const mlv = t.match(/(\d+)(?:st|nd|rd|th)\s+LEVEL/i);
+      if (mlv) curLevel = parseInt(mlv[1]);
+      const msl = t.match(/(\d+)\s+Slots/);
+      if (msl && curLevel) slots[curLevel] = { cur: parseInt(msl[1]), max: parseInt(msl[1]) };
+      const m = t.match(srcRe);
+      if (m) {
+        const nm = m[1].replace(/\s*\[R\]/g, '').trim();
+        if (curLevel === 0) cantrips.push(nm);
+        else if (curLevel) spells.push({ name: nm, level: curLevel });
+      }
+    });
+    ch._cantrips = cantrips;
+    ch._spells = spells;
+    ch._slots = slots;
+
+    // Spellcasting header (page 4 top): ability, save DC, spell attack bonus
+    {
+      const head = all.filter(l => l.page === 4).slice(0, 8).map(l => l.text).join(' ');
+      const ab = head.match(/\b(STR|DEX|CON|INT|WIS|CHA)\b/);
+      const dc = head.match(/\b(\d{1,2})\b/);
+      const atk = head.match(/([+\-]\d+)/);
+      if (ab) ch._spellAbility = ab[1];
+      if (dc) ch._spellDC = parseInt(dc[1]);
+      if (atk) ch._spellAtk = atk[1];
+    }
+
+    // Other Proficiencies & Languages (page 1): "=== LABEL ===" headers, value in the column band.
+    // pdf.js y is bottom-up (higher y = nearer the top), so "below a header" means a smaller y.
+    {
+      const labels = ['ARMOR', 'WEAPONS', 'TOOLS', 'LANGUAGES'];
+      const labelName = { ARMOR: 'Armor', WEAPONS: 'Weapons', TOOLS: 'Tools', LANGUAGES: 'Languages' };
+      const p1 = items.filter(it => it.page === 1);
+      const heads = p1.filter(it => labels.includes(it.str) && p1.some(o => o.str === '===' && Math.abs(o.y - it.y) < 3 && o.x < it.x));
+      heads.sort((a, b) => b.y - a.y); // top first
+      const parts = [];
+      heads.forEach((h, idx) => {
+        const nextY = idx + 1 < heads.length ? heads[idx + 1].y : h.y - 40;
+        const band = p1.filter(o => o.y < h.y - 1 && o.y > nextY + 1 && o.x >= h.x - 30 && o.str !== '===');
+        band.sort((a, b) => (b.y - a.y) || (a.x - b.x));
+        const val = band.map(o => o.str).join(' ').replace(/\s+/g, ' ').trim();
+        if (val) parts.push(labelName[h.str] + ': ' + val);
+      });
+      if (parts.length) ch._proficiencies = parts.join('\n');
+    }
+
+    // Features & Traits (pages 1-2): lines starting with "*" or "|"; capture the name
+    {
+      const feats = [], seen = new Set();
+      all.forEach(l => {
+        if (l.page !== 1 && l.page !== 2) return;
+        l.text.split(/(?=[*|]\s)/).forEach(seg => {
+          seg = seg.trim();
+          const m = seg.match(/^[*|]\s+(.+)$/);
+          if (!m) return;
+          const body = m[1].trim();
+          if (/^\d+\s*\//.test(body)) return; // usage line e.g. "2 / Long Rest"
+          let name = body.split(/\s*•/)[0].trim();
+          name = name.replace(/:\s*\d+\s*(Action|Bonus Action|Reaction).*$/i, '').trim();
+          name = name.replace(/\s*•\s*$/, '').trim();
+          if (name.length < 2 || name.length > 48) return;
+          const key = name.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          feats.push(name);
+        });
+      });
+      if (feats.length) ch._features = feats;
+    }
+
+    ch._background = bg;
+    ch._attacks = attacks;
+    return ch;
+  }
+
+  async function importDndBeyondPdf(file) {
+    if (!CHAR_POPUP.targetPlayerId) { toast('Open a character first', 'error'); return; }
+    const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+    if (!canEdit) { toast('Read-only sheet', 'error'); return; }
+
+    let parsed;
+    try {
+      toast('Reading PDF...');
+      const buf = await file.arrayBuffer();
+      const lines = await pdfExtractLines(buf);
+      parsed = parseDndBeyondPdf(lines);
+    } catch (e) {
+      console.error('PDF parse failed', e);
+      toast('Could not read this PDF', 'error');
+      return;
+    }
+    if (!parsed || (!parsed.class && parsed.strength == null)) {
+      toast('Not a recognized D&D Beyond sheet', 'error');
+      return;
+    }
+
+    const summary = [
+      parsed.name ? `Name: ${parsed.name}` : null,
+      parsed.class ? `Class: ${parsed.class} ${parsed.level || ''}`.trim() : null,
+      `Abilities: STR ${parsed.strength ?? '?'} DEX ${parsed.dexterity ?? '?'} CON ${parsed.constitution ?? '?'} INT ${parsed.intelligence ?? '?'} WIS ${parsed.wisdom ?? '?'} CHA ${parsed.charisma ?? '?'}`,
+      parsed.skill_profs ? `Skill profs: ${parsed.skill_profs.split(',').length}` : 'Skill profs: 0',
+      parsed.save_profs ? `Save profs: ${parsed.save_profs}` : 'Save profs: none',
+      (parsed._attacks && parsed._attacks.length) ? `Attacks: ${parsed._attacks.length}` : null,
+      (parsed._cantrips && parsed._cantrips.length) ? `Cantrips: ${parsed._cantrips.length}` : null,
+      (parsed._spells && parsed._spells.length) ? `Spells: ${parsed._spells.length}` : null,
+      (parsed._inventory && parsed._inventory.length) ? `Items: ${parsed._inventory.length}` : null,
+      (parsed._features && parsed._features.length) ? `Features: ${parsed._features.length}` : null,
+      parsed._proficiencies ? 'Proficiencies & languages: yes' : null,
+      `Gold: ${parsed.gold || 0}`,
+    ].filter(Boolean).join('\n');
+    if (!confirm('Import this character and overwrite the open sheet?\n\n' + summary)) return;
+
+    // Seed from the current row so we do not wipe fields the PDF parser does not cover yet.
+    const cur = STATE.persistedPlayers.find(p => p.id === CHAR_POPUP.targetPlayerId) || {};
+    let magic;
+    try { magic = JSON.parse(cur.magic_data || '{}'); } catch (e) { magic = {}; }
+    if (!magic || typeof magic !== 'object') magic = {};
+    const baseMagic = emptyMagicData();
+    magic = Object.assign(baseMagic, magic);
+    if (parsed._cantrips && parsed._cantrips.length) magic.cantrips = parsed._cantrips.map(n => ({ name: n, desc: '' }));
+    if (parsed._spells && parsed._spells.length) magic.spells = parsed._spells.map(s => ({ name: s.name, level: s.level, desc: '', prepared: false }));
+    if (parsed._slots && Object.keys(parsed._slots).length) {
+      Object.keys(parsed._slots).forEach(lv => { magic.slots[lv] = parsed._slots[lv]; });
+    }
+    magic.attacks = (parsed._attacks && parsed._attacks.length) ? parsed._attacks.slice() : (Array.isArray(magic.attacks) ? magic.attacks.slice() : []);
+    if (parsed._spellAbility) {
+      if (!magic.spellcasting) magic.spellcasting = { ability: '', bonus: 0 };
+      magic.spellcasting.ability = parsed._spellAbility.toLowerCase();
+    }
+
+    let notes = cur.notes || '';
+    if (parsed._background && !/background:/i.test(notes)) {
+      notes = (notes ? notes + '\n' : '') + 'Background: ' + parsed._background;
+    }
+
+    let profileObj = {};
+    try { profileObj = JSON.parse(cur.profile || '{}') || {}; } catch (e) { profileObj = {}; }
+    if (typeof profileObj !== 'object' || Array.isArray(profileObj)) profileObj = {};
+    if (parsed._proficiencies) profileObj.proficiencies = parsed._proficiencies;
+    if (parsed._features && parsed._features.length) profileObj.features = parsed._features.map(n => ({ name: n, desc: '' }));
+
+    const ch = {
+      name: parsed.name || cur.name || 'Unnamed',
+      level: parsed.level != null ? parsed.level : (cur.level || 1),
+      class: parsed.class || cur.class || '',
+      race: parsed.race || cur.race || '',
+      subclass: cur.subclass || '',
+      ac: parsed.ac != null ? parsed.ac : (cur.ac || 10),
+      speed: parsed.speed != null ? parsed.speed : (cur.speed || 30),
+      strength: parsed.strength != null ? parsed.strength : (cur.strength || 10),
+      dexterity: parsed.dexterity != null ? parsed.dexterity : (cur.dexterity || 10),
+      constitution: parsed.constitution != null ? parsed.constitution : (cur.constitution || 10),
+      intelligence: parsed.intelligence != null ? parsed.intelligence : (cur.intelligence || 10),
+      wisdom: parsed.wisdom != null ? parsed.wisdom : (cur.wisdom || 10),
+      charisma: parsed.charisma != null ? parsed.charisma : (cur.charisma || 10),
+      notes,
+      gold: parsed.gold != null ? parsed.gold : (cur.gold || 0),
+      silver: parsed.silver != null ? parsed.silver : (cur.silver || 0),
+      copper: parsed.copper != null ? parsed.copper : (cur.copper || 0),
+      save_profs: parsed.save_profs || '',
+      skill_profs: parsed.skill_profs || '',
+      save_expertise: cur.save_expertise || '',
+      skill_expertise: parsed.skill_expertise || '',
+      skill_overrides: cur.skill_overrides || '{}',
+      save_overrides: cur.save_overrides || '{}',
+      passive_overrides: cur.passive_overrides || '{}',
+      buffs: cur.buffs || '[]',
+      inventory: (parsed._inventory && parsed._inventory.length) ? JSON.stringify(parsed._inventory) : (cur.inventory || '[]'),
+      equipment: cur.equipment || '{}',
+      magic_data: JSON.stringify(magic),
+      inspiration: cur.inspiration ? 1 : 0,
+      death_saves: cur.death_saves || '',
+      conditions: cur.conditions || '',
+      hp_max: parsed.hp_max,
+      hp_current: parsed.hp_current,
+      profile: JSON.stringify(profileObj),
+    };
+    await applyCharacterObject(ch);
+    toast('Imported from D&D Beyond');
+  }
+
   // Wire popup inputs
   function setupCharPopupListeners() {
     const popup = document.getElementById('char-popup');
     document.getElementById('char-popup-close').addEventListener('click', closeCharPopup);
     setupSheetRolls();
+
+    // Spellcasting: ability + derived DC/attack, rollable spell attack
+    const scCanEdit = () => !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+    document.getElementById('spell-ability').addEventListener('change', (e) => {
+      if (!scCanEdit()) { renderSpellcasting(); return; }
+      if (!CHAR_POPUP.magic) CHAR_POPUP.magic = emptyMagicData();
+      if (!CHAR_POPUP.magic.spellcasting) CHAR_POPUP.magic.spellcasting = { ability: '', bonus: 0 };
+      CHAR_POPUP.magic.spellcasting.ability = e.target.value;
+      renderSpellcasting();
+      if (!CHAR_POPUP.loading) scheduleSavePlayer();
+    });
+    document.getElementById('spell-misc-bonus').addEventListener('input', (e) => {
+      if (!scCanEdit()) { renderSpellcasting(); return; }
+      if (!CHAR_POPUP.magic) CHAR_POPUP.magic = emptyMagicData();
+      if (!CHAR_POPUP.magic.spellcasting) CHAR_POPUP.magic.spellcasting = { ability: '', bonus: 0 };
+      CHAR_POPUP.magic.spellcasting.bonus = parseInt(e.target.value) || 0;
+      renderSpellcasting();
+      if (!CHAR_POPUP.loading) scheduleSavePlayer();
+    });
+    document.getElementById('spell-attack-roll').addEventListener('click', () => {
+      const c = computeSpellcasting();
+      if (c.atk == null) { toast('Set a spellcasting ability first', 'error'); return; }
+      rollDice(20, 1, c.atk, false, 'Spell Attack');
+    });
+
+    // HP controls: damage (absorbed by Temp first), heal, set Temp HP
+    document.getElementById('char-hp-dmg').addEventListener('click', () => {
+      const t = getSheetToken(); if (!t) { toast('No token on the map yet', 'error'); return; }
+      const amt = parseInt(document.getElementById('char-hp-amount').value) || 0;
+      if (amt > 0) applyHpChange(t.id, -amt);
+    });
+    document.getElementById('char-hp-heal').addEventListener('click', () => {
+      const t = getSheetToken(); if (!t) { toast('No token on the map yet', 'error'); return; }
+      const amt = parseInt(document.getElementById('char-hp-amount').value) || 0;
+      if (amt > 0) applyHpChange(t.id, amt);
+    });
+    document.getElementById('char-hp-temp').addEventListener('change', (e) => {
+      const t = getSheetToken(); if (!t) { e.target.value = 0; return; }
+      setTempHp(t.id, e.target.value);
+    });
+    document.getElementById('char-hd-spend').addEventListener('click', () => {
+      const t = getSheetToken(); if (!t) { toast('No token on the map yet', 'error'); return; }
+      const level = parseInt(document.getElementById('char-level').value) || 0;
+      const used = CHAR_POPUP.hitDiceUsed || 0;
+      if (used >= level) { toast('No Hit Dice remaining', 'error'); return; }
+      const die = hitDieForClass(document.getElementById('char-class').value);
+      const conMod = statMod(getCharStat('constitution'));
+      const r = rollDice(die, 1, conMod, false, 'Hit Die');
+      const heal = Math.max(0, r.total);
+      applyHpChange(t.id, heal);
+      setHitDiceUsed(CHAR_POPUP.targetPlayerId || STATE.userId, used + 1);
+      renderHitDice();
+    });
+    document.getElementById('char-proficiencies').addEventListener('input', (e) => {
+      const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) return;
+      if (!CHAR_POPUP.profile) CHAR_POPUP.profile = {};
+      CHAR_POPUP.profile.proficiencies = e.target.value;
+      if (!CHAR_POPUP.loading) scheduleSaveProfile();
+    });
+    document.getElementById('feature-add-btn').addEventListener('click', () => {
+      const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) return;
+      const nameInp = document.getElementById('feature-add-name');
+      const descInp = document.getElementById('feature-add-desc');
+      const name = (nameInp.value || '').trim();
+      if (!name) { toast('Feature needs a name', 'error'); return; }
+      if (!CHAR_POPUP.profile) CHAR_POPUP.profile = {};
+      if (!Array.isArray(CHAR_POPUP.profile.features)) CHAR_POPUP.profile.features = [];
+      CHAR_POPUP.profile.features.push({ name, desc: (descInp.value || '').trim() });
+      nameInp.value = ''; descInp.value = '';
+      renderFeatures();
+      scheduleSaveProfile();
+    });
 
     // Character file import/export (4a)
     document.getElementById('char-export-btn').addEventListener('click', exportCharacter);
@@ -5740,6 +6446,16 @@
     document.getElementById('char-import-input').addEventListener('change', (e) => {
       const f = e.target.files[0];
       if (f) importCharacterFile(f);
+      e.target.value = '';
+    });
+    document.getElementById('char-import-pdf-btn').addEventListener('click', () => {
+      const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) { toast('Read-only sheet', 'error'); return; }
+      document.getElementById('char-import-pdf-input').click();
+    });
+    document.getElementById('char-import-pdf-input').addEventListener('change', (e) => {
+      const f = e.target.files[0];
+      if (f) importDndBeyondPdf(f);
       e.target.value = '';
     });
 
@@ -6482,6 +7198,9 @@
     const level = parseInt(player.level) || 1;
     const conMod = Math.floor(((parseInt(player.constitution) || 10) - 10) / 2);
     const hd = hitDieForClass(player.class);
+    const usedHd = parseInt(player.hit_dice_used) || 0;
+    const totalHd = level;
+    const remHd = Math.max(0, totalHd - usedHd);
     const myToken = Array.from(STATE.tokens.values()).find(t => t.owner_id === STATE.userId && t.x != null);
     const curHp = myToken ? (myToken.current_hp ?? 0) : null;
     const maxHp = myToken ? (myToken.max_hp ?? 0) : null;
@@ -6492,6 +7211,8 @@
 
     if (kind === 'long') {
       const halfHd = Math.max(1, Math.floor(level / 2));
+      const restoredTo = Math.max(0, usedHd - halfHd);
+      const newRem = totalHd - restoredTo;
       const slotsRestored = magic && magic.slots ? Object.entries(magic.slots).filter(([lv, v]) => v && v.max > 0).map(([lv, v]) => `Lv ${lv}: ${v.max}`).join(', ') : '';
       return {
         kind: 'long',
@@ -6499,7 +7220,7 @@
         intro: 'A full night of rest. Restores all hit points, all spell slots, half of your hit dice, reduces exhaustion by 1, and resets death saves.',
         changes: [
           { key: 'Hit Points', val: maxHp != null ? `${curHp ?? '?'} → ${maxHp} (full)` : 'No token on map', cls: 'gain' },
-          { key: 'Hit Dice restored', val: `+${halfHd} (half of ${level})`, cls: 'gain' },
+          { key: 'Hit Dice', val: `${remHd} → ${newRem} / ${totalHd} (+${Math.min(halfHd, usedHd)})`, cls: 'gain' },
           { key: 'Spell slots', val: slotsRestored || 'none configured', cls: 'gain' },
           { key: 'Exhaustion', val: conds.exhaustionLevel > 0 ? `${conds.exhaustionLevel} → ${conds.exhaustionLevel - 1}` : '0 (none)', cls: conds.exhaustionLevel > 0 ? 'gain' : '' },
           { key: 'Death saves', val: 'reset', cls: 'gain' },
@@ -6543,6 +7264,8 @@
             await sb.from('vtt_players').update(updates).eq('id', STATE.userId);
             Object.assign(player, updates);
           }
+          await setHitDiceUsed(STATE.userId, restoredTo);
+          if (CHAR_POPUP.targetPlayerId === STATE.userId) renderHitDice();
           // Announce in chat for the table
           await sb.from('vtt_chat').insert({
             id: genId(),
@@ -6557,23 +7280,28 @@
         },
       };
     } else {
-      // Short rest: roll one Hit Die for healing (player can choose to spend more later)
-      const heal = Math.floor(Math.random() * hd) + 1 + conMod;
-      const newHp = myToken && curHp != null && maxHp != null ? Math.min(maxHp, curHp + heal) : null;
+      // Short rest: spend one Hit Die for healing (if any remain)
+      const canSpend = remHd > 0;
+      const heal = canSpend ? (Math.floor(Math.random() * hd) + 1 + conMod) : 0;
+      const newHp = canSpend && myToken && curHp != null && maxHp != null ? Math.min(maxHp, curHp + heal) : null;
       return {
         kind: 'short',
         title: 'Short Rest (1 hour)',
         intro: `A brief respite. Spend one Hit Die (d${hd}) + CON modifier (${conMod >= 0 ? '+' : ''}${conMod}) to heal. Spell slots do NOT restore (Warlock excepted). Some class features recharge.`,
         changes: [
-          { key: `Hit Die roll (d${hd})`, val: `${heal - conMod} ${conMod >= 0 ? '+' : ''} ${conMod} = ${heal}`, cls: 'gain' },
-          { key: 'Hit Points', val: newHp != null ? `${curHp} → ${newHp}` : 'No token on map', cls: 'gain' },
+          { key: `Hit Die roll (d${hd})`, val: canSpend ? `${heal - conMod} ${conMod >= 0 ? '+' : ''} ${conMod} = ${heal}` : 'no Hit Dice remaining', cls: canSpend ? 'gain' : '' },
+          { key: 'Hit Points', val: newHp != null ? `${curHp} → ${newHp}` : (canSpend ? 'No token on map' : 'unchanged'), cls: canSpend ? 'gain' : '' },
           { key: 'Spell slots', val: player.class === 'Warlock' ? 'restored (Warlock Pact Magic)' : 'unchanged', cls: player.class === 'Warlock' ? 'gain' : '' },
-          { key: 'Hit Dice remaining', val: `${level - 1} / ${level} (you spent 1)`, cls: 'lose' },
+          { key: 'Hit Dice', val: canSpend ? `${remHd} → ${remHd - 1} / ${totalHd} (spent 1)` : `0 / ${totalHd} (none to spend)`, cls: canSpend ? 'lose' : '' },
         ],
         apply: async () => {
-          if (myToken && newHp != null) {
+          if (canSpend && myToken && newHp != null) {
             await sb.from('vtt_tokens').update({ current_hp: newHp, updated_at: new Date().toISOString() }).eq('id', myToken.id);
             myToken.current_hp = newHp;
+          }
+          if (canSpend) {
+            await setHitDiceUsed(STATE.userId, usedHd + 1);
+            if (CHAR_POPUP.targetPlayerId === STATE.userId) renderHitDice();
           }
           // Warlock: restore all spell slots
           if (player.class === 'Warlock' && magic && magic.slots) {
