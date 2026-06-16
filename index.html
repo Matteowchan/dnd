@@ -1085,22 +1085,22 @@
   #rtc-bar { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 80; display: none; flex-direction: column; align-items: center; gap: 6px; --rtc-tile-h: 120px; }
   #rtc-launch { padding: 8px 16px; background: var(--panel-light); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 6px; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.05em; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
   #rtc-launch:hover { background: var(--gold); color: #1a1612; }
-  #rtc-panel { display: none; flex-direction: column; align-items: center; gap: 6px; background: rgba(20,17,14,0.86); border: 1px solid var(--border); border-radius: 10px; padding: 8px; box-shadow: 0 6px 24px rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+  #rtc-panel { display: none; flex-direction: column; align-items: center; gap: 3px; background: rgba(20,17,14,0.82); border: 1px solid var(--border); border-radius: 8px; padding: 4px; box-shadow: 0 4px 14px rgba(0,0,0,0.4); backdrop-filter: blur(4px); }
   #rtc-bar.in-call #rtc-panel { display: flex; }
   #rtc-bar.in-call #rtc-launch { display: none; }
-  #rtc-resize { align-self: stretch; height: 14px; cursor: ns-resize; display: flex; align-items: center; justify-content: center; }
-  #rtc-resize::before { content: ''; width: 38px; height: 4px; border-radius: 2px; background: var(--gold-soft); opacity: 0.6; }
+  #rtc-resize { align-self: stretch; height: 9px; cursor: ns-resize; display: flex; align-items: center; justify-content: center; }
+  #rtc-resize::before { content: ''; width: 26px; height: 3px; border-radius: 2px; background: var(--gold-soft); opacity: 0.5; }
   #rtc-topbar { align-self: stretch; display: flex; align-items: center; gap: 6px; }
-  #rtc-move { flex: 1; height: 16px; cursor: move; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
-  #rtc-move::before { content: ''; width: 46px; height: 4px; border-radius: 2px; background: var(--gold-soft); opacity: 0.5; }
+  #rtc-move { flex: 1; height: 11px; cursor: move; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
+  #rtc-move::before { content: ''; width: 30px; height: 3px; border-radius: 2px; background: var(--gold-soft); opacity: 0.45; }
   #rtc-bar.locked #rtc-move { cursor: default; }
   #rtc-bar.locked #rtc-move::before { opacity: 0.18; }
   #rtc-lock { padding: 3px 9px; font-size: 11px; border-radius: 5px; border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); cursor: pointer; white-space: nowrap; }
   #rtc-lock:hover { border-color: var(--gold-soft); }
   #rtc-lock.off { background: rgba(160,40,40,0.22); border-color: var(--danger); color: #f0c9c9; }
   #rtc-bar.locked #rtc-tiles { flex-wrap: wrap; justify-content: center; }
-  #rtc-tiles { display: flex; gap: 6px; align-items: flex-end; max-width: 86vw; overflow-x: auto; padding-bottom: 2px; }
-  .rtc-tile { position: relative; height: var(--rtc-tile-h); aspect-ratio: 4 / 3; background: #0b0907; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; flex: 0 0 auto; }
+  #rtc-tiles { display: flex; gap: 4px; align-items: flex-end; max-width: 86vw; overflow-x: auto; padding-bottom: 0; }
+  .rtc-tile { position: relative; height: var(--rtc-tile-h); aspect-ratio: 4 / 3; background: #0b0907; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; flex: 0 0 auto; }
   .rtc-tile video { width: 100%; height: 100%; object-fit: cover; display: block; background: #0b0907; }
   .rtc-tile.local video { transform: scaleX(-1); }
   .rtc-tile .rtc-name { position: absolute; left: 4px; bottom: 3px; font-size: 11px; color: var(--cream); background: rgba(0,0,0,0.55); padding: 1px 6px; border-radius: 3px; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
