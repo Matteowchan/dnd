@@ -1867,6 +1867,15 @@
   </div>
 </div>
 
+<!-- Shared image reveal: broadcast to every player as a popup -->
+<div id="shared-image-overlay" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.85); align-items:center; justify-content:center; padding:30px;">
+  <div style="position:relative; max-width:90vw; max-height:90vh; display:flex; flex-direction:column; align-items:center;">
+    <button id="shared-image-close" style="position:absolute; top:-14px; right:-14px; width:36px; height:36px; border-radius:50%; background:var(--panel); border:1px solid var(--gold-soft); color:var(--cream); font-size:18px; line-height:1; cursor:pointer; z-index:1;">×</button>
+    <img id="shared-image-img" style="max-width:90vw; max-height:80vh; border:2px solid var(--gold-soft); border-radius:6px; box-shadow:0 20px 60px rgba(0,0,0,0.7); object-fit:contain;">
+    <div id="shared-image-caption" style="margin-top:10px; font-family:'Cinzel',serif; color:var(--gold); font-size:16px; letter-spacing:0.05em; text-align:center;"></div>
+  </div>
+</div>
+
 <!-- Short / Long Rest popup -->
 <div id="rest-popup">
   <div class="char-popup-header">
@@ -3487,6 +3496,7 @@
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vtt_sessions', filter: `id=eq.${STATE.sessionId}` }, handleSessionChange)
       .on('broadcast', { event: 'drag' }, ({ payload }) => handleRemoteDrag(payload))
       .on('broadcast', { event: 'effect-clear' }, ({ payload }) => handleRemoteEffectClear(payload))
+      .on('broadcast', { event: 'show-image' }, ({ payload }) => showSharedImagePopup(payload))
       .on('presence', { event: 'sync' }, handlePresenceSync)
       .subscribe(async (status) => {
         const ind = document.getElementById('conn-indicator');
@@ -7651,8 +7661,49 @@
   // "Show to All" routes by type: map → map, others → token. Both keep popup open.
   document.getElementById('imggen-show-all').addEventListener('click', async () => {
     if (!imgGenState.url) return;
-    if (imgGenState.type === 'map') await imgGenSetAsMap();
-    else await imgGenAddAsToken();
+    let url = imgGenState.url;
+    // Broadcast icin gercek bir URL gerekir, data URI cok buyuk. Gerekirse once yukle.
+    if (!/^https?:/i.test(url)) {
+      try {
+        showImggenStatus('Sharing...');
+        const blob = await getGeneratedBlob();
+        const ext = (blob.type === 'image/jpeg') ? 'jpg' : (blob.type === 'image/webp' ? 'webp' : 'png');
+        const path = `${STATE.sessionId}/generated/${genId()}.${ext}`;
+        url = await uploadImage(blob, path);
+        imgGenState.url = url;
+      } catch (e) {
+        console.error('share upload failed', e);
+        toast('Could not share image', 'error');
+        return;
+      }
+    }
+    const name = (document.getElementById('imggen-name').value || '').trim();
+    // Herkese yayinla. Gonderen kendi broadcast'ini almaz, o yuzden lokal de goster.
+    try {
+      if (STATE.channel) STATE.channel.send({ type: 'broadcast', event: 'show-image', payload: { url, name } });
+    } catch (e) { /* ignore */ }
+    showSharedImagePopup({ url, name });
+    showImggenStatus('Shown to all players');
+  });
+
+  function showSharedImagePopup(payload) {
+    const url = payload && payload.url;
+    if (!url) return;
+    const overlay = document.getElementById('shared-image-overlay');
+    const img = document.getElementById('shared-image-img');
+    const cap = document.getElementById('shared-image-caption');
+    img.src = url;
+    cap.textContent = (payload.name || '').trim();
+    overlay.style.display = 'flex';
+  }
+  function closeSharedImagePopup() {
+    const overlay = document.getElementById('shared-image-overlay');
+    overlay.style.display = 'none';
+    document.getElementById('shared-image-img').removeAttribute('src');
+  }
+  document.getElementById('shared-image-close').addEventListener('click', closeSharedImagePopup);
+  document.getElementById('shared-image-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'shared-image-overlay') closeSharedImagePopup();
   });
 
   // Library: click thumbnail to load it back into the preview
