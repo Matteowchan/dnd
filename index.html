@@ -245,6 +245,13 @@
   /* Header is shared with floating popups (imggen/spells/recap) which keep drag, so cursor:move applies there */
   .char-popup-header { padding: 10px 14px; background: var(--panel-light); border-bottom: 1px solid var(--border); cursor: move; display: flex; align-items: center; justify-content: space-between; gap: 6px; border-radius: 6px 6px 0 0; }
   .char-popup-header .ttl { font-family: 'Cinzel', serif; font-size: 14px; color: var(--gold); letter-spacing: 0.05em; }
+  .char-hdr-actions { display: flex; align-items: center; gap: 6px; }
+  #char-import-pdf-hdr { background: rgba(212,165,116,0.16); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 4px; font-size: 11px; padding: 3px 9px; cursor: pointer; white-space: nowrap; }
+  #char-import-pdf-hdr:hover { background: rgba(212,165,116,0.3); }
+  .char-file-backup { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .char-file-backup .cfb-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-right: 2px; }
+  .char-file-backup button { font-size: 11px; padding: 3px 10px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 4px; cursor: pointer; }
+  .char-file-backup button:hover { color: var(--cream); border-color: var(--gold-soft); }
   .char-popup-header button { padding: 2px 10px; font-size: 14px; }
   /* Override cursor on the docked char-popup since it doesn't drag */
   #char-popup .char-popup-header { cursor: default; padding: 8px 12px; }
@@ -523,21 +530,24 @@
 
   /* Saving throws */
   .saves-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-  .save-row { display: flex; align-items: center; gap: 6px; padding: 4px 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; font-size: 12px; }
-  .save-row .save-prof { width: 14px; height: 14px; cursor: pointer; accent-color: var(--gold); }
-  .save-row .save-stat { font-family: 'Cinzel', serif; color: var(--muted); font-size: 10px; letter-spacing: 0.1em; min-width: 26px; }
-  .save-row .save-bonus { margin-left: auto; color: var(--gold); font-weight: 700; }
-  .save-row.state-prof .save-stat, .save-row.state-exp .save-stat { color: var(--cream); }
-
-  /* Skill/Save bonus boxes: base (auto, readonly), extra (manual editable), total */
-  .bonus-base { width: 30px; text-align: center; color: var(--muted); font-weight: 600; font-family: 'Cinzel', serif; padding: 2px 0; border: 1px solid var(--border); background: rgba(0,0,0,0.25); border-radius: 3px; font-size: 12px; margin-left: auto; cursor: help; }
-  .bonus-extra { width: 36px; text-align: center; background: var(--bg); border: 1px solid var(--gold-soft); color: var(--gold); font-weight: 700; font-family: 'Cinzel', serif; padding: 2px 0; border-radius: 3px; font-size: 12px; -moz-appearance: textfield; }
+  .save-row { display: flex; align-items: center; gap: 7px; padding: 7px 9px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
+  .row-fill { flex: 1; min-width: 4px; }
+  .skills-editbar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+  .skills-edit-toggle { font-size: 11px; padding: 4px 11px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 5px; cursor: pointer; }
+  .skills-edit-toggle:hover { color: var(--cream); border-color: var(--gold-soft); }
+  .skills-edit-toggle.on { color: var(--gold); border-color: var(--gold-soft); background: rgba(212,165,116,0.14); }
+  /* Manual bonus is hidden by default; only shown in edit mode */
+  .bonus-base { display: none; }
+  .bonus-extra { display: none; width: 40px; text-align: center; background: var(--bg); border: 1px solid var(--gold-soft); color: var(--gold); font-weight: 700; font-family: 'Cinzel', serif; padding: 3px 0; border-radius: 4px; font-size: 12px; -moz-appearance: textfield; }
+  .char-tab-content[data-tab="skills"].editing .bonus-extra { display: inline-block; }
   .bonus-extra::-webkit-outer-spin-button, .bonus-extra::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .bonus-extra:focus { outline: none; border-color: var(--gold); background: var(--panel-light); }
   .bonus-extra[readonly] { opacity: 0.5; cursor: default; }
   .overridden .bonus-extra { color: #ffc77a; border-color: var(--gold); background: rgba(212,175,55,0.12); }
-  .bonus-total { font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold); min-width: 28px; text-align: center; padding: 2px 4px; }
+  .bonus-total { font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold); min-width: 34px; text-align: center; padding: 3px 8px; border-radius: 5px; background: rgba(212,165,116,0.1); border: 1px solid transparent; font-size: 14px; }
+  .skill-row:hover .bonus-total, .save-row:hover .bonus-total { border-color: var(--gold-soft); background: rgba(212,165,116,0.2); }
   .state-exp .bonus-total { color: #ffd87a; text-shadow: 0 0 6px rgba(255,216,122,0.5); }
+  .overridden .bonus-total { color: #ffc77a; }
 
   /* Tri-state proficiency toggle: empty / proficient (✓) / expertise (★) */
   .prof-toggle { width: 16px; height: 16px; padding: 0; background: var(--bg); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 3px; cursor: pointer; font-size: 11px; line-height: 1; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: background 0.12s, border-color 0.12s; flex-shrink: 0; }
@@ -547,11 +557,9 @@
   .state-exp .skill-bonus, .state-exp .save-bonus { color: #ffd87a; text-shadow: 0 0 6px rgba(255,216,122,0.5); }
 
   /* SKILLS */
-  .skill-row { display: flex; align-items: center; gap: 6px; padding: 3px 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; font-size: 12px; }
-  .skill-row .skill-prof { width: 13px; height: 13px; cursor: pointer; accent-color: var(--gold); }
+  .skill-row { display: flex; align-items: center; gap: 7px; padding: 7px 9px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
   .skill-row .skill-stat { font-family: 'Cinzel', serif; color: var(--muted); font-size: 9px; letter-spacing: 0.1em; min-width: 22px; }
-  .skill-row .skill-name { flex: 1; color: var(--cream); }
-  .skill-row .skill-bonus { color: var(--gold); font-weight: 700; min-width: 26px; text-align: right; }
+  .skill-row .skill-name { color: var(--cream); }
   .skill-row.state-prof .skill-name, .skill-row.state-exp .skill-name { font-weight: 600; }
 
   /* Skills */
@@ -737,16 +745,17 @@
   .vital-box.vital-hp .hp-edit-inline input.auto-calc { color: #ffd0d0; opacity: 0.85; }
   .vital-box.vital-hp .hp-sep { font-size: 14px; color: #d28a8a; }
   .vital-box.vital-hp .hp-temp-badge { font-size: 11px; font-weight: 700; color: #7fc7ff; text-shadow: 0 1px 2px rgba(0,0,0,0.7); }
-  #char-hp-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
-  #char-hp-controls .hpc-temp { font-size: 11px; color: #7fc7ff; display: inline-flex; align-items: center; gap: 4px; }
-  #char-hp-controls .hpc-temp input { width: 46px; background: rgba(0,0,0,0.3); border: 1px solid rgba(127,199,255,0.4); border-radius: 4px; color: #cfe8ff; text-align: center; padding: 3px 2px; font-size: 12px; }
-  #char-hp-controls .hpc-apply { display: inline-flex; align-items: center; gap: 4px; }
-  #char-hp-controls .hpc-apply input { width: 48px; background: var(--panel-light); border: 1px solid var(--border); border-radius: 4px; color: var(--cream); text-align: center; padding: 3px 2px; font-size: 12px; }
-  #char-hp-controls .hpc-apply button { border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); border-radius: 4px; padding: 4px 9px; font-size: 11px; cursor: pointer; }
+  .health-panel { margin-top: 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: rgba(0,0,0,0.18); display: flex; flex-direction: column; gap: 8px; }
+  #char-hp-controls { display: flex; align-items: center; justify-content: flex-start; gap: 14px; flex-wrap: wrap; }
+  #char-hp-controls .hpc-temp { font-size: 11px; color: #7fc7ff; display: inline-flex; align-items: center; gap: 5px; }
+  #char-hp-controls .hpc-temp input { width: 48px; background: rgba(0,0,0,0.3); border: 1px solid rgba(127,199,255,0.4); border-radius: 4px; color: #cfe8ff; text-align: center; padding: 4px 2px; font-size: 12px; }
+  #char-hp-controls .hpc-apply { display: inline-flex; align-items: center; gap: 5px; }
+  #char-hp-controls .hpc-apply input { width: 50px; background: var(--panel-light); border: 1px solid var(--border); border-radius: 4px; color: var(--cream); text-align: center; padding: 4px 2px; font-size: 12px; }
+  #char-hp-controls .hpc-apply button { border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); border-radius: 4px; padding: 5px 12px; font-size: 11px; cursor: pointer; }
   #char-hp-controls .hpc-dmg:hover { border-color: var(--danger); color: #ff8a8a; }
   #char-hp-controls .hpc-heal:hover { border-color: #6fbf73; color: #9fe0a0; }
   #char-hp-controls.disabled { opacity: 0.4; pointer-events: none; }
-  #char-hitdice { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+  #char-hitdice { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); padding-top: 8px; border-top: 1px solid var(--border); }
   #char-hitdice .hd-label { letter-spacing: 0.04em; }
   #char-hitdice .hd-pool { color: var(--cream); }
   #char-hitdice .hd-pool b { color: var(--gold); font-size: 14px; }
@@ -1458,8 +1467,11 @@
 <div id="char-popup">
   <div class="char-popup-header">
     <span class="ttl">Character</span>
-    <button id="char-back-btn" style="display:none;" title="Return to your character">← My character</button>
-    <button id="char-popup-close" title="Hide panel">×</button>
+    <span class="char-hdr-actions">
+      <button id="char-import-pdf-hdr" title="Import a D&D Beyond character PDF" style="display:none;">Import PDF</button>
+      <button id="char-back-btn" style="display:none;" title="Return to your character">← My character</button>
+      <button id="char-popup-close" title="Hide panel">×</button>
+    </span>
   </div>
 
   <div class="char-head">
@@ -1557,19 +1569,21 @@
     </div>
   </div>
 
-  <div class="hp-controls" id="char-hp-controls" title="Damage hits Temporary HP first. Heal restores Current up to Max.">
-    <span class="hpc-temp">Temp HP <input type="number" id="char-hp-temp" min="0" value="0"></span>
-    <span class="hpc-apply">
-      <input type="number" id="char-hp-amount" min="0" value="1" title="Amount">
-      <button type="button" id="char-hp-dmg" class="hpc-dmg">Damage</button>
-      <button type="button" id="char-hp-heal" class="hpc-heal">Heal</button>
-    </span>
-  </div>
+  <div class="health-panel">
+    <div class="hp-controls" id="char-hp-controls" title="Damage hits Temporary HP first. Heal restores Current up to Max.">
+      <span class="hpc-apply">
+        <input type="number" id="char-hp-amount" min="0" value="1" title="Amount">
+        <button type="button" id="char-hp-dmg" class="hpc-dmg">Damage</button>
+        <button type="button" id="char-hp-heal" class="hpc-heal">Heal</button>
+      </span>
+      <span class="hpc-temp">Temp HP <input type="number" id="char-hp-temp" min="0" value="0"></span>
+    </div>
 
-  <div class="hp-hitdice" id="char-hitdice" title="Spend a Hit Die: roll the die + CON mod to regain HP. A short-rest resource.">
-    <span class="hd-label">Hit Dice</span>
-    <span class="hd-pool"><b id="char-hd-cur">0</b> / <span id="char-hd-max">0</span> <span id="char-hd-die">d8</span></span>
-    <button type="button" id="char-hd-spend" class="hd-spend">Spend</button>
+    <div class="hp-hitdice" id="char-hitdice" title="Spend a Hit Die: roll the die + CON mod to regain HP. A short-rest resource.">
+      <span class="hd-label">Hit Dice</span>
+      <span class="hd-pool"><b id="char-hd-cur">0</b> / <span id="char-hd-max">0</span> <span id="char-hd-die">d8</span></span>
+      <button type="button" id="char-hd-spend" class="hd-spend">Spend</button>
+    </div>
   </div>
 
   <!-- Death Saves panel: only visible when current HP is 0 and the character has a token -->
@@ -1653,6 +1667,9 @@
     </div>
 
     <div class="char-tab-content" data-tab="skills">
+      <div class="skills-editbar">
+        <button id="skills-edit-toggle" class="skills-edit-toggle" title="Show manual bonus fields for magic items or feats">Edit bonuses</button>
+      </div>
       <div class="char-section">
         <div class="char-section-head">Saving Throws</div>
         <div class="saves-grid" id="saves-grid"></div>
@@ -1815,15 +1832,16 @@
         <textarea id="char-notes" placeholder="Background, equipment notes, spells, anything you want to remember"></textarea>
       </div>
       <div class="char-section" id="char-file-section" style="margin-top:12px;">
-        <div class="char-section-head">Character File</div>
-        <div style="display:flex; gap:8px;">
-          <button id="char-export-btn" style="flex:1;">Export JSON</button>
-          <button id="char-import-btn" class="primary" style="flex:1;">Import JSON</button>
-        </div>
-        <button id="char-import-pdf-btn" class="primary" style="width:100%; margin-top:8px;">Import from D&D Beyond PDF</button>
-        <input type="file" id="char-import-input" accept="application/json,.json" style="display:none">
+        <div class="char-section-head">Import Character</div>
+        <button id="char-import-pdf-btn" class="primary" style="width:100%;">Upload D&amp;D Beyond PDF</button>
         <input type="file" id="char-import-pdf-input" accept="application/pdf,.pdf" style="display:none">
-        <div class="hint" style="margin-top:6px; font-size:11px; color:var(--muted);">Export saves this sheet as a file. Import overwrites the open sheet. PDF import reads a D&D Beyond character sheet export.</div>
+        <div class="hint" style="margin-top:6px; font-size:11px; color:var(--muted);">Upload your D&amp;D Beyond character sheet PDF. Its data fills this character automatically.</div>
+        <div class="char-file-backup">
+          <span class="cfb-label">Backup</span>
+          <button id="char-export-btn">Export</button>
+          <button id="char-import-btn">Import</button>
+          <input type="file" id="char-import-input" accept="application/json,.json" style="display:none">
+        </div>
       </div>
     </div>
 
@@ -4919,9 +4937,9 @@
       row.innerHTML = `
         <button class="prof-toggle" data-kind="save" data-key="${stat}" title="None → Proficient → Expertise">${state === 'exp' ? '★' : (state === 'prof' ? '✓' : '')}</button>
         <span class="save-stat">${stat.toUpperCase()}</span>
-        <span class="bonus-base" title="Auto: ability mod ${fmtMod(mod)}${profPart ? ' + prof ' + fmtMod(profPart) : ''}">${fmtMod(baseTotal)}</span>
-        <input type="text" inputmode="numeric" pattern="[+\-0-9]*" class="bonus-extra" data-kind="save" data-key="${stat}" value="${extra >= 0 ? '+' + extra : extra}" title="Extra bonus (manual). Final = base ${fmtMod(baseTotal)} + this." ${canEdit ? '' : 'readonly'}>
-        <span class="bonus-total" title="Final bonus">${fmtMod(total)}</span>
+        <span class="row-fill"></span>
+        <input type="text" inputmode="numeric" pattern="[+\-0-9]*" class="bonus-extra" data-kind="save" data-key="${stat}" value="${extra >= 0 ? '+' + extra : extra}" title="Extra bonus (magic items, feats). Final = base ${fmtMod(baseTotal)} + this." ${canEdit ? '' : 'readonly'}>
+        <span class="bonus-total" title="Click the row to roll. Base ${fmtMod(baseTotal)}${extra ? ' + ' + fmtMod(extra) : ''}">${fmtMod(total)}</span>
       `;
       grid.appendChild(row);
     });
@@ -4946,11 +4964,11 @@
       row.dataset.skill = s.key;
       row.innerHTML = `
         <button class="prof-toggle" data-kind="skill" data-key="${s.key}" title="None → Proficient → Expertise">${state === 'exp' ? '★' : (state === 'prof' ? '✓' : '')}</button>
-        <span class="skill-stat">${s.stat.toUpperCase()}</span>
         <span class="skill-name">${s.name}</span>
-        <span class="bonus-base" title="Auto: ${s.stat.toUpperCase()} mod ${fmtMod(mod)}${profPart ? ' + prof ' + fmtMod(profPart) : ''}">${fmtMod(baseTotal)}</span>
-        <input type="text" inputmode="numeric" pattern="[+\-0-9]*" class="bonus-extra" data-kind="skill" data-key="${s.key}" value="${extra >= 0 ? '+' + extra : extra}" title="Extra bonus (manual). Final = base ${fmtMod(baseTotal)} + this." ${canEdit ? '' : 'readonly'}>
-        <span class="bonus-total" title="Final bonus">${fmtMod(total)}</span>
+        <span class="skill-stat">${s.stat.toUpperCase()}</span>
+        <span class="row-fill"></span>
+        <input type="text" inputmode="numeric" pattern="[+\-0-9]*" class="bonus-extra" data-kind="skill" data-key="${s.key}" value="${extra >= 0 ? '+' + extra : extra}" title="Extra bonus (magic items, feats). Final = base ${fmtMod(baseTotal)} + this." ${canEdit ? '' : 'readonly'}>
+        <span class="bonus-total" title="Click the row to roll. Base ${fmtMod(baseTotal)}${extra ? ' + ' + fmtMod(extra) : ''}">${fmtMod(total)}</span>
       `;
       grid.appendChild(row);
     });
@@ -5675,6 +5693,8 @@
     if (importBtn) importBtn.style.display = canEdit ? '' : 'none';
     const importPdfBtn = document.getElementById('char-import-pdf-btn');
     if (importPdfBtn) importPdfBtn.style.display = canEdit ? '' : 'none';
+    const importPdfHdr = document.getElementById('char-import-pdf-hdr');
+    if (importPdfHdr) importPdfHdr.style.display = canEdit ? '' : 'none';
     // Population complete - re-enable auto-save. Use a microtask delay so any
     // pending synthetic events from setting .value get processed first.
     setTimeout(() => { CHAR_POPUP.loading = false; }, 50);
@@ -6362,6 +6382,15 @@
     document.getElementById('char-popup-close').addEventListener('click', closeCharPopup);
     setupSheetRolls();
 
+    const skillsEditToggle = document.getElementById('skills-edit-toggle');
+    if (skillsEditToggle) skillsEditToggle.addEventListener('click', () => {
+      const tab = document.querySelector('.char-tab-content[data-tab="skills"]');
+      if (!tab) return;
+      const on = tab.classList.toggle('editing');
+      skillsEditToggle.classList.toggle('on', on);
+      skillsEditToggle.textContent = on ? 'Done' : 'Edit bonuses';
+    });
+
     // Spellcasting: ability + derived DC/attack, rollable spell attack
     const scCanEdit = () => !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
     document.getElementById('spell-ability').addEventListener('change', (e) => {
@@ -6449,6 +6478,11 @@
       e.target.value = '';
     });
     document.getElementById('char-import-pdf-btn').addEventListener('click', () => {
+      const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) { toast('Read-only sheet', 'error'); return; }
+      document.getElementById('char-import-pdf-input').click();
+    });
+    document.getElementById('char-import-pdf-hdr').addEventListener('click', () => {
       const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
       if (!canEdit) { toast('Read-only sheet', 'error'); return; }
       document.getElementById('char-import-pdf-input').click();
