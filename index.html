@@ -7419,7 +7419,7 @@
   let imgGenSeq = 0;
   let imgGenInFlight = false;
 
-  const IMGGEN_FN_URL = `${SUPABASE_URL}/functions/v1/generate-image`;
+  const IMGGEN_FN_URL = `${SUPABASE_URL}/functions/v1/smart-processor`;
   const GEN_MIME_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 
   async function runImgGen() {
