@@ -7336,20 +7336,17 @@
     if (regenBtn) regenBtn.style.display = 'block';
   }
 
-  // ============ AI GEN COOLDOWN ============
-  // Pollinations rate-limits free tier; a visible cooldown stops users from
-  // hammering it and getting 429s. Stored in localStorage so it persists
-  // across popup closes and page refreshes.
-  const COOLDOWN_MS = 25000;
+  // ============ AI GEN COOLDOWN (kaldirildi) ============
+  // Cooldown tamamen devre disi. Zaman siniri yok.
   let cooldownTimer = null;
+  try { localStorage.removeItem('vtt_imggen_cooldown_until'); } catch (e) {}
 
   function getCooldownRemaining() {
-    return 0; // Cooldown kaldirildi: zaman siniri yok.
+    return 0;
   }
 
   function startCooldown() {
-    localStorage.setItem('vtt_imggen_cooldown_until', String(Date.now() + COOLDOWN_MS));
-    updateCooldownUI();
+    // no-op
   }
 
   function updateCooldownUI() {
