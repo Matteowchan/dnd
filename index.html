@@ -1081,6 +1081,28 @@
   #conn-indicator.connected { color: var(--success); border-color: var(--success); }
   #conn-indicator.disconnected { color: var(--danger); border-color: var(--danger); }
   #conn-indicator.demo { color: var(--ember); border-color: var(--ember); }
+  /* ============ VIRTUAL MEET (A/V) ============ */
+  #rtc-bar { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 80; display: none; flex-direction: column; align-items: center; gap: 6px; --rtc-tile-h: 120px; }
+  #rtc-launch { padding: 8px 16px; background: var(--panel-light); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 6px; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.05em; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
+  #rtc-launch:hover { background: var(--gold); color: #1a1612; }
+  #rtc-panel { display: none; flex-direction: column; align-items: center; gap: 6px; background: rgba(20,17,14,0.86); border: 1px solid var(--border); border-radius: 10px; padding: 8px; box-shadow: 0 6px 24px rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+  #rtc-bar.in-call #rtc-panel { display: flex; }
+  #rtc-bar.in-call #rtc-launch { display: none; }
+  #rtc-resize { align-self: stretch; height: 14px; cursor: ns-resize; display: flex; align-items: center; justify-content: center; }
+  #rtc-resize::before { content: ''; width: 38px; height: 4px; border-radius: 2px; background: var(--gold-soft); opacity: 0.6; }
+  #rtc-tiles { display: flex; gap: 6px; align-items: flex-end; max-width: 86vw; overflow-x: auto; padding-bottom: 2px; }
+  .rtc-tile { position: relative; height: var(--rtc-tile-h); aspect-ratio: 4 / 3; background: #0b0907; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; flex: 0 0 auto; }
+  .rtc-tile video { width: 100%; height: 100%; object-fit: cover; display: block; background: #0b0907; }
+  .rtc-tile.local video { transform: scaleX(-1); }
+  .rtc-tile .rtc-name { position: absolute; left: 4px; bottom: 3px; font-size: 11px; color: var(--cream); background: rgba(0,0,0,0.55); padding: 1px 6px; border-radius: 3px; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rtc-tile .rtc-novid { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-size: calc(var(--rtc-tile-h) * 0.28); color: var(--gold-soft); background: radial-gradient(circle at 50% 40%, #2a231c, #0b0907); }
+  .rtc-tile .rtc-mic-off { position: absolute; right: 4px; top: 4px; width: 18px; height: 18px; border-radius: 50%; background: rgba(160,40,40,0.9); display: none; align-items: center; justify-content: center; font-size: 11px; color: #fff; }
+  .rtc-tile.muted .rtc-mic-off { display: flex; }
+  #rtc-controls { display: flex; gap: 6px; }
+  #rtc-controls button { padding: 5px 10px; font-size: 12px; border-radius: 5px; border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); cursor: pointer; }
+  #rtc-controls button:hover { border-color: var(--gold-soft); }
+  #rtc-controls button.off { background: rgba(160,40,40,0.25); border-color: var(--danger); color: #f0c9c9; }
+  #rtc-controls #rtc-leave { background: rgba(160,40,40,0.35); border-color: var(--danger); color: #f4d4d4; }
 </style>
 </head>
 <body>
@@ -1686,6 +1708,15 @@
         <label>Notes</label>
         <textarea id="char-notes" placeholder="Background, equipment notes, spells, anything you want to remember"></textarea>
       </div>
+      <div class="char-section" id="char-file-section" style="margin-top:12px;">
+        <div class="char-section-head">Character File</div>
+        <div style="display:flex; gap:8px;">
+          <button id="char-export-btn" style="flex:1;">Export JSON</button>
+          <button id="char-import-btn" class="primary" style="flex:1;">Import JSON</button>
+        </div>
+        <input type="file" id="char-import-input" accept="application/json,.json" style="display:none">
+        <div class="hint" style="margin-top:6px; font-size:11px; color:var(--muted);">Export saves this sheet as a file. Import overwrites the open sheet.</div>
+      </div>
     </div>
 
     <div class="char-readonly-note" id="char-readonly-note" style="display:none">Read-only · Only the owner and the host can edit</div>
@@ -1693,6 +1724,19 @@
 </div>
 
 <button id="char-panel-show" title="Show character panel">Character</button>
+
+<div id="rtc-bar">
+  <button id="rtc-launch" title="Start camera and microphone with the table">Join Voice / Video</button>
+  <div id="rtc-panel">
+    <div id="rtc-resize" title="Drag up or down to resize the camera tiles"></div>
+    <div id="rtc-tiles"></div>
+    <div id="rtc-controls">
+      <button id="rtc-mic" title="Toggle microphone">Mic On</button>
+      <button id="rtc-cam" title="Toggle camera">Cam On</button>
+      <button id="rtc-leave" title="Leave the call">Leave</button>
+    </div>
+  </div>
+</div>
 
 <div id="imggen-popup">
   <div class="char-popup-header">
@@ -2745,6 +2789,7 @@
   async function enterApp() {
     document.getElementById('login').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
+    if (!DEMO_MODE) { const rb = document.getElementById('rtc-bar'); if (rb) rb.style.display = 'flex'; }
     document.getElementById('session-code-display').textContent = STATE.sessionId;
     document.getElementById('username-display').textContent = STATE.username;
 
@@ -3552,6 +3597,7 @@
       .on('broadcast', { event: 'drag' }, ({ payload }) => handleRemoteDrag(payload))
       .on('broadcast', { event: 'effect-clear' }, ({ payload }) => handleRemoteEffectClear(payload))
       .on('broadcast', { event: 'show-image' }, ({ payload }) => showSharedImagePopup(payload))
+      .on('broadcast', { event: 'rtc-signal' }, ({ payload }) => handleRtcSignal(payload))
       .on('presence', { event: 'sync' }, handlePresenceSync)
       .subscribe(async (status) => {
         const ind = document.getElementById('conn-indicator');
@@ -3889,6 +3935,7 @@
       }
     });
     renderPlayers();
+    if (typeof rtcPresenceReconcile === 'function') rtcPresenceReconcile();
   }
 
   // ============ RENDERING ============
@@ -5197,6 +5244,8 @@
       }
     });
     document.getElementById('char-readonly-note').style.display = canEdit ? 'none' : 'block';
+    const importBtn = document.getElementById('char-import-btn');
+    if (importBtn) importBtn.style.display = canEdit ? '' : 'none';
     // Population complete - re-enable auto-save. Use a microtask delay so any
     // pending synthetic events from setting .value get processed first.
     setTimeout(() => { CHAR_POPUP.loading = false; }, 50);
@@ -5320,10 +5369,177 @@
     }
   }
 
+  // ============ CHARACTER IMPORT / EXPORT (4a) ============
+  // Serializes the open sheet into a portable JSON file. Field names match the
+  // vtt_players columns so import can write them back as a patch directly.
+  function buildCharacterExport() {
+    const g = id => document.getElementById(id);
+    const player = STATE.persistedPlayers.find(p => p.id === CHAR_POPUP.targetPlayerId) || {};
+    const hpCur = parseInt(g('char-hp-cur').value);
+    const hpMax = parseInt(g('char-hp-max').value);
+    const ch = {
+      name: g('char-name').value.trim() || 'Unnamed',
+      level: parseInt(g('char-level').value) || 1,
+      class: g('char-class').value,
+      race: g('char-race').value,
+      subclass: g('char-subclass').value || '',
+      ac: parseInt(g('char-ac').value) || 10,
+      speed: parseInt(g('char-speed').value) || 30,
+      strength: parseInt(g('char-str').value) || 10,
+      dexterity: parseInt(g('char-dex').value) || 10,
+      constitution: parseInt(g('char-con').value) || 10,
+      intelligence: parseInt(g('char-int').value) || 10,
+      wisdom: parseInt(g('char-wis').value) || 10,
+      charisma: parseInt(g('char-cha').value) || 10,
+      notes: g('char-notes').value,
+      gold: parseInt(g('char-gold').value) || 0,
+      silver: parseInt(g('char-silver').value) || 0,
+      copper: parseInt(g('char-copper').value) || 0,
+      save_profs: setToCsv(CHAR_POPUP.saveProfs),
+      skill_profs: setToCsv(CHAR_POPUP.skillProfs),
+      save_expertise: setToCsv(CHAR_POPUP.saveExpertise),
+      skill_expertise: setToCsv(CHAR_POPUP.skillExpertise),
+      skill_overrides: JSON.stringify(CHAR_POPUP.skillOverrides || {}),
+      save_overrides: JSON.stringify(CHAR_POPUP.saveOverrides || {}),
+      passive_overrides: JSON.stringify(CHAR_POPUP.passiveOverrides || {}),
+      buffs: JSON.stringify(CHAR_POPUP.buffs || []),
+      inventory: JSON.stringify(CHAR_POPUP.inventory || []),
+      equipment: JSON.stringify(CHAR_POPUP.equipment || {}),
+      magic_data: JSON.stringify(CHAR_POPUP.magic || emptyMagicData()),
+      inspiration: CHAR_POPUP.inspiration ? 1 : 0,
+      death_saves: serializeDeathSaves(CHAR_POPUP.deathSaves),
+      conditions: serializeConditions(CHAR_POPUP.conditions, CHAR_POPUP.exhaustionLevel),
+      portrait_url: player.portrait_url || '',
+      hp_current: isNaN(hpCur) ? null : hpCur,
+      hp_max: isNaN(hpMax) ? null : hpMax,
+    };
+    return { app: 'embervault-character', version: 1, exported_at: new Date().toISOString(), character: ch };
+  }
+
+  function exportCharacter() {
+    if (!CHAR_POPUP.targetPlayerId) { toast('Open a character first', 'error'); return; }
+    const data = buildCharacterExport();
+    const safeName = (data.character.name || 'character').replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'character';
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${safeName}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('Character exported');
+  }
+
+  async function importCharacterFile(file) {
+    if (!CHAR_POPUP.targetPlayerId) { toast('Open a character first', 'error'); return; }
+    const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+    if (!canEdit) { toast('Read-only sheet', 'error'); return; }
+
+    let parsed;
+    try { parsed = JSON.parse(await file.text()); }
+    catch (e) { toast('Invalid JSON file', 'error'); return; }
+    const ch = (parsed && parsed.character) ? parsed.character : parsed;
+    if (!ch || typeof ch !== 'object' || Array.isArray(ch)) { toast('Unrecognized character file', 'error'); return; }
+    if (!confirm('Import will overwrite this character sheet. Continue?')) return;
+
+    const num = (v, d) => { const n = parseInt(v); return isNaN(n) ? d : n; };
+    const str = (v) => (typeof v === 'string') ? v : (v == null ? '' : String(v));
+    const jstr = (v, d) => {
+      if (typeof v === 'string') return v;
+      if (v == null) return d;
+      try { return JSON.stringify(v); } catch (e) { return d; }
+    };
+
+    const patch = {
+      name: str(ch.name).trim() || 'Unnamed',
+      level: num(ch.level, 1),
+      class: str(ch.class),
+      race: str(ch.race),
+      subclass: str(ch.subclass),
+      ac: num(ch.ac, 10),
+      speed: num(ch.speed, 30),
+      strength: num(ch.strength, 10),
+      dexterity: num(ch.dexterity, 10),
+      constitution: num(ch.constitution, 10),
+      intelligence: num(ch.intelligence, 10),
+      wisdom: num(ch.wisdom, 10),
+      charisma: num(ch.charisma, 10),
+      notes: str(ch.notes),
+      gold: num(ch.gold, 0),
+      silver: num(ch.silver, 0),
+      copper: num(ch.copper, 0),
+      save_profs: str(ch.save_profs),
+      skill_profs: str(ch.skill_profs),
+      save_expertise: str(ch.save_expertise),
+      skill_expertise: str(ch.skill_expertise),
+      skill_overrides: jstr(ch.skill_overrides, '{}'),
+      save_overrides: jstr(ch.save_overrides, '{}'),
+      passive_overrides: jstr(ch.passive_overrides, '{}'),
+      buffs: jstr(ch.buffs, '[]'),
+      inventory: jstr(ch.inventory, '[]'),
+      equipment: jstr(ch.equipment, '{}'),
+      magic_data: jstr(ch.magic_data, JSON.stringify(emptyMagicData())),
+      inspiration: ch.inspiration ? 1 : 0,
+      death_saves: str(ch.death_saves),
+      conditions: str(ch.conditions),
+    };
+    if (ch.portrait_url) patch.portrait_url = str(ch.portrait_url);
+
+    let { error } = await sb.from('vtt_players').update(patch).eq('id', CHAR_POPUP.targetPlayerId);
+    if (error && error.message && /subclass|passive_overrides|portrait_url/i.test(error.message)) {
+      const { subclass, passive_overrides, portrait_url, ...minimal } = patch;
+      ({ error } = await sb.from('vtt_players').update(minimal).eq('id', CHAR_POPUP.targetPlayerId));
+    }
+    if (error) { console.error('import failed', error); toast('Import failed', 'error'); return; }
+
+    // HP lives on the token, not the player row
+    const hpMax = parseInt(ch.hp_max);
+    const hpCur = parseInt(ch.hp_current);
+    if (!isNaN(hpMax) && hpMax > 0 && CHAR_POPUP.targetTokenId) {
+      const tok = STATE.tokens.get(CHAR_POPUP.targetTokenId);
+      if (tok) {
+        tok.max_hp = hpMax;
+        tok.current_hp = isNaN(hpCur) ? hpMax : Math.min(hpCur, hpMax);
+        STATE.tokens.set(tok.id, tok);
+        try { await sb.from('vtt_tokens').update({ current_hp: tok.current_hp, max_hp: tok.max_hp, updated_at: new Date().toISOString() }).eq('id', tok.id); } catch (e) { console.warn(e); }
+      }
+    }
+
+    // Reflect locally and rehydrate
+    const idx = STATE.persistedPlayers.findIndex(p => p.id === CHAR_POPUP.targetPlayerId);
+    if (idx >= 0) STATE.persistedPlayers[idx] = { ...STATE.persistedPlayers[idx], ...patch };
+    openCharPopup(CHAR_POPUP.targetPlayerId, CHAR_POPUP.targetTokenId);
+    if (!CHAR_POPUP.targetTokenId && !isNaN(hpMax)) {
+      const mx = document.getElementById('char-hp-max'); if (mx) mx.value = hpMax;
+      const cu = document.getElementById('char-hp-cur'); if (cu) cu.value = isNaN(hpCur) ? hpMax : hpCur;
+    }
+    if (CHAR_POPUP.targetPlayerId === STATE.userId && patch.class !== STATE.playerClass) {
+      STATE.playerClass = patch.class;
+      applyClassTheme(patch.class);
+      saveSessionState();
+    }
+    toast('Character imported');
+  }
+
   // Wire popup inputs
   function setupCharPopupListeners() {
     const popup = document.getElementById('char-popup');
     document.getElementById('char-popup-close').addEventListener('click', closeCharPopup);
+
+    // Character file import/export (4a)
+    document.getElementById('char-export-btn').addEventListener('click', exportCharacter);
+    document.getElementById('char-import-btn').addEventListener('click', () => {
+      const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) { toast('Read-only sheet', 'error'); return; }
+      document.getElementById('char-import-input').click();
+    });
+    document.getElementById('char-import-input').addEventListener('change', (e) => {
+      const f = e.target.files[0];
+      if (f) importCharacterFile(f);
+      e.target.value = '';
+    });
 
     // Auto-save on change for player profile fields
     ['char-name', 'char-level', 'char-class', 'char-race', 'char-ac', 'char-speed',
@@ -9106,6 +9322,7 @@
         ts: nowTs(),
       });
       // Unsubscribe
+      try { rtcLeaveCall(); } catch (e) {}
       if (STATE.channel) await STATE.channel.unsubscribe();
     } catch (e) { console.warn(e); }
     // Note: we deliberately do NOT clear localStorage so you can hit
@@ -9120,8 +9337,281 @@
     location.reload();
   });
 
+  // ============ VIRTUAL MEET (WebRTC mesh over Supabase broadcast) ============
+  const RTC = {
+    inCall: false,
+    localStream: null,
+    micOn: true,
+    camOn: true,
+    peers: new Map(),       // peerId -> { pc, name, tile }
+    pendingIce: new Map(),  // peerId -> [candidate, ...] buffered until remote desc set
+  };
+  const RTC_ICE = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ];
+
+  function rtcSend(to, kind, data) {
+    if (!STATE.channel) return;
+    STATE.channel.send({
+      type: 'broadcast',
+      event: 'rtc-signal',
+      payload: { from: STATE.userId, fromName: STATE.username, to: to || null, kind, data: data || null },
+    });
+  }
+
+  function rtcTilesEl() { return document.getElementById('rtc-tiles'); }
+
+  function rtcAddTile(peerId, name, isLocal) {
+    const tiles = rtcTilesEl();
+    let tile = document.getElementById('rtc-tile-' + peerId);
+    if (tile) return tile;
+    tile = document.createElement('div');
+    tile.className = 'rtc-tile' + (isLocal ? ' local' : '');
+    tile.id = 'rtc-tile-' + peerId;
+    const initial = (name || '?').trim().charAt(0).toUpperCase() || '?';
+    tile.innerHTML = `
+      <div class="rtc-novid">${escapeHtml(initial)}</div>
+      <video autoplay playsinline ${isLocal ? 'muted' : ''}></video>
+      <span class="rtc-mic-off" title="Muted">x</span>
+      <span class="rtc-name">${escapeHtml(isLocal ? (name + ' (you)') : name)}</span>`;
+    tiles.appendChild(tile);
+    return tile;
+  }
+
+  function rtcAttachStream(peerId, stream, name, isLocal) {
+    const tile = rtcAddTile(peerId, name, isLocal);
+    const video = tile.querySelector('video');
+    if (video.srcObject !== stream) video.srcObject = stream;
+    const hasVideo = stream.getVideoTracks().some(t => t.readyState !== 'ended');
+    tile.querySelector('.rtc-novid').style.display = hasVideo ? 'none' : 'flex';
+  }
+
+  function rtcRemoveTile(peerId) {
+    const tile = document.getElementById('rtc-tile-' + peerId);
+    if (tile) tile.remove();
+  }
+
+  function rtcGetOrCreatePeer(peerId, name) {
+    let entry = RTC.peers.get(peerId);
+    if (entry) return entry;
+    const pc = new RTCPeerConnection({ iceServers: RTC_ICE });
+    entry = { pc, name: name || 'Player' };
+    RTC.peers.set(peerId, entry);
+
+    if (RTC.localStream) {
+      RTC.localStream.getTracks().forEach(t => pc.addTrack(t, RTC.localStream));
+    }
+    pc.onicecandidate = (e) => {
+      if (e.candidate) rtcSend(peerId, 'ice', e.candidate);
+    };
+    pc.ontrack = (e) => {
+      const stream = e.streams[0];
+      rtcAttachStream(peerId, stream, entry.name, false);
+      stream.addEventListener('removetrack', () => rtcAttachStream(peerId, stream, entry.name, false));
+    };
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') rtcClosePeer(peerId);
+    };
+    return entry;
+  }
+
+  async function rtcMaybeOffer(peerId, name) {
+    if (!RTC.inCall) return;
+    if (peerId === STATE.userId) return;
+    // Deterministic initiator: the greater userId offers. Prevents glare.
+    if (String(STATE.userId) <= String(peerId)) return;
+    if (RTC.peers.has(peerId)) return;
+    const { pc } = rtcGetOrCreatePeer(peerId, name);
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      rtcSend(peerId, 'offer', offer);
+    } catch (e) { console.error('offer failed', e); }
+  }
+
+  async function rtcFlushIce(peerId) {
+    const entry = RTC.peers.get(peerId);
+    const list = RTC.pendingIce.get(peerId);
+    if (!entry || !list) return;
+    for (const c of list) {
+      try { await entry.pc.addIceCandidate(c); } catch (e) { console.warn('ice add failed', e); }
+    }
+    RTC.pendingIce.delete(peerId);
+  }
+
+  async function handleRtcSignal(payload) {
+    if (!payload || payload.from === STATE.userId) return;
+    if (payload.to && payload.to !== STATE.userId) return;
+    const peerId = payload.from;
+    const name = payload.fromName || 'Player';
+
+    if (payload.kind === 'join') {
+      if (!RTC.inCall) return;
+      rtcSend(peerId, 'hello', null);   // tell the newcomer we are here
+      rtcMaybeOffer(peerId, name);
+      return;
+    }
+    if (payload.kind === 'hello') {
+      if (!RTC.inCall) return;
+      rtcMaybeOffer(peerId, name);
+      return;
+    }
+    if (payload.kind === 'leave') {
+      rtcClosePeer(peerId);
+      return;
+    }
+    if (!RTC.inCall) return;
+
+    if (payload.kind === 'offer') {
+      const entry = rtcGetOrCreatePeer(peerId, name);
+      try {
+        await entry.pc.setRemoteDescription(new RTCSessionDescription(payload.data));
+        await rtcFlushIce(peerId);
+        const answer = await entry.pc.createAnswer();
+        await entry.pc.setLocalDescription(answer);
+        rtcSend(peerId, 'answer', answer);
+      } catch (e) { console.error('answer failed', e); }
+    } else if (payload.kind === 'answer') {
+      const entry = RTC.peers.get(peerId);
+      if (!entry) return;
+      try {
+        await entry.pc.setRemoteDescription(new RTCSessionDescription(payload.data));
+        await rtcFlushIce(peerId);
+      } catch (e) { console.error('set answer failed', e); }
+    } else if (payload.kind === 'ice') {
+      const entry = RTC.peers.get(peerId);
+      const cand = new RTCIceCandidate(payload.data);
+      if (entry && entry.pc.remoteDescription && entry.pc.remoteDescription.type) {
+        try { await entry.pc.addIceCandidate(cand); } catch (e) { console.warn('ice add failed', e); }
+      } else {
+        if (!RTC.pendingIce.has(peerId)) RTC.pendingIce.set(peerId, []);
+        RTC.pendingIce.get(peerId).push(cand);
+      }
+    }
+  }
+
+  function rtcClosePeer(peerId) {
+    const entry = RTC.peers.get(peerId);
+    if (entry) {
+      try { entry.pc.close(); } catch (e) {}
+      RTC.peers.delete(peerId);
+    }
+    RTC.pendingIce.delete(peerId);
+    rtcRemoveTile(peerId);
+  }
+
+  // Drop peers that have gone offline (presence no longer lists them)
+  function rtcPresenceReconcile() {
+    if (!RTC.inCall) return;
+    RTC.peers.forEach((entry, peerId) => {
+      if (!STATE.onlinePlayers.has(peerId)) rtcClosePeer(peerId);
+    });
+  }
+
+  async function rtcJoinCall() {
+    if (RTC.inCall) return;
+    if (DEMO_MODE) { toast('Voice / video needs a live session', 'error'); return; }
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 320 }, height: { ideal: 240 }, frameRate: { ideal: 20, max: 24 } },
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+    } catch (e) {
+      // Fall back to audio only if the camera is unavailable or denied
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        RTC.camOn = false;
+      } catch (e2) {
+        console.error('getUserMedia failed', e2);
+        toast('Could not access camera or microphone', 'error');
+        return;
+      }
+    }
+    RTC.localStream = stream;
+    RTC.inCall = true;
+    RTC.micOn = stream.getAudioTracks().length > 0;
+    RTC.camOn = stream.getVideoTracks().length > 0;
+    document.getElementById('rtc-bar').classList.add('in-call');
+    rtcAttachStream(STATE.userId, stream, STATE.username || 'You', true);
+    rtcUpdateControls();
+    if (Array.from(RTC.peers.keys()).length > 6) toast('Large calls may strain bandwidth', 'error');
+    rtcSend(null, 'join', null);   // announce to the table
+  }
+
+  function rtcLeaveCall() {
+    if (!RTC.inCall) return;
+    rtcSend(null, 'leave', null);
+    RTC.peers.forEach((entry) => { try { entry.pc.close(); } catch (e) {} });
+    RTC.peers.clear();
+    RTC.pendingIce.clear();
+    if (RTC.localStream) { RTC.localStream.getTracks().forEach(t => t.stop()); RTC.localStream = null; }
+    RTC.inCall = false;
+    document.getElementById('rtc-bar').classList.remove('in-call');
+    rtcTilesEl().innerHTML = '';
+  }
+
+  function rtcToggleMic() {
+    if (!RTC.localStream) return;
+    RTC.micOn = !RTC.micOn;
+    RTC.localStream.getAudioTracks().forEach(t => { t.enabled = RTC.micOn; });
+    const selfTile = document.getElementById('rtc-tile-' + STATE.userId);
+    if (selfTile) selfTile.classList.toggle('muted', !RTC.micOn);
+    rtcUpdateControls();
+  }
+
+  function rtcToggleCam() {
+    if (!RTC.localStream) return;
+    const vids = RTC.localStream.getVideoTracks();
+    if (vids.length === 0) { toast('No camera on this call', 'error'); return; }
+    RTC.camOn = !RTC.camOn;
+    vids.forEach(t => { t.enabled = RTC.camOn; });
+    const selfTile = document.getElementById('rtc-tile-' + STATE.userId);
+    if (selfTile) selfTile.querySelector('.rtc-novid').style.display = RTC.camOn ? 'none' : 'flex';
+    rtcUpdateControls();
+  }
+
+  function rtcUpdateControls() {
+    const mic = document.getElementById('rtc-mic');
+    const cam = document.getElementById('rtc-cam');
+    mic.textContent = RTC.micOn ? 'Mic On' : 'Mic Off';
+    mic.classList.toggle('off', !RTC.micOn);
+    cam.textContent = RTC.camOn ? 'Cam On' : 'Cam Off';
+    cam.classList.toggle('off', !RTC.camOn);
+  }
+
+  function setupRtcUi() {
+    const launch = document.getElementById('rtc-launch');
+    if (launch) launch.addEventListener('click', rtcJoinCall);
+    document.getElementById('rtc-mic').addEventListener('click', rtcToggleMic);
+    document.getElementById('rtc-cam').addEventListener('click', rtcToggleCam);
+    document.getElementById('rtc-leave').addEventListener('click', rtcLeaveCall);
+
+    // Resize: drag the grip up or down to scale the tiles
+    const grip = document.getElementById('rtc-resize');
+    const bar = document.getElementById('rtc-bar');
+    let resizing = false, startY = 0, startH = 120;
+    grip.addEventListener('pointerdown', (e) => {
+      resizing = true; startY = e.clientY;
+      startH = parseInt(getComputedStyle(bar).getPropertyValue('--rtc-tile-h')) || 120;
+      grip.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+    grip.addEventListener('pointermove', (e) => {
+      if (!resizing) return;
+      const next = Math.max(80, Math.min(280, startH + (startY - e.clientY)));
+      bar.style.setProperty('--rtc-tile-h', next + 'px');
+    });
+    const endResize = (e) => { if (resizing) { resizing = false; try { grip.releasePointerCapture(e.pointerId); } catch (err) {} } };
+    grip.addEventListener('pointerup', endResize);
+    grip.addEventListener('pointercancel', endResize);
+  }
+  setupRtcUi();
+
   // Clean up presence on unload
   window.addEventListener('beforeunload', () => {
+    try { rtcLeaveCall(); } catch (e) {}
     if (STATE.channel) STATE.channel.unsubscribe();
   });
 
