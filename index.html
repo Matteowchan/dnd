@@ -1090,6 +1090,15 @@
   #rtc-bar.in-call #rtc-launch { display: none; }
   #rtc-resize { align-self: stretch; height: 14px; cursor: ns-resize; display: flex; align-items: center; justify-content: center; }
   #rtc-resize::before { content: ''; width: 38px; height: 4px; border-radius: 2px; background: var(--gold-soft); opacity: 0.6; }
+  #rtc-topbar { align-self: stretch; display: flex; align-items: center; gap: 6px; }
+  #rtc-move { flex: 1; height: 16px; cursor: move; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
+  #rtc-move::before { content: ''; width: 46px; height: 4px; border-radius: 2px; background: var(--gold-soft); opacity: 0.5; }
+  #rtc-bar.locked #rtc-move { cursor: default; }
+  #rtc-bar.locked #rtc-move::before { opacity: 0.18; }
+  #rtc-lock { padding: 3px 9px; font-size: 11px; border-radius: 5px; border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); cursor: pointer; white-space: nowrap; }
+  #rtc-lock:hover { border-color: var(--gold-soft); }
+  #rtc-lock.off { background: rgba(160,40,40,0.22); border-color: var(--danger); color: #f0c9c9; }
+  #rtc-bar.locked #rtc-tiles { flex-wrap: wrap; justify-content: center; }
   #rtc-tiles { display: flex; gap: 6px; align-items: flex-end; max-width: 86vw; overflow-x: auto; padding-bottom: 2px; }
   .rtc-tile { position: relative; height: var(--rtc-tile-h); aspect-ratio: 4 / 3; background: #0b0907; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; flex: 0 0 auto; }
   .rtc-tile video { width: 100%; height: 100%; object-fit: cover; display: block; background: #0b0907; }
@@ -1098,9 +1107,9 @@
   .rtc-tile .rtc-novid { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-size: calc(var(--rtc-tile-h) * 0.28); color: var(--gold-soft); background: radial-gradient(circle at 50% 40%, #2a231c, #0b0907); }
   .rtc-tile .rtc-mic-off { position: absolute; right: 4px; top: 4px; width: 18px; height: 18px; border-radius: 50%; background: rgba(160,40,40,0.9); display: none; align-items: center; justify-content: center; font-size: 11px; color: #fff; }
   .rtc-tile.muted .rtc-mic-off { display: flex; }
-  #rtc-controls { display: flex; gap: 6px; }
-  #rtc-controls button { padding: 5px 10px; font-size: 12px; border-radius: 5px; border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); cursor: pointer; }
-  #rtc-controls button:hover { border-color: var(--gold-soft); }
+  #rtc-controls { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  #rtc-controls button, #rtc-controls select { padding: 5px 10px; font-size: 12px; border-radius: 5px; border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); cursor: pointer; }
+  #rtc-controls button:hover, #rtc-controls select:hover { border-color: var(--gold-soft); }
   #rtc-controls button.off { background: rgba(160,40,40,0.25); border-color: var(--danger); color: #f0c9c9; }
   #rtc-controls #rtc-leave { background: rgba(160,40,40,0.35); border-color: var(--danger); color: #f4d4d4; }
 </style>
@@ -1728,11 +1737,21 @@
 <div id="rtc-bar">
   <button id="rtc-launch" title="Start camera and microphone with the table">Join Voice / Video</button>
   <div id="rtc-panel">
+    <div id="rtc-topbar">
+      <div id="rtc-move" title="Drag to move (unlock first)"></div>
+      <button id="rtc-lock" title="Lock position and tidy the tiles">Lock: On</button>
+    </div>
     <div id="rtc-resize" title="Drag up or down to resize the camera tiles"></div>
     <div id="rtc-tiles"></div>
     <div id="rtc-controls">
       <button id="rtc-mic" title="Toggle microphone">Mic On</button>
       <button id="rtc-cam" title="Toggle camera">Cam On</button>
+      <select id="rtc-bg-mode" title="Background effect">
+        <option value="none">BG: None</option>
+        <option value="blur">BG: Blur</option>
+        <option value="image">BG: Image</option>
+      </select>
+      <input type="file" id="rtc-bg-image" accept="image/*" style="display:none">
       <button id="rtc-leave" title="Leave the call">Leave</button>
     </div>
   </div>
@@ -9343,6 +9362,7 @@
     localStream: null,
     micOn: true,
     camOn: true,
+    locked: true,
     peers: new Map(),       // peerId -> { pc, name, tile }
     pendingIce: new Map(),  // peerId -> [candidate, ...] buffered until remote desc set
   };
@@ -9350,6 +9370,154 @@
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
   ];
+
+  // ---- Background blur / replacement (MediaPipe Selfie Segmentation) ----
+  const RTC_MP_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js';
+  const RTC_BG = {
+    mode: 'none', image: null, seg: null, loadingSeg: null,
+    running: false, rawVideo: null, canvas: null, ctx: null,
+    processedStream: null, rafId: null,
+  };
+
+  function rtcRawVideoTrack() {
+    return RTC.localStream ? (RTC.localStream.getVideoTracks()[0] || null) : null;
+  }
+  function rtcCurrentVideoTrack() {
+    if (RTC_BG.running && RTC_BG.processedStream) {
+      const vt = RTC_BG.processedStream.getVideoTracks()[0];
+      if (vt) return vt;
+    }
+    return rtcRawVideoTrack();
+  }
+
+  function rtcLoadSeg() {
+    if (RTC_BG.seg) return Promise.resolve(RTC_BG.seg);
+    if (RTC_BG.loadingSeg) return RTC_BG.loadingSeg;
+    RTC_BG.loadingSeg = (async () => {
+      if (!window.SelfieSegmentation) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = RTC_MP_URL;
+          s.crossOrigin = 'anonymous';
+          s.onload = resolve;
+          s.onerror = () => reject(new Error('MediaPipe load failed'));
+          document.head.appendChild(s);
+        });
+      }
+      if (!window.SelfieSegmentation) throw new Error('SelfieSegmentation unavailable');
+      const seg = new window.SelfieSegmentation({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}` });
+      seg.setOptions({ modelSelection: 1, selfieMode: false });
+      seg.onResults(rtcOnSegResults);
+      RTC_BG.seg = seg;
+      return seg;
+    })();
+    return RTC_BG.loadingSeg;
+  }
+
+  function rtcDrawCover(ctx, img, w, h) {
+    const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    if (!iw || !ih) { ctx.fillStyle = '#0b0907'; ctx.fillRect(0, 0, w, h); return; }
+    const scale = Math.max(w / iw, h / ih);
+    const dw = iw * scale, dh = ih * scale;
+    ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  }
+
+  function rtcOnSegResults(results) {
+    const ctx = RTC_BG.ctx, canvas = RTC_BG.canvas;
+    if (!ctx || !canvas) return;
+    const w = canvas.width, h = canvas.height;
+    ctx.save();
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(results.segmentationMask, 0, 0, w, h);
+    ctx.globalCompositeOperation = 'source-in';
+    ctx.drawImage(results.image, 0, 0, w, h);        // person only
+    ctx.globalCompositeOperation = 'destination-over';
+    if (RTC_BG.mode === 'image' && RTC_BG.image) {
+      rtcDrawCover(ctx, RTC_BG.image, w, h);
+    } else {
+      ctx.filter = 'blur(10px)';
+      ctx.drawImage(results.image, 0, 0, w, h);
+      ctx.filter = 'none';
+    }
+    ctx.restore();
+  }
+
+  function rtcSwapVideoTrack(track) {
+    if (!track) return;
+    track.enabled = RTC.camOn;
+    RTC.peers.forEach((entry) => {
+      const sender = entry.pc.getSenders().find(s => s.track && s.track.kind === 'video');
+      if (sender) sender.replaceTrack(track).catch(e => console.warn('replaceTrack', e));
+    });
+    const tile = document.getElementById('rtc-tile-' + STATE.userId);
+    if (tile) {
+      const v = tile.querySelector('video');
+      v.srcObject = new MediaStream([track]);
+      tile.querySelector('.rtc-novid').style.display = RTC.camOn ? 'none' : 'flex';
+    }
+  }
+
+  async function rtcStartProcessing() {
+    if (RTC_BG.running) return true;
+    const raw = rtcRawVideoTrack();
+    if (!raw) return false;
+    try { await rtcLoadSeg(); }
+    catch (e) { console.error(e); toast('Background effects unavailable', 'error'); return false; }
+
+    const settings = raw.getSettings ? raw.getSettings() : {};
+    const w = settings.width || 320, h = settings.height || 240;
+    const video = document.createElement('video');
+    video.autoplay = true; video.muted = true; video.playsInline = true;
+    video.srcObject = new MediaStream([raw]);
+    try { await video.play(); } catch (e) {}
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    RTC_BG.rawVideo = video;
+    RTC_BG.canvas = canvas;
+    RTC_BG.ctx = canvas.getContext('2d');
+    RTC_BG.processedStream = canvas.captureStream(24);
+    RTC_BG.running = true;
+
+    const loop = async () => {
+      if (!RTC_BG.running) return;
+      try { if (RTC_BG.seg && video.readyState >= 2) await RTC_BG.seg.send({ image: video }); }
+      catch (e) { /* skip bad frame */ }
+      RTC_BG.rafId = requestAnimationFrame(loop);
+    };
+    RTC_BG.rafId = requestAnimationFrame(loop);
+    rtcSwapVideoTrack(RTC_BG.processedStream.getVideoTracks()[0]);
+    return true;
+  }
+
+  function rtcStopProcessing() {
+    if (!RTC_BG.running) return;
+    RTC_BG.running = false;
+    if (RTC_BG.rafId) cancelAnimationFrame(RTC_BG.rafId);
+    RTC_BG.rafId = null;
+    if (RTC_BG.processedStream) { RTC_BG.processedStream.getTracks().forEach(t => t.stop()); RTC_BG.processedStream = null; }
+    if (RTC_BG.rawVideo) { RTC_BG.rawVideo.srcObject = null; RTC_BG.rawVideo = null; }
+    RTC_BG.canvas = null; RTC_BG.ctx = null;
+    rtcSwapVideoTrack(rtcRawVideoTrack());
+  }
+
+  async function rtcSetBgMode(mode) {
+    if (!RTC.localStream || RTC.localStream.getVideoTracks().length === 0) {
+      toast('No camera on this call', 'error');
+      document.getElementById('rtc-bg-mode').value = 'none';
+      return;
+    }
+    if (mode === 'image' && !RTC_BG.image) {
+      document.getElementById('rtc-bg-image').click();   // pick an image first
+      return;
+    }
+    RTC_BG.mode = mode;
+    if (mode === 'none') {
+      rtcStopProcessing();
+    } else {
+      const ok = await rtcStartProcessing();
+      if (!ok) { RTC_BG.mode = 'none'; document.getElementById('rtc-bg-mode').value = 'none'; }
+    }
+  }
 
   function rtcSend(to, kind, data) {
     if (!STATE.channel) return;
@@ -9400,7 +9568,9 @@
     RTC.peers.set(peerId, entry);
 
     if (RTC.localStream) {
-      RTC.localStream.getTracks().forEach(t => pc.addTrack(t, RTC.localStream));
+      RTC.localStream.getTracks().forEach(t => { if (t.kind !== 'video') pc.addTrack(t, RTC.localStream); });
+      const vt = rtcCurrentVideoTrack();
+      if (vt) pc.addTrack(vt, RTC.localStream);
     }
     pc.onicecandidate = (e) => {
       if (e.candidate) rtcSend(peerId, 'ice', e.candidate);
@@ -9543,6 +9713,10 @@
   function rtcLeaveCall() {
     if (!RTC.inCall) return;
     rtcSend(null, 'leave', null);
+    rtcStopProcessing();
+    RTC_BG.mode = 'none';
+    const bgSel = document.getElementById('rtc-bg-mode');
+    if (bgSel) bgSel.value = 'none';
     RTC.peers.forEach((entry) => { try { entry.pc.close(); } catch (e) {} });
     RTC.peers.clear();
     RTC.pendingIce.clear();
@@ -9566,7 +9740,12 @@
     const vids = RTC.localStream.getVideoTracks();
     if (vids.length === 0) { toast('No camera on this call', 'error'); return; }
     RTC.camOn = !RTC.camOn;
-    vids.forEach(t => { t.enabled = RTC.camOn; });
+    // Toggle the actually-sent track (processed canvas track when background is on)
+    const sent = rtcCurrentVideoTrack();
+    if (sent) sent.enabled = RTC.camOn;
+    // When not processing, also toggle the raw track so the camera light goes off.
+    // When processing, the raw track must keep running to feed segmentation.
+    if (!RTC_BG.running) vids.forEach(t => { t.enabled = RTC.camOn; });
     const selfTile = document.getElementById('rtc-tile-' + STATE.userId);
     if (selfTile) selfTile.querySelector('.rtc-novid').style.display = RTC.camOn ? 'none' : 'flex';
     rtcUpdateControls();
@@ -9581,16 +9760,53 @@
     cam.classList.toggle('off', !RTC.camOn);
   }
 
+  function rtcSetLocked(locked) {
+    RTC.locked = locked;
+    const bar = document.getElementById('rtc-bar');
+    const btn = document.getElementById('rtc-lock');
+    btn.textContent = 'Lock: ' + (locked ? 'On' : 'Off');
+    btn.classList.toggle('off', !locked);
+    if (locked) {
+      // Snap back to a tidy, centered, bottom-pinned arrangement
+      bar.classList.add('locked');
+      bar.style.left = '50%';
+      bar.style.top = 'auto';
+      bar.style.bottom = '10px';
+      bar.style.transform = 'translateX(-50%)';
+    } else {
+      bar.classList.remove('locked');
+    }
+  }
+
   function setupRtcUi() {
     const launch = document.getElementById('rtc-launch');
     if (launch) launch.addEventListener('click', rtcJoinCall);
     document.getElementById('rtc-mic').addEventListener('click', rtcToggleMic);
     document.getElementById('rtc-cam').addEventListener('click', rtcToggleCam);
     document.getElementById('rtc-leave').addEventListener('click', rtcLeaveCall);
+    document.getElementById('rtc-lock').addEventListener('click', () => rtcSetLocked(!RTC.locked));
+
+    document.getElementById('rtc-bg-mode').addEventListener('change', (e) => rtcSetBgMode(e.target.value));
+    document.getElementById('rtc-bg-image').addEventListener('change', (e) => {
+      const f = e.target.files[0];
+      e.target.value = '';
+      if (!f) { document.getElementById('rtc-bg-mode').value = RTC_BG.mode; return; }
+      const img = new Image();
+      img.onload = async () => {
+        RTC_BG.image = img;
+        RTC_BG.mode = 'image';
+        document.getElementById('rtc-bg-mode').value = 'image';
+        const ok = await rtcStartProcessing();
+        if (!ok) { RTC_BG.mode = 'none'; document.getElementById('rtc-bg-mode').value = 'none'; }
+      };
+      img.onerror = () => toast('Could not load image', 'error');
+      img.src = URL.createObjectURL(f);
+    });
+
+    const bar = document.getElementById('rtc-bar');
 
     // Resize: drag the grip up or down to scale the tiles
     const grip = document.getElementById('rtc-resize');
-    const bar = document.getElementById('rtc-bar');
     let resizing = false, startY = 0, startH = 120;
     grip.addEventListener('pointerdown', (e) => {
       resizing = true; startY = e.clientY;
@@ -9606,6 +9822,34 @@
     const endResize = (e) => { if (resizing) { resizing = false; try { grip.releasePointerCapture(e.pointerId); } catch (err) {} } };
     grip.addEventListener('pointerup', endResize);
     grip.addEventListener('pointercancel', endResize);
+
+    // Move: drag the handle to reposition the whole bar (only when unlocked)
+    const move = document.getElementById('rtc-move');
+    let moving = false, mx = 0, my = 0, baseLeft = 0, baseTop = 0;
+    move.addEventListener('pointerdown', (e) => {
+      if (RTC.locked) return;
+      const r = bar.getBoundingClientRect();
+      bar.style.transform = 'none';
+      bar.style.left = r.left + 'px';
+      bar.style.top = r.top + 'px';
+      bar.style.bottom = 'auto';
+      moving = true; mx = e.clientX; my = e.clientY; baseLeft = r.left; baseTop = r.top;
+      move.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+    move.addEventListener('pointermove', (e) => {
+      if (!moving) return;
+      const w = bar.offsetWidth, h = bar.offsetHeight;
+      let nx = Math.max(0, Math.min(window.innerWidth - w, baseLeft + (e.clientX - mx)));
+      let ny = Math.max(56, Math.min(window.innerHeight - h, baseTop + (e.clientY - my)));
+      bar.style.left = nx + 'px';
+      bar.style.top = ny + 'px';
+    });
+    const endMove = (e) => { if (moving) { moving = false; try { move.releasePointerCapture(e.pointerId); } catch (err) {} } };
+    move.addEventListener('pointerup', endMove);
+    move.addEventListener('pointercancel', endMove);
+
+    rtcSetLocked(true);
   }
   setupRtcUi();
 
