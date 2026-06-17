@@ -416,7 +416,8 @@
   .monster-tab-content.active { display: flex; }
   .monster-search { padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 4px; font-size: 13px; font-family: inherit; }
   .monster-preset-list { display: flex; flex-direction: column; gap: 4px; max-height: 360px; overflow-y: auto; padding-right: 4px; }
-  .monster-card { display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px; align-items: center; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--danger); border-radius: 4px; cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+  .monster-card { display: grid; grid-template-columns: auto 1fr auto auto auto; gap: 10px; align-items: center; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--danger); border-radius: 4px; cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+  .monster-card .m-art { width: 36px; height: 36px; border-radius: 5px; background-size: cover; background-position: center; border: 1px solid var(--border); flex-shrink: 0; }
   .monster-card:hover { background: var(--panel-light); border-color: var(--gold-soft); }
   .monster-card.selected { background: rgba(212,165,116,0.12); border-color: var(--gold); border-left-color: var(--gold); }
   .monster-card .m-name { font-family: 'Cinzel', serif; color: var(--cream); font-weight: 600; }
@@ -3675,6 +3676,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           card.className = 'monster-card' + (selectedMonster && selectedMonster.id === m.id ? ' selected' : '');
           card.dataset.id = m.id;
           card.innerHTML = `
+            <div class="m-art" style="background-image:url('${monsterPlaceholderImg(m)}')"></div>
             <div>
               <div class="m-name">${escapeHtml(m.name)}</div>
               <div class="m-cr">CR <b>${m.cr}</b> · ${m.speed}ft · DEX ${m.dex} (${fmtMod(dexMod)})</div>
@@ -3768,7 +3770,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       hp: preset.hp,
       maxHp: preset.hp,
       ac: preset.ac,
-      portrait: '',
+      portrait: monsterPlaceholderImg(preset),
       isNpc: true,
       downed: false,
     };
@@ -3778,9 +3780,19 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     await saveInitiative();
   }
 
-  // Inline SVG placeholder for monster tokens (initial letter on colored background)
+  // Archetype silhouettes for monster tokens. Drawn in a 64x64 viewBox with a
+  // single contrast fill, plus background-colored cutouts for eyes/beaks.
+  const MONSTER_SIL = {
+    humanoid: (C) => `<g fill='${C}'><circle cx='32' cy='15' r='8'/><rect x='24' y='24' width='16' height='19' rx='4'/><rect x='16' y='26' width='8' height='15' rx='4'/><rect x='40' y='26' width='8' height='15' rx='4'/><rect x='25' y='42' width='6' height='16' rx='2'/><rect x='33' y='42' width='6' height='16' rx='2'/></g>`,
+    giant: (C) => `<g fill='${C}'><circle cx='32' cy='14' r='9'/><rect x='19' y='23' width='26' height='21' rx='5'/><rect x='11' y='25' width='9' height='17' rx='4'/><rect x='44' y='25' width='9' height='17' rx='4'/><rect x='22' y='43' width='8' height='16' rx='3'/><rect x='34' y='43' width='8' height='16' rx='3'/></g>`,
+    beast: (C) => `<g fill='${C}'><ellipse cx='30' cy='34' rx='17' ry='8'/><rect x='17' y='39' width='4' height='13' rx='2'/><rect x='25' y='39' width='4' height='13' rx='2'/><rect x='33' y='39' width='4' height='13' rx='2'/><rect x='40' y='39' width='4' height='13' rx='2'/><path d='M44 30 l11 -3 -2 7 -9 4 z'/><polygon points='46,27 49,18 53,26'/><path d='M14 31 l-9 -3 2 7 7 1 z'/></g>`,
+    undead: (C, bg) => `<g fill='${C}'><path d='M32 8 c-12 0 -19 8 -19 19 0 7 4 12 8 14 l0 7 5 0 0 -4 3 0 0 4 6 0 0 -4 3 0 0 4 5 0 0 -7 c4 -2 8 -7 8 -14 0 -11 -7 -19 -19 -19 z'/></g><g fill='${bg}'><circle cx='24' cy='27' r='5'/><circle cx='40' cy='27' r='5'/><polygon points='32,32 29,39 35,39'/></g>`,
+    owlbear: (C, bg) => `<g fill='${C}'><ellipse cx='32' cy='42' rx='15' ry='14'/><circle cx='32' cy='22' r='12'/><polygon points='23,13 25,5 30,14'/><polygon points='41,13 39,5 34,14'/><rect x='20' y='52' width='7' height='8' rx='2'/><rect x='37' y='52' width='7' height='8' rx='2'/></g><g fill='${bg}'><circle cx='27' cy='21' r='3'/><circle cx='37' cy='21' r='3'/><polygon points='32,24 28,28 36,28'/></g>`,
+    dragon: (C, bg) => `<g fill='${C}'><path d='M14 30 q4 -14 20 -16 q14 -2 18 8 q3 7 -2 12 l6 2 -7 3 q-1 6 -8 8 l0 -5 q-6 1 -10 -2 l-3 5 -2 -7 q-6 -3 -7 -11 z'/><polygon points='30,14 28,4 36,12'/><path d='M48 33 l8 1 -6 4 z'/></g><circle cx='40' cy='24' r='2.6' fill='${bg}'/>`,
+  };
+
+  // Inline SVG art for monster tokens, themed by type and shaped by archetype.
   function monsterPlaceholderImg(preset) {
-    const initial = (preset.name || '?').charAt(0).toUpperCase();
     const colors = {
       goblin: '#5b8a3a', orc: '#7d4a25', kobold: '#a85020', wolf: '#665a4a',
       skeleton: '#d0d0c4', zombie: '#5a7050', bandit: '#705540', guard: '#a89568',
@@ -3788,11 +3800,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       owlbear: '#7d5a25', troll: '#3a6a3a', mummy: '#a8945a', lich: '#2a1a3a',
       'red-dragon': '#9a2828',
     };
+    const arch = {
+      goblin: 'humanoid', orc: 'humanoid', kobold: 'humanoid', bandit: 'humanoid', guard: 'humanoid', hobgoblin: 'humanoid', bugbear: 'humanoid', gnoll: 'humanoid',
+      wolf: 'beast', skeleton: 'undead', zombie: 'undead', mummy: 'undead', lich: 'undead', ogre: 'giant', troll: 'giant', owlbear: 'owlbear', 'red-dragon': 'dragon',
+    };
     const bg = colors[preset.id] || '#5a4630';
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
-      <rect width='64' height='64' fill='${bg}'/>
-      <text x='32' y='44' text-anchor='middle' font-family='Cinzel, serif' font-weight='700' font-size='38' fill='#1a1612'>${initial}</text>
-    </svg>`;
+    const h = bg.replace('#', '');
+    const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    const C = (0.299 * r + 0.587 * g + 0.114 * b) > 140 ? '#16110b' : '#f1e8d7';
+    const sil = (MONSTER_SIL[arch[preset.id]] || MONSTER_SIL.humanoid)(C, bg);
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='${bg}'/>${sil}</svg>`;
     return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
   }
 
