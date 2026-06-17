@@ -1326,14 +1326,14 @@
       </select>
     </div>
 
-    <div class="field" id="session-field" style="display:none">
-      <label>Session Code</label>
-      <input type="text" id="session-input" placeholder="4-character code" maxlength="4" style="text-transform: uppercase; letter-spacing: 0.2em;">
+    <div class="field" id="session-field" style="display:block">
+      <label>Resume code (optional)</label>
+      <input type="text" id="session-input" placeholder="Leave empty for a new game" maxlength="4" style="text-transform: uppercase; letter-spacing: 0.2em;">
     </div>
 
     <button class="primary" id="enter-btn" style="width:100%; padding: 12px; margin-top: 10px;">Enter</button>
     <button id="resume-btn" style="width:100%; padding: 10px; margin-top: 6px; display:none; background: transparent; color: var(--gold); border: 1px solid var(--gold-soft);">Continue last session</button>
-    <div class="footer-note">Host opens a new session. Players enter the host's code to join.</div>
+    <div class="footer-note">Host: leave the code empty to start a new game, or enter a code to resume one you host. Players enter the host's code to join.</div>
     <div class="conn-status" id="conn-status">Connecting...</div>
   </div>
 </div>
@@ -2823,8 +2823,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     chosenRole = 'host';
     document.getElementById('role-host-btn').classList.add('active');
     document.getElementById('role-player-btn').classList.remove('active');
-    document.getElementById('session-field').style.display = 'none';
+    document.getElementById('session-field').style.display = 'block';
     document.getElementById('class-field').style.display = 'none';
+    const lbl = document.querySelector('#session-field label');
+    if (lbl) lbl.textContent = 'Resume code (optional)';
+    const si = document.getElementById('session-input');
+    if (si) si.placeholder = 'Leave empty for a new game';
   });
   document.getElementById('role-player-btn').addEventListener('click', () => {
     chosenRole = 'player';
@@ -2832,6 +2836,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.getElementById('role-host-btn').classList.remove('active');
     document.getElementById('session-field').style.display = 'block';
     document.getElementById('class-field').style.display = 'block';
+    const lbl = document.querySelector('#session-field label');
+    if (lbl) lbl.textContent = 'Session Code';
+    const si = document.getElementById('session-input');
+    if (si) si.placeholder = '4-character code';
   });
 
   // Connection test
@@ -2876,6 +2884,34 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       STATE.playerClass = playerClass;
 
       if (chosenRole === 'host') {
+        let resumeCode = document.getElementById('session-input').value.trim().toUpperCase();
+        if (resumeCode) {
+          // Resume a game you already host instead of opening a new one
+          if (resumeCode.length !== 4) {
+            toast('Enter a valid 4-character code', 'error');
+            btn.disabled = false; btn.textContent = 'Enter';
+            return;
+          }
+          const { data: sess, error: sErr } = await sb.from('vtt_sessions').select('id').eq('id', resumeCode).maybeSingle();
+          if (sErr) throw sErr;
+          if (!sess) {
+            toast('No game found with that code', 'error');
+            btn.disabled = false; btn.textContent = 'Enter';
+            return;
+          }
+          STATE.sessionId = resumeCode;
+          // Adopt the existing host identity so the map, tokens and character carry over
+          const { data: hostRow } = await sb.from('vtt_players').select('id').eq('session_id', resumeCode).eq('is_host', true).limit(1).maybeSingle();
+          if (hostRow && hostRow.id) {
+            STATE.userId = hostRow.id;
+          } else {
+            await sb.from('vtt_players').insert({ id: STATE.userId, session_id: resumeCode, name, is_host: true });
+          }
+          await sb.from('vtt_chat').insert({
+            id: genId(), session_id: resumeCode, msg_type: 'system',
+            text: `${name} resumed the session.`, ts: nowTs(),
+          });
+        } else {
         // Create session
         STATE.sessionId = genSessionCode();
         const { error: sErr } = await sb.from('vtt_sessions').insert({
@@ -2901,6 +2937,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           text: `${name} opened the session.`,
           ts: nowTs(),
         });
+        }
       } else {
         // Join session
         let code = document.getElementById('session-input').value.trim().toUpperCase();
@@ -3025,7 +3062,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     // Switch to the role the user was last using
     if (saved.role === 'player') document.getElementById('role-player-btn').click();
     // If session is < 7 days old, allow a one-click resume
-    const fresh = saved.savedAt && (Date.now() - saved.savedAt < 7 * 24 * 3600 * 1000);
+    const fresh = saved.savedAt && (Date.now() - saved.savedAt < 90 * 24 * 3600 * 1000);
     if (!fresh) return;
     const btn = document.getElementById('resume-btn');
     btn.style.display = 'block';
