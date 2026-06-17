@@ -474,6 +474,16 @@
   .cond-toggle .cond-name { color: var(--cream); font-weight: 600; }
   .cond-toggle.on .cond-name { color: var(--cond-color, var(--gold)); }
   .cond-toggle .cond-rounds { font-size: 10px; color: var(--muted); margin-left: 4px; }
+  /* Each grid cell wraps the toggle plus a small info button */
+  .cond-cell { display: flex; gap: 4px; align-items: stretch; }
+  .cond-cell .cond-toggle { flex: 1; min-width: 0; }
+  .cond-expand { width: 26px; flex-shrink: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; color: var(--muted); cursor: pointer; font-family: 'Cinzel', serif; font-weight: 700; font-size: 12px; line-height: 1; }
+  .cond-expand:hover { border-color: var(--gold-soft); color: var(--gold); }
+  .cond-expand.open { color: var(--gold); border-color: var(--gold-soft); background: rgba(212,165,116,0.1); }
+  /* Shared description panel below the grid - full width, readable in a narrow bar */
+  .cond-detail { margin-top: 8px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--gold-soft); border-radius: 4px; font-size: 11px; line-height: 1.5; color: var(--cream); }
+  .cond-detail.hidden { display: none; }
+  .cond-detail .cd-name { font-family: 'Cinzel', serif; color: var(--gold); font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 3px; }
 
   /* Exhaustion */
   .exhaustion-row { display: flex; gap: 4px; }
@@ -563,8 +573,9 @@
   .char-section-head .hint { font-size: 9px; color: var(--muted); letter-spacing: 0.08em; text-transform: none; font-style: italic; font-family: inherit; }
 
   /* Saving throws */
-  .saves-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-  .save-row { display: flex; align-items: center; gap: 7px; padding: 7px 9px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
+  .saves-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 5px; }
+  .save-row { display: flex; align-items: center; gap: 7px; padding: 7px 9px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; min-width: 0; }
+  .save-row .save-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .row-fill { flex: 1; min-width: 4px; }
   .skills-editbar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
   .skills-edit-toggle { font-size: 11px; padding: 4px 11px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 5px; cursor: pointer; }
@@ -591,13 +602,13 @@
   .state-exp .skill-bonus, .state-exp .save-bonus { color: #ffd87a; text-shadow: 0 0 6px rgba(255,216,122,0.5); }
 
   /* SKILLS */
-  .skill-row { display: flex; align-items: center; gap: 7px; padding: 7px 9px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
+  .skill-row { display: flex; align-items: center; gap: 7px; padding: 7px 9px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; min-width: 0; }
   .skill-row .skill-stat { font-family: 'Cinzel', serif; color: var(--muted); font-size: 9px; letter-spacing: 0.1em; min-width: 22px; }
-  .skill-row .skill-name { color: var(--cream); }
+  .skill-row .skill-name { color: var(--cream); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .skill-row.state-prof .skill-name, .skill-row.state-exp .skill-name { font-weight: 600; }
 
   /* Skills */
-  .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .skills-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 4px; }
   .skill-row:has(.skill-prof:checked) { background: rgba(212,175,55,0.06); }
   .skill-row.state-prof, .skill-row.state-exp { background: rgba(212,175,55,0.08); }
 
@@ -609,6 +620,14 @@
   .buff-preset-chip.on { background: rgba(212,165,116,0.15); color: var(--gold); border-color: var(--gold); }
   .buff-preset-chip .bp-name { font-weight: 600; }
   .buff-preset-chip .bp-mod { font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold); }
+  .buff-ref-toggle { margin-top: 8px; font-size: 11px; padding: 4px 11px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 5px; cursor: pointer; }
+  .buff-ref-toggle:hover { color: var(--cream); border-color: var(--gold-soft); }
+  .buff-ref-toggle.on { color: var(--gold); border-color: var(--gold-soft); background: rgba(212,165,116,0.12); }
+  .buff-ref { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .buff-ref.hidden { display: none; }
+  .buff-ref .br-row { padding: 6px 9px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; font-size: 11px; line-height: 1.45; color: var(--muted); }
+  .buff-ref .br-name { font-family: 'Cinzel', serif; color: var(--gold); font-weight: 700; letter-spacing: 0.04em; }
+  .buff-ref .br-mod { color: var(--gold-soft); font-weight: 700; margin-left: 4px; }
 
   /* Active buffs grid - like condition toggles */
   .buffs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
@@ -815,7 +834,7 @@
   #char-hitdice .hd-pool b { color: var(--gold); font-size: 14px; }
   #char-hitdice .hd-spend { margin-left: auto; border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer; }
   #char-hitdice .hd-spend:hover { border-color: var(--gold-soft); color: var(--gold); }
-  #char-hitdice .hd-spend:disabled { opacity: 0.45; cursor: default; }
+  #char-hitdice .hd-spend:disabled { opacity: 0.4; cursor: default; border-style: dashed; color: var(--muted); }
   #char-hitdice.disabled { opacity: 0.4; pointer-events: none; }
   /* Low HP - pulse the heart graphic */
   .vital-box.vital-hp.low .hp-heart-graphic { animation: hp-low-pulse 1.4s ease-in-out infinite; }
@@ -1636,7 +1655,7 @@
     <div class="hp-hitdice" id="char-hitdice" title="Spend a Hit Die: roll the die + CON mod to regain HP. A short-rest resource.">
       <span class="hd-label">Hit Dice</span>
       <span class="hd-pool"><b id="char-hd-cur">0</b> / <span id="char-hd-max">0</span> <span id="char-hd-die">d8</span></span>
-      <button type="button" id="char-hd-spend" class="hd-spend">Spend</button>
+      <button type="button" id="char-hd-spend" class="hd-spend" title="Spend one Hit Die to heal on a short rest: roll the die + CON mod, regain that many HP.">Spend HD</button>
     </div>
   </div>
 
@@ -1856,6 +1875,8 @@
       <div class="char-section">
         <div class="char-section-head">Quick Buffs <span class="hint">(click to add common buffs)</span></div>
         <div class="buff-presets" id="buff-presets"></div>
+        <button type="button" id="buff-ref-toggle" class="buff-ref-toggle">What do these do?</button>
+        <div id="buff-ref" class="buff-ref hidden"></div>
       </div>
       <div class="char-section">
         <div class="char-section-head">Active Buffs <span class="hint">(click to toggle, × to remove)</span></div>
@@ -1873,8 +1894,9 @@
 
     <div class="char-tab-content" data-tab="conditions">
       <div class="char-section">
-        <div class="char-section-head">Active Conditions <span class="hint">(click to toggle)</span></div>
+        <div class="char-section-head">Active Conditions <span class="hint">(click to toggle, i for details)</span></div>
         <div id="conditions-grid" class="conditions-grid"></div>
+        <div id="cond-detail" class="cond-detail hidden"></div>
       </div>
       <div class="char-section">
         <div class="char-section-head">Exhaustion <span class="hint">(5.5e: -2 per level on d20 tests; level 6 = death)</span></div>
@@ -5076,18 +5098,20 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   // Common preset buffs - one tap to add. Modeled like Conditions tab.
   const BUFF_PRESETS = [
-    { name: 'Bless',                mod: 2, desc: '+1d4 to attacks and saves (avg +2)' },
-    { name: 'Bardic Inspiration',   mod: 4, desc: 'Bonus die to add to one roll (avg ~+3 to +5)' },
-    { name: 'Guidance',             mod: 2, desc: '+1d4 to one ability check (avg +2)' },
-    { name: 'Heroism',              mod: 0, desc: 'Immune to frightened; temp HP each round' },
-    { name: 'Rage',                 mod: 2, desc: 'Bonus damage on STR melee' },
-    { name: 'Aid',                  mod: 0, desc: 'Max HP +5 for 8 hours' },
-    { name: 'Faerie Fire',          mod: 0, desc: 'Targets give advantage on attacks vs them' },
-    { name: 'Divine Favor',         mod: 0, desc: '+1d4 radiant damage on weapon attacks' },
-    { name: 'Hex',                  mod: 0, desc: '+1d6 necrotic damage on hits' },
-    { name: 'Hunter\'s Mark',       mod: 0, desc: '+1d6 damage to marked target' },
-    { name: 'Inspire',              mod: 1, desc: 'Generic morale boost' },
-    { name: 'Custom +1',            mod: 1, desc: 'Flat +1 to next roll' },
+    { name: 'Bless',                mod: 2, desc: 'Add 1d4 to each attack roll and saving throw for up to 1 min (avg +2). Concentration.' },
+    { name: 'Bardic Inspiration',   mod: 4, desc: 'Spend the die to add it to one attack, check, or save (d6 to d12 by bard level).' },
+    { name: 'Guidance',             mod: 2, desc: 'Add 1d4 to one ability check (avg +2). Concentration.' },
+    { name: 'Heroism',              mod: 0, desc: 'Immune to frightened; gain temp HP equal to caster mod at the start of each turn. Concentration.' },
+    { name: 'Rage',                 mod: 2, desc: 'Bonus damage on Strength melee hits; resistance to bludgeon, pierce, slash; advantage on STR checks and saves.' },
+    { name: 'Aid',                  mod: 0, desc: 'Max HP and current HP +5 for 8 hours (more at higher slots).' },
+    { name: 'Shield of Faith',      mod: 0, desc: '+2 AC to one creature for up to 10 min. Concentration.' },
+    { name: 'Haste',                mod: 0, desc: 'Speed doubled, +2 AC, advantage on DEX saves, one extra limited action; lethargy for a turn when it ends. Concentration.' },
+    { name: 'Faerie Fire',          mod: 0, desc: 'Outlined targets cannot benefit from invisibility; attacks against them have advantage. Concentration.' },
+    { name: 'Divine Favor',         mod: 0, desc: 'Your weapon hits deal +1d4 radiant damage. Concentration.' },
+    { name: 'Hex',                  mod: 0, desc: 'Deal +1d6 necrotic on hits to the hexed target; it has disadvantage on one chosen ability. Concentration.' },
+    { name: 'Hunter\'s Mark',       mod: 0, desc: 'Deal +1d6 damage to the marked target; advantage on checks to track it. Concentration.' },
+    { name: 'Inspire',              mod: 1, desc: 'Generic morale boost. A flat reminder buff.' },
+    { name: 'Custom +1',            mod: 1, desc: 'Flat +1 marker for an unlisted effect.' },
   ];
 
   function renderBuffs(buffs) {
@@ -5105,6 +5129,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         chip.innerHTML = `<span class="bp-name">${escapeHtml(p.name)}</span>${p.mod ? `<span class="bp-mod">${p.mod >= 0 ? '+' : ''}${p.mod}</span>` : ''}`;
         presets.appendChild(chip);
       });
+    }
+
+    // -- Reference list: what each preset does (collapsed by default) --
+    const ref = document.getElementById('buff-ref');
+    if (ref) {
+      ref.innerHTML = BUFF_PRESETS.map(p =>
+        `<div class="br-row"><span class="br-name">${escapeHtml(p.name)}</span>${p.mod ? `<span class="br-mod">${p.mod >= 0 ? '+' : ''}${p.mod}</span>` : ''}<br>${escapeHtml(p.desc)}</div>`
+      ).join('');
     }
 
     // -- Active buffs grid: each one is a toggleable chip like a condition --
@@ -5851,6 +5883,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (key === 'exhaustion') return; // handled separately
       const def = D5E_CONDITIONS[key];
       const active = CHAR_POPUP.conditions.find(c => c.key === key);
+      const cell = document.createElement('div');
+      cell.className = 'cond-cell';
       const btn = document.createElement('button');
       btn.className = 'cond-toggle' + (active ? ' on' : '');
       btn.dataset.key = key;
@@ -5864,7 +5898,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         </span>
       `;
       btn.title = def.desc + (canEdit ? '\n\nClick to toggle.' : '');
-      grid.appendChild(btn);
+      const info = document.createElement('button');
+      info.className = 'cond-expand';
+      info.dataset.key = key;
+      info.textContent = 'i';
+      info.title = 'What it does';
+      cell.appendChild(btn);
+      cell.appendChild(info);
+      grid.appendChild(cell);
     });
     // Exhaustion pips
     const exhRow = document.getElementById('exhaustion-row');
@@ -6673,8 +6714,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       toast('Could not read this PDF', 'error');
       return;
     }
-    if (!parsed || (!parsed.class && parsed.strength == null)) {
-      toast('Not a recognized D&D Beyond sheet', 'error');
+    const gotAnything = parsed && (parsed.class || parsed.name ||
+      parsed.strength != null || parsed.dexterity != null || parsed.constitution != null ||
+      parsed.intelligence != null || parsed.wisdom != null || parsed.charisma != null ||
+      parsed.ac != null || parsed.hp_max != null);
+    if (!gotAnything) {
+      console.warn('DDB import: nothing usable parsed from this PDF.', parsed);
+      toast('Could not read this sheet. Is it a D&D Beyond PDF export?', 'error');
       return;
     }
 
@@ -7278,6 +7324,25 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
     // Conditions tab toggles. Right-click sets a duration (rounds) for the condition.
     document.getElementById('conditions-grid').addEventListener('click', (e) => {
+      const info = e.target.closest('.cond-expand');
+      if (info) {
+        const key = info.dataset.key;
+        const def = D5E_CONDITIONS[key];
+        const panel = document.getElementById('cond-detail');
+        if (!def || !panel) return;
+        const isOpen = !panel.classList.contains('hidden') && panel.dataset.key === key;
+        document.querySelectorAll('#conditions-grid .cond-expand.open').forEach(b => b.classList.remove('open'));
+        if (isOpen) {
+          panel.classList.add('hidden');
+          panel.dataset.key = '';
+        } else {
+          panel.innerHTML = `<span class="cd-name">${escapeHtml(def.name)}</span>${escapeHtml(def.desc)}`;
+          panel.classList.remove('hidden');
+          panel.dataset.key = key;
+          info.classList.add('open');
+        }
+        return;
+      }
       const btn = e.target.closest('.cond-toggle');
       if (!btn) return;
       const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
@@ -7523,6 +7588,19 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         renderBuffs(CHAR_POPUP.buffs);
         renderTokens();
         scheduleSavePlayer();
+      });
+    }
+
+    // Buff reference - shows what each preset does, full width and readable
+    const buffRefToggle = document.getElementById('buff-ref-toggle');
+    if (buffRefToggle) {
+      buffRefToggle.addEventListener('click', () => {
+        const ref = document.getElementById('buff-ref');
+        if (!ref) return;
+        const willShow = ref.classList.contains('hidden');
+        ref.classList.toggle('hidden', !willShow);
+        buffRefToggle.classList.toggle('on', willShow);
+        buffRefToggle.textContent = willShow ? 'Hide details' : 'What do these do?';
       });
     }
 
