@@ -3244,7 +3244,6 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
     await loadInitialState();
     setupRealtime();
-    setTimeout(() => { try { loadDice3D(); } catch (e) {} }, 5000); // warm up 3D dice in the background
 
     // Open the docked character panel automatically for players. For hosts,
     // leave it closed - it will slide in when they click on a token.
@@ -11219,7 +11218,6 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     // Cancel any in-flight animations from previous rolls so they cannot
     // overwrite the new roll's display
     clearDiceTimers();
-    if (DICE3D._active) { try { DICE3D._active.cleanup(); } catch (e) {} DICE3D._active = null; }
     document.getElementById('nat20-fx').classList.remove('active');
     document.getElementById('nat20-glow').classList.remove('active');
     document.getElementById('nat1-fx').classList.remove('active');
@@ -11251,15 +11249,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const maxDieDuration = Math.max.apply(null, dieData.map(d => d.dur));
     const totalSettleTime = maxDieDuration + (msg.rolls.length - 1) * STAGGER;
 
-    // Use 3D dice when the model is loaded; otherwise the 2D fallback below.
-    let use3D = false;
-    if (DICE3D.ready) {
-      try { render3DDice(stage, msg, totalSettleTime); use3D = true; }
-      catch (e) { console.warn('3D dice failed, using 2D', e); use3D = false; }
-    }
-    loadDice3D(); // warm up for next time (no-op once loaded or failed)
-
-    if (!use3D) msg.rolls.forEach((val, i) => {
+    msg.rolls.forEach((val, i) => {
       const delay = i * STAGGER;
       const { path } = dieData[i];
       let dieEl;
