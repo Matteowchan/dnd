@@ -345,6 +345,26 @@
   .rest-hd-stepper #rest-hd-count { font-family: 'Cinzel', serif; font-size: 22px; color: var(--gold); min-width: 24px; text-align: center; }
   .rest-hd-rem { font-size: 12px; color: var(--muted); }
   .rest-hd-estimate { margin-top: 10px; font-size: 13px; color: var(--cream); }
+  .catalog-open-btn { float: right; font-size: 11px; padding: 3px 9px; border: 1px solid var(--gold-soft); background: var(--panel-light); color: var(--gold); border-radius: 4px; cursor: pointer; }
+  .catalog-open-btn:hover { background: var(--gold-soft); color: var(--bg); }
+  #catalog-popup { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); width: 520px; max-width: 94vw; max-height: 80vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1600; display: none; flex-direction: column; }
+  #catalog-popup.active { display: flex; }
+  #catalog-popup .char-popup-body { overflow: hidden; display: flex; flex-direction: column; }
+  .catalog-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .catalog-tab { flex: 1; min-width: 84px; padding: 7px 6px; font-size: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); border-radius: 4px; cursor: pointer; }
+  .catalog-tab.on { background: var(--gold-soft); color: var(--bg); border-color: var(--gold); }
+  .catalog-search { margin: 10px 0; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 4px; font-family: inherit; font-size: 13px; }
+  .catalog-list { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 5px; padding-right: 4px; }
+  .cat-row { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; }
+  .cat-row:hover { border-color: var(--gold-soft); }
+  .cat-info { flex: 1; min-width: 0; }
+  .cat-name { font-size: 13px; color: var(--cream); }
+  .cat-name .cat-tag { font-size: 10px; color: var(--gold); margin-left: 6px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .cat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .cat-actions { display: flex; gap: 5px; flex-shrink: 0; align-self: center; }
+  .cat-btn { font-size: 11px; padding: 5px 9px; border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); border-radius: 4px; cursor: pointer; white-space: nowrap; }
+  .cat-btn:hover { border-color: var(--gold-soft); color: var(--gold); }
+  .cat-btn.primary { background: var(--gold-soft); color: var(--bg); border-color: var(--gold); }
   #spell-catalog { position: fixed; top: 50px; left: 50%; transform: translateX(-50%); width: 720px; max-width: 94vw; max-height: 82vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 8px; box-shadow: 0 18px 50px rgba(0,0,0,0.75); z-index: 1600; display: none; flex-direction: column; }
   #spell-catalog.active { display: flex; }
   #spell-catalog .sc-controls { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
@@ -689,6 +709,9 @@
   .char-portrait-wrap:hover .char-portrait-hint { opacity: 1; }
   .race-traits { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.45; max-width: 100%; }
   .race-traits b { color: var(--gold-soft); font-weight: 600; }
+  .race-asi-btn { margin-top: 7px; font-size: 11px; padding: 5px 10px; border: 1px solid var(--gold-soft); background: var(--panel-light); color: var(--gold); border-radius: 4px; cursor: pointer; }
+  .race-asi-btn:hover { background: var(--gold-soft); color: var(--bg); }
+  .race-asi-btn.on { background: var(--gold); color: var(--bg); border-color: var(--gold); }
 
   /* Currency row in Equipment tab */
   .currency-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 6px; }
@@ -1608,6 +1631,7 @@
         <input type="text" id="char-subclass" placeholder="Subclass (e.g. Battle Master, Life Domain)" maxlength="40">
       </div>
       <div id="race-traits" class="race-traits"></div>
+      <button id="race-asi-btn" class="race-asi-btn" type="button" style="display:none;"></button>
     </div>
   </div>
 
@@ -1782,7 +1806,7 @@
         </div>
       </div>
       <div class="char-section">
-        <div class="char-section-head">Inventory</div>
+        <div class="char-section-head">Inventory <button id="catalog-open-btn" class="catalog-open-btn" type="button">Browse Catalog</button></div>
         <div id="inventory-list"></div>
         <div class="inv-add-row">
           <input type="text" id="inv-add-name" placeholder="Item name" maxlength="40">
@@ -2198,11 +2222,6 @@
       <button id="maps-upload-btn" class="primary" style="width:100%; margin-bottom:12px;">Upload New Map</button>
       <div id="maps-library-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;"></div>
       <div id="maps-library-empty" style="font-size:12px; color:var(--muted); text-align:center; padding:16px;">No maps yet. Generate one or upload an image, it will appear here.</div>
-      <div style="margin-top:14px; border-top:1px solid var(--border); padding-top:12px;">
-        <div style="font-family:'Cinzel',serif; color:var(--gold); font-size:12px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px;">Preset Maps</div>
-        <div style="font-size:11px; color:var(--muted); margin-bottom:8px;">Built-in static battle floors. Click to add one to the library, then Reveal to players.</div>
-        <div id="preset-maps-grid" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px;"></div>
-      </div>
     </div>
 
     <div class="lib-tab-content" data-tab="npcs" style="display:none;">
@@ -2276,6 +2295,24 @@
       <button id="grant-rest-cancel" class="init-mini-btn">Cancel</button>
       <button id="grant-rest-confirm" class="init-mini-btn primary">Grant Rest</button>
     </div>
+  </div>
+</div>
+
+<!-- Equipment catalog popup -->
+<div id="catalog-popup">
+  <div class="char-popup-header">
+    <span class="ttl">Equipment Catalog</span>
+    <button id="catalog-close">×</button>
+  </div>
+  <div class="char-popup-body" style="padding: 12px;">
+    <div class="catalog-tabs">
+      <button class="catalog-tab on" data-ctab="weapons">Weapons</button>
+      <button class="catalog-tab" data-ctab="armor">Armor</button>
+      <button class="catalog-tab" data-ctab="gear">Gear</button>
+      <button class="catalog-tab" data-ctab="magic">Magic Items</button>
+    </div>
+    <input type="text" id="catalog-search" class="catalog-search" placeholder="Search...">
+    <div id="catalog-list" class="catalog-list"></div>
   </div>
 </div>
 
@@ -4882,6 +4919,66 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     { key: 'offhand', label: 'Off-hand'  },
   ];
 
+  // ---- Equipment catalog data (weapons reuse SRD_WEAPONS) ----
+  const SRD_ARMOR = [
+    { n: 'Padded', type: 'light', base: 11, stealth: true },
+    { n: 'Leather', type: 'light', base: 11 },
+    { n: 'Studded Leather', type: 'light', base: 12 },
+    { n: 'Hide', type: 'medium', base: 12 },
+    { n: 'Chain Shirt', type: 'medium', base: 13 },
+    { n: 'Scale Mail', type: 'medium', base: 14, stealth: true },
+    { n: 'Breastplate', type: 'medium', base: 14 },
+    { n: 'Half Plate', type: 'medium', base: 15, stealth: true },
+    { n: 'Ring Mail', type: 'heavy', base: 14, stealth: true },
+    { n: 'Chain Mail', type: 'heavy', base: 16, stealth: true, str: 13 },
+    { n: 'Splint', type: 'heavy', base: 17, stealth: true, str: 15 },
+    { n: 'Plate', type: 'heavy', base: 18, stealth: true, str: 15 },
+    { n: 'Shield', type: 'shield', base: 2 },
+  ];
+  const SRD_GEAR = [
+    { n: 'Torch', note: 'bright 20 ft, dim 20 ft' }, { n: 'Rope, hempen (50 ft)' }, { n: 'Rope, silk (50 ft)' },
+    { n: 'Rations (1 day)' }, { n: 'Waterskin' }, { n: 'Bedroll' }, { n: 'Blanket' }, { n: 'Tent, two-person' },
+    { n: 'Lantern, hooded', note: 'bright 30 ft' }, { n: 'Lantern, bullseye', note: 'cone 60 ft' }, { n: 'Oil, flask' },
+    { n: 'Tinderbox' }, { n: 'Candle', note: 'bright 5 ft' }, { n: 'Backpack' }, { n: 'Pouch' }, { n: 'Sack' },
+    { n: "Healer's kit", note: '10 uses, stabilize a creature' }, { n: 'Potion of Healing', note: 'regain 2d4+2 HP' },
+    { n: "Thieves' tools", note: 'pick locks, disarm traps' }, { n: "Smith's tools" }, { n: "Herbalism kit" },
+    { n: 'Crowbar' }, { n: 'Hammer' }, { n: 'Piton' }, { n: 'Grappling hook' }, { n: 'Chain (10 ft)' },
+    { n: 'Caltrops (bag of 20)' }, { n: 'Ball bearings (bag of 1000)' }, { n: 'Manacles' }, { n: 'Lock', note: 'DC 15 to pick' },
+    { n: 'Hunting trap' }, { n: 'Climber\'s kit' }, { n: 'Mess kit' }, { n: 'Shovel' }, { n: 'Pole (10 ft)' },
+    { n: 'Signal whistle' }, { n: 'Bell' }, { n: 'Chalk' }, { n: 'Soap' }, { n: 'Whetstone' }, { n: 'Vial' }, { n: 'Flask' },
+    { n: 'Holy symbol' }, { n: 'Spellbook' }, { n: 'Component pouch' }, { n: 'Arcane focus' }, { n: 'Druidic focus' },
+    { n: 'Quiver (20 arrows)' }, { n: 'Crossbow bolts (20)' }, { n: 'Sling bullets (20)' },
+  ];
+  // bonus.kind: 'atkdmg' (weapon), 'ac', 'acsave'  -> applied as a reversible buff
+  // setAbility: reference only in v1 (needs ability-set machinery from race/class)
+  const MAGIC_ITEMS = [
+    { n: 'Weapon, +1', r: 'uncommon', att: false, t: 'Weapon', d: '+1 to attack and damage rolls with this magic weapon.', bonus: { mod: 1, kind: 'atkdmg' } },
+    { n: 'Weapon, +2', r: 'rare', att: false, t: 'Weapon', d: '+2 to attack and damage rolls with this magic weapon.', bonus: { mod: 2, kind: 'atkdmg' } },
+    { n: 'Weapon, +3', r: 'very rare', att: false, t: 'Weapon', d: '+3 to attack and damage rolls with this magic weapon.', bonus: { mod: 3, kind: 'atkdmg' } },
+    { n: 'Armor, +1', r: 'rare', att: false, t: 'Armor', d: '+1 bonus to AC while worn.', bonus: { mod: 1, kind: 'ac' } },
+    { n: 'Armor, +2', r: 'very rare', att: false, t: 'Armor', d: '+2 bonus to AC while worn.', bonus: { mod: 2, kind: 'ac' } },
+    { n: 'Shield, +1', r: 'uncommon', att: false, t: 'Shield', d: '+1 bonus to AC, beyond the shield\'s normal +2.', bonus: { mod: 1, kind: 'ac' } },
+    { n: 'Shield, +2', r: 'rare', att: false, t: 'Shield', d: '+2 bonus to AC, beyond the shield\'s normal +2.', bonus: { mod: 2, kind: 'ac' } },
+    { n: 'Ring of Protection', r: 'rare', att: true, t: 'Ring', d: '+1 to AC and all saving throws while worn.', bonus: { mod: 1, kind: 'acsave' } },
+    { n: 'Cloak of Protection', r: 'uncommon', att: true, t: 'Wondrous', d: '+1 to AC and all saving throws while worn.', bonus: { mod: 1, kind: 'acsave' } },
+    { n: 'Bracers of Defense', r: 'rare', att: true, t: 'Wondrous', d: '+2 AC when wearing no armor and no shield.', bonus: { mod: 2, kind: 'ac' } },
+    { n: 'Amulet of Health', r: 'rare', att: true, t: 'Wondrous', d: 'Sets your Constitution to 19 while worn.', setAbility: { ability: 'con', score: 19 } },
+    { n: 'Headband of Intellect', r: 'uncommon', att: true, t: 'Wondrous', d: 'Sets your Intelligence to 19 while worn.', setAbility: { ability: 'int', score: 19 } },
+    { n: 'Gauntlets of Ogre Power', r: 'uncommon', att: true, t: 'Wondrous', d: 'Sets your Strength to 19 while worn.', setAbility: { ability: 'str', score: 19 } },
+    { n: 'Belt of Hill Giant Strength', r: 'rare', att: true, t: 'Wondrous', d: 'Sets your Strength to 21 while worn.', setAbility: { ability: 'str', score: 21 } },
+    { n: 'Potion of Greater Healing', r: 'uncommon', att: false, t: 'Potion', d: 'Regain 4d4+4 hit points when you drink it.' },
+    { n: 'Bag of Holding', r: 'uncommon', att: false, t: 'Wondrous', d: 'Holds up to 500 lb in an extradimensional space.' },
+    { n: 'Cloak of Elvenkind', r: 'uncommon', att: true, t: 'Wondrous', d: 'Advantage on Stealth (hide); others have disadvantage to spot you.' },
+    { n: 'Boots of Elvenkind', r: 'uncommon', att: false, t: 'Wondrous', d: 'Your steps make no sound; advantage on quiet movement.' },
+    { n: 'Goggles of Night', r: 'uncommon', att: false, t: 'Wondrous', d: 'Darkvision 60 ft while worn.' },
+    { n: 'Slippers of Spider Climbing', r: 'uncommon', att: true, t: 'Wondrous', d: 'Climb walls and ceilings, hands free.' },
+    { n: 'Boots of Speed', r: 'rare', att: true, t: 'Wondrous', d: 'Double your speed and impose disadvantage on opportunity attacks (bonus action).' },
+    { n: 'Immovable Rod', r: 'uncommon', att: false, t: 'Rod', d: 'Fixes in place, holds up to 8000 lb.' },
+    { n: 'Driftglobe', r: 'uncommon', att: false, t: 'Wondrous', d: 'Floating light, bright 30 ft on command.' },
+    { n: 'Ring of Free Action', r: 'rare', att: true, t: 'Ring', d: 'Immune to difficult terrain, paralysis, and restraint penalties.' },
+  ];
+
+
   // ============ CHARACTER SHEET EXTENSIONS (skills, saves, buffs, inventory) ============
   const SKILLS_DEF = [
     { key: 'acrobatics',      name: 'Acrobatics',      stat: 'dex' },
@@ -4953,18 +5050,36 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   // D&D 5e basic races with their key traits. Shown under the race dropdown.
   const D5E_RACES = {
-    'human':      { name: 'Human',      size: 'Medium', speed: 30, asi: '+1 to all abilities',                    traits: 'Versatile and adaptable. Extra language.' },
-    'elf':        { name: 'Elf',        size: 'Medium', speed: 30, asi: '+2 DEX',                                  traits: 'Darkvision 60ft. Keen Senses (perception prof). Fey Ancestry (charm resistance, no magical sleep). Trance (4h instead of 8h rest).' },
-    'dwarf':      { name: 'Dwarf',      size: 'Medium', speed: 25, asi: '+2 CON',                                  traits: 'Darkvision 60ft. Dwarven Resilience (poison resist, advantage on saves vs poison). Stonecunning (history checks for stonework with proficiency).' },
-    'halfling':   { name: 'Halfling',   size: 'Small',  speed: 25, asi: '+2 DEX',                                  traits: 'Lucky (reroll 1s on d20). Brave (advantage on saves vs frightened). Halfling Nimbleness (move through larger creatures).' },
-    'half-elf':   { name: 'Half-Elf',   size: 'Medium', speed: 30, asi: '+2 CHA, +1 to two other abilities',       traits: 'Darkvision 60ft. Fey Ancestry. Skill Versatility (two skill proficiencies of your choice).' },
-    'half-orc':   { name: 'Half-Orc',   size: 'Medium', speed: 30, asi: '+2 STR, +1 CON',                          traits: 'Darkvision 60ft. Menacing (intimidation prof). Relentless Endurance (drop to 1 HP instead of 0, once/long rest). Savage Attacks (extra damage die on melee crits).' },
-    'tiefling':   { name: 'Tiefling',   size: 'Medium', speed: 30, asi: '+2 CHA, +1 INT',                          traits: 'Darkvision 60ft. Hellish Resistance (fire resist). Infernal Legacy (thaumaturgy cantrip; hellish rebuke at lv3; darkness at lv5).' },
-    'gnome':      { name: 'Gnome',      size: 'Small',  speed: 25, asi: '+2 INT',                                  traits: 'Darkvision 60ft. Gnome Cunning (advantage on INT, WIS, CHA saves vs magic).' },
-    'dragonborn': { name: 'Dragonborn', size: 'Medium', speed: 30, asi: '+2 STR, +1 CHA',                          traits: 'Draconic Ancestry (choose dragon type). Breath Weapon (cone or line, 2d6 of element type, dex/con save). Damage Resistance to ancestry element.' },
-    'goliath':    { name: 'Goliath',    size: 'Medium', speed: 30, asi: '+2 STR, +1 CON',                          traits: 'Natural Athlete (athletics prof). Stone\'s Endurance (reduce damage 1/short rest). Mountain Born (cold resist, no penalty up to 20,000 ft).' },
-    'aasimar':    { name: 'Aasimar',    size: 'Medium', speed: 30, asi: '+2 CHA',                                  traits: 'Darkvision 60ft. Celestial Resistance (necrotic and radiant). Healing Hands (1/long rest heal HP equal to level). Light cantrip.' },
-    'tabaxi':     { name: 'Tabaxi',     size: 'Medium', speed: 30, asi: '+2 DEX, +1 CHA',                          traits: 'Darkvision 60ft. Feline Agility (double speed for one turn). Cat\'s Claws (climb 20ft, claws are 1d4 slash). Cat\'s Talent (perception and stealth prof).' },
+    'human':      { name: 'Human',      size: 'Medium', speed: 30, asi: '+1 to all abilities',                    bonus: { str:1, dex:1, con:1, int:1, wis:1, cha:1 }, traits: 'Versatile and adaptable. Extra language.' },
+    'elf':        { name: 'Elf',        size: 'Medium', speed: 30, asi: '+2 DEX',                                  bonus: { dex:2 }, traits: 'Darkvision 60ft. Keen Senses (perception prof). Fey Ancestry (charm resistance, no magical sleep). Trance (4h instead of 8h rest).' },
+    'dwarf':      { name: 'Dwarf',      size: 'Medium', speed: 25, asi: '+2 CON',                                  bonus: { con:2 }, traits: 'Darkvision 60ft. Dwarven Resilience (poison resist, advantage on saves vs poison). Stonecunning (history checks for stonework with proficiency).' },
+    'halfling':   { name: 'Halfling',   size: 'Small',  speed: 25, asi: '+2 DEX',                                  bonus: { dex:2 }, traits: 'Lucky (reroll 1s on d20). Brave (advantage on saves vs frightened). Halfling Nimbleness (move through larger creatures).' },
+    'half-elf':   { name: 'Half-Elf',   size: 'Medium', speed: 30, asi: '+2 CHA, +1 to two other abilities',       bonus: { cha:2 }, floating: '+1 to two abilities of your choice', traits: 'Darkvision 60ft. Fey Ancestry. Skill Versatility (two skill proficiencies of your choice).' },
+    'half-orc':   { name: 'Half-Orc',   size: 'Medium', speed: 30, asi: '+2 STR, +1 CON',                          bonus: { str:2, con:1 }, traits: 'Darkvision 60ft. Menacing (intimidation prof). Relentless Endurance (drop to 1 HP instead of 0, once/long rest). Savage Attacks (extra damage die on melee crits).' },
+    'tiefling':   { name: 'Tiefling',   size: 'Medium', speed: 30, asi: '+2 CHA, +1 INT',                          bonus: { cha:2, int:1 }, traits: 'Darkvision 60ft. Hellish Resistance (fire resist). Infernal Legacy (thaumaturgy cantrip; hellish rebuke at lv3; darkness at lv5).' },
+    'gnome':      { name: 'Gnome',      size: 'Small',  speed: 25, asi: '+2 INT',                                  bonus: { int:2 }, traits: 'Darkvision 60ft. Gnome Cunning (advantage on INT, WIS, CHA saves vs magic).' },
+    'dragonborn': { name: 'Dragonborn', size: 'Medium', speed: 30, asi: '+2 STR, +1 CHA',                          bonus: { str:2, cha:1 }, traits: 'Draconic Ancestry (choose dragon type). Breath Weapon (cone or line, 2d6 of element type, dex/con save). Damage Resistance to ancestry element.' },
+    'goliath':    { name: 'Goliath',    size: 'Medium', speed: 30, asi: '+2 STR, +1 CON',                          bonus: { str:2, con:1 }, traits: 'Natural Athlete (athletics prof). Stone\'s Endurance (reduce damage 1/short rest). Mountain Born (cold resist, no penalty up to 20,000 ft).' },
+    'aasimar':    { name: 'Aasimar',    size: 'Medium', speed: 30, asi: '+2 CHA',                                  bonus: { cha:2 }, traits: 'Darkvision 60ft. Celestial Resistance (necrotic and radiant). Healing Hands (1/long rest heal HP equal to level). Light cantrip.' },
+    'tabaxi':     { name: 'Tabaxi',     size: 'Medium', speed: 30, asi: '+2 DEX, +1 CHA',                          bonus: { dex:2, cha:1 }, traits: 'Darkvision 60ft. Feline Agility (double speed for one turn). Cat\'s Claws (climb 20ft, claws are 1d4 slash). Cat\'s Talent (perception and stealth prof).' },
+  };
+
+  // Class save proficiencies + suggested spellcasting ability. Keyed to match
+  // the values in the #char-class select and hitDieForClass.
+  const D5E_CLASSES = {
+    'Barbarian': { saves: ['str', 'con'] },
+    'Bard':      { saves: ['dex', 'cha'], spell: 'cha' },
+    'Cleric':    { saves: ['wis', 'cha'], spell: 'wis' },
+    'Druid':     { saves: ['int', 'wis'], spell: 'wis' },
+    'Fighter':   { saves: ['str', 'con'] },
+    'Monk':      { saves: ['str', 'dex'] },
+    'Paladin':   { saves: ['wis', 'cha'], spell: 'cha' },
+    'Ranger':    { saves: ['str', 'dex'], spell: 'wis' },
+    'Rogue':     { saves: ['dex', 'int'] },
+    'Sorcerer':  { saves: ['con', 'cha'], spell: 'cha' },
+    'Warlock':   { saves: ['wis', 'cha'], spell: 'cha' },
+    'Wizard':    { saves: ['int', 'wis'], spell: 'int' },
+    'Artificer': { saves: ['con', 'int'], spell: 'int' },
   };
 
   function setRaceTraits(raceKey) {
@@ -4973,6 +5088,32 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const r = D5E_RACES[raceKey];
     if (!r) { el.innerHTML = ''; return; }
     el.innerHTML = `<b>${r.name}</b> · ${r.size} · ${r.speed}ft · <b>${r.asi}</b><br>${r.traits}`;
+  }
+
+  // Apply (sign +1) or reverse (sign -1) a set of ability-score deltas to the
+  // sheet inputs. Dispatching 'input' lets the existing wiring recompute mods,
+  // re-render saves/skills, and save.
+  function applyAbilityDelta(delta, sign) {
+    Object.keys(delta || {}).forEach(stat => {
+      const elx = document.getElementById('char-' + stat);
+      if (!elx) return;
+      const cur = parseInt(elx.value) || 10;
+      elx.value = Math.max(1, cur + sign * (delta[stat] || 0));
+      elx.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+  function updateRaceAsiButton() {
+    const btn = document.getElementById('race-asi-btn');
+    if (!btn) return;
+    const raceKey = (document.getElementById('char-race') || {}).value;
+    const r = D5E_RACES[raceKey];
+    CHAR_POPUP.profile = CHAR_POPUP.profile || {};
+    if (!r || !r.bonus) { btn.style.display = 'none'; return; }
+    const applied = CHAR_POPUP.profile.raceAsi;
+    const isApplied = applied && applied.race === raceKey;
+    btn.style.display = '';
+    btn.textContent = isApplied ? `Remove racial ASI (${r.asi})` : `Apply racial ASI (${r.asi})`;
+    btn.classList.toggle('on', !!isApplied);
   }
 
   // Default empty magic data structure used for new players.
@@ -6276,6 +6417,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }
     // Race traits panel
     setRaceTraits(player.race);
+    updateRaceAsiButton();
     refreshDerivedSections();
     renderBuffs(CHAR_POPUP.buffs);
     renderInventory(CHAR_POPUP.inventory);
@@ -7366,9 +7508,75 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       hpMaxEl.addEventListener('change', pushHpToToken);
     }
 
-    // Race dropdown also updates the traits panel below
+    // Race dropdown: update traits, auto-apply speed, reverse any stale ASI.
     document.getElementById('char-race').addEventListener('change', (e) => {
-      setRaceTraits(e.target.value);
+      const raceKey = e.target.value;
+      CHAR_POPUP.profile = CHAR_POPUP.profile || {};
+      // Changing race reverses an ASI applied for the previous race so scores
+      // return to base before the player re-applies for the new race.
+      if (CHAR_POPUP.profile.raceAsi) {
+        applyAbilityDelta(CHAR_POPUP.profile.raceAsi.delta, -1);
+        delete CHAR_POPUP.profile.raceAsi;
+      }
+      setRaceTraits(raceKey);
+      const r = D5E_RACES[raceKey];
+      if (r && r.speed) {
+        const sp = document.getElementById('char-speed');
+        if (sp) { sp.value = r.speed; sp.dispatchEvent(new Event('input', { bubbles: true })); }
+      }
+      updateRaceAsiButton();
+      scheduleSaveProfile();
+    });
+
+    // Racial ASI toggle: apply or remove the fixed ability bonuses, reversibly.
+    // Default is OFF so imported sheets (whose scores already include ASI) are
+    // never double-counted.
+    document.getElementById('race-asi-btn').addEventListener('click', () => {
+      const raceKey = document.getElementById('char-race').value;
+      const r = D5E_RACES[raceKey];
+      if (!r || !r.bonus) return;
+      CHAR_POPUP.profile = CHAR_POPUP.profile || {};
+      const applied = CHAR_POPUP.profile.raceAsi;
+      if (applied && applied.race === raceKey) {
+        applyAbilityDelta(applied.delta, -1);
+        delete CHAR_POPUP.profile.raceAsi;
+        toast('Racial ASI removed', 'success');
+      } else {
+        if (applied && applied.delta) applyAbilityDelta(applied.delta, -1); // clear stale
+        applyAbilityDelta(r.bonus, +1);
+        CHAR_POPUP.profile.raceAsi = { race: raceKey, delta: Object.assign({}, r.bonus) };
+        toast(`Racial ASI applied (${r.asi})${r.floating ? '. Still choose: ' + r.floating : ''}`, 'success');
+      }
+      updateRaceAsiButton();
+      scheduleSaveProfile();
+    });
+
+    // Class dropdown: set the two class save proficiencies, suggest a spellcasting
+    // ability, refresh the hit die. Swaps cleanly when the class changes.
+    document.getElementById('char-class').addEventListener('change', (e) => {
+      const cls = e.target.value;
+      const c = D5E_CLASSES[cls];
+      CHAR_POPUP.profile = CHAR_POPUP.profile || {};
+      CHAR_POPUP.saveProfs = CHAR_POPUP.saveProfs || new Set();
+      (CHAR_POPUP.profile.classSaves || []).forEach(s => CHAR_POPUP.saveProfs.delete(s));
+      if (c) {
+        c.saves.forEach(s => CHAR_POPUP.saveProfs.add(s));
+        CHAR_POPUP.profile.classSaves = c.saves.slice();
+        let msg = `${cls}: saves ${c.saves.map(x => x.toUpperCase()).join(', ')}, d${hitDieForClass(cls)} hit die`;
+        const sa = document.getElementById('spell-ability');
+        if (c.spell && sa && !sa.value) {
+          sa.value = c.spell;
+          sa.dispatchEvent(new Event('change', { bubbles: true }));
+          msg += `, spell ${c.spell.toUpperCase()}`;
+        }
+        toast(msg, 'success');
+      } else {
+        CHAR_POPUP.profile.classSaves = [];
+      }
+      if (typeof renderSaves === 'function') renderSaves(CHAR_POPUP.saveProfs);
+      renderHitDice();
+      scheduleSaveProfile();
+      scheduleSavePlayer();
     });
 
     // Portrait upload (separate from token image)
@@ -7908,6 +8116,104 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       document.getElementById('inv-add-stats').value = '';
       renderInventory(CHAR_POPUP.inventory);
       scheduleSavePlayer();
+    });
+
+    // ---- Equipment catalog: browse weapons / armor / gear / magic items ----
+    const CATALOG = { tab: 'weapons', query: '' };
+    function catAddInventory(name, stats) {
+      CHAR_POPUP.inventory.push({ name, qty: 1, stats: stats || '' });
+      renderInventory(CHAR_POPUP.inventory);
+      scheduleSavePlayer();
+      toast(name + ' added to inventory', 'success');
+    }
+    function catEquipArmor(a) {
+      const dexMod = statMod(getCharStat('dex'));
+      const acInput = document.getElementById('char-ac');
+      const cur = parseInt(acInput.value) || 10;
+      let newAc;
+      if (a.type === 'shield') newAc = cur + a.base;
+      else if (a.type === 'light') newAc = a.base + dexMod;
+      else if (a.type === 'medium') newAc = a.base + Math.min(dexMod, 2);
+      else newAc = a.base; // heavy: no Dex
+      newAc = Math.max(0, newAc);
+      acInput.value = newAc;
+      acInput.dispatchEvent(new Event('input', { bubbles: true }));
+      const note = a.type === 'shield' ? '+2 AC (shield)'
+        : `AC ${a.base}${a.type === 'light' ? ' + Dex' : a.type === 'medium' ? ' + Dex (max 2)' : ''}${a.stealth ? ', stealth disadv' : ''}`;
+      CHAR_POPUP.inventory.push({ name: a.n, qty: 1, stats: note });
+      renderInventory(CHAR_POPUP.inventory);
+      scheduleSavePlayer();
+      toast(`${a.n} equipped, AC set to ${newAc}`, 'success');
+    }
+    function catApplyMagic(item) {
+      if (!item.bonus) return;
+      CHAR_POPUP.buffs = CHAR_POPUP.buffs || [];
+      if (CHAR_POPUP.buffs.find(b => b.name === item.n)) { toast('Already applied', 'error'); return; }
+      CHAR_POPUP.buffs.push({ name: item.n, mod: item.bonus.mod, active: true });
+      renderBuffs(CHAR_POPUP.buffs);
+      scheduleSavePlayer();
+      const where = item.bonus.kind === 'ac' ? 'AC' : item.bonus.kind === 'acsave' ? 'AC and saves' : 'attack and damage';
+      toast(`${item.n} applied as a buff (${where}). Toggle or remove it in the Buffs tab.`, 'success');
+    }
+    function renderCatalog() {
+      const q = (CATALOG.query || '').toLowerCase();
+      const list = document.getElementById('catalog-list');
+      let rows = '';
+      if (CATALOG.tab === 'weapons') {
+        SRD_WEAPONS.filter(w => w.n.toLowerCase().includes(q)).forEach(w => {
+          const idx = SRD_WEAPONS.indexOf(w);
+          const sub = `${w.d || '—'} · ${w.cat}${w.p ? ' · ' + w.p : ''}`;
+          rows += `<div class="cat-row"><div class="cat-info"><div class="cat-name">${escapeHtml(w.n)}</div><div class="cat-sub">${escapeHtml(sub)}</div></div><div class="cat-actions"><button class="cat-btn primary" data-act="add-weapon" data-i="${idx}">Add</button></div></div>`;
+        });
+      } else if (CATALOG.tab === 'armor') {
+        SRD_ARMOR.filter(a => a.n.toLowerCase().includes(q)).forEach(a => {
+          const idx = SRD_ARMOR.indexOf(a);
+          const acTxt = a.type === 'shield' ? '+2 AC' : `AC ${a.base}${a.type === 'light' ? ' + Dex' : a.type === 'medium' ? ' + Dex (max 2)' : ''}`;
+          const sub = `${a.type} · ${acTxt}${a.stealth ? ' · stealth disadv' : ''}${a.str ? ' · Str ' + a.str : ''}`;
+          rows += `<div class="cat-row"><div class="cat-info"><div class="cat-name">${escapeHtml(a.n)}</div><div class="cat-sub">${escapeHtml(sub)}</div></div><div class="cat-actions"><button class="cat-btn" data-act="add-armor" data-i="${idx}">Add</button><button class="cat-btn primary" data-act="equip-armor" data-i="${idx}">Equip</button></div></div>`;
+        });
+      } else if (CATALOG.tab === 'gear') {
+        SRD_GEAR.filter(g => g.n.toLowerCase().includes(q)).forEach(g => {
+          const idx = SRD_GEAR.indexOf(g);
+          rows += `<div class="cat-row"><div class="cat-info"><div class="cat-name">${escapeHtml(g.n)}</div>${g.note ? `<div class="cat-sub">${escapeHtml(g.note)}</div>` : ''}</div><div class="cat-actions"><button class="cat-btn primary" data-act="add-gear" data-i="${idx}">Add</button></div></div>`;
+        });
+      } else if (CATALOG.tab === 'magic') {
+        MAGIC_ITEMS.filter(m => m.n.toLowerCase().includes(q)).forEach(m => {
+          const idx = MAGIC_ITEMS.indexOf(m);
+          const tag = `${m.r}${m.att ? ' · attune' : ''}`;
+          let actions = `<button class="cat-btn" data-act="add-magic" data-i="${idx}">Add</button>`;
+          if (m.bonus) actions += `<button class="cat-btn primary" data-act="apply-magic" data-i="${idx}">Apply +${m.bonus.mod}</button>`;
+          rows += `<div class="cat-row"><div class="cat-info"><div class="cat-name">${escapeHtml(m.n)}<span class="cat-tag">${escapeHtml(tag)}</span></div><div class="cat-sub">${escapeHtml(m.d)}</div></div><div class="cat-actions">${actions}</div></div>`;
+        });
+      }
+      list.innerHTML = rows || '<div style="font-size:12px;color:var(--muted);padding:10px;">No matches.</div>';
+    }
+    function openCatalog() {
+      CATALOG.query = '';
+      document.getElementById('catalog-search').value = '';
+      renderCatalog();
+      document.getElementById('catalog-popup').classList.add('active');
+    }
+    document.getElementById('catalog-open-btn').addEventListener('click', openCatalog);
+    document.getElementById('catalog-close').addEventListener('click', () => document.getElementById('catalog-popup').classList.remove('active'));
+    document.getElementById('catalog-search').addEventListener('input', (e) => { CATALOG.query = e.target.value; renderCatalog(); });
+    document.querySelectorAll('.catalog-tab').forEach(t => t.addEventListener('click', () => {
+      document.querySelectorAll('.catalog-tab').forEach(x => x.classList.remove('on'));
+      t.classList.add('on');
+      CATALOG.tab = t.dataset.ctab;
+      CATALOG.query = '';
+      document.getElementById('catalog-search').value = '';
+      renderCatalog();
+    }));
+    document.getElementById('catalog-list').addEventListener('click', (e) => {
+      const btn = e.target.closest('.cat-btn'); if (!btn) return;
+      const i = parseInt(btn.dataset.i); const act = btn.dataset.act;
+      if (act === 'add-weapon') { const w = SRD_WEAPONS[i]; catAddInventory(w.n, `${w.d || ''}${w.p ? ' (' + w.p + ')' : ''}`.trim()); }
+      else if (act === 'add-armor') { const a = SRD_ARMOR[i]; catAddInventory(a.n, a.type === 'shield' ? '+2 AC' : `AC ${a.base}, ${a.type}`); }
+      else if (act === 'equip-armor') { catEquipArmor(SRD_ARMOR[i]); }
+      else if (act === 'add-gear') { const g = SRD_GEAR[i]; catAddInventory(g.n, g.note || ''); }
+      else if (act === 'add-magic') { const m = MAGIC_ITEMS[i]; catAddInventory(m.n, m.d); }
+      else if (act === 'apply-magic') { catApplyMagic(MAGIC_ITEMS[i]); }
     });
 
     // Equipment slot edits (delegated since grid is rebuilt)
@@ -8570,7 +8876,6 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (!STATE.isHost) return;
     document.getElementById('maps-popup').classList.add('active');
     renderMapsLibrary();
-    renderPresetMaps();
     renderNpcLibrary();
     renderTokenLibrary();
   });
@@ -8592,12 +8897,6 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (!thumb || !STATE.isHost) return;
     switchToMapSlot(parseInt(thumb.dataset.slot, 10), false);
     renderMapsLibrary();
-  });
-
-  document.getElementById('preset-maps-grid').addEventListener('click', (e) => {
-    const thumb = e.target.closest('.preset-thumb');
-    if (!thumb || !STATE.isHost) return;
-    addPresetMap(thumb.dataset.kind);
   });
 
   // Library tab switching
