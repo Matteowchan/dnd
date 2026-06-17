@@ -333,7 +333,18 @@
   }
 
   /* Short/Long Rest popup */
-  #rest-popup { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); width: 460px; max-width: 92vw; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  #rest-popup, #grant-rest-popup { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); width: 460px; max-width: 92vw; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  .grant-member { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-size: 13px; color: var(--cream); }
+  .grant-member:hover { border-color: var(--gold-soft); }
+  .grant-member input { accent-color: var(--gold); width: 15px; height: 15px; }
+  .rest-hd-spend { margin: 10px 0; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; }
+  .rest-hd-label { font-size: 12px; color: var(--muted); letter-spacing: 0.03em; margin-bottom: 10px; }
+  .rest-hd-stepper { display: flex; align-items: center; gap: 12px; }
+  .rest-hd-stepper button { width: 34px; height: 34px; font-size: 20px; line-height: 1; padding: 0; }
+  .rest-hd-stepper button:disabled { opacity: 0.35; cursor: default; }
+  .rest-hd-stepper #rest-hd-count { font-family: 'Cinzel', serif; font-size: 22px; color: var(--gold); min-width: 24px; text-align: center; }
+  .rest-hd-rem { font-size: 12px; color: var(--muted); }
+  .rest-hd-estimate { margin-top: 10px; font-size: 13px; color: var(--cream); }
   #spell-catalog { position: fixed; top: 50px; left: 50%; transform: translateX(-50%); width: 720px; max-width: 94vw; max-height: 82vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 8px; box-shadow: 0 18px 50px rgba(0,0,0,0.75); z-index: 1600; display: none; flex-direction: column; }
   #spell-catalog.active { display: flex; }
   #spell-catalog .sc-controls { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
@@ -368,7 +379,7 @@
   .sc-row .sc-add:hover { filter: brightness(1.08); }
   .sc-row .sc-add.added { background: transparent; border: 1px solid var(--border); color: var(--muted); cursor: default; }
   .sc-desc { margin-top: 6px; padding: 7px 9px; background: rgba(0,0,0,0.22); border-left: 2px solid var(--gold-soft); border-radius: 4px; color: var(--cream); font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
-  #rest-popup.active { display: flex; }
+  #rest-popup.active, #grant-rest-popup.active { display: flex; }
   .rest-intro { font-size: 13px; color: var(--cream); line-height: 1.55; margin-bottom: 12px; font-family: 'Crimson Pro', serif; }
   .rest-intro b { color: var(--gold); }
   .rest-results { font-size: 13px; color: var(--cream); padding: 10px 12px; background: rgba(212,165,116,0.08); border: 1px solid var(--gold-soft); border-radius: 4px; margin-bottom: 12px; min-height: 0; max-height: 240px; overflow-y: auto; }
@@ -2252,6 +2263,22 @@
   </div>
 </div>
 
+<!-- DM grant-rest popup: choose party members + rest type -->
+<div id="grant-rest-popup">
+  <div class="char-popup-header">
+    <span class="ttl" id="grant-rest-title">Grant Rest</span>
+    <button id="grant-rest-close">×</button>
+  </div>
+  <div class="char-popup-body" style="padding: 14px;">
+    <div id="grant-rest-intro" class="rest-intro"></div>
+    <div id="grant-rest-members" style="display:flex; flex-direction:column; gap:6px; margin:12px 0;"></div>
+    <div class="rest-actions">
+      <button id="grant-rest-cancel" class="init-mini-btn">Cancel</button>
+      <button id="grant-rest-confirm" class="init-mini-btn primary">Grant Rest</button>
+    </div>
+  </div>
+</div>
+
 <!-- DM Special Rules popup -->
 <div id="dm-rules-popup">
   <div class="char-popup-header">
@@ -3134,6 +3161,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (imggenBtn) imggenBtn.style.display = 'none';
       if (clearBtn) clearBtn.style.display = 'none';
       if (dmRulesBtn) dmRulesBtn.style.display = 'none';
+      // Rest is DM-controlled: players resolve a rest only when the DM grants one
+      const srBtn = document.getElementById('short-rest-btn');
+      const lrBtn = document.getElementById('long-rest-btn');
+      if (srBtn) srBtn.style.display = 'none';
+      if (lrBtn) lrBtn.style.display = 'none';
     }
 
     await loadInitialState();
@@ -4285,6 +4317,18 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     // (c) the target user if target_user_id is set. Everyone else skips it.
     if (msg.is_private && !canSeePrivateMsg(msg)) return;
 
+    if (msg.msg_type === 'rest_request') {
+      // DM granted a rest. If we are a target, open the resolve popup so we
+      // roll our own Hit Dice (short) or confirm a full rest (long).
+      try {
+        const payload = JSON.parse(msg.text || '{}');
+        if (Array.isArray(payload.targets) && payload.targets.includes(STATE.userId)) {
+          openRestPopup(payload.kind === 'long' ? 'long' : 'short');
+        }
+      } catch (e) { /* ignore malformed request */ }
+      return; // never shown as a chat line
+    }
+
     if (msg.msg_type === 'roll') {
       // Roll: defer the chat row until the dice settle so the result isn't spoiled.
       // Our own rolls are already animated by rollDice(); skip the duplicate.
@@ -4505,6 +4549,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   }
 
   function renderChatMessage(msg, opts = {}) {
+    if (msg.msg_type === 'rest_request') return; // control message, not a chat line
     if (msg.is_private && !canSeePrivateMsg(msg)) return;
 
     const log = document.getElementById('chatlog');
@@ -8127,50 +8172,47 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         },
       };
     } else {
-      // Short rest: spend one Hit Die for healing (if any remain)
-      const canSpend = remHd > 0;
-      const heal = canSpend ? (Math.floor(Math.random() * hd) + 1 + conMod) : 0;
-      const newHp = canSpend && myToken && curHp != null && maxHp != null ? Math.min(maxHp, curHp + heal) : null;
+      // Short rest: spend any number of remaining Hit Dice, rolled individually.
+      const hasToken = !!(myToken && curHp != null && maxHp != null);
       return {
         kind: 'short',
         title: 'Short Rest (1 hour)',
-        intro: `A brief respite. Spend one Hit Die (d${hd}) + CON modifier (${conMod >= 0 ? '+' : ''}${conMod}) to heal. Spell slots do NOT restore (Warlock excepted). Some class features recharge.`,
-        changes: [
-          { key: `Hit Die roll (d${hd})`, val: canSpend ? `${heal - conMod} ${conMod >= 0 ? '+' : ''} ${conMod} = ${heal}` : 'no Hit Dice remaining', cls: canSpend ? 'gain' : '' },
-          { key: 'Hit Points', val: newHp != null ? `${curHp} → ${newHp}` : (canSpend ? 'No token on map' : 'unchanged'), cls: canSpend ? 'gain' : '' },
-          { key: 'Spell slots', val: player.class === 'Warlock' ? 'restored (Warlock Pact Magic)' : 'unchanged', cls: player.class === 'Warlock' ? 'gain' : '' },
-          { key: 'Hit Dice', val: canSpend ? `${remHd} → ${remHd - 1} / ${totalHd} (spent 1)` : `0 / ${totalHd} (none to spend)`, cls: canSpend ? 'lose' : '' },
-        ],
-        apply: async () => {
-          if (canSpend && myToken && newHp != null) {
+        intro: `A brief respite. Spend Hit Dice (each d${hd} ${conMod >= 0 ? '+' : ''}${conMod}) to heal. Spell slots do NOT restore, Warlock excepted.`,
+        interactive: true,
+        hd, conMod, maxSpend: remHd, totalHd, usedHd, hasToken, curHp, maxHp,
+        warlock: player.class === 'Warlock',
+        applyShort: async (count) => {
+          count = Math.max(0, Math.min(remHd, parseInt(count) || 0));
+          if (!hasToken) count = 0; // need a token on the map to track healing
+          const rolls = [];
+          let sum = 0;
+          for (let i = 0; i < count; i++) { const r = Math.floor(Math.random() * hd) + 1; rolls.push(r); sum += r + conMod; }
+          sum = Math.max(0, sum);
+          const newHp = (count > 0 && hasToken) ? Math.min(maxHp, curHp + sum) : null;
+          if (newHp != null) {
             await sb.from('vtt_tokens').update({ current_hp: newHp, updated_at: new Date().toISOString() }).eq('id', myToken.id);
             myToken.current_hp = newHp;
           }
-          if (canSpend) {
-            await setHitDiceUsed(STATE.userId, usedHd + 1);
+          if (count > 0) {
+            await setHitDiceUsed(STATE.userId, usedHd + count);
             if (CHAR_POPUP.targetPlayerId === STATE.userId) renderHitDice();
           }
-          // Warlock: restore all spell slots
           if (player.class === 'Warlock' && magic && magic.slots) {
-            Object.keys(magic.slots).forEach(lv => {
-              if (magic.slots[lv]) magic.slots[lv].cur = magic.slots[lv].max || 0;
-            });
+            Object.keys(magic.slots).forEach(lv => { if (magic.slots[lv]) magic.slots[lv].cur = magic.slots[lv].max || 0; });
             await sb.from('vtt_players').update({ magic_data: JSON.stringify(magic) }).eq('id', STATE.userId);
             player.magic_data = JSON.stringify(magic);
-            if (CHAR_POPUP.targetPlayerId === STATE.userId) {
-              CHAR_POPUP.magic = magic;
-              if (typeof renderMagic === 'function') renderMagic(CHAR_POPUP.magic);
-            }
+            if (CHAR_POPUP.targetPlayerId === STATE.userId) { CHAR_POPUP.magic = magic; if (typeof renderMagic === 'function') renderMagic(CHAR_POPUP.magic); }
+          }
+          const who = player.name || STATE.username;
+          let text;
+          if (count > 0) {
+            text = `${who} took a Short Rest: spent ${count} Hit Di${count > 1 ? 'ce' : 'e'} (d${hd}) [${rolls.join(', ')}] ${conMod >= 0 ? '+' : ''}${conMod} each = ${sum} HP${player.class === 'Warlock' ? ', Pact slots restored' : ''}.`;
+          } else {
+            text = `${who} took a Short Rest${player.class === 'Warlock' ? ', Pact slots restored' : ' (no Hit Dice spent)'}.`;
           }
           await sb.from('vtt_chat').insert({
-            id: genId(),
-            session_id: STATE.sessionId,
-            user_id: STATE.userId,
-            user_name: player.name || STATE.username,
-            is_host: STATE.isHost,
-            msg_type: 'system',
-            text: `${player.name || STATE.username} took a Short Rest. Rolled d${hd}+${conMod} = ${heal} HP recovered.`,
-            ts: nowTs(),
+            id: genId(), session_id: STATE.sessionId, user_id: STATE.userId,
+            user_name: who, is_host: STATE.isHost, msg_type: 'system', text, ts: nowTs(),
           });
         },
       };
@@ -8185,11 +8227,89 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.getElementById('rest-popup-title').textContent = data.title;
     document.getElementById('rest-popup-intro').innerHTML = data.intro;
     const resultsEl = document.getElementById('rest-popup-results');
-    resultsEl.innerHTML = data.changes.map(c => `<div class="res-row"><span class="res-key">${escapeHtml(c.key)}</span><span class="res-val ${c.cls || ''}">${escapeHtml(c.val)}</span></div>`).join('');
+    if (data.interactive) {
+      CURRENT_REST.spendCount = Math.min(1, data.maxSpend);
+      resultsEl.innerHTML = `
+        <div class="rest-hd-spend">
+          <div class="rest-hd-label">Spend Hit Dice (each d${data.hd} ${data.conMod >= 0 ? '+' : ''}${data.conMod})</div>
+          <div class="rest-hd-stepper">
+            <button id="rest-hd-minus" class="init-mini-btn">−</button>
+            <span id="rest-hd-count">${CURRENT_REST.spendCount}</span>
+            <button id="rest-hd-plus" class="init-mini-btn">+</button>
+            <span class="rest-hd-rem">of ${data.maxSpend} remaining</span>
+          </div>
+          <div id="rest-hd-estimate" class="rest-hd-estimate"></div>
+        </div>`;
+      updateShortRestEstimate();
+      const minus = document.getElementById('rest-hd-minus');
+      const plus = document.getElementById('rest-hd-plus');
+      minus.addEventListener('click', () => { CURRENT_REST.spendCount = Math.max(0, CURRENT_REST.spendCount - 1); document.getElementById('rest-hd-count').textContent = CURRENT_REST.spendCount; updateShortRestEstimate(); });
+      plus.addEventListener('click', () => { CURRENT_REST.spendCount = Math.min(data.maxSpend, CURRENT_REST.spendCount + 1); document.getElementById('rest-hd-count').textContent = CURRENT_REST.spendCount; updateShortRestEstimate(); });
+    } else {
+      resultsEl.innerHTML = data.changes.map(c => `<div class="res-row"><span class="res-key">${escapeHtml(c.key)}</span><span class="res-val ${c.cls || ''}">${escapeHtml(c.val)}</span></div>`).join('');
+    }
     document.getElementById('rest-popup').classList.add('active');
   }
-  document.getElementById('short-rest-btn').addEventListener('click', () => openRestPopup('short'));
-  document.getElementById('long-rest-btn').addEventListener('click', () => openRestPopup('long'));
+  function updateShortRestEstimate() {
+    const el = document.getElementById('rest-hd-estimate');
+    if (!el || !CURRENT_REST) return;
+    const d = CURRENT_REST, n = d.spendCount;
+    if (!d.hasToken) { el.innerHTML = 'No token on the map, so HP cannot be tracked. Place your token to heal.'; return; }
+    if (n <= 0) { el.innerHTML = 'No Hit Dice spent. You still take the hour of rest.'; return; }
+    const lo = Math.max(0, n * (1 + d.conMod));
+    const hi = Math.max(0, n * (d.hd + d.conMod));
+    el.innerHTML = `Heals about <b>${lo}–${hi}</b> HP, rolled on confirm. Current HP ${d.curHp} / ${d.maxHp}.`;
+  }
+  document.getElementById('short-rest-btn').addEventListener('click', () => openGrantRest('short'));
+  document.getElementById('long-rest-btn').addEventListener('click', () => openGrantRest('long'));
+
+  // ---- DM grant-rest flow: pick party members, broadcast a rest request ----
+  let GRANT_REST_KIND = 'short';
+  function openGrantRest(kind) {
+    if (!STATE.isHost) { openRestPopup(kind); return; }
+    GRANT_REST_KIND = kind;
+    document.getElementById('grant-rest-title').textContent = (kind === 'long' ? 'Long' : 'Short') + ' Rest';
+    document.getElementById('grant-rest-intro').innerHTML = kind === 'long'
+      ? 'Grant a Long Rest. Selected members are prompted to confirm a full rest (full HP, spell slots, half Hit Dice, exhaustion reduced by 1).'
+      : 'Grant a Short Rest. Selected members are prompted to roll Hit Dice to heal.';
+    const members = (STATE.persistedPlayers || []).filter(p => p && p.id);
+    const wrap = document.getElementById('grant-rest-members');
+    if (!members.length) {
+      wrap.innerHTML = '<div class="rest-intro">No party members found.</div>';
+    } else {
+      wrap.innerHTML = members.map(p => `
+        <label class="grant-member">
+          <input type="checkbox" class="grant-member-cb" value="${escapeHtml(p.id)}" checked>
+          <span>${escapeHtml(p.name || 'Player')}${p.class ? ' · ' + escapeHtml(p.class) : ''}${p.level ? ' ' + escapeHtml(String(p.level)) : ''}</span>
+        </label>`).join('');
+    }
+    document.getElementById('grant-rest-popup').classList.add('active');
+  }
+  document.getElementById('grant-rest-close').addEventListener('click', () => document.getElementById('grant-rest-popup').classList.remove('active'));
+  document.getElementById('grant-rest-cancel').addEventListener('click', () => document.getElementById('grant-rest-popup').classList.remove('active'));
+  document.getElementById('grant-rest-confirm').addEventListener('click', async () => {
+    const targets = Array.from(document.querySelectorAll('.grant-member-cb:checked')).map(cb => cb.value);
+    if (!targets.length) { toast('Select at least one member', 'error'); return; }
+    const kind = GRANT_REST_KIND;
+    const names = targets.map(id => { const p = (STATE.persistedPlayers || []).find(x => x.id === id); return p ? (p.name || 'Player') : 'Player'; });
+    try {
+      await sb.from('vtt_chat').insert({
+        id: genId(), session_id: STATE.sessionId, user_id: STATE.userId,
+        user_name: STATE.username, is_host: true, msg_type: 'rest_request',
+        text: JSON.stringify({ kind, targets }), ts: nowTs(),
+      });
+      await sb.from('vtt_chat').insert({
+        id: genId(), session_id: STATE.sessionId, user_id: STATE.userId,
+        user_name: STATE.username, is_host: true, msg_type: 'system',
+        text: `The DM called a ${kind === 'long' ? 'Long' : 'Short'} Rest for: ${names.join(', ')}.`, ts: nowTs(),
+      });
+      toast('Rest granted', 'success');
+    } catch (e) {
+      console.error('grant rest failed', e);
+      toast('Could not grant rest', 'error');
+    }
+    document.getElementById('grant-rest-popup').classList.remove('active');
+  });
   document.getElementById('rest-popup-close').addEventListener('click', () => document.getElementById('rest-popup').classList.remove('active'));
   document.getElementById('rest-cancel').addEventListener('click', () => document.getElementById('rest-popup').classList.remove('active'));
   document.getElementById('rest-confirm').addEventListener('click', async () => {
@@ -8198,7 +8318,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     btn.disabled = true;
     btn.textContent = 'Resting...';
     try {
-      await CURRENT_REST.apply();
+      if (CURRENT_REST.interactive) await CURRENT_REST.applyShort(CURRENT_REST.spendCount || 0);
+      else await CURRENT_REST.apply();
       toast(`${CURRENT_REST.title.split(' (')[0]} complete`, 'success');
     } catch (e) {
       console.error(e);
