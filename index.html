@@ -3170,6 +3170,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
     await loadInitialState();
     setupRealtime();
+    setTimeout(() => { try { loadDice3D(); } catch (e) {} }, 5000); // warm up 3D dice in the background
 
     // Open the docked character panel automatically for players. For hosts,
     // leave it closed - it will slide in when they click on a token.
@@ -10756,10 +10757,133 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     return { points, bounceCount };
   }
 
+  // ===== 3D dice: lazy-loaded glTF model + three.js, with 2D fallback =====
+  const DICE_GLB_URL = `${SUPABASE_URL}/storage/v1/object/public/vtt-assets/dice/dnd_dice_set.glb`;
+  const DICE_COLORS = ['Red', 'Silver', 'TieDye', 'White', 'Yellow'];
+  const DICE3D = { ready: false, failed: false, loading: null, index: {}, THREE: null, _active: null };
+
+  function load3DScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = res; s.onerror = () => rej(new Error('failed to load ' + src));
+      document.head.appendChild(s);
+    });
+  }
+  function loadDice3D() {
+    if (DICE3D.ready || DICE3D.failed) return Promise.resolve();
+    if (DICE3D.loading) return DICE3D.loading;
+    DICE3D.loading = (async () => {
+      try {
+        if (!window.THREE) await load3DScript('https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js');
+        if (!window.THREE) throw new Error('three.js missing');
+        if (!window.THREE.GLTFLoader) await load3DScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js');
+        DICE3D.THREE = window.THREE;
+        const loader = new DICE3D.THREE.GLTFLoader();
+        const gltf = await new Promise((res, rej) => loader.load(DICE_GLB_URL, res, undefined, rej));
+        const re = /^(\d+)(Red|Silver|TieDye|White|Yellow)$/i;
+        gltf.scene.traverse(o => {
+          const m = o.name && o.name.match(re);
+          if (m) { (DICE3D.index[m[1]] = DICE3D.index[m[1]] || {})[m[2].toLowerCase()] = o; }
+        });
+        DICE3D.ready = Object.keys(DICE3D.index).length > 0;
+        if (!DICE3D.ready) DICE3D.failed = true;
+      } catch (e) {
+        console.warn('3D dice unavailable, falling back to 2D', e);
+        DICE3D.failed = true;
+      }
+    })();
+    return DICE3D.loading;
+  }
+  function dice3DColorFor(userId) {
+    let h = 0; const s = String(userId || '');
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return DICE_COLORS[h % DICE_COLORS.length].toLowerCase();
+  }
+  function render3DDice(stage, msg, durationMs) {
+    const THREE = DICE3D.THREE;
+    let key = String(msg.sides); if (msg.sides === 100) key = '10';
+    const byColor = DICE3D.index[key];
+    if (!byColor) throw new Error('no 3D die for d' + msg.sides);
+    const colorKey = dice3DColorFor(msg.user_id);
+    const proto = byColor[colorKey] || byColor[Object.keys(byColor)[0]];
+    const rect = stage.getBoundingClientRect();
+    const W = Math.max(220, Math.round(rect.width) || 360);
+    const H = Math.max(220, Math.round(rect.height) || 360);
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.setSize(W, H);
+    const canvas = renderer.domElement;
+    canvas.style.cssText = 'position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1;';
+    stage.appendChild(canvas);
+
+    const scene = new THREE.Scene();
+    scene.add(new THREE.AmbientLight(0xffffff, 0.95));
+    const d1 = new THREE.DirectionalLight(0xffffff, 1.15); d1.position.set(3, 5, 4); scene.add(d1);
+    const d2 = new THREE.DirectionalLight(0xffe9c4, 0.5); d2.position.set(-4, -2, 3); scene.add(d2);
+
+    const n = Math.min(msg.rolls.length, 6);
+    const spacing = 1.45;
+    const spread = (n - 1) * spacing;
+    const dice = [];
+    for (let i = 0; i < n; i++) {
+      const pivot = new THREE.Group();
+      const obj = proto.clone(true);
+      pivot.add(obj);
+      scene.add(pivot);
+      const box = new THREE.Box3().setFromObject(obj);
+      const c = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      obj.position.sub(c);
+      const base = 1.1 / (Math.max(size.x, size.y, size.z) || 1);
+      pivot.scale.setScalar(base);
+      pivot.position.x = -spread / 2 + i * spacing;
+      pivot.rotation.set(Math.random() * 6, Math.random() * 6, Math.random() * 6);
+      pivot.userData = { base, vel: new THREE.Vector3((Math.random() * 2 - 1) * 7, (Math.random() * 2 - 1) * 7, (Math.random() * 2 - 1) * 7) };
+      dice.push(pivot);
+    }
+
+    const aspect = W / H;
+    const fov = 40;
+    const halfTan = Math.tan((fov / 2) * Math.PI / 180);
+    const camZ = Math.max(5, (spread + 1.6) / (2 * halfTan * aspect));
+    const camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 100);
+    camera.position.set(0, 0, camZ);
+    camera.lookAt(0, 0, 0);
+
+    const startT = performance.now();
+    let last = startT, raf = null;
+    function frame(now) {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      const t = (now - startT) / durationMs;
+      dice.forEach(g => {
+        g.rotation.x += g.userData.vel.x * dt;
+        g.rotation.y += g.userData.vel.y * dt;
+        g.rotation.z += g.userData.vel.z * dt;
+        if (t > 0.7) g.userData.vel.multiplyScalar(0.93);
+        let s = 1;
+        if (t < 0.12) s = Math.max(0.05, t / 0.12);
+        if (t > 0.82) s = Math.max(0, 1 - (t - 0.82) / 0.18);
+        g.scale.setScalar(g.userData.base * s);
+      });
+      renderer.render(scene, camera);
+      if (now - startT < durationMs + 80) raf = requestAnimationFrame(frame);
+      else cleanup();
+    }
+    function cleanup() {
+      if (raf) cancelAnimationFrame(raf);
+      try { renderer.dispose(); } catch (e) {}
+      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+      if (DICE3D._active && DICE3D._active.canvas === canvas) DICE3D._active = null;
+    }
+    DICE3D._active = { cleanup, canvas };
+    raf = requestAnimationFrame(frame);
+  }
+
   function animateDiceRoll(msg, onSettle) {
     // Cancel any in-flight animations from previous rolls so they cannot
     // overwrite the new roll's display
     clearDiceTimers();
+    if (DICE3D._active) { try { DICE3D._active.cleanup(); } catch (e) {} DICE3D._active = null; }
     document.getElementById('nat20-fx').classList.remove('active');
     document.getElementById('nat20-glow').classList.remove('active');
     document.getElementById('nat1-fx').classList.remove('active');
@@ -10791,7 +10915,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const maxDieDuration = Math.max.apply(null, dieData.map(d => d.dur));
     const totalSettleTime = maxDieDuration + (msg.rolls.length - 1) * STAGGER;
 
-    msg.rolls.forEach((val, i) => {
+    // Use 3D dice when the model is loaded; otherwise the 2D fallback below.
+    let use3D = false;
+    if (DICE3D.ready) {
+      try { render3DDice(stage, msg, totalSettleTime); use3D = true; }
+      catch (e) { console.warn('3D dice failed, using 2D', e); use3D = false; }
+    }
+    loadDice3D(); // warm up for next time (no-op once loaded or failed)
+
+    if (!use3D) msg.rolls.forEach((val, i) => {
       const delay = i * STAGGER;
       const { path } = dieData[i];
       let dieEl;
