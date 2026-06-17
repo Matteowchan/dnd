@@ -1342,8 +1342,8 @@
         <div id="active-map-name" style="font-size:11px; color:var(--muted); margin-bottom:8px; text-align:center;">No map active</div>
         <button id="reveal-map-btn" class="primary" style="width:100%; margin-bottom:4px;">Reveal Map to Players</button>
         <label class="upload-box" id="map-upload-label">
-          <input type="file" id="map-upload" accept="image/*">
-          <span id="map-upload-text">Upload map image</span>
+          <input type="file" id="map-upload" accept="image/*,video/mp4,video/webm,video/quicktime">
+          <span id="map-upload-text">Upload map (image, gif, mp4)</span>
         </label>
         <div style="margin-top: 12px; display: flex; align-items: center; gap: 6px;">
           <label style="margin: 0;">Ft per square</label>
@@ -2694,6 +2694,43 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     });
   }
 
+  // For map uploads: images get resized to JPEG, but GIFs and videos are kept
+  // raw (resizing through a canvas would flatten a gif and destroy a video).
+  // Returns { kind, blob, width, height, ext }.
+  async function loadMapMedia(file) {
+    const type = file.type || '';
+    const name = (file.name || '').toLowerCase();
+    const isVideo = type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/.test(name);
+    const isGif = type === 'image/gif' || /\.gif$/.test(name);
+    if (isVideo) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const v = document.createElement('video');
+        v.preload = 'metadata';
+        v.onloadedmetadata = () => {
+          const w = v.videoWidth || 1600, h = v.videoHeight || 900;
+          URL.revokeObjectURL(url);
+          let ext = (name.match(/\.(mp4|webm|mov|m4v)$/) || [])[1];
+          if (!ext) { const t = (type.split('/')[1] || 'mp4'); ext = t === 'quicktime' ? 'mov' : t; }
+          resolve({ kind: 'video', blob: file, width: w, height: h, ext });
+        };
+        v.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read video')); };
+        v.src = url;
+      });
+    }
+    if (isGif) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => { const w = img.naturalWidth || 1600, h = img.naturalHeight || 900; URL.revokeObjectURL(url); resolve({ kind: 'image', blob: file, width: w, height: h, ext: 'gif' }); };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read gif')); };
+        img.src = url;
+      });
+    }
+    const r = await fileToResizedBlob(file, 1600);
+    return { kind: 'image', blob: r.blob, width: r.width, height: r.height, ext: 'jpg' };
+  }
+
   async function uploadImage(blob, path) {
     if (DEMO_MODE) {
       // Use a data URL (base64) for robustness across browser sandboxes.
@@ -4025,9 +4062,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     grid.innerHTML = slots.map(s => {
       const m = STATE.maps.get(s);
       const active = s === STATE.activeMapSlot;
+      const isVid = /\.(mp4|webm|mov|m4v)(\?|$)/i.test(m.image_url || '');
+      const media = isVid
+        ? `<video src="${escapeHtml(m.image_url)}" muted preload="metadata" style="width:100%;height:100%;object-fit:cover;pointer-events:none"></video>`
+        : `<img src="${escapeHtml(m.image_url)}" alt="">`;
       return `
         <div class="maps-thumb${active ? ' active' : ''}" data-slot="${s}" title="Map ${s}">
-          <img src="${escapeHtml(m.image_url)}" alt="">
+          ${media}
           <div class="maps-thumb-label">Map ${s}${active ? ' (active)' : ''}</div>
           <button class="maps-thumb-del" title="Delete map">×</button>
         </div>`;
@@ -4205,17 +4246,27 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const layer = document.getElementById('maplayer');
     layer.innerHTML = '';
     if (STATE.map && STATE.map.image_url) {
-      const img = document.createElement('img');
-      img.onload = () => {
-        if (STATE._centerPending) { STATE._centerPending = false; centerViewOnMap(); }
-      };
-      img.src = STATE.map.image_url;
-      img.style.width = STATE.map.width + 'px';
-      img.style.height = STATE.map.height + 'px';
-      img.style.position = 'absolute';
-      img.style.left = (STATE.map.offset_x || 0) + 'px';
-      img.style.top = (STATE.map.offset_y || 0) + 'px';
-      layer.appendChild(img);
+      const url = STATE.map.image_url;
+      const isVideo = /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url);
+      let el;
+      if (isVideo) {
+        el = document.createElement('video');
+        el.autoplay = true; el.loop = true; el.muted = true; el.playsInline = true;
+        el.setAttribute('autoplay', ''); el.setAttribute('loop', ''); el.setAttribute('muted', ''); el.setAttribute('playsinline', '');
+        el.onloadedmetadata = () => { if (STATE._centerPending) { STATE._centerPending = false; centerViewOnMap(); } };
+        el.src = url;
+        const tryPlay = el.play(); if (tryPlay && tryPlay.catch) tryPlay.catch(() => {});
+      } else {
+        el = document.createElement('img');
+        el.onload = () => { if (STATE._centerPending) { STATE._centerPending = false; centerViewOnMap(); } };
+        el.src = url;
+      }
+      el.style.width = STATE.map.width + 'px';
+      el.style.height = STATE.map.height + 'px';
+      el.style.position = 'absolute';
+      el.style.left = (STATE.map.offset_x || 0) + 'px';
+      el.style.top = (STATE.map.offset_y || 0) + 'px';
+      layer.appendChild(el);
     }
     applyTransform();
   }
@@ -8262,8 +8313,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     textEl.textContent = 'Uploading...';
     try {
       const slot = nextFreeMapSlot();
-      const { blob, width, height } = await fileToResizedBlob(e.target.files[0], 1600);
-      const path = `${STATE.sessionId}/maps/slot-${slot}-${Date.now()}.jpg`;
+      const media = await loadMapMedia(e.target.files[0]);
+      const { blob, width, height } = media;
+      const path = `${STATE.sessionId}/maps/slot-${slot}-${Date.now()}.${media.ext}`;
       const url = await uploadImage(blob, path);
       const gridFt = parseInt(document.getElementById('grid-ft').value) || 5;
       const finalUrl = (DEMO_MODE || url.startsWith('data:') || url.startsWith('blob:')) ? url : url + '?t=' + Date.now();
@@ -8283,11 +8335,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (error) throw error;
       STATE.maps.set(slot, row);
       switchToMapSlot(slot, false);
-      textEl.textContent = 'Upload map image';
+      textEl.textContent = 'Upload map (image, gif, mp4)';
       toast('Map ' + slot + ' added to library');
     } catch (err) {
       console.error(err);
-      textEl.textContent = 'Upload map image';
+      textEl.textContent = 'Upload map (image, gif, mp4)';
       toast('Map upload failed: ' + (err.message || ''), 'error');
     }
     e.target.value = '';
