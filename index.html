@@ -353,6 +353,8 @@
   .sub-row .sub-flavor { color: var(--muted); font-size: 12px; margin-top: 3px; line-height: 1.45; }
   .sub-row .sub-domspells { margin-top: 8px; padding: 8px 10px; background: rgba(0,0,0,0.22); border-left: 2px solid var(--gold-soft); border-radius: 4px; }
   .sub-row .sub-domspells .sds-title { font-family: 'Cinzel', serif; font-size: 10px; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 5px; }
+  .sub-row .sub-domspells .sds-about { font-size: 12px; color: var(--cream); line-height: 1.5; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(58,47,36,0.5); }
+  .stub-badge { font-size: 8px; color: var(--ember); border: 1px solid rgba(224,140,58,0.5); border-radius: 3px; padding: 0 4px; letter-spacing: 0.06em; text-transform: uppercase; vertical-align: middle; }
   .sc-chip { font-size: 11px; padding: 4px 11px; border: 1px solid var(--border); border-radius: 14px; color: var(--muted); cursor: pointer; background: transparent; font-family: inherit; }
   .sc-chip:hover { color: var(--cream); }
   .sc-chip.on { color: var(--gold); border-color: var(--gold); background: rgba(212,165,116,0.14); }
@@ -5310,6 +5312,30 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       return `<div class="lib-result" data-i="${i}"><span class="lr-lvl">${lvl}</span><span class="lr-name">${escapeHtml(s.n)}</span><span class="lr-meta">${escapeHtml(s.e)}</span></div>`;
     }).join('');
   }
+  function getCatalogSpellByName(name) {
+    const ln = (name || '').toLowerCase();
+    return SRD_SPELLS.find(s => s.n.toLowerCase() === ln) || NONSRD_SPELLS.find(s => s.n.toLowerCase() === ln) || null;
+  }
+
+  function addSpellObj(s) {
+    if (!s) return;
+    if (!CHAR_POPUP.magic) CHAR_POPUP.magic = emptyMagicData();
+    if (s.l === 0) {
+      if (!Array.isArray(CHAR_POPUP.magic.cantrips)) CHAR_POPUP.magic.cantrips = [];
+      if (CHAR_POPUP.magic.cantrips.some(c => (c.name || '').toLowerCase() === s.n.toLowerCase())) { toast(s.n + ' already added', 'error'); return; }
+      CHAR_POPUP.magic.cantrips.push({ name: s.n, desc: s.e, info: s.d || '', dmg: s.dmg || null, atk: s.atk || null });
+    } else {
+      if (!Array.isArray(CHAR_POPUP.magic.spells)) CHAR_POPUP.magic.spells = [];
+      if (CHAR_POPUP.magic.spells.some(sp => (sp.name || '').toLowerCase() === s.n.toLowerCase())) { toast(s.n + ' already added', 'error'); return; }
+      CHAR_POPUP.magic.spells.push({ name: s.n, level: s.l, desc: s.e, prepared: false, info: s.d || '', dmg: s.dmg || null, atk: s.atk || null });
+    }
+    renderMagic(CHAR_POPUP.magic);
+    scheduleSavePlayer();
+    toast('Added ' + s.n);
+  }
+
+  function addSpellByName(name) { addSpellObj(getCatalogSpellByName(name)); }
+
   function addSpellFromLib(i) {
     const s = SRD_SPELLS[i]; if (!s) return;
     if (!CHAR_POPUP.magic) CHAR_POPUP.magic = emptyMagicData();
@@ -5378,6 +5404,23 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     'Tempest Domain': ['Fog Cloud','Thunderwave','Gust of Wind','Shatter','Call Lightning','Sleet Storm','Control Water','Ice Storm','Insect Plague'],
     'Trickery Domain': ['Charm Person','Disguise Self','Mirror Image','Pass Without Trace','Blink','Dispel Magic','Dimension Door','Polymorph','Dominate Person'],
     'War Domain': ['Divine Favor','Shield of Faith','Magic Weapon','Spiritual Weapon','Spirit Guardians','Freedom of Movement','Stoneskin','Flame Strike','Hold Monster']
+  };
+  // Non-SRD domain spells, summarized in my own words (mechanic only, not official text).
+  const NONSRD_SPELLS = [
+    { n: "Crusader's Mantle", l: 3, e: 'Evocation · Radiant dmg · Conc', stub: true, d: '(Non-SRD summary, not official text) A 30-foot aura around you. For the duration, allies in the aura deal an extra 1d6 radiant damage on their weapon hits. Concentration, up to 1 minute.', dmg: { t: 'Radiant', sl: { '3': '1d6' } } },
+    { n: 'Modify Memory', l: 5, e: 'Enchantment · Conc', stub: true, d: '(Non-SRD summary, not official text) Target makes a Wisdom save. On a fail you reshape or erase one memory of an event it experienced within the last 24 hours. Concentration, up to 1 minute.' },
+    { n: 'Grasping Vine', l: 4, e: 'Conjuration · Conc', stub: true, d: '(Non-SRD summary, not official text) Conjure a vine that lashes a creature within 30 feet. On a failed Dexterity save it is pulled up to 30 feet toward the vine. Concentration, up to 1 minute.' },
+    { n: 'Destructive Wave', l: 5, e: 'Evocation · Thunder + Radiant/Necrotic dmg', stub: true, d: '(Non-SRD summary, not official text) A burst of force ripples out 30 feet from you. Each creature you choose makes a Constitution save, taking 5d6 thunder plus 5d6 radiant or necrotic (your choice) on a fail, and is knocked prone. Half damage and no prone on a success.', dmg: { t: 'Thunder', sl: { '5': '5d6' } } }
+  ];
+  // Short original summaries for the cleric domains (my own words).
+  const DOMAIN_SUMMARY = {
+    'Knowledge Domain': 'Tanrisinin bilgi ve sir yonunu temsil eder. Ekstra diller ve beceriler, gecmisi okuma ve zihin etkileme egilimli, destek odakli bir cleric.',
+    'Life Domain': 'En guclu saf iyilestirici yol. Sifa buyuleri fazladan can yeniler, agir zirh tasir, mutterikleri ayakta tutar.',
+    'Light Domain': 'Atesi ve isigi silah yapan saldirgan cleric. Alan hasari, korlesticiren parlama ve guclu evocation buyuleri one cikar.',
+    'Nature Domain': 'Doga ve hayvanlarla bagli cleric. Druid benzeri buyuler, bir beceride ustalik ve bir miktar yakin dovus dayanikligi.',
+    'Tempest Domain': 'Yildirim ve gok gurultusu temasi. Vurana karsilik veren, dusmani iten ve maksimum hasar vurabilen agresif cleric.',
+    'Trickery Domain': 'Yanilsama, gizlilik ve aldatma. Kendini kopyalar, mutterike avantaj verir, hirsiz benzeri kacamak bir cleric.',
+    'War Domain': 'Savas tanrisinin sampiyonu. On safta dovusur, ekstra saldiri ve isabet bonuslari ile silah temelli bir cleric.'
   };
 
   function openSpellCatalog() {
@@ -5474,8 +5517,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (classes.length > 1) html += `<div class="sc-cls-head">${cls[0].toUpperCase() + cls.slice(1)}</div>`;
       list.forEach(sub => {
         const dom = CLERIC_DOMAIN_SPELLS[sub.n];
-        const granted = dom ? dom.map(srdSpellByName).filter(Boolean) : [];
-        const hasDom = granted.length > 0;
+        const granted = dom ? dom.map(getCatalogSpellByName).filter(Boolean) : [];
+        const about = DOMAIN_SUMMARY[sub.n];
+        const hasDom = granted.length > 0 || !!about;
         html += `<div class="sub-row${hasDom ? ' has-dom' : ''}" data-dom="${escapeHtml(sub.n)}">
           <div class="sub-head">
             <span class="sub-name">${escapeHtml(sub.n)}${hasDom ? ' ▸' : ''}</span>
@@ -5483,18 +5527,17 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           </div>
           ${sub.f ? `<div class="sub-flavor">${escapeHtml(sub.f)}</div>` : ''}
           ${hasDom ? `<div class="sub-domspells" hidden>
-            <div class="sds-title">Domain spells (SRD)</div>
-            ${granted.map(s => {
-              const i = SRD_SPELLS.indexOf(s);
+            ${about ? `<div class="sds-about">${escapeHtml(about)}</div>` : ''}
+            ${granted.length ? `<div class="sds-title">Domain spells</div>${granted.map(s => {
               const isAdded = added.has(s.n.toLowerCase());
-              return `<div class="sc-row" data-i="${i}">
+              return `<div class="sc-row">
                 <div style="flex:1; min-width:0;">
-                  <div class="sc-name" data-i="${i}">${escapeHtml(s.n)}</div>
+                  <div class="sc-name" data-name="${escapeHtml(s.n)}">${escapeHtml(s.n)}${s.stub ? ' <span class="stub-badge">stub</span>' : ''}</div>
                   <div class="sc-meta">${s.l === 0 ? 'Cantrip' : 'Lv ' + s.l} · ${escapeHtml(s.e)}</div>
                 </div>
-                <button class="sc-add${isAdded ? ' added' : ''}" data-i="${i}">${isAdded ? 'Added' : 'Add'}</button>
+                <button class="sc-add${isAdded ? ' added' : ''}" data-name="${escapeHtml(s.n)}">${isAdded ? 'Added' : 'Add'}</button>
               </div>`;
-            }).join('')}
+            }).join('')}` : ''}
           </div>` : ''}
         </div>`;
       });
@@ -6818,7 +6861,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (addBtn) {
         if (addBtn.classList.contains('added')) return;
         if (!libCanEdit()) { toast('Read-only sheet', 'error'); return; }
-        addSpellFromLib(parseInt(addBtn.dataset.i));
+        if (addBtn.dataset.name) addSpellByName(addBtn.dataset.name);
+        else addSpellFromLib(parseInt(addBtn.dataset.i));
         addBtn.classList.add('added');
         addBtn.textContent = 'Added';
         return;
@@ -6828,7 +6872,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         const row = nameEl.closest('.sc-row');
         let desc = row.querySelector('.sc-desc');
         if (desc) { desc.remove(); return; }
-        const sp = SRD_SPELLS[parseInt(nameEl.dataset.i)];
+        const sp = nameEl.dataset.name ? getCatalogSpellByName(nameEl.dataset.name) : SRD_SPELLS[parseInt(nameEl.dataset.i)];
         if (sp && sp.d) {
           desc = document.createElement('div');
           desc.className = 'sc-desc';
