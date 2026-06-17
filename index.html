@@ -11157,9 +11157,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   }
   function dice3Label(sides, i) { if (sides === 10) return (i + 1 === 10) ? '0' : String(i + 1); if (sides === 100) return String(i * 10); return String(i + 1); }
   function dice3ClusterForValue(sides, value, count) { if (sides === 10) { const L = value % 10; return (L === 0) ? 9 : L - 1; } if (sides === 100) return Math.min(count - 1, Math.floor(value / 10)); return Math.min(count - 1, value - 1); }
-  function dice3NumberTex(THREE, label) {
+  function dice3NumberTex(THREE, label, ink) {
     const c = document.createElement('canvas'); c.width = c.height = 128; const ctx = c.getContext('2d');
-    ctx.clearRect(0, 0, 128, 128); ctx.fillStyle = DICE3D_INK; ctx.font = 'bold 72px Cinzel, Georgia, serif';
+    ctx.clearRect(0, 0, 128, 128); ctx.fillStyle = ink || DICE3D_INK; ctx.font = 'bold 72px Cinzel, Georgia, serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 5;
     ctx.fillText(label, 64, 66); if (label === '6' || label === '9') { ctx.fillRect(44, 98, 40, 5); }
     const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
@@ -11191,22 +11191,36 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const spacing = 2.2; const spread = (n - 1) * spacing;
     const fov = 40, aspect = W / H, halfTan = Math.tan((fov / 2) * Math.PI / 180);
     const camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 100);
-    const camZ = Math.max(7, (spread + 3.2) / (2 * halfTan * aspect));
+    const dieR = 1.9;
+    const vFit = dieR / (0.28 * halfTan);
+    const hFit = (spread / 2 + dieR) / (0.72 * halfTan * aspect);
+    const camZ = Math.max(vFit, hFit);
     camera.position.set(0, 0, camZ); camera.lookAt(0, 0, 0);
     const visHalfH = halfTan * camZ;
-    const yStart = visHalfH + 1.8;
+    const yStart = visHalfH + dieR;
     const targetDir = new THREE.Vector3(0, 0.32, 1).normalize();
+
+    // Theme colours from the roller's dice set: body = mid tone, edges + numerals
+    // pick whichever of light/stroke contrasts most with the body so it stays legible.
+    const lum = (hex) => { const c = new THREE.Color(hex); return 0.299 * c.r + 0.587 * c.g + 0.114 * c.b; };
+    const pMid = (palette && palette.mid) || '#171210';
+    const pLight = (palette && palette.light) || '#6b6359';
+    const pStroke = (palette && palette.stroke) || '#d4a574';
+    const ml = lum(pMid);
+    const ink = [pLight, pStroke].reduce((b, h) => Math.abs(lum(h) - ml) > Math.abs(lum(b) - ml) ? h : b, pLight);
+    const bodyCol = new THREE.Color(pMid);
+    const edgeCol = new THREE.Color(ink);
 
     const dice = [];
     for (let i = 0; i < n; i++) {
       const geo = dice3Geom(THREE, sides);
-      const mat = new THREE.MeshStandardMaterial({ color: 0x171210, metalness: 0.45, roughness: 0.3, flatShading: true });
+      const mat = new THREE.MeshStandardMaterial({ color: bodyCol, metalness: 0.45, roughness: 0.3, flatShading: true });
       const mesh = new THREE.Mesh(geo, mat);
-      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 18), new THREE.LineBasicMaterial({ color: 0xd4a574, transparent: true, opacity: 0.9 }));
+      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 18), new THREE.LineBasicMaterial({ color: edgeCol, transparent: true, opacity: 0.9 }));
       const group = new THREE.Group(); group.add(mesh); group.add(edges);
       const faces = dice3Faces(THREE, geo);
       faces.forEach((f, fi) => {
-        const size = f.size * 1.15; const tex = dice3NumberTex(THREE, dice3Label(sides, fi));
+        const size = f.size * 1.15; const tex = dice3NumberTex(THREE, dice3Label(sides, fi), ink);
         const pm = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
         const plane = new THREE.Mesh(new THREE.PlaneGeometry(size, size), pm);
         plane.position.copy(f.center).addScaledVector(f.normal, 0.02);
