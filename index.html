@@ -503,7 +503,10 @@
   #hp-tracker-list-right .hp-row.viewing { border-color: var(--gold); background: rgba(212,175,55,0.12); }
 
   /* Char-popup as an embedded section (not fixed) */
-  #right-bar #char-popup { position: static; width: auto; right: auto; top: auto; bottom: auto; border-left: none; box-shadow: none; flex: 1; min-height: 0; transform: none; transition: none; }
+  #right-bar #char-popup { position: static; width: auto; right: auto; top: auto; bottom: auto; border-left: none; box-shadow: none; flex: 1; min-height: 0; transform: none; transition: none; overflow-y: auto; }
+  #right-bar #char-popup > * { flex-shrink: 0; }
+  #right-bar #char-popup .char-popup-body { overflow: visible; flex: none; }
+  #right-bar #char-popup .char-popup-header { position: sticky; top: 0; z-index: 3; background: var(--panel); }
   #right-bar #char-popup.collapsed { display: none; }
   #right-bar #char-popup .char-popup-header { padding: 6px 12px; }
 
@@ -6448,10 +6451,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   }
 
   // Pull text items, group them into lines (by y), each line carries its items.
+  // Also collect AcroForm field values (D&D Beyond fillable exports store the
+  // real character data in form fields, not the page text layer).
   async function pdfExtractLines(arrayBuffer) {
     const lib = await loadPdfJs();
     const doc = await lib.getDocument({ data: arrayBuffer }).promise;
     const all = [];
+    const fields = {};
     for (let p = 1; p <= doc.numPages; p++) {
       const page = await doc.getPage(p);
       const content = await page.getTextContent();
@@ -6470,8 +6476,21 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         l.text = l.items.map(i => i.str).join(' ').replace(/\s+/g, ' ').trim();
         all.push(l);
       });
+      try {
+        const ann = await page.getAnnotations();
+        ann.forEach(a => {
+          if (a.subtype !== 'Widget' || !a.fieldName) return;
+          let v = a.fieldValue;
+          if (Array.isArray(v)) v = v.join(', ');
+          if (v == null) return;
+          v = String(v).trim();
+          if (v === '') return;
+          const key = a.fieldName.trim();
+          if (!(key in fields)) fields[key] = v; // first page wins (later pages repeat name with a "2" suffix)
+        });
+      } catch (e) { /* no annotations on this page */ }
     }
-    return all;
+    return { lines: all, fields };
   }
 
   function parseDndBeyondPdf(all) {
@@ -6698,6 +6717,89 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     return ch;
   }
 
+  // Parse a D&D Beyond fillable PDF straight from its AcroForm field values.
+  // This is the reliable path: DDB stores the real data in named fields.
+  // Returns the same shape as parseDndBeyondPdf, or null if not a DDB form.
+  function parseDdbFields(F) {
+    if (!F) return null;
+    const g = k => (F[k] != null ? F[k] : '');
+    if (!(g('STR') || g('CharacterName') || g('CLASS  LEVEL') || g('CLASS LEVEL'))) return null;
+    const ch = {};
+    ch.name = g('CharacterName') || '';
+    const CLASSES = 'Barbarian|Bard|Cleric|Druid|Fighter|Monk|Paladin|Ranger|Rogue|Sorcerer|Warlock|Wizard|Artificer';
+    const cl = g('CLASS  LEVEL') || g('CLASS LEVEL') || '';
+    const re = new RegExp('(' + CLASSES + ')\\s+(\\d+)', 'gi');
+    let m, lvl = 0, first = '';
+    while ((m = re.exec(cl)) !== null) { if (!first) first = m[1]; lvl += parseInt(m[2]); }
+    if (first) { ch.class = first; ch.level = lvl || 1; }
+    else { const m2 = cl.match(new RegExp('(' + CLASSES + ')', 'i')); if (m2) ch.class = m2[1]; const lm = cl.match(/(\d+)/); if (lm) ch.level = parseInt(lm[1]); }
+    ch.race = g('RACE') || '';
+    ch._background = g('BACKGROUND') || '';
+    [['strength', 'STR'], ['dexterity', 'DEX'], ['constitution', 'CON'], ['intelligence', 'INT'], ['wisdom', 'WIS'], ['charisma', 'CHA']]
+      .forEach(([key, f]) => { const v = parseInt(g(f)); if (!isNaN(v)) ch[key] = v; });
+    // Saving throws: <Abbr>Prof holds a bullet when proficient
+    const SAVES = [['str', 'StrProf'], ['dex', 'DexProf'], ['con', 'ConProf'], ['int', 'IntProf'], ['wis', 'WisProf'], ['cha', 'ChaProf']];
+    ch.save_profs = SAVES.filter(([, f]) => /[•·∙●⚫]/.test(g(f))).map(([a]) => a).join(',');
+    // Skills: <Skill>Prof = P (proficient) or E (expertise)
+    const SKILL_FIELD = { acrobatics: 'AcrobaticsProf', animal_handling: 'AnimalHandlingProf', arcana: 'ArcanaProf', athletics: 'AthleticsProf', deception: 'DeceptionProf', history: 'HistoryProf', insight: 'InsightProf', intimidation: 'IntimidationProf', investigation: 'InvestigationProf', medicine: 'MedicineProf', nature: 'NatureProf', perception: 'PerceptionProf', performance: 'PerformanceProf', persuasion: 'PersuasionProf', religion: 'ReligionProf', sleight_of_hand: 'SleightOfHandProf', stealth: 'StealthProf', survival: 'SurvivalProf' };
+    const profSk = [], expSk = [];
+    Object.keys(SKILL_FIELD).forEach(key => {
+      const v = (g(SKILL_FIELD[key]) || '').toUpperCase();
+      if (v.includes('E')) { expSk.push(key); profSk.push(key); }
+      else if (v.includes('P') || /[•·∙●⚫]/.test(v)) profSk.push(key);
+    });
+    ch.skill_profs = profSk.join(',');
+    ch.skill_expertise = expSk.join(',');
+    let n;
+    n = parseInt(g('AC')); if (!isNaN(n)) ch.ac = n;
+    n = parseInt(g('MaxHP')); if (!isNaN(n)) { ch.hp_max = n; ch.hp_current = n; }
+    const sp = g('Speed').match(/(\d+)/); if (sp) ch.speed = parseInt(sp[1]);
+    ch.gold = parseInt(g('GP')) || 0;
+    ch.silver = parseInt(g('SP')) || 0;
+    ch.copper = parseInt(g('CP')) || 0;
+    // Weapons -> attacks
+    const atks = [];
+    for (let i = 1; i <= 8; i++) {
+      const name = g(i === 1 ? 'Wpn Name' : 'Wpn Name ' + i);
+      if (!name) continue;
+      atks.push({ name, bonus: g('Wpn' + i + ' AtkBonus') || '', dmg: g('Wpn' + i + ' Damage') || '' });
+    }
+    if (atks.length) ch._attacks = atks;
+    // Spellcasting + spell list. Level is resolved from the bundled SRD data
+    // because DDB stores section headers in a separate index space from rows.
+    ch._spellAbility = g('spellCastingAbility0') || '';
+    const lvlByName = {};
+    try {
+      (SRD_SPELLS || []).forEach(s => { lvlByName[s.n.toLowerCase()] = s.l; });
+      (typeof NONSRD_SPELLS !== 'undefined' ? NONSRD_SPELLS : []).forEach(s => { if (lvlByName[s.n.toLowerCase()] == null) lvlByName[s.n.toLowerCase()] = s.l; });
+    } catch (e) { /* SRD not in scope */ }
+    const cantrips = [], spells = [];
+    for (let i = 0; i < 80; i++) {
+      const nm = g('spellName' + i);
+      if (!nm) continue;
+      const lv = lvlByName[nm.toLowerCase()];
+      if (lv === 0) cantrips.push(nm);
+      else spells.push({ name: nm, level: lv != null ? lv : 1 });
+    }
+    if (cantrips.length) ch._cantrips = cantrips;
+    if (spells.length) ch._spells = spells;
+    // Features: the blob fields list each feature on a line starting with "*"
+    const featBlob = [g('FeaturesTraits1'), g('FeaturesTraits2'), g('FeaturesTraits3'), g('FeaturesTraits4')].filter(Boolean).join('\n');
+    if (featBlob) {
+      const feats = [];
+      featBlob.split('\n').forEach(line => {
+        const fm = line.match(/^\s*\*\s+(.+)$/);
+        if (!fm) return;
+        let name = fm[1].split('•')[0].trim();
+        if (name.length >= 2 && name.length <= 60 && !feats.includes(name)) feats.push(name);
+      });
+      if (feats.length) ch._features = feats;
+    }
+    const prof = g('ProficienciesLang');
+    if (prof) ch._proficiencies = prof;
+    return ch;
+  }
+
   async function importDndBeyondPdf(file) {
     if (!CHAR_POPUP.targetPlayerId) { toast('Open a character first', 'error'); return; }
     const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
@@ -6707,8 +6809,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     try {
       toast('Reading PDF...');
       const buf = await file.arrayBuffer();
-      const lines = await pdfExtractLines(buf);
-      parsed = parseDndBeyondPdf(lines);
+      const { lines, fields } = await pdfExtractLines(buf);
+      parsed = parseDdbFields(fields);
+      if (!parsed || (parsed.strength == null && !parsed.class)) {
+        parsed = parseDndBeyondPdf(lines); // flattened PDF with no form fields
+      }
     } catch (e) {
       console.error('PDF parse failed', e);
       toast('Could not read this PDF', 'error');
