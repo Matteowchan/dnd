@@ -2181,6 +2181,9 @@
       <div class="spells-current-row">
         Selected: <strong id="spells-current-name">Pick a shape and element</strong>
       </div>
+      <div id="spell-fx-preview" style="display:none; margin: 10px 0; height: 150px; background: radial-gradient(circle at 50% 45%, #2a2620, #100d09); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; position: relative;">
+        <video id="spell-fx-preview-vid" muted loop playsinline style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; mix-blend-mode:screen;"></video>
+      </div>
       <div class="spell-buff-row" id="spell-buff-row">
         <label class="spell-buff-toggle">
           <input type="checkbox" id="spell-buff-check">
@@ -8853,6 +8856,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const it = items[parseInt(b.dataset.i)];
       SPELL_DRAFT.fx = it.hit; SPELL_DRAFT.color = 'webm|' + it.file; SPELL_DRAFT.name = it.name;
       el.querySelectorAll('.spell-element').forEach(x => x.classList.toggle('active', x === b));
+      const pv = document.getElementById('spell-fx-preview');
+      const pvv = document.getElementById('spell-fx-preview-vid');
+      if (pv && pvv) { pvv.src = FX_BUCKET_BASE + it.file; pv.style.display = 'block'; pvv.play().catch(() => {}); }
       updateSpellsPreview();
     }));
   }
@@ -8884,6 +8890,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   }
   async function spellsOpen() {
     document.getElementById('spells-popup').classList.add('active');
+    const pv = document.getElementById('spell-fx-preview');
+    if (pv && !SPELL_DRAFT.color) pv.style.display = 'none';
     renderSpellShapeList();
     updateSpellsPreview();
     await loadSpellFx();
@@ -9430,7 +9438,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (typeof elem === 'string' && elem.indexOf('webm|') === 0) {
       const file = elem.split('|')[1] || '';
       const url = SUPABASE_URL + '/storage/v1/object/public/vtt-assets/' + file;
-      const vid = '<video src="' + url + '" autoplay loop muted playsinline style="width:100%;height:100%;object-fit:contain;display:block;"></video>';
+      const vid = '<video src="' + url + '" autoplay loop muted playsinline style="width:100%;height:100%;object-fit:contain;display:block;mix-blend-mode:screen;"></video>';
       const idAttr = 'data-fx-id="' + (fx.id || '') + '" data-fx-user="' + (fx.user_id || '') + '"';
       const aim = ['breath', 'beam', 'arrow', 'rocket', 'sword'].indexOf(fx.type) >= 0;
       if (aim) {
