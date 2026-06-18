@@ -691,10 +691,22 @@
   .feat-row .feat-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 2px; }
   .feat-row .feat-del:hover { color: var(--danger); }
   #features-list:empty + .inv-add-row::before { content: 'No features yet —'; color: var(--muted); font-size: 11px; font-style: italic; margin-right: 6px; align-self: center; }
-  .inv-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; font-size: 12px; }
-  .inv-row .inv-qty { color: var(--gold); font-weight: 700; min-width: 32px; }
-  .inv-row .inv-name { flex: 1; color: var(--cream); }
-  .inv-row .inv-del { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 1px 7px; font-size: 13px; line-height: 1; cursor: pointer; border-radius: 2px; }
+  .inv-row { display: flex; align-items: center; gap: 9px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; font-size: 12px; transition: border-color 0.15s; }
+  .inv-row:hover { border-color: var(--gold-soft); }
+  .inv-tag { flex-shrink: 0; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; border: 1px solid; min-width: 38px; text-align: center; }
+  .inv-tag-weapon { color: #e3a08c; border-color: #6e3a2c; background: rgba(160,60,40,0.14); }
+  .inv-tag-armor  { color: #9fc2e3; border-color: #2c4a6e; background: rgba(40,90,160,0.14); }
+  .inv-tag-gear   { color: var(--muted); border-color: var(--border); background: rgba(255,255,255,0.03); }
+  .inv-tag-magic  { color: #d7b2ef; border-color: #4a2c6e; background: rgba(110,60,160,0.16); }
+  .inv-tag-misc   { color: var(--gold-soft); border-color: var(--gold-soft); background: rgba(212,165,116,0.08); }
+  .inv-row .inv-body { flex: 1; min-width: 0; }
+  .inv-row .inv-name { color: var(--cream); font-weight: 600; word-break: break-word; }
+  .inv-row .inv-stats { color: var(--gold); font-size: 10px; font-style: italic; margin-top: 2px; opacity: 0.85; word-break: break-word; }
+  .inv-qty-ctl { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+  .inv-qty-ctl button { width: 20px; height: 20px; line-height: 1; padding: 0; font-size: 14px; background: var(--panel-light); border: 1px solid var(--border); color: var(--gold); border-radius: 3px; cursor: pointer; }
+  .inv-qty-ctl button:hover { border-color: var(--gold-soft); }
+  .inv-qty-ctl .inv-qty { color: var(--gold); font-weight: 700; min-width: 20px; text-align: center; }
+  .inv-row .inv-del { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 1px 7px; font-size: 13px; line-height: 1; cursor: pointer; border-radius: 2px; flex-shrink: 0; }
   .inv-row .inv-del:hover { color: var(--danger); border-color: var(--danger); }
   .inv-add-row { display: flex; gap: 5px; margin-top: 8px; }
   .inv-add-row input { flex: 1; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; font-family: inherit; font-size: 12px; }
@@ -5575,26 +5587,52 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (addRow) addRow.style.display = canEdit ? '' : 'none';
   }
 
+  function invTag(type) {
+    const labels = { weapon: 'WPN', armor: 'ARM', gear: 'GEAR', magic: 'MAGIC', misc: 'ITEM' };
+    const cls = ['weapon', 'armor', 'gear', 'magic'].includes(type) ? type : 'misc';
+    return `<span class="inv-tag inv-tag-${cls}">${labels[cls]}</span>`;
+  }
+  function addInvItem(name, qty, stats, type) {
+    qty = Math.max(1, parseInt(qty) || 1);
+    CHAR_POPUP.inventory = CHAR_POPUP.inventory || [];
+    const existing = CHAR_POPUP.inventory.find(it => it.name === name && (it.stats || '') === (stats || ''));
+    if (existing) existing.qty = (existing.qty || 1) + qty;
+    else CHAR_POPUP.inventory.push({ name, qty, stats: stats || '', type: type || 'misc' });
+    renderInventory(CHAR_POPUP.inventory);
+    scheduleSavePlayer();
+  }
   function renderInventory(items) {
     const list = document.getElementById('inventory-list');
     list.innerHTML = '';
     if (!items.length) {
-      list.innerHTML = '<div style="font-size: 11px; color: var(--muted); padding: 4px 0;">Empty. Add items below.</div>';
+      list.innerHTML = '<div style="font-size: 11px; color: var(--muted); padding: 6px 0;">Empty. Browse the catalog or add an item below.</div>';
       return;
     }
     items.forEach((it, idx) => {
       const row = document.createElement('div');
       row.className = 'inv-row';
-      const statsHtml = it.stats ? `<span class="inv-stats">${escapeHtml(it.stats)}</span>` : '';
+      const statsHtml = it.stats ? `<div class="inv-stats">${escapeHtml(it.stats)}</div>` : '';
       row.innerHTML = `
-        <span class="inv-qty">${it.qty}×</span>
-        <span class="inv-name">${escapeHtml(it.name)}${statsHtml}</span>
-        <button class="inv-del">×</button>
+        ${invTag(it.type)}
+        <div class="inv-body"><div class="inv-name">${escapeHtml(it.name)}</div>${statsHtml}</div>
+        <div class="inv-qty-ctl">
+          <button class="inv-minus" title="Less">−</button>
+          <span class="inv-qty">${it.qty}</span>
+          <button class="inv-plus" title="More">+</button>
+        </div>
+        <button class="inv-del" title="Remove">×</button>
       `;
+      row.querySelector('.inv-minus').addEventListener('click', () => {
+        it.qty = Math.max(1, (it.qty || 1) - 1);
+        renderInventory(CHAR_POPUP.inventory); scheduleSavePlayer();
+      });
+      row.querySelector('.inv-plus').addEventListener('click', () => {
+        it.qty = (it.qty || 1) + 1;
+        renderInventory(CHAR_POPUP.inventory); scheduleSavePlayer();
+      });
       row.querySelector('.inv-del').addEventListener('click', () => {
         CHAR_POPUP.inventory.splice(idx, 1);
-        renderInventory(CHAR_POPUP.inventory);
-        scheduleSavePlayer();
+        renderInventory(CHAR_POPUP.inventory); scheduleSavePlayer();
       });
       list.appendChild(row);
     });
@@ -8147,20 +8185,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const qty = Math.max(1, parseInt(document.getElementById('inv-add-qty').value) || 1);
       const stats = document.getElementById('inv-add-stats').value.trim();
       if (!name) { toast('Item name required', 'error'); return; }
-      CHAR_POPUP.inventory.push({ name, qty, stats });
+      addInvItem(name, qty, stats, 'misc');
       document.getElementById('inv-add-name').value = '';
       document.getElementById('inv-add-qty').value = '1';
       document.getElementById('inv-add-stats').value = '';
-      renderInventory(CHAR_POPUP.inventory);
-      scheduleSavePlayer();
     });
 
     // ---- Equipment catalog: browse weapons / armor / gear / magic items ----
     const CATALOG = { tab: 'weapons', query: '' };
-    function catAddInventory(name, stats) {
-      CHAR_POPUP.inventory.push({ name, qty: 1, stats: stats || '' });
-      renderInventory(CHAR_POPUP.inventory);
-      scheduleSavePlayer();
+    function catAddInventory(name, stats, type) {
+      addInvItem(name, 1, stats || '', type || 'misc');
       toast(name + ' added to inventory', 'success');
     }
     function catEquipArmor(a) {
@@ -8177,9 +8211,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       acInput.dispatchEvent(new Event('input', { bubbles: true }));
       const note = a.type === 'shield' ? '+2 AC (shield)'
         : `AC ${a.base}${a.type === 'light' ? ' + Dex' : a.type === 'medium' ? ' + Dex (max 2)' : ''}${a.stealth ? ', stealth disadv' : ''}`;
-      CHAR_POPUP.inventory.push({ name: a.n, qty: 1, stats: note });
-      renderInventory(CHAR_POPUP.inventory);
-      scheduleSavePlayer();
+      addInvItem(a.n, 1, note, 'armor');
       toast(`${a.n} equipped, AC set to ${newAc}`, 'success');
     }
     function catApplyMagic(item) {
@@ -8245,11 +8277,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.getElementById('catalog-list').addEventListener('click', (e) => {
       const btn = e.target.closest('.cat-btn'); if (!btn) return;
       const i = parseInt(btn.dataset.i); const act = btn.dataset.act;
-      if (act === 'add-weapon') { const w = SRD_WEAPONS[i]; catAddInventory(w.n, `${w.d || ''}${w.p ? ' (' + w.p + ')' : ''}`.trim()); }
-      else if (act === 'add-armor') { const a = SRD_ARMOR[i]; catAddInventory(a.n, a.type === 'shield' ? '+2 AC' : `AC ${a.base}, ${a.type}`); }
+      if (act === 'add-weapon') { const w = SRD_WEAPONS[i]; catAddInventory(w.n, `${w.d || ''}${w.p ? ' (' + w.p + ')' : ''}`.trim(), 'weapon'); }
+      else if (act === 'add-armor') { const a = SRD_ARMOR[i]; catAddInventory(a.n, a.type === 'shield' ? '+2 AC' : `AC ${a.base}, ${a.type}`, 'armor'); }
       else if (act === 'equip-armor') { catEquipArmor(SRD_ARMOR[i]); }
-      else if (act === 'add-gear') { const g = SRD_GEAR[i]; catAddInventory(g.n, g.note || ''); }
-      else if (act === 'add-magic') { const m = MAGIC_ITEMS[i]; catAddInventory(m.n, m.d); }
+      else if (act === 'add-gear') { const g = SRD_GEAR[i]; catAddInventory(g.n, g.note || '', 'gear'); }
+      else if (act === 'add-magic') { const m = MAGIC_ITEMS[i]; catAddInventory(m.n, m.d, 'magic'); }
       else if (act === 'apply-magic') { catApplyMagic(MAGIC_ITEMS[i]); }
     });
 
