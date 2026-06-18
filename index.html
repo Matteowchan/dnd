@@ -1276,7 +1276,7 @@
   #rtc-bar { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 80; display: none; flex-direction: column; align-items: center; gap: 6px; --rtc-tile-h: 120px; }
   #rtc-launch { padding: 8px 16px; background: var(--panel-light); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 6px; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.05em; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
   #rtc-launch:hover { background: var(--gold); color: #1a1612; }
-  #rtc-panel { display: none; flex-direction: column; align-items: center; gap: 3px; background: rgba(20,17,14,0.82); border: 1px solid var(--border); border-radius: 8px; padding: 4px; box-shadow: 0 4px 14px rgba(0,0,0,0.4); backdrop-filter: blur(4px); }
+  #rtc-panel { display: none; flex-direction: column; align-items: center; gap: 3px; background: rgba(20,17,14,0.82); border: 1px solid var(--border); border-radius: 8px; padding: 5px; box-shadow: 0 4px 14px rgba(0,0,0,0.4); backdrop-filter: blur(4px); transform: scale(var(--rtc-pscale, 1)); transform-origin: bottom center; }
   #rtc-bar.in-call #rtc-panel { display: flex; }
   #rtc-bar.in-call #rtc-launch { display: none; }
   #rtc-resize { align-self: stretch; height: 9px; cursor: ns-resize; display: flex; align-items: center; justify-content: center; }
@@ -1288,6 +1288,9 @@
   #rtc-bar.locked #rtc-move::before { opacity: 0.18; }
   #rtc-lock { padding: 3px 9px; font-size: 11px; border-radius: 5px; border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); cursor: pointer; white-space: nowrap; }
   #rtc-lock:hover { border-color: var(--gold-soft); }
+  #rtc-min { padding: 3px 9px; font-size: 11px; border-radius: 5px; border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); cursor: pointer; white-space: nowrap; }
+  #rtc-min:hover { border-color: var(--gold-soft); }
+  #rtc-bar.tiles-hidden #rtc-tiles, #rtc-bar.tiles-hidden #rtc-resize { display: none; }
   #rtc-lock.off { background: rgba(160,40,40,0.22); border-color: var(--danger); color: #f0c9c9; }
   #rtc-bar.locked #rtc-tiles { flex-wrap: wrap; justify-content: center; }
   #rtc-tiles { display: flex; gap: 4px; align-items: flex-end; max-width: 86vw; overflow-x: auto; padding-bottom: 0; }
@@ -2021,8 +2024,9 @@
     <div id="rtc-topbar">
       <div id="rtc-move" title="Drag to move (unlock first)"></div>
       <button id="rtc-lock" title="Lock position and tidy the tiles">Lock: On</button>
+      <button id="rtc-min" title="Minimize the camera tiles">Hide</button>
     </div>
-    <div id="rtc-resize" title="Drag up or down to resize the camera tiles"></div>
+    <div id="rtc-resize" title="Drag up or down to resize the whole window"></div>
     <div id="rtc-tiles"></div>
     <div id="rtc-controls">
       <button id="rtc-mic" title="Toggle microphone">Mic On</button>
@@ -11986,6 +11990,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   }
 
   function rtcTilesEl() { return document.getElementById('rtc-tiles'); }
+  function rtcApplyTileSize() {
+    const bar = document.getElementById('rtc-bar');
+    if (!bar) return;
+    const n = rtcTilesEl().children.length;
+    // Auto-shrink past 5 people: 100% -> 75% -> 50% -> 25%
+    const factor = n <= 5 ? 1 : n <= 7 ? 0.75 : n <= 9 ? 0.5 : 0.25;
+    if (RTC.tileScale == null) RTC.tileScale = 1;
+    const h = Math.round(120 * factor * RTC.tileScale);
+    bar.style.setProperty('--rtc-tile-h', Math.max(34, Math.min(340, h)) + 'px');
+  }
 
   function rtcAddTile(peerId, name, isLocal) {
     const tiles = rtcTilesEl();
@@ -12001,6 +12015,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       <span class="rtc-mic-off" title="Muted">x</span>
       <span class="rtc-name">${escapeHtml(isLocal ? (name + ' (you)') : name)}</span>`;
     tiles.appendChild(tile);
+    rtcApplyTileSize();
     return tile;
   }
 
@@ -12015,6 +12030,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   function rtcRemoveTile(peerId) {
     const tile = document.getElementById('rtc-tile-' + peerId);
     if (tile) tile.remove();
+    rtcApplyTileSize();
   }
 
   function rtcGetOrCreatePeer(peerId, name) {
@@ -12242,6 +12258,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.getElementById('rtc-cam').addEventListener('click', rtcToggleCam);
     document.getElementById('rtc-leave').addEventListener('click', rtcLeaveCall);
     document.getElementById('rtc-lock').addEventListener('click', () => rtcSetLocked(!RTC.locked));
+    document.getElementById('rtc-min').addEventListener('click', () => {
+      const hidden = document.getElementById('rtc-bar').classList.toggle('tiles-hidden');
+      document.getElementById('rtc-min').textContent = hidden ? 'Show' : 'Hide';
+    });
 
     document.getElementById('rtc-bg-mode').addEventListener('change', (e) => rtcSetBgMode(e.target.value));
     document.getElementById('rtc-bg-image').addEventListener('change', (e) => {
@@ -12262,19 +12282,19 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
     const bar = document.getElementById('rtc-bar');
 
-    // Resize: drag the grip up or down to scale the tiles
+    // Resize: drag the grip up or down to scale the whole panel window
     const grip = document.getElementById('rtc-resize');
-    let resizing = false, startY = 0, startH = 120;
+    let resizing = false, startY = 0, startScale = 1;
     grip.addEventListener('pointerdown', (e) => {
       resizing = true; startY = e.clientY;
-      startH = parseInt(getComputedStyle(bar).getPropertyValue('--rtc-tile-h')) || 120;
+      startScale = (RTC.panelScale == null) ? 1 : RTC.panelScale;
       grip.setPointerCapture(e.pointerId);
       e.preventDefault();
     });
     grip.addEventListener('pointermove', (e) => {
       if (!resizing) return;
-      const next = Math.max(80, Math.min(280, startH + (startY - e.clientY)));
-      bar.style.setProperty('--rtc-tile-h', next + 'px');
+      RTC.panelScale = Math.max(0.55, Math.min(2.4, startScale + (startY - e.clientY) / 220));
+      bar.style.setProperty('--rtc-pscale', RTC.panelScale);
     });
     const endResize = (e) => { if (resizing) { resizing = false; try { grip.releasePointerCapture(e.pointerId); } catch (err) {} } };
     grip.addEventListener('pointerup', endResize);
