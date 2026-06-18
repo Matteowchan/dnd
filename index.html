@@ -255,8 +255,8 @@
   #char-popup.active { display: flex; }
   #char-popup.collapsed { transform: translateX(380px); }
   /* Header is shared with floating popups (imggen/spells/recap) which keep drag, so cursor:move applies there */
-  .char-popup-header { padding: 10px 14px; background: var(--panel-light); border-bottom: 1px solid var(--border); cursor: move; display: flex; align-items: center; justify-content: space-between; gap: 6px; border-radius: 6px 6px 0 0; }
-  .char-popup-header .ttl { font-family: 'Cinzel', serif; font-size: 14px; color: var(--gold); letter-spacing: 0.05em; }
+  .char-popup-header { padding: 10px 14px; background: linear-gradient(180deg, #221a12, var(--panel-light)); border-bottom: 1px solid var(--gold-soft); cursor: move; display: flex; align-items: center; justify-content: space-between; gap: 6px; border-radius: 6px 6px 0 0; }
+  .char-popup-header .ttl { font-family: 'Cinzel', serif; font-size: 14px; color: var(--gold); letter-spacing: 0.06em; text-transform: uppercase; text-shadow: 0 0 12px rgba(212,165,116,0.3); }
   .char-hdr-actions { display: flex; align-items: center; gap: 6px; }
   #char-import-pdf-hdr { background: rgba(212,165,116,0.16); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 4px; font-size: 11px; padding: 3px 9px; cursor: pointer; white-space: nowrap; }
   #char-import-pdf-hdr:hover { background: rgba(212,165,116,0.3); }
@@ -264,7 +264,8 @@
   .char-file-backup .cfb-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-right: 2px; }
   .char-file-backup button { font-size: 11px; padding: 3px 10px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 4px; cursor: pointer; }
   .char-file-backup button:hover { color: var(--cream); border-color: var(--gold-soft); }
-  .char-popup-header button { padding: 2px 10px; font-size: 14px; }
+  .char-popup-header button { padding: 2px 10px; font-size: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; color: var(--cream); cursor: pointer; transition: border-color 0.15s, color 0.15s; }
+  .char-popup-header button:hover { border-color: var(--gold-soft); color: var(--gold); }
   /* Override cursor on the docked char-popup since it doesn't drag */
   #char-popup .char-popup-header { cursor: default; padding: 8px 12px; }
   #char-popup .char-popup-header .ttl { font-size: 13px; }
