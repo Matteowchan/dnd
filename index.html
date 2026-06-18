@@ -1441,6 +1441,7 @@
             <input type="file" id="dm-token-upload" accept="image/*" multiple>
             <span id="dm-token-upload-text">+ Upload tokens (DM)</span>
           </label>
+          <button id="gen-npc-btn" class="primary" style="width:100%; margin-top: 8px; padding: 9px;">Generate NPC (AI)</button>
           <div style="font-size: 11px; color: var(--muted); margin-top: 6px; font-style: italic;">DM-only. Upload any image as a free-standing token (no character sheet). Useful for monsters, NPCs, or set pieces.</div>
         </div>
       </div>
@@ -10231,6 +10232,19 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     showImggenForType(document.getElementById('imggen-type').value);
     updateCooldownUI();
   });
+  {
+    const genNpcBtn = document.getElementById('gen-npc-btn');
+    if (genNpcBtn) genNpcBtn.addEventListener('click', () => {
+      document.getElementById('imggen-popup').classList.add('active');
+      const typeSel = document.getElementById('imggen-type');
+      typeSel.value = 'character';
+      renderLibrary();
+      showImggenForType('character');
+      updateCooldownUI();
+      const prompt = document.getElementById('imggen-prompt');
+      if (prompt) { prompt.focus(); }
+    });
+  }
   document.getElementById('imggen-close').addEventListener('click', () => {
     document.getElementById('imggen-popup').classList.remove('active');
   });
