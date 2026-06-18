@@ -356,6 +356,11 @@
   .catalog-search { margin: 10px 0; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 4px; font-family: inherit; font-size: 13px; }
   .catalog-list { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 5px; padding-right: 4px; }
   .cat-row { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; }
+  .cat-custom-row { display: flex; gap: 5px; margin: 0 0 8px; }
+  .cat-custom-row input { padding: 6px 8px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 4px; font-family: inherit; font-size: 12px; }
+  .cat-custom-row #cat-custom-name { flex: 2; min-width: 0; }
+  .cat-custom-row #cat-custom-stats { flex: 3; min-width: 0; }
+  .cat-custom-row #cat-custom-add { flex-shrink: 0; white-space: nowrap; }
   .cat-row:hover { border-color: var(--gold-soft); }
   .cat-info { flex: 1; min-width: 0; }
   .cat-name { font-size: 13px; color: var(--cream); }
@@ -2324,6 +2329,11 @@
       <button class="catalog-tab" data-ctab="magic">Magic Items</button>
     </div>
     <input type="text" id="catalog-search" class="catalog-search" placeholder="Search...">
+    <div class="cat-custom-row">
+      <input type="text" id="cat-custom-name" placeholder="Custom item name" maxlength="40">
+      <input type="text" id="cat-custom-stats" placeholder="Stats (optional)" maxlength="60">
+      <button id="cat-custom-add" class="cat-btn primary" type="button">Add Custom</button>
+    </div>
     <div id="catalog-list" class="catalog-list"></div>
   </div>
 </div>
@@ -8257,21 +8267,38 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       }
       list.innerHTML = rows || '<div style="font-size:12px;color:var(--muted);padding:10px;">No matches.</div>';
     }
+    const CAT_TYPE = { weapons: 'weapon', armor: 'armor', gear: 'gear', magic: 'magic' };
+    const CAT_LABEL = { weapons: 'Weapon', armor: 'Armor', gear: 'Gear', magic: 'Magic Item' };
+    function updateCatCustomRow() {
+      const t = CATALOG.tab;
+      document.getElementById('cat-custom-name').placeholder = `Custom ${(CAT_LABEL[t] || 'item').toLowerCase()} name`;
+      document.getElementById('cat-custom-add').textContent = `Add ${CAT_LABEL[t] || 'Item'}`;
+    }
     function openCatalog() {
       CATALOG.query = '';
       document.getElementById('catalog-search').value = '';
+      updateCatCustomRow();
       renderCatalog();
       document.getElementById('catalog-popup').classList.add('active');
     }
     document.getElementById('catalog-open-btn').addEventListener('click', openCatalog);
     document.getElementById('catalog-close').addEventListener('click', () => document.getElementById('catalog-popup').classList.remove('active'));
     document.getElementById('catalog-search').addEventListener('input', (e) => { CATALOG.query = e.target.value; renderCatalog(); });
+    document.getElementById('cat-custom-add').addEventListener('click', () => {
+      const nameEl = document.getElementById('cat-custom-name');
+      const statsEl = document.getElementById('cat-custom-stats');
+      const name = nameEl.value.trim();
+      if (!name) { toast('Item name required', 'error'); return; }
+      catAddInventory(name, statsEl.value.trim(), CAT_TYPE[CATALOG.tab] || 'misc');
+      nameEl.value = ''; statsEl.value = '';
+    });
     document.querySelectorAll('.catalog-tab').forEach(t => t.addEventListener('click', () => {
       document.querySelectorAll('.catalog-tab').forEach(x => x.classList.remove('on'));
       t.classList.add('on');
       CATALOG.tab = t.dataset.ctab;
       CATALOG.query = '';
       document.getElementById('catalog-search').value = '';
+      updateCatCustomRow();
       renderCatalog();
     }));
     document.getElementById('catalog-list').addEventListener('click', (e) => {
