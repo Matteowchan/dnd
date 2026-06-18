@@ -1056,6 +1056,7 @@
   .spells-cols { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
   .spells-col-title { font-family: 'Cinzel', serif; font-size: 11px; color: var(--gold); letter-spacing: 0.15em; text-transform: uppercase; text-align: center; padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
   .spell-shape, .spell-element { width: 100%; display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: transparent; border: 1px solid transparent; border-radius: 3px; cursor: pointer; color: var(--cream); text-align: left; margin-bottom: 3px; }
+  .sp-empty { color: var(--muted); font-size: 12px; padding: 10px 4px; font-style: italic; }
   .spell-shape:hover, .spell-element:hover { background: var(--panel-light); border-color: var(--border); }
   .spell-shape.active, .spell-element.active { background: var(--gold); border-color: var(--gold); color: #1a1612; }
   .spell-shape.active svg { color: #1a1612; }
@@ -2158,61 +2159,11 @@
     <div class="spells-cols">
       <div class="spells-col">
         <div class="spells-col-title">Shape</div>
-        <button class="spell-shape" data-fx="breath">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2 L4 20 L20 20 Z"/></svg>
-          <div class="sp-info"><div class="sp-name">Breath</div><div class="sp-hint">cone · aim</div></div>
-        </button>
-        <button class="spell-shape" data-fx="beam">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="4"><line x1="3" y1="3" x2="21" y2="21"/></svg>
-          <div class="sp-info"><div class="sp-name">Beam</div><div class="sp-hint">line · aim</div></div>
-        </button>
-        <button class="spell-shape" data-fx="rocket">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2 L18 12 L15 12 L15 22 L9 22 L9 12 L6 12 Z"/></svg>
-          <div class="sp-info"><div class="sp-name">Rocket</div><div class="sp-hint">projectile · aim</div></div>
-        </button>
-        <button class="spell-shape" data-fx="burn">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><circle cx="12" cy="12" r="9"/></svg>
-          <div class="sp-info"><div class="sp-name">Burn</div><div class="sp-hint">area · hold</div></div>
-        </button>
-        <button class="spell-shape" data-fx="glow">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
-          <div class="sp-info"><div class="sp-name">Glow</div><div class="sp-hint">aura · hold</div></div>
-        </button>
-        <button class="spell-shape" data-fx="sword">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 19 L17 7 L19 5 L18 8 L6 20 Z M5 19 L7 21 M14 10 L17 13"/></svg>
-          <div class="sp-info"><div class="sp-name">Sword Slash</div><div class="sp-hint">arc · aim</div></div>
-        </button>
-        <button class="spell-shape" data-fx="shield">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 L4 5 V12 C4 17 8 21 12 22 C16 21 20 17 20 12 V5 Z"/></svg>
-          <div class="sp-info"><div class="sp-name">Shield</div><div class="sp-hint">barrier · hold</div></div>
-        </button>
-        <button class="spell-shape" data-fx="hit">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 L12 22 M2 12 L22 12 M5 5 L19 19 M5 19 L19 5"/></svg>
-          <div class="sp-info"><div class="sp-name">Hit</div><div class="sp-hint">impact · hold</div></div>
-        </button>
-        <button class="spell-shape" data-fx="fist">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><circle cx="6" cy="10" r="2.2"/><circle cx="12" cy="9.5" r="2.4"/><circle cx="18" cy="10" r="2.2"/><rect x="3" y="13" width="18" height="7" rx="2"/></svg>
-          <div class="sp-info"><div class="sp-name">Fist</div><div class="sp-hint">punch · hold</div></div>
-        </button>
-        <button class="spell-shape" data-fx="arrow">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 12 L21 12 M15 6 L21 12 L15 18"/></svg>
-          <div class="sp-info"><div class="sp-name">Arrow</div><div class="sp-hint">ranged · aim</div></div>
-        </button>
+        <div id="spell-shape-list"></div>
       </div>
       <div class="spells-col">
-        <div class="spells-col-title">Element</div>
-        <button class="spell-element" data-color="fire"><span class="sp-swatch" style="background:#d44a26"></span><span class="sp-name">Fire</span></button>
-        <button class="spell-element" data-color="frost"><span class="sp-swatch" style="background:#6bb8e0"></span><span class="sp-name">Frost</span></button>
-        <button class="spell-element" data-color="acid"><span class="sp-swatch" style="background:#7bb838"></span><span class="sp-name">Acid</span></button>
-        <button class="spell-element" data-color="holy"><span class="sp-swatch" style="background:#e8c878"></span><span class="sp-name">Holy</span></button>
-        <button class="spell-element" data-color="blood"><span class="sp-swatch" style="background:#8b1e1e"></span><span class="sp-name">Blood</span></button>
-        <button class="spell-element" data-color="death"><span class="sp-swatch" style="background:#1a1a1a"></span><span class="sp-name">Death</span></button>
-        <button class="spell-element" data-color="magic"><span class="sp-swatch" style="background:#b026ff"></span><span class="sp-name">Magic</span></button>
-        <button class="spell-element" data-color="smoke"><span class="sp-swatch" style="background:#6a6a6a"></span><span class="sp-name">Smoke</span></button>
-        <button class="spell-element" data-color="charm"><span class="sp-swatch" style="background:#ff44cc"></span><span class="sp-name">Charm</span></button>
-        <button class="spell-element" data-color="slime"><span class="sp-swatch" style="background:#6dbf3a"></span><span class="sp-name">Slime</span></button>
-        <button class="spell-element" data-color="water"><span class="sp-swatch" style="background:#2070d8"></span><span class="sp-name">Water</span></button>
-        <button class="spell-element" data-color="lightning"><span class="sp-swatch" style="background:#a0d0ff"></span><span class="sp-name">Lightning</span></button>
+        <div class="spells-col-title">Effect</div>
+        <div id="spell-fx-list" style="max-height: 46vh; overflow-y: auto; padding-right: 2px;"></div>
       </div>
     </div>
     <div class="spells-bottom">
@@ -8830,7 +8781,70 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   });
 
   // ============ SPELLS POPUP ============
-  const SPELL_DRAFT = { fx: null, color: null, buff: null };
+  const SPELL_DRAFT = { fx: null, color: null, buff: null, name: null };
+  const SPELL_FX = { loaded: false, loading: null, error: null, items: [], byCat: {}, cats: [], curCat: null };
+  const FX_BUCKET_BASE = SUPABASE_URL + '/storage/v1/object/public/vtt-assets/';
+  function parseFxFile(file) {
+    const base = file.replace(/\.webm$/i, '');
+    const parts = base.split('_');
+    let variant = '';
+    if (/^\d+$/.test(parts[parts.length - 1])) variant = parts.pop();
+    const SHAPE_TOKENS = ['CONE', 'CIRCLE', 'SQUARE', 'RAY', 'LINE', 'SPHERE', 'WALL', 'BEAM', 'CROSS', 'STAR'];
+    let ti = -1;
+    for (let i = 0; i < parts.length; i++) { if (parts[i] === parts[i].toUpperCase() && SHAPE_TOKENS.indexOf(parts[i].toUpperCase()) >= 0) { ti = i; break; } }
+    const token = ti >= 0 ? parts[ti].toLowerCase() : '';
+    const nameParts = parts.slice(); if (ti >= 0) nameParts.splice(ti, 1);
+    let name = nameParts.join(' ').replace(/\b\w/g, c => c.toUpperCase());
+    if (variant) name += ' ' + variant;
+    const low = base.toLowerCase();
+    let cat, hit;
+    if (token === 'cone' || /cone/.test(low)) { cat = 'Cone'; hit = 'breath'; }
+    else if (token === 'ray' || token === 'line' || token === 'beam' || /beam|ray|\bbolt\b/.test(low)) { cat = 'Beam / Ray'; hit = 'beam'; }
+    else if (token === 'circle' || token === 'sphere' || /circle|sphere|nova|burst|explosion|blast|aura|ring/.test(low)) { cat = 'Circle'; hit = 'burn'; }
+    else if (token === 'square' || token === 'wall' || /square|wall/.test(low)) { cat = 'Square / Wall'; hit = 'burn'; }
+    else if (/arrow|bullet|missile|rocket|barrage|dart|projectile|straight|shot/.test(low)) { cat = 'Projectile'; hit = 'arrow'; }
+    else { cat = 'Other'; hit = 'beam'; }
+    return { file, name, cat, hit };
+  }
+  async function loadSpellFx() {
+    if (SPELL_FX.loaded) return;
+    if (SPELL_FX.loading) return SPELL_FX.loading;
+    SPELL_FX.loading = (async () => {
+      try {
+        const { data, error } = await sb.storage.from('vtt-assets').list('', { limit: 1000, sortBy: { column: 'name', order: 'asc' } });
+        if (error) throw error;
+        const items = (data || []).filter(f => /\.webm$/i.test(f.name)).map(f => parseFxFile(f.name));
+        SPELL_FX.items = items;
+        SPELL_FX.byCat = {};
+        items.forEach(it => { (SPELL_FX.byCat[it.cat] = SPELL_FX.byCat[it.cat] || []).push(it); });
+        const ORDER = ['Cone', 'Beam / Ray', 'Circle', 'Square / Wall', 'Projectile', 'Other'];
+        SPELL_FX.cats = ORDER.filter(c => SPELL_FX.byCat[c]);
+        SPELL_FX.loaded = true;
+      } catch (e) { console.error('spell fx list failed', e); SPELL_FX.error = e; }
+    })();
+    return SPELL_FX.loading;
+  }
+  function renderSpellShapeList() {
+    const el = document.getElementById('spell-shape-list');
+    if (!el) return;
+    if (!SPELL_FX.loaded) { el.innerHTML = '<div class="sp-empty">' + (SPELL_FX.error ? 'Could not load effects. Make sure the vtt-assets bucket allows listing.' : 'Loading effects...') + '</div>'; return; }
+    if (!SPELL_FX.cats.length) { el.innerHTML = '<div class="sp-empty">No effects found in the bucket.</div>'; return; }
+    el.innerHTML = SPELL_FX.cats.map(c => `<button class="spell-shape${c === SPELL_FX.curCat ? ' active' : ''}" data-cat="${escapeHtml(c)}"><div class="sp-info"><div class="sp-name">${escapeHtml(c)}</div><div class="sp-hint">${SPELL_FX.byCat[c].length} effects</div></div></button>`).join('');
+    el.querySelectorAll('.spell-shape').forEach(b => b.addEventListener('click', () => { SPELL_FX.curCat = b.dataset.cat; renderSpellShapeList(); renderSpellFxList(); }));
+  }
+  function renderSpellFxList() {
+    const el = document.getElementById('spell-fx-list');
+    if (!el) return;
+    if (!SPELL_FX.curCat) { el.innerHTML = '<div class="sp-empty">Pick a shape on the left.</div>'; return; }
+    const items = SPELL_FX.byCat[SPELL_FX.curCat] || [];
+    el.innerHTML = items.map((it, i) => `<button class="spell-element${SPELL_DRAFT.color === 'webm|' + it.file ? ' active' : ''}" data-i="${i}"><span class="sp-name">${escapeHtml(it.name)}</span></button>`).join('');
+    el.querySelectorAll('.spell-element').forEach(b => b.addEventListener('click', () => {
+      const it = items[parseInt(b.dataset.i)];
+      SPELL_DRAFT.fx = it.hit; SPELL_DRAFT.color = 'webm|' + it.file; SPELL_DRAFT.name = it.name;
+      el.querySelectorAll('.spell-element').forEach(x => x.classList.toggle('active', x === b));
+      updateSpellsPreview();
+    }));
+  }
   // Pending buff attached to the currently-being-cast effect. Once the area
   // is drawn, we read this to decide which buff to attach to each token in range.
   // Format: { name, mod, color } or null.
@@ -8846,43 +8860,29 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   function updateSpellsPreview() {
     const label = document.getElementById('spells-current-name');
     const btn = document.getElementById('spells-activate');
-    const name = spellNameFor(SPELL_DRAFT.fx, SPELL_DRAFT.color);
+    const name = (SPELL_DRAFT.name && SPELL_DRAFT.color) ? SPELL_DRAFT.name : null;
     if (name) {
       label.textContent = name;
       btn.disabled = false;
       btn.textContent = 'Activate ' + name;
     } else {
-      label.textContent = 'Pick a shape and element';
+      label.textContent = 'Pick a shape and effect';
       btn.disabled = true;
       btn.textContent = 'Activate';
     }
   }
-  function spellsOpen() {
-    // Pre-select whatever the toolbar currently has
-    SPELL_DRAFT.fx = STATE.activeFx || STATE.activeFx;
-    SPELL_DRAFT.color = STATE.activeFxColor || null;
-    document.querySelectorAll('.spell-shape').forEach(b => b.classList.toggle('active', b.dataset.fx === SPELL_DRAFT.fx));
-    document.querySelectorAll('.spell-element').forEach(b => b.classList.toggle('active', b.dataset.color === SPELL_DRAFT.color));
-    updateSpellsPreview();
+  async function spellsOpen() {
     document.getElementById('spells-popup').classList.add('active');
+    renderSpellShapeList();
+    updateSpellsPreview();
+    await loadSpellFx();
+    if (!SPELL_FX.curCat && SPELL_FX.cats.length) SPELL_FX.curCat = SPELL_FX.cats[0];
+    renderSpellShapeList();
+    renderSpellFxList();
   }
   document.getElementById('spells-btn').addEventListener('click', spellsOpen);
   document.getElementById('spells-close').addEventListener('click', () => {
     document.getElementById('spells-popup').classList.remove('active');
-  });
-  document.querySelectorAll('.spell-shape').forEach(btn => {
-    btn.addEventListener('click', () => {
-      SPELL_DRAFT.fx = btn.dataset.fx;
-      document.querySelectorAll('.spell-shape').forEach(b => b.classList.toggle('active', b === btn));
-      updateSpellsPreview();
-    });
-  });
-  document.querySelectorAll('.spell-element').forEach(btn => {
-    btn.addEventListener('click', () => {
-      SPELL_DRAFT.color = btn.dataset.color;
-      document.querySelectorAll('.spell-element').forEach(b => b.classList.toggle('active', b === btn));
-      updateSpellsPreview();
-    });
   });
   document.getElementById('spells-activate').addEventListener('click', () => {
     if (!SPELL_DRAFT.fx || !SPELL_DRAFT.color) return;
@@ -8898,7 +8898,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     STATE.activeFxColor = SPELL_DRAFT.color;
     setActiveTool('fx', SPELL_DRAFT.fx);
     document.getElementById('spells-popup').classList.remove('active');
-    const msg = 'Casting ' + spellNameFor(SPELL_DRAFT.fx, SPELL_DRAFT.color) + ' - drag on the map';
+    const msg = 'Casting ' + (SPELL_DRAFT.name || 'effect') + ' - drag on the map';
     toast(SPELL_DRAFT.buff ? msg + ` (buff: ${SPELL_DRAFT.buff.name} ${fmtMod(SPELL_DRAFT.buff.mod)})` : msg);
   });
   // Toggle buff fields visibility
@@ -9414,6 +9414,28 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const y2 = (fx.end_y || 0) + oy;
     const dx = x2 - x1, dy = y2 - y1;
     const dist = Math.sqrt(dx*dx + dy*dy);
+    // Real video effect: color packed as "webm|<filename>"
+    if (typeof elem === 'string' && elem.indexOf('webm|') === 0) {
+      const file = elem.split('|')[1] || '';
+      const url = SUPABASE_URL + '/storage/v1/object/public/vtt-assets/' + file;
+      const vid = '<video src="' + url + '" autoplay loop muted playsinline style="width:100%;height:100%;object-fit:contain;display:block;"></video>';
+      const idAttr = 'data-fx-id="' + (fx.id || '') + '"';
+      const aim = ['breath', 'beam', 'arrow', 'rocket', 'sword'].indexOf(fx.type) >= 0;
+      if (aim) {
+        const len = Math.max(140, dist);
+        const h = len * 0.6;
+        const ang = Math.atan2(dy, dx) * 180 / Math.PI;
+        return '<g ' + idAttr + ' transform="translate(' + x1 + ',' + y1 + ') rotate(' + ang + ')">' +
+          '<foreignObject x="0" y="' + (-h / 2) + '" width="' + len + '" height="' + h + '" style="overflow:visible">' +
+          '<div xmlns="http://www.w3.org/1999/xhtml" style="width:' + len + 'px;height:' + h + 'px">' + vid + '</div>' +
+          '</foreignObject></g>';
+      }
+      const r = Math.max(90, dist);
+      return '<g ' + idAttr + ' transform="translate(' + (x1 - r) + ',' + (y1 - r) + ')">' +
+        '<foreignObject x="0" y="0" width="' + (r * 2) + '" height="' + (r * 2) + '" style="overflow:visible">' +
+        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:' + (r * 2) + 'px;height:' + (r * 2) + 'px">' + vid + '</div>' +
+        '</foreignObject></g>';
+    }
     const gid = 'fxg_' + (fx.id || Math.random().toString(36).substr(2,6)).replace(/[^a-z0-9_]/gi,'').slice(0,12);
     const rng = mulberry32(hashStr(fx.id || (x1+','+y1+','+x2+','+y2+','+elem+','+fx.type)));
 
