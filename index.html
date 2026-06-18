@@ -11258,7 +11258,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const sides = msg.sides;
     const vals = (msg.rolls && msg.rolls.length) ? msg.rolls.slice(0, 8) : [msg.total || 0];
     const n = vals.length;
-    const spacing = 2.2; const spread = (n - 1) * spacing;
+    const spacing = 3.5; const spread = (n - 1) * spacing;
     const fov = 40, aspect = W / H, halfTan = Math.tan((fov / 2) * Math.PI / 180);
     const camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 100);
     const dieR = 1.9;
