@@ -9171,7 +9171,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     // Cursor hint
     const mc = document.getElementById('mapcontainer');
     if (tool === 'measure' || tool === 'fx') mc.style.cursor = 'crosshair';
-    else if (tool === 'eraser') mc.style.cursor = 'not-allowed';
+    else if (tool === 'eraser') mc.style.cursor = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cg transform='rotate(-40 14 14)'%3E%3Crect x='6' y='10' width='15' height='8' rx='1.5' fill='%23e8c9a0' stroke='%23201a14' stroke-width='1.6'/%3E%3Cline x1='13' y1='10' x2='13' y2='18' stroke='%23201a14' stroke-width='1.4'/%3E%3C/g%3E%3C/svg%3E\") 7 19, crosshair";
     else if (STATE.mapMoveMode) mc.style.cursor = 'move';
     else mc.style.cursor = '';
     // Toggle eraser button visual state and body class (controls pointer-events)
@@ -9187,6 +9187,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   // single interface for picking spell shape and element.
 
   document.getElementById('clear-effects-btn').addEventListener('click', async () => {
+    if (!STATE.isHost) { toast('Only the DM can clear all effects. Use the eraser for your own.', 'error'); return; }
     if (!confirm('Clear ALL effects on the map (including other players\')?')) return;
     // Local clear for immediate feedback
     STATE.effects.clear();
