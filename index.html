@@ -586,6 +586,7 @@
   .char-tabs { display: flex; flex-wrap: wrap; background: var(--bg); border-bottom: 1px solid var(--border); padding: 0 6px; }
   .char-tab { flex: 1 1 22%; padding: 7px 4px; cursor: pointer; font-size: 11px; color: var(--muted); background: transparent; border: none; border-bottom: 2px solid transparent; font-family: 'Cinzel', serif; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
   .char-tab:hover { color: var(--cream); }
+  .char-tab:hover:not(.active) { color: var(--cream); border-bottom-color: var(--gold-soft); }
   .char-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
   .char-tab-content { display: none; padding-top: 12px; }
   .char-tab-content.active { display: block; }
@@ -830,7 +831,7 @@
   /* Char vitals - HP gets a wider first column (2x) so its inputs have room.
    * Remaining 4 cols are AC, Speed, Init, Inspiration. */
   .char-vitals { display: grid; grid-template-columns: 1.7fr 1fr 1fr 1fr 1fr; gap: 5px; margin-bottom: 12px; align-items: stretch; }
-  .vital-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 3px; padding: 5px 4px; text-align: center; min-width: 0; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; }
+  .vital-box { background: linear-gradient(180deg, rgba(212,165,116,0.07), rgba(0,0,0,0.32)); border: 1px solid var(--border); border-radius: 3px; padding: 5px 4px; text-align: center; min-width: 0; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; }
   .vital-box label { display: block; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
   .vital-box .vital-val { font-family: 'Cinzel', serif; font-size: 14px; color: var(--gold); font-weight: 600; }
   .vital-box input { width: 100%; background: transparent; border: none; color: var(--gold); font-family: 'Cinzel', serif; font-size: 13px; font-weight: 600; text-align: center; padding: 0; }
