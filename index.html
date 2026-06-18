@@ -5554,6 +5554,34 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     renderInventory(CHAR_POPUP.inventory);
     scheduleSavePlayer();
   }
+  // Decide which equipment slot an item belongs to (null = not wearable, goes to bag)
+  function slotForItem(name, type) {
+    const n = (name || '').toLowerCase();
+    if (/\bring\b/.test(n)) return 'ring1';
+    if (/amulet|necklace|periapt|medallion|pendant|talisman/.test(n)) return 'amulet';
+    if (/goggles|eyes of|headband|helm|helmet|\bhat\b|circlet|crown|\bmask\b|hood/.test(n)) return 'helmet';
+    if (/gauntlet|bracer|\bgloves?\b/.test(n)) return 'gloves';
+    if (/boots|slippers|sandals|\bshoes\b|greaves/.test(n)) return 'boots';
+    if (type === 'armor') return /shield/.test(n) ? 'offhand' : 'chest';
+    if (type === 'weapon') return 'weapon';
+    return null; // gear, potions, bags, rods, cloaks (no slot) -> inventory
+  }
+  // Auto-equip into the matching slot if free, otherwise drop into the bag.
+  function autoEquipOrBag(name, stats, type) {
+    CHAR_POPUP.equipment = CHAR_POPUP.equipment || {};
+    const occupied = k => { const e = CHAR_POPUP.equipment[k]; return !!(e && (e.name || e.stats)); };
+    let slot = slotForItem(name, type);
+    if (slot === 'ring1' && occupied('ring1')) slot = 'ring2';
+    if (slot === 'weapon' && occupied('weapon')) slot = 'offhand';
+    if (slot && !occupied(slot)) {
+      CHAR_POPUP.equipment[slot] = { name, stats: stats || '' };
+      renderEquipment(CHAR_POPUP.equipment);
+      scheduleSavePlayer();
+      return slot;
+    }
+    addInvItem(name, 1, stats, type);
+    return null;
+  }
   function renderInventory(items) {
     const list = document.getElementById('inventory-list');
     list.innerHTML = '';
@@ -8147,8 +8175,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     // ---- Equipment catalog: browse weapons / armor / gear / magic items ----
     const CATALOG = { tab: 'weapons', query: '' };
     function catAddInventory(name, stats, type) {
-      addInvItem(name, 1, stats || '', type || 'misc');
-      toast(name + ' added to inventory', 'success');
+      const slot = autoEquipOrBag(name, stats || '', type || 'misc');
+      if (slot) {
+        const label = (EQUIPMENT_SLOTS.find(s => s.key === slot) || {}).label || slot;
+        toast(`${name} equipped to ${label}`, 'success');
+      } else {
+        toast(`${name} added to inventory`, 'success');
+      }
     }
     function catEquipArmor(a) {
       const dexMod = statMod(getCharStat('dex'));
@@ -8164,8 +8197,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       acInput.dispatchEvent(new Event('input', { bubbles: true }));
       const note = a.type === 'shield' ? '+2 AC (shield)'
         : `AC ${a.base}${a.type === 'light' ? ' + Dex' : a.type === 'medium' ? ' + Dex (max 2)' : ''}${a.stealth ? ', stealth disadv' : ''}`;
-      addInvItem(a.n, 1, note, 'armor');
-      toast(`${a.n} equipped, AC set to ${newAc}`, 'success');
+      const slot = a.type === 'shield' ? 'offhand' : 'chest';
+      CHAR_POPUP.equipment = CHAR_POPUP.equipment || {};
+      CHAR_POPUP.equipment[slot] = { name: a.n, stats: note };
+      renderEquipment(CHAR_POPUP.equipment);
+      scheduleSavePlayer();
+      const label = (EQUIPMENT_SLOTS.find(s => s.key === slot) || {}).label || slot;
+      toast(`${a.n} equipped to ${label}, AC set to ${newAc}`, 'success');
     }
     function catApplyMagic(item) {
       if (!item.bonus) return;
