@@ -136,6 +136,11 @@
   .mc-or { display: flex; align-items: center; text-align: center; color: var(--muted); font-size: 11px; font-style: italic; letter-spacing: 0.08em; margin: 20px 0 18px; }
   .mc-or::before, .mc-or::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-soft), transparent); }
   .mc-or span { padding: 0 12px; }
+  .mc-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .mc-leave { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 4px; padding: 7px 12px; font-size: 11px; letter-spacing: 0.06em; transition: border-color 0.15s, color 0.15s; }
+  .mc-leave:hover { border-color: var(--danger); color: var(--danger); }
+  .auth-link { display: block; width: 100%; margin-top: 10px; background: transparent; border: none; color: var(--muted); font-size: 12px; letter-spacing: 0.03em; text-align: center; cursor: pointer; transition: color 0.15s; }
+  .auth-link:hover { color: var(--gold); background: transparent; }
 
   /* DEMO BANNER */
   #demo-banner { background: linear-gradient(90deg, rgba(224,140,58,0.15), rgba(224,140,58,0.05)); border-bottom: 1px solid var(--ember); color: var(--ember); padding: 6px 18px; font-size: 12px; text-align: center; letter-spacing: 0.05em; flex-shrink: 0; }
@@ -1410,6 +1415,7 @@
       </div>
       <button class="primary" id="auth-login-btn" style="width:100%; padding: 12px; margin-top: 6px;">Log in</button>
       <button id="auth-signup-btn" style="width:100%; padding: 10px; margin-top: 6px; background: transparent; color: var(--gold); border: 1px solid var(--gold-soft); border-radius: 5px;">Create an account</button>
+      <button id="auth-reset-btn" class="auth-link">Forgot your password?</button>
       <div class="auth-msg" id="auth-msg"></div>
     </div>
 
@@ -2999,11 +3005,21 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     list.innerHTML = '';
     if (!uid || DEMO_MODE) return;
     try {
-      const { data: rows, error } = await sb
+      // Try to read the recency stamp. If the column is not there yet, retry
+      // without it so the list still works before the SQL migration is run.
+      let rows = null;
+      let res = await sb
         .from('vtt_players')
-        .select('session_id, is_host, class, level, name')
+        .select('session_id, is_host, class, level, name, last_entered_at')
         .eq('id', uid);
-      if (error || !rows || !rows.length) return;
+      if (res.error && /last_entered_at/i.test(res.error.message || '')) {
+        res = await sb
+          .from('vtt_players')
+          .select('session_id, is_host, class, level, name')
+          .eq('id', uid);
+      }
+      rows = res.data;
+      if (res.error || !rows || !rows.length) return;
 
       const bySession = {};
       for (const r of rows) { if (r.session_id) bySession[r.session_id] = r; }
@@ -3017,6 +3033,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const sessMap = {};
       (sessions || []).forEach(s => { sessMap[s.id] = s; });
 
+      // Fallback recency when no stamp exists: the locally remembered last session.
       let lastId = null;
       try {
         const ls = JSON.parse(localStorage.getItem('vtt_session_state_v1') || 'null');
@@ -3036,17 +3053,27 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           cls: p.class || '',
           level: p.level || null,
           playerName: p.name || '',
-          recent: id === lastId,
+          stamp: p.last_entered_at ? Date.parse(p.last_entered_at) : 0,
         };
       });
+
+      const hasStamps = items.some(i => i.stamp > 0);
       items.sort((a, b) => {
-        if (a.recent !== b.recent) return a.recent ? -1 : 1;
+        if (hasStamps) {
+          if (b.stamp !== a.stamp) return b.stamp - a.stamp;
+        } else {
+          const ar = a.code === lastId, br = b.code === lastId;
+          if (ar !== br) return ar ? -1 : 1;
+        }
         return a.name.localeCompare(b.name);
       });
+      // The top card is the genuine most recent one, so it earns the marker.
+      const recentCode = hasStamps ? (items[0] && items[0].stamp > 0 ? items[0].code : null) : lastId;
 
       for (const it of items) {
+        const isRecent = it.code === recentCode;
         const card = document.createElement('div');
-        card.className = 'mc-card' + (it.recent ? ' mc-recent' : '');
+        card.className = 'mc-card' + (isRecent ? ' mc-recent' : '');
 
         const info = document.createElement('div');
         info.className = 'mc-info';
@@ -3076,7 +3103,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         code.textContent = it.code;
         meta.appendChild(code);
 
-        if (it.recent) {
+        if (isRecent) {
           const last = document.createElement('span');
           last.className = 'mc-last';
           last.textContent = 'last played';
@@ -3086,12 +3113,25 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         info.appendChild(meta);
         card.appendChild(info);
 
+        const actions = document.createElement('div');
+        actions.className = 'mc-actions';
+
+        const leaveBtn = document.createElement('button');
+        leaveBtn.className = 'mc-leave';
+        leaveBtn.textContent = it.isHost ? 'Delete' : 'Leave';
+        leaveBtn.title = it.isHost
+          ? 'Delete this campaign for everyone'
+          : 'Remove this campaign and your character in it';
+        leaveBtn.addEventListener('click', () => removeSavedCampaign(it, uid));
+        actions.appendChild(leaveBtn);
+
         const btn = document.createElement('button');
         btn.className = 'mc-enter';
         btn.textContent = 'Enter';
         btn.addEventListener('click', () => enterSavedCampaign(it));
-        card.appendChild(btn);
+        actions.appendChild(btn);
 
+        card.appendChild(actions);
         list.appendChild(card);
       }
 
@@ -3100,6 +3140,34 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       // Silent: a failed lookup simply hides the list, the create/join flow stays usable.
       console.warn('renderMyCampaigns', e);
     }
+  }
+  // Leave a campaign (player: drop your own row and character) or delete it
+  // entirely (host: remove the session and every row attached to it).
+  async function removeSavedCampaign(it, uid) {
+    if (it.isHost) {
+      const ok = confirm('Delete "' + it.name + '" for everyone? This erases the map, tokens, characters and chat. This cannot be undone.');
+      if (!ok) return;
+      try {
+        const sid = it.code;
+        for (const tbl of ['vtt_chat', 'vtt_effects', 'vtt_audio', 'vtt_tokens', 'vtt_maps', 'vtt_players']) {
+          try { await sb.from(tbl).delete().eq('session_id', sid); } catch (e) { console.warn('delete ' + tbl, e); }
+        }
+        await sb.from('vtt_sessions').delete().eq('id', sid);
+        toast('Campaign deleted.', 'success');
+      } catch (e) {
+        toast('Could not delete: ' + (e.message || 'unknown error'), 'error', 4000);
+      }
+    } else {
+      const ok = confirm('Leave "' + it.name + '"? Your character in this campaign will be removed.');
+      if (!ok) return;
+      try {
+        await sb.from('vtt_players').delete().eq('id', uid).eq('session_id', it.code);
+        toast('Left the campaign.', 'success');
+      } catch (e) {
+        toast('Could not leave: ' + (e.message || 'unknown error'), 'error', 4000);
+      }
+    }
+    renderMyCampaigns(uid);
   }
   // Pre-fill the entry form from a saved campaign and reuse the Enter handler.
   function enterSavedCampaign(it) {
@@ -3154,10 +3222,27 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const sb2 = document.getElementById('auth-signup-btn');
     const pw = document.getElementById('auth-password');
     const so = document.getElementById('sign-out-btn');
+    const rs = document.getElementById('auth-reset-btn');
     if (lb) lb.addEventListener('click', () => doAuth('login'));
     if (sb2) sb2.addEventListener('click', () => doAuth('signup'));
     if (pw) pw.addEventListener('keydown', e => { if (e.key === 'Enter') doAuth('login'); });
     if (so) so.addEventListener('click', async () => { try { await sb.auth.signOut(); } catch (e) {} showAuthUi(); });
+    if (rs) rs.addEventListener('click', async () => {
+      const email = (document.getElementById('auth-email').value || '').trim();
+      const msg = document.getElementById('auth-msg');
+      msg.className = 'auth-msg';
+      if (!email) { msg.textContent = 'Type your email above first, then tap reset.'; return; }
+      rs.disabled = true;
+      try {
+        await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+        msg.className = 'auth-msg ok';
+        msg.textContent = 'If that email has an account, a reset link is on its way. Check your inbox.';
+      } catch (e) {
+        msg.textContent = (e && e.message) || 'Could not start a reset.';
+      } finally {
+        rs.disabled = false;
+      }
+    });
   }
   // On load: decide whether to show the auth gate or the entry form.
   (async () => {
@@ -3522,6 +3607,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   async function enterApp() {
     document.getElementById('login').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
+    // Stamp recency on this account's row so "Your Campaigns" can sort by last
+    // played across devices. Silently ignored if the column is not present yet.
+    if (!DEMO_MODE && STATE.userId && STATE.sessionId) {
+      sb.from('vtt_players')
+        .update({ last_entered_at: new Date().toISOString() })
+        .eq('id', STATE.userId)
+        .eq('session_id', STATE.sessionId)
+        .then(() => {}, () => {});
+    }
     if (!DEMO_MODE) { const rb = document.getElementById('rtc-bar'); if (rb) rb.style.display = 'flex'; }
     document.getElementById('session-code-display').textContent = STATE.sessionId;
     document.getElementById('username-display').textContent = STATE.username;
