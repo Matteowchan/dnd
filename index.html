@@ -226,13 +226,13 @@
   .adv-btn.active { background: var(--gold); border-color: var(--gold); color: #1a1612; font-weight: 700; }
 
   /* MAP AREA */
-  #mapcontainer { flex: 1; position: relative; overflow: hidden; background: #f4f0e8; cursor: grab; }
+  #mapcontainer { flex: 1; position: relative; overflow: hidden; background: #15120d; cursor: grab; }
   #mapcontainer.panning { cursor: grabbing; }
   #grid { position: absolute; top: 0; left: 0; background-image:
-    linear-gradient(rgba(140,120,90,0.25) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(140,120,90,0.25) 1px, transparent 1px);
+    linear-gradient(rgba(212,165,116,0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212,165,116,0.10) 1px, transparent 1px);
     background-size: 50px 50px;
-    background-color: #f4f0e8;
+    background-color: #15120d;
     transform-origin: 0 0;
     width: 4000px; height: 4000px;
   }
@@ -244,6 +244,8 @@
   #tokenlayer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: 0 0; pointer-events: none; }
   .map-token { position: absolute; width: 50px; height: 50px; border-radius: 50%; border: 3px solid var(--gold); background-size: cover; background-position: center; cursor: grab; box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3); pointer-events: auto; image-rendering: -webkit-optimize-contrast; }
   .map-token .token-x-btn { position: absolute; top: -7px; right: -7px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: white; border: 1.5px solid #1a1612; padding: 0; font-size: 12px; line-height: 1; cursor: pointer; opacity: 0; transition: opacity 0.12s, transform 0.12s; z-index: 3; box-shadow: 0 1px 4px rgba(0,0,0,0.6); }
+  .map-token .token-disp-btn { position: absolute; top: -7px; left: -7px; width: 18px; height: 18px; border-radius: 50%; background: rgba(20,16,12,0.85); color: #fff; border: 1.5px solid #1a1612; padding: 0; font-size: 10px; font-weight: 700; line-height: 1; cursor: pointer; opacity: 0; transition: opacity 0.12s; z-index: 3; box-shadow: 0 1px 4px rgba(0,0,0,0.6); }
+  .map-token:hover .token-disp-btn { opacity: 1; }
   .map-token:hover .token-x-btn { opacity: 0.95; }
   .map-token .token-x-btn:hover { opacity: 1; transform: scale(1.18); }
   .map-token.smooth-move { transition: left 0.25s ease, top 0.25s ease; }
@@ -260,6 +262,8 @@
   .char-hdr-actions { display: flex; align-items: center; gap: 6px; }
   #char-import-pdf-hdr { background: rgba(212,165,116,0.16); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 4px; font-size: 11px; padding: 3px 9px; cursor: pointer; white-space: nowrap; }
   #char-import-pdf-hdr:hover { background: rgba(212,165,116,0.3); }
+  #char-export-hdr { background: rgba(212,165,116,0.16); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 4px; font-size: 11px; padding: 3px 9px; cursor: pointer; white-space: nowrap; }
+  #char-export-hdr:hover { background: rgba(212,165,116,0.3); }
   .char-file-backup { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
   .char-file-backup .cfb-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-right: 2px; }
   .char-file-backup button { font-size: 11px; padding: 3px 10px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 4px; cursor: pointer; }
@@ -411,14 +415,14 @@
   .sc-chip.on { color: var(--gold); border-color: var(--gold); background: rgba(212,165,116,0.14); }
   .sc-body { overflow-y: auto; padding: 4px 14px 14px; }
   .sc-lvl-head { font-family: 'Cinzel', serif; color: var(--gold); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; margin: 12px 0 4px; position: sticky; top: 0; background: var(--panel); padding: 4px 0; }
-  .sc-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 6px; border-bottom: 1px solid rgba(58,47,36,0.4); }
+  .sc-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 6px; border-bottom: 1px solid rgba(58,47,36,0.4); flex-wrap: wrap; }
   .sc-row .sc-name { color: var(--cream); font-weight: 600; cursor: pointer; }
   .sc-row .sc-name:hover { color: var(--gold); }
   .sc-row .sc-meta { color: var(--muted); font-size: 11px; margin-top: 2px; }
   .sc-row .sc-add { margin-left: auto; flex-shrink: 0; background: var(--gold-soft); border: none; color: #2a1c0e; border-radius: 4px; padding: 5px 14px; font-size: 11px; cursor: pointer; font-weight: 700; }
   .sc-row .sc-add:hover { filter: brightness(1.08); }
   .sc-row .sc-add.added { background: transparent; border: 1px solid var(--border); color: var(--muted); cursor: default; }
-  .sc-desc { margin-top: 6px; padding: 7px 9px; background: rgba(0,0,0,0.22); border-left: 2px solid var(--gold-soft); border-radius: 4px; color: var(--cream); font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
+  .sc-desc { margin-top: 6px; flex-basis: 100%; width: 100%; padding: 7px 9px; background: rgba(0,0,0,0.22); border-left: 2px solid var(--gold-soft); border-radius: 4px; color: var(--cream); font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
   #rest-popup.active, #grant-rest-popup.active { display: flex; }
   .rest-intro { font-size: 13px; color: var(--cream); line-height: 1.55; margin-bottom: 12px; font-family: 'Crimson Pro', serif; }
   .rest-intro b { color: var(--gold); }
@@ -706,7 +710,8 @@
   /* Inventory */
   #inventory-list { display: flex; flex-direction: column; gap: 3px; }
   #features-list { display: flex; flex-direction: column; gap: 4px; }
-  .feat-row { display: flex; align-items: flex-start; gap: 6px; padding: 5px 7px; background: var(--panel-light); border: 1px solid var(--border); border-radius: 4px; }
+  .feat-row { display: flex; align-items: flex-start; gap: 6px; padding: 5px 7px; background: var(--panel-light); border: 1px solid var(--border); border-radius: 4px; transition: border-color 0.12s; }
+  .feat-row:hover { border-color: var(--gold-soft); }
   .feat-row .feat-body { flex: 1; min-width: 0; }
   .feat-row .feat-name { color: var(--cream); font-weight: 600; font-size: 13px; }
   .feat-row .feat-desc { color: var(--muted); font-size: 11px; margin-top: 2px; white-space: pre-wrap; word-break: break-word; }
@@ -729,6 +734,8 @@
   .inv-qty-ctl button:hover { border-color: var(--gold-soft); }
   .inv-qty-ctl .inv-qty { color: var(--gold); font-weight: 700; min-width: 20px; text-align: center; }
   .inv-row .inv-del { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 1px 7px; font-size: 13px; line-height: 1; cursor: pointer; border-radius: 2px; flex-shrink: 0; }
+  .inv-row .inv-use { background: rgba(111,191,115,0.14); border: 1px solid rgba(111,191,115,0.5); color: #9fe0a0; padding: 3px 9px; font-size: 11px; line-height: 1; cursor: pointer; border-radius: 4px; flex-shrink: 0; font-family: 'Cinzel', serif; letter-spacing: 0.04em; }
+  .inv-row .inv-use:hover { border-color: #6fbf73; background: rgba(111,191,115,0.24); }
   .inv-row .inv-del:hover { color: var(--danger); border-color: var(--danger); }
   .inv-add-row { display: flex; gap: 5px; margin-top: 8px; }
   .inv-add-row input { flex: 1; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; font-family: inherit; font-size: 12px; }
@@ -801,6 +808,8 @@
   .magic-row .del { background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 2px 6px; font-size: 15px; line-height: 1; }
   .magic-row .del:hover { color: var(--danger); }
   .magic-row .spell-roll { background: rgba(212,165,116,0.14); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 4px; padding: 2px 9px; font-size: 11px; cursor: pointer; font-family: 'Cinzel', serif; }
+  .magic-row .spell-cast { background: rgba(111,191,115,0.16); border: 1px solid rgba(111,191,115,0.5); color: #9fe0a0; border-radius: 4px; padding: 2px 9px; font-size: 11px; cursor: pointer; font-family: 'Cinzel', serif; flex-shrink: 0; }
+  .magic-row .spell-cast:hover { background: rgba(111,191,115,0.28); border-color: #6fbf73; }
   .magic-row .spell-dice { font-family: 'Cinzel', serif; font-size: 11px; color: var(--ember); background: rgba(224,140,58,0.12); border: 1px solid rgba(224,140,58,0.35); border-radius: 4px; padding: 2px 7px; white-space: nowrap; }
   .magic-row .spell-roll:hover { background: rgba(212,165,116,0.28); }
   .magic-row .mr-desc { margin: 6px 2px 2px; padding: 7px 9px; background: rgba(0,0,0,0.22); border-left: 2px solid var(--gold-soft); border-radius: 4px; color: var(--cream); font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
@@ -960,7 +969,7 @@
   .tool-btn.active svg { color: #1a1612; }
 
   /* EFFECTS LAYER */
-  #effectslayer { position: absolute; top: 0; left: 0; width: 4000px; height: 4000px; transform-origin: 0 0; pointer-events: none; overflow: visible; }
+  #effectslayer { position: absolute; top: 0; left: 0; width: 4000px; height: 4000px; transform-origin: 0 0; pointer-events: none; overflow: visible; mix-blend-mode: screen; }
   /* Eraser mode: make effects clickable. Hovered effects glow red to signal removal. */
   body.eraser-mode #effectslayer { pointer-events: auto; cursor: not-allowed; }
   body.eraser-mode #effectslayer .fx-anim { pointer-events: auto; cursor: pointer; transition: filter 0.15s; }
@@ -1236,6 +1245,9 @@
 
   /* PLAYERS LIST */
   .player-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 3px; font-size: 13px; }
+  .player-item .player-kick { margin-left: 4px; background: transparent; border: 1px solid transparent; color: var(--muted); width: 20px; height: 20px; border-radius: 4px; cursor: pointer; font-size: 13px; line-height: 1; padding: 0; opacity: 0; transition: opacity 0.12s, color 0.12s, border-color 0.12s; flex-shrink: 0; }
+  .player-item:hover .player-kick { opacity: 1; }
+  .player-item .player-kick:hover { color: #ff8a8a; border-color: var(--danger); }
   .player-item.clickable { cursor: pointer; transition: background 0.12s; }
   .player-item.clickable:hover { background: rgba(212,175,55,0.08); }
   .player-item .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; box-shadow: 0 0 6px rgba(107,138,74,0.6); }
@@ -1306,18 +1318,32 @@
   #rtc-lock.off { background: rgba(160,40,40,0.22); border-color: var(--danger); color: #f0c9c9; }
   #rtc-bar.locked #rtc-tiles { flex-wrap: wrap; justify-content: center; }
   #rtc-tiles { display: flex; gap: 4px; align-items: flex-end; max-width: 86vw; overflow-x: auto; padding-bottom: 0; }
-  .rtc-tile { position: relative; height: var(--rtc-tile-h); aspect-ratio: 4 / 3; background: #0b0907; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; flex: 0 0 auto; }
+  .rtc-tile { position: relative; height: var(--rtc-tile-h); aspect-ratio: 4 / 3; background: #0b0907; border: 2px solid var(--tile-frame, var(--border)); border-radius: 4px; overflow: hidden; flex: 0 0 auto; transition: border-color 0.15s, box-shadow 0.15s; }
   .rtc-tile video { width: 100%; height: 100%; object-fit: cover; display: block; background: #0b0907; }
   .rtc-tile.local video { transform: scaleX(-1); }
   .rtc-tile .rtc-name { position: absolute; left: 4px; bottom: 3px; font-size: 11px; color: var(--cream); background: rgba(0,0,0,0.55); padding: 1px 6px; border-radius: 3px; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .rtc-tile .rtc-novid { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-size: calc(var(--rtc-tile-h) * 0.28); color: var(--gold-soft); background: radial-gradient(circle at 50% 40%, #2a231c, #0b0907); }
+  .rtc-tile .rtc-novid { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-size: calc(var(--rtc-tile-h) * 0.28); color: var(--tile-frame, var(--gold-soft)); background: radial-gradient(circle at 50% 40%, #2a231c, #0b0907); }
   .rtc-tile .rtc-mic-off { position: absolute; right: 4px; top: 4px; width: 18px; height: 18px; border-radius: 50%; background: rgba(160,40,40,0.9); display: none; align-items: center; justify-content: center; font-size: 11px; color: #fff; }
   .rtc-tile.muted .rtc-mic-off { display: flex; }
+  .rtc-tile .rtc-speak { position: absolute; left: 4px; top: 4px; display: flex; align-items: center; justify-content: center; color: var(--cream); opacity: 0.32; transition: opacity 0.12s, color 0.12s, filter 0.12s; pointer-events: none; }
+  .rtc-tile.speaking .rtc-speak { opacity: 1; color: #8fe39a; filter: drop-shadow(0 0 5px rgba(143,227,154,0.85)); }
+  .rtc-tile.muted .rtc-speak { display: none; }
+  .rtc-tile.speaking { border-color: #8fe39a; box-shadow: 0 0 9px rgba(143,227,154,0.4); }
+  .rtc-tile.reconnecting { opacity: 0.5; }
+  .rtc-tile.reconnecting::after { content: 'reconnecting'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 10px; color: #f0c9c9; background: rgba(0,0,0,0.65); padding: 2px 8px; border-radius: 3px; font-family: 'Cinzel', serif; letter-spacing: 0.04em; }
   #rtc-controls { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
   #rtc-controls button, #rtc-controls select { padding: 5px 10px; font-size: 12px; border-radius: 5px; border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); cursor: pointer; }
   #rtc-controls button:hover, #rtc-controls select:hover { border-color: var(--gold-soft); }
   #rtc-controls button.off { background: rgba(160,40,40,0.25); border-color: var(--danger); color: #f0c9c9; }
   #rtc-controls #rtc-leave { background: rgba(160,40,40,0.35); border-color: var(--danger); color: #f4d4d4; }
+  #rtc-controls #rtc-share.sharing { background: rgba(111,191,115,0.22); border-color: #6fbf73; color: #bdf0c0; }
+  #screen-share-popup { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); width: min(900px, 86vw); background: #0b0907; border: 1px solid var(--gold-soft); border-radius: 6px; box-shadow: 0 24px 70px rgba(0,0,0,0.75); z-index: 1400; display: none; flex-direction: column; overflow: hidden; resize: both; min-width: 320px; min-height: 220px; }
+  #screen-share-popup.active { display: flex; }
+  #screen-share-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: linear-gradient(180deg, #221a12, var(--panel-light)); border-bottom: 1px solid var(--gold-soft); cursor: move; }
+  #screen-share-title { font-family: 'Cinzel', serif; font-size: 12px; color: var(--gold); letter-spacing: 0.06em; text-transform: uppercase; }
+  #screen-share-close { background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 5px; cursor: pointer; font-size: 14px; line-height: 1; padding: 1px 9px; }
+  #screen-share-close:hover { border-color: var(--gold-soft); color: var(--gold); }
+  #screen-share-video { width: 100%; flex: 1; min-height: 0; background: #000; object-fit: contain; display: block; }
 </style>
 </head>
 <body>
@@ -1621,6 +1647,7 @@
     <span class="ttl">Character</span>
     <span class="char-hdr-actions">
       <button id="char-import-pdf-hdr" title="Import a D&D Beyond character PDF" style="display:none;">Import PDF</button>
+      <button id="char-export-hdr" title="Export this character as a text sheet" style="display:none;">Export</button>
       <button id="char-back-btn" style="display:none;" title="Return to your character">← My character</button>
       <button id="char-popup-close" title="Hide panel">×</button>
     </span>
@@ -2050,8 +2077,16 @@
         <option value="image">BG: Image</option>
       </select>
       <input type="file" id="rtc-bg-image" accept="image/*" style="display:none">
+      <button id="rtc-share" title="Share your screen with the table" style="display:none;">Share Screen</button>
       <button id="rtc-leave" title="Leave the call">Leave</button>
     </div>
+  </div>
+  <div id="screen-share-popup">
+    <div id="screen-share-header">
+      <span id="screen-share-title">Shared Screen</span>
+      <button id="screen-share-close" title="Hide">×</button>
+    </div>
+    <video id="screen-share-video" autoplay playsinline></video>
   </div>
 </div>
 
@@ -2305,6 +2340,7 @@
       <button class="catalog-tab" data-ctab="armor">Armor</button>
       <button class="catalog-tab" data-ctab="gear">Gear</button>
       <button class="catalog-tab" data-ctab="magic">Magic Items</button>
+      <button class="catalog-tab" data-ctab="custom">Custom</button>
     </div>
     <input type="text" id="catalog-search" class="catalog-search" placeholder="Search...">
     <div class="cat-custom-row">
@@ -2578,6 +2614,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     maps: new Map(),       // slot (1|2|3) -> map data
     activeMapSlot: 1,
     publishedSlot: 1,    // oyuncularin gordugu slot (session.active_map_slot)
+    customItems: [],     // DM-shared custom catalog items (vtt_sessions.custom_items)
     _centerPending: false,
     tokens: new Map(),     // id -> token data
     onlinePlayers: new Map(), // userId -> { name, isHost }
@@ -3997,6 +4034,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       renderPlayers();
     }
 
+    // Load DM-shared custom catalog items (gracefully skip if the column is missing)
+    try {
+      const { data: sessRow } = await sb.from('vtt_sessions').select('custom_items').eq('id', STATE.sessionId).maybeSingle();
+      if (sessRow && Array.isArray(sessRow.custom_items)) STATE.customItems = sessRow.custom_items;
+    } catch (e) { STATE.customItems = STATE.customItems || []; }
+
     // Load recent chat (last 200)
     const { data: chat } = await sb.from('vtt_chat')
       .select('*')
@@ -4084,6 +4127,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   function handleSessionChange(payload) {
     if (payload.eventType !== 'UPDATE' || !payload.new) return;
     STATE.session = payload.new;
+    if (Array.isArray(payload.new.custom_items)) {
+      STATE.customItems = payload.new.custom_items;
+      const cp = document.getElementById('catalog-popup');
+      if (cp && cp.classList.contains('active') && typeof STATE._renderCatalog === 'function') STATE._renderCatalog();
+    }
     const newSlot = payload.new.active_map_slot;
     if (newSlot) STATE.publishedSlot = newSlot;
     if (newSlot && newSlot !== STATE.activeMapSlot && !STATE.isHost) {
@@ -4360,6 +4408,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         renderPlayers();
         // Re-render tokens so border colors reflect updated classes
         renderTokens();
+        rtcApplyFrameColors();
         // If the open character popup is showing a player that just changed, refresh it
         if (CHAR_POPUP.targetPlayerId) {
           const inputsFocused = document.activeElement && document.activeElement.closest('#char-popup');
@@ -4428,8 +4477,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       el.style.backgroundImage = `url(${tok.image_url})`;
       el.style.left = (tok.x + ox - 25) + 'px';
       el.style.top = (tok.y + oy - 25) + 'px';
-      // Border color reflects the owner's class
-      el.style.borderColor = getPlayerClassColor(tok.owner_id);
+      // Border color: player characters use their class color; NPCs are red (enemy) or blue (friendly)
+      const ownerP = STATE.persistedPlayers.find(p => p.id === tok.owner_id);
+      const isPlayerChar = ownerP && !ownerP.is_host;
+      if (isPlayerChar) {
+        el.style.borderColor = getPlayerClassColor(tok.owner_id);
+      } else {
+        el.classList.add('npc-token');
+        el.style.borderColor = (tok.disposition === 'friendly') ? '#3b82f6' : '#c0392b';
+      }
 
       // Active buffs on this token's owner (filtered to ones that target this token)
       const tokBuffs = getActiveBuffsForToken(tok);
@@ -4501,7 +4557,25 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         el.appendChild(del);
       }
 
-      el.addEventListener('mousedown', (e) => startTokenDrag(e, tok));
+      // DM-only enemy/friendly toggle for NPC tokens (no player-character owner)
+      if (!isPlayerChar && STATE.isHost) {
+        const disp = document.createElement('button');
+        disp.className = 'token-disp-btn';
+        const friendly = tok.disposition === 'friendly';
+        disp.textContent = friendly ? 'F' : 'E';
+        disp.title = friendly ? 'Friendly NPC (blue). Click to mark Enemy.' : 'Enemy NPC (red). Click to mark Friendly.';
+        disp.addEventListener('mousedown', (e) => e.stopPropagation());
+        disp.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
+        disp.addEventListener('click', async (ev) => {
+          ev.stopPropagation();
+          ev.preventDefault();
+          tok.disposition = (tok.disposition === 'friendly') ? 'enemy' : 'friendly';
+          renderTokens();
+          try { await sb.from('vtt_tokens').update({ disposition: tok.disposition }).eq('id', tok.id); }
+          catch (e) { console.warn('disposition save failed (add column?)', e); }
+        });
+        el.appendChild(disp);
+      }
       el.addEventListener('touchstart', (e) => startTokenDrag(e, tok), { passive: false });
       layer.appendChild(el);
     });
@@ -4615,6 +4689,24 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     return false;
   }
 
+  async function kickPlayer(pid, pname) {
+    if (!STATE.isHost) return;
+    if (pid === STATE.userId) { toast('You cannot remove yourself', 'error'); return; }
+    if (!confirm(`Remove "${pname || 'this player'}" from the session? This deletes their character row and their token.`)) return;
+    try {
+      await sb.from('vtt_tokens').delete().eq('session_id', STATE.sessionId).eq('owner_id', pid);
+      const { error } = await sb.from('vtt_players').delete().eq('id', pid).eq('session_id', STATE.sessionId);
+      if (error) throw error;
+      STATE.persistedPlayers = STATE.persistedPlayers.filter(p => p.id !== pid);
+      renderPlayers();
+      renderTokens();
+      toast(`Removed ${pname || 'player'}`);
+    } catch (err) {
+      console.error(err);
+      toast('Failed to remove player. Check permissions.', 'error');
+    }
+  }
+
   function renderPlayers() {
     const list = document.getElementById('players-list');
     list.innerHTML = '';
@@ -4627,9 +4719,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         item.classList.add('clickable');
         item.title = 'Click to open character sheet';
       }
-      item.innerHTML = `<div class="dot"></div><div class="name">${escapeHtml(p.name)}</div><div class="role-tag">${p.is_host ? 'Host' : 'Player'}</div>`;
+      const canKick = STATE.isHost && !p.is_host;
+      item.innerHTML = `<div class="dot"></div><div class="name">${escapeHtml(p.name)}</div><div class="role-tag">${p.is_host ? 'Host' : 'Player'}</div>` + (canKick ? `<button class="player-kick" title="Remove this player from the session">×</button>` : '');
       if (canOpen) {
         item.addEventListener('click', () => openCharPopup(p.id));
+      }
+      if (canKick) {
+        const kb = item.querySelector('.player-kick');
+        if (kb) kb.addEventListener('click', (e) => { e.stopPropagation(); kickPlayer(p.id, p.name); });
       }
       list.appendChild(item);
     });
@@ -4974,6 +5071,70 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     { key: 'stealth',         name: 'Stealth',         stat: 'dex' },
     { key: 'survival',        name: 'Survival',        stat: 'wis' },
   ];
+  const SKILL_DESC = {
+    acrobatics: 'Keep your balance, tumble, and stay on your feet in tricky situations.',
+    animal_handling: 'Calm, control, or read the intentions of a domesticated or wild animal.',
+    arcana: 'Recall lore about spells, magic items, planes, and arcane symbols.',
+    athletics: 'Climb, jump, swim, grapple, and other feats of physical exertion.',
+    deception: 'Convincingly hide the truth through words or actions.',
+    history: 'Recall lore about events, people, nations, and ancient kingdoms.',
+    insight: 'Read body language and intentions to detect lies or shifting moods.',
+    intimidation: 'Influence others through threats, hostility, or force of presence.',
+    investigation: 'Search for clues and deduce how things work or connect.',
+    medicine: 'Stabilize a dying creature and diagnose illness or injury.',
+    nature: 'Recall lore about terrain, plants, animals, weather, and natural cycles.',
+    perception: 'Notice things using your senses: spot, listen, or otherwise detect.',
+    performance: 'Delight an audience with music, dance, acting, or storytelling.',
+    persuasion: 'Influence others with tact, social grace, or good faith.',
+    religion: 'Recall lore about deities, rites, holy symbols, and the planes.',
+    sleight_of_hand: 'Pickpocket, plant an object, or perform manual trickery.',
+    stealth: 'Hide, move silently, and avoid being seen or heard.',
+    survival: 'Track, forage, navigate, predict weather, and endure the wilds.',
+  };
+  const FEATURE_DESC = {
+    'spellcasting': 'Lets you prepare and cast spells from your class list using your spellcasting ability and available slots.',
+    'pact magic': 'Warlock casting: a small number of slots that all cast at the same (highest) level and recharge on a short rest.',
+    'channel divinity': "Channel your deity's power for special effects (like Turn Undead), regaining uses on a rest.",
+    'divine order': 'A level 1 Cleric choice (2024): Protector for martial training, or Thaumaturge for an extra cantrip and bonus to Arcana or Religion.',
+    'divine domain': 'Your chosen domain grants bonus spells and special features as you level.',
+    'creature type': 'Your game category (usually Humanoid). Some spells and effects only target certain types.',
+    'size': 'Your size category (commonly Medium or Small), affecting the space you occupy and some rules.',
+    'speed': 'Your walking speed in feet per turn.',
+    'darkvision': 'See in dim light within 60 ft as if it were bright, and in darkness as if it were dim (shades of gray).',
+    'superior darkvision': 'Darkvision out to 120 ft.',
+    'fey ancestry': "Advantage on saving throws against being charmed; magic can't put you to sleep.",
+    'keen senses': 'Proficiency in the Perception skill (or a free skill choice under 2024 rules).',
+    'trance': "You don't need sleep; a 4-hour meditation gives you the benefit of a long rest.",
+    'elven lineage': 'A 2024 Elf choice (Drow, High, or Wood) granting a cantrip now and extra spells as you level.',
+    'elven lineage spells': 'The cantrip and spells granted by your chosen elven lineage.',
+    'ability score increases': 'Bonuses to your ability scores granted by your species or background.',
+    'ability score improvement': 'At certain levels, raise one ability by 2 or two abilities by 1 (or take a feat instead).',
+    'dwarven resilience': 'Advantage on saves against poison and resistance to poison damage.',
+    'stonecunning': 'Add proficiency (doubled) to History checks about stonework.',
+    'lucky': 'When you roll a 1 on a d20 for an attack, check, or save, you may reroll once.',
+    'brave': 'Advantage on saving throws against being frightened.',
+    'rage': 'Bonus melee damage, advantage on Strength checks and saves, and resistance to physical damage for the duration.',
+    'unarmored defense': 'When not wearing armor, your AC is 10 plus two ability modifiers set by your class.',
+    'second wind': 'Once per short rest, use a bonus action to regain 1d10 plus your level in hit points.',
+    'action surge': 'Once per short rest, take one extra action on your turn.',
+    'extra attack': 'Attack twice (or more at higher levels) whenever you take the Attack action.',
+    'sneak attack': 'Once per turn, deal extra damage to a target you have advantage against (or that is flanked by an ally).',
+    'cunning action': 'Use a bonus action to Dash, Disengage, or Hide each turn.',
+    'expertise': 'Double your proficiency bonus for chosen skills.',
+    'bardic inspiration': 'Give an ally a die they can add to one roll; recharges on a rest.',
+    'divine smite': 'Spend a spell slot when you hit with a melee weapon to deal extra radiant damage.',
+    'lay on hands': 'A pool of healing equal to five times your level that you can spend to restore hit points.',
+    'wild shape': 'Transform into a beast you have seen, gaining its statistics for a time.',
+    'favored enemy': 'Bonuses to tracking and recalling information about chosen creature types.',
+    'font of magic': 'Sorcery points you can convert into spell slots or spend on Metamagic.',
+    'eldritch invocations': 'Permanent magical perks chosen and swapped as you level.',
+    'arcane recovery': 'Recover some expended spell slots on a short rest, once per day.',
+    'ki': 'A pool of energy fueling monk abilities like Flurry of Blows, Patient Defense, and Step of the Wind.',
+    'martial arts': 'Use Dexterity for unarmed strikes and monk weapons, with a scaling damage die and a bonus unarmed strike.',
+  };
+  function normalizeFeatKey(name) {
+    return String(name || '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z\s']/g, '').replace(/\s+/g, ' ').trim();
+  }
   const SAVE_STATS = ['str','dex','con','int','wis','cha'];
 
   // ============ D&D 5e CONDITIONS ============
@@ -5391,7 +5552,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       row.dataset.skill = s.key;
       row.innerHTML = `
         <button class="prof-toggle" data-kind="skill" data-key="${s.key}" title="None → Proficient → Expertise">${state === 'exp' ? '★' : (state === 'prof' ? '✓' : '')}</button>
-        <span class="skill-name">${s.name}</span>
+        <span class="skill-name" title="${escapeHtml(SKILL_DESC[s.key] || '')}">${s.name}</span>
         <span class="skill-stat">${s.stat.toUpperCase()}</span>
         <span class="row-fill"></span>
         <input type="text" inputmode="numeric" pattern="[+\-0-9]*" class="bonus-extra" data-kind="skill" data-key="${s.key}" value="${extra >= 0 ? '+' + extra : extra}" title="Extra bonus (magic items, feats). Final = base ${fmtMod(baseTotal)} + this." ${canEdit ? '' : 'readonly'}>
@@ -5484,6 +5645,128 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     });
   }
 
+  function exportCharacterInfo() {
+    if (!CHAR_POPUP.targetPlayerId) { toast('Open a character first', 'error'); return; }
+    const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+    const g = id => { const el = document.getElementById(id); return el ? (el.value || '') : ''; };
+    const name = (g('char-name') || 'Character').trim();
+    const lvl = g('char-level') || '1';
+    const cls = g('char-class'), sub = g('char-subclass'), race = g('char-race');
+    const ac = g('char-ac'), speed = g('char-speed');
+    const hpCur = g('char-hp-cur'), hpMax = g('char-hp-max');
+    const pb = (typeof getProfBonus === 'function') ? getProfBonus() : 2;
+    const stats = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+    const statName = { str: 'STR', dex: 'DEX', con: 'CON', int: 'INT', wis: 'WIS', cha: 'CHA' };
+    const L = [];
+    L.push(`=== ${name} ===`);
+    const titleBits = [cls ? cap(cls) : '', sub, race ? cap(race) : ''].filter(Boolean).join(' / ');
+    L.push(`Level ${lvl}${titleBits ? '  ' + titleBits : ''}`);
+    L.push('');
+    L.push(`HP ${hpCur || '?'}/${hpMax || '?'}    AC ${ac || '?'}    Speed ${speed || '?'} ft    Proficiency ${fmtMod(pb)}`);
+    L.push('');
+    L.push('Ability Scores:');
+    stats.forEach(s => { const v = getCharStat(s); L.push(`  ${statName[s]} ${v} (${fmtMod(statMod(v))})`); });
+    L.push('');
+    L.push('Saving Throws:');
+    stats.forEach(s => {
+      const prof = CHAR_POPUP.saveProfs && CHAR_POPUP.saveProfs.has(s);
+      const extra = parseInt(CHAR_POPUP.saveOverrides && CHAR_POPUP.saveOverrides[s]) || 0;
+      const total = statMod(getCharStat(s)) + (prof ? pb : 0) + extra;
+      L.push(`  ${prof ? '[x]' : '[ ]'} ${statName[s]} ${fmtMod(total)}`);
+    });
+    L.push('');
+    L.push('Skills:');
+    SKILLS_DEF.forEach(sk => {
+      const exp = CHAR_POPUP.skillExpertise && CHAR_POPUP.skillExpertise.has(sk.key);
+      const prof = (CHAR_POPUP.skillProfs && CHAR_POPUP.skillProfs.has(sk.key)) || exp;
+      const total = (typeof skillTotalFromSheet === 'function') ? skillTotalFromSheet(sk.key) : 0;
+      L.push(`  ${exp ? '[E]' : (prof ? '[x]' : '[ ]')} ${sk.name} (${sk.stat.toUpperCase()}) ${fmtMod(total)}`);
+    });
+    const m = CHAR_POPUP.magic;
+    if (m) {
+      const slotLines = [];
+      for (let lv = 1; lv <= 9; lv++) { const s = m.slots && m.slots[lv]; if (s && (s.max > 0 || s.cur > 0 || s.active)) slotLines.push(`L${lv}: ${s.cur || 0}/${s.max || 0}`); }
+      if (slotLines.length) { L.push(''); L.push('Spell Slots: ' + slotLines.join('   ')); }
+      if (Array.isArray(m.cantrips) && m.cantrips.length) { L.push(''); L.push('Cantrips:'); m.cantrips.forEach(c => L.push(`  - ${c.name}${c.desc ? ' (' + c.desc + ')' : ''}`)); }
+      if (Array.isArray(m.spells) && m.spells.length) { L.push(''); L.push('Spells:'); m.spells.slice().sort((a, b) => (a.level || 0) - (b.level || 0)).forEach(sp => L.push(`  - L${sp.level} ${sp.name}${sp.prepared ? ' (prepared)' : ''}${sp.desc ? ' - ' + sp.desc : ''}`)); }
+    }
+    const eq = CHAR_POPUP.equipment;
+    if (eq && Object.keys(eq).length) {
+      const eqLines = Object.keys(eq).filter(k => eq[k] && eq[k].name).map(k => `  ${k}: ${eq[k].name}${eq[k].stats ? ' (' + eq[k].stats + ')' : ''}`);
+      if (eqLines.length) { L.push(''); L.push('Equipped:'); eqLines.forEach(x => L.push(x)); }
+    }
+    if (Array.isArray(CHAR_POPUP.inventory) && CHAR_POPUP.inventory.length) {
+      L.push(''); L.push('Inventory:');
+      CHAR_POPUP.inventory.forEach(it => L.push(`  - ${it.name} x${it.qty || 1}${it.stats ? ' (' + it.stats + ')' : ''}`));
+    }
+    const gold = g('char-gold'), silver = g('char-silver'), copper = g('char-copper');
+    if (gold || silver || copper) { L.push(''); L.push(`Currency: ${gold || 0} gp, ${silver || 0} sp, ${copper || 0} cp`); }
+    const feats = (CHAR_POPUP.profile && Array.isArray(CHAR_POPUP.profile.features)) ? CHAR_POPUP.profile.features : [];
+    if (feats.length) {
+      L.push(''); L.push('Features & Traits:');
+      feats.forEach(f => { const d = (f.desc && f.desc.trim()) || FEATURE_DESC[normalizeFeatKey(f.name)] || ''; L.push(`  - ${f.name}${d ? ': ' + d : ''}`); });
+    }
+    const notes = g('char-notes');
+    if (notes && notes.trim()) { L.push(''); L.push('Notes:'); L.push(notes.trim()); }
+
+    exportLinesToPdf(L, name);
+  }
+
+  function ensureJsPDF() {
+    return new Promise((resolve, reject) => {
+      if (window.jspdf && window.jspdf.jsPDF) return resolve(window.jspdf.jsPDF);
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = () => (window.jspdf && window.jspdf.jsPDF) ? resolve(window.jspdf.jsPDF) : reject(new Error('no jsPDF'));
+      s.onerror = () => reject(new Error('load failed'));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function exportLinesToPdf(lines, name) {
+    let jsPDFCtor;
+    toast('Building PDF...');
+    try { jsPDFCtor = await ensureJsPDF(); }
+    catch (e) { toast('Could not load the PDF library. Check your connection.', 'error'); return; }
+    const doc = new jsPDFCtor({ unit: 'pt', format: 'a4' });
+    const margin = 48;
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const maxW = pageW - margin * 2;
+    let y = margin;
+    const ensure = (h) => { if (y + h > pageH - margin) { doc.addPage(); y = margin; } };
+    lines.forEach((raw, i) => {
+      const line = raw == null ? '' : String(raw);
+      if (i === 0) {
+        const title = line.replace(/=/g, '').trim();
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor(20);
+        ensure(26); doc.text(title, margin, y); y += 24;
+        doc.setDrawColor(190); doc.line(margin, y, pageW - margin, y); y += 16;
+        return;
+      }
+      if (i === 1) {
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(110);
+        ensure(16); doc.text(line, margin, y); y += 20; doc.setTextColor(20);
+        return;
+      }
+      if (line.trim() === '') { y += 8; return; }
+      if (/^\s/.test(raw)) {
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(35);
+        const wrapped = doc.splitTextToSize(line.trim(), maxW - 12);
+        wrapped.forEach(w => { ensure(14); doc.text(w, margin + 12, y); y += 13.5; });
+        return;
+      }
+      y += 4;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(20);
+      const wrapped = doc.splitTextToSize(line, maxW);
+      wrapped.forEach(w => { ensure(16); doc.text(w, margin, y); y += 15; });
+      y += 2;
+    });
+    const fname = (name.replace(/[^a-z0-9_\- ]/gi, '').trim() || 'character') + '.pdf';
+    doc.save(fname);
+    toast('Character exported as PDF');
+  }
+
   function renderFeatures() {
     const list = document.getElementById('features-list');
     if (!list) return;
@@ -5493,15 +5776,27 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     feats.forEach((f, idx) => {
       const row = document.createElement('div');
       row.className = 'feat-row';
+      const own = (f.desc && String(f.desc).trim()) ? String(f.desc).trim() : '';
+      let looked = FEATURE_DESC[normalizeFeatKey(f.name)] || '';
+      if (!looked && /core .* traits/.test(normalizeFeatKey(f.name))) looked = 'The baseline proficiencies, hit dice, and starting features your class grants at level 1.';
+      const desc = own || looked;
+      const descText = desc || 'No description yet. Add one with the field below.';
       row.innerHTML = `
-        <div class="feat-body">
+        <div class="feat-body" title="${escapeHtml(desc || 'Click to add a description below')}">
           <div class="feat-name">${escapeHtml(f.name || '')}</div>
-          ${f.desc ? `<div class="feat-desc">${escapeHtml(f.desc)}</div>` : ''}
+          <div class="feat-desc" hidden>${escapeHtml(descText)}</div>
         </div>
         ${canEdit ? '<button class="feat-del" title="Remove">×</button>' : ''}
       `;
+      const body = row.querySelector('.feat-body');
+      const descEl = row.querySelector('.feat-desc');
+      if (body && descEl) {
+        body.style.cursor = 'pointer';
+        body.addEventListener('click', () => { descEl.hidden = !descEl.hidden; });
+      }
       const del = row.querySelector('.feat-del');
-      if (del) del.addEventListener('click', () => {
+      if (del) del.addEventListener('click', (e) => {
+        e.stopPropagation();
         CHAR_POPUP.profile.features.splice(idx, 1);
         renderFeatures();
         scheduleSaveProfile();
@@ -5556,6 +5851,51 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     addInvItem(name, 1, stats, type);
     return null;
   }
+  function invIsConsumable(it) {
+    const s = ((it.name || '') + ' ' + (it.stats || '')).toLowerCase();
+    return /potion|elixir|scroll|oil of|antitoxin|vial|flask|ration|draught|tonic|philter|\bdose\b|poison|salve|bead of/.test(s);
+  }
+  function rollDiceExpr(expr) {
+    const m = String(expr).match(/(\d+)\s*d\s*(\d+)\s*([+-]\s*\d+)?/i);
+    if (!m) { const n = parseInt(expr); return isNaN(n) ? 0 : n; }
+    const n = parseInt(m[1]), faces = parseInt(m[2]);
+    let mod = 0;
+    if (m[3]) mod = parseInt(m[3].replace(/\s+/g, ''));
+    let total = mod;
+    for (let i = 0; i < n; i++) total += 1 + Math.floor(Math.random() * faces);
+    return total;
+  }
+  function invUseItem(idx) {
+    const it = CHAR_POPUP.inventory[idx];
+    if (!it) return;
+    const txt = ((it.name || '') + ' ' + (it.stats || ''));
+    const healMatch = txt.match(/(\d+\s*d\s*\d+\s*(?:[+-]\s*\d+)?)/i);
+    const isHeal = /heal|healing|cure|restore|regain/i.test(txt);
+    if (isHeal) {
+      const expr = healMatch ? healMatch[1] : '2d4+2';
+      const amount = rollDiceExpr(expr);
+      const curInp = document.getElementById('char-hp-cur');
+      const maxInp = document.getElementById('char-hp-max');
+      if (curInp && !curInp.disabled) {
+        const max = parseInt(maxInp && maxInp.value);
+        let cur = (parseInt(curInp.value) || 0) + amount;
+        if (!isNaN(max)) cur = Math.min(max, cur);
+        curInp.value = cur;
+        curInp.dispatchEvent(new Event('input', { bubbles: true }));
+        curInp.dispatchEvent(new Event('change', { bubbles: true }));
+        toast(`Used ${it.name}: +${amount} HP (${expr})`);
+      } else {
+        toast(`Used ${it.name}: rolled ${amount} (${expr})`);
+      }
+    } else {
+      toast(`Used ${it.name}`);
+    }
+    it.qty = (it.qty || 1) - 1;
+    if (it.qty <= 0) CHAR_POPUP.inventory.splice(idx, 1);
+    renderInventory(CHAR_POPUP.inventory);
+    scheduleSavePlayer();
+  }
+
   function renderInventory(items) {
     const list = document.getElementById('inventory-list');
     list.innerHTML = '';
@@ -5570,6 +5910,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       row.innerHTML = `
         ${invTag(it.type)}
         <div class="inv-body"><div class="inv-name">${escapeHtml(it.name)}</div>${statsHtml}</div>
+        ${invIsConsumable(it) ? '<button class="inv-use" title="Use one">Use</button>' : ''}
         <div class="inv-qty-ctl">
           <button class="inv-minus" title="Less">−</button>
           <span class="inv-qty">${it.qty}</span>
@@ -5577,6 +5918,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         </div>
         <button class="inv-del" title="Remove">×</button>
       `;
+      const useBtn = row.querySelector('.inv-use');
+      if (useBtn) useBtn.addEventListener('click', () => invUseItem(idx));
       row.querySelector('.inv-minus').addEventListener('click', () => {
         it.qty = Math.max(1, (it.qty || 1) - 1);
         renderInventory(CHAR_POPUP.inventory); scheduleSavePlayer();
@@ -5708,6 +6051,31 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   function getCatalogSpellByName(name) {
     const ln = (name || '').toLowerCase();
     return SRD_SPELLS.find(s => s.n.toLowerCase() === ln) || NONSRD_SPELLS.find(s => s.n.toLowerCase() === ln) || null;
+  }
+
+  function castSpellSlot(level) {
+    if (!level || level < 1) return;
+    if (!CHAR_POPUP.magic) CHAR_POPUP.magic = emptyMagicData();
+    if (!CHAR_POPUP.magic.slots) CHAR_POPUP.magic.slots = {};
+    const slots = CHAR_POPUP.magic.slots;
+    const spend = (lv, label) => {
+      slots[lv].cur -= 1;
+      renderMagic(CHAR_POPUP.magic);
+      scheduleSavePlayer();
+      toast(`${label} Lv ${lv} slot (${slots[lv].cur}/${slots[lv].max} left)`);
+    };
+    if (slots[level] && slots[level].cur > 0) { spend(level, 'Cast,'); return; }
+    for (let lv = level + 1; lv <= 9; lv++) {
+      if (slots[lv] && slots[lv].cur > 0) { spend(lv, 'Upcast,'); return; }
+    }
+    const exists = slots[level] && (slots[level].max > 0 || slots[level].active);
+    if (exists) { toast(`No Lv ${level} or higher slot left`, 'error'); return; }
+    // No slot row for this level yet: reveal one with a sensible default and spend one.
+    const defMax = level <= 2 ? 3 : (level <= 5 ? 2 : 1);
+    slots[level] = { cur: defMax - 1, max: defMax, active: true };
+    renderMagic(CHAR_POPUP.magic);
+    scheduleSavePlayer();
+    toast(`Cast, Lv ${level} slot (${defMax - 1}/${defMax} left)`);
   }
 
   function addSpellObj(s) {
@@ -6064,6 +6432,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           <div class="mr-head">
             <input type="checkbox" class="prep-check" data-i="${realIdx}" ${sp.prepared ? 'checked' : ''} ${canEdit ? '' : 'disabled'} title="Prepared">
             <div class="name"><b>L${sp.level}</b>${escapeHtml(sp.name)} <span class="meta">${escapeHtml(sp.desc || '')}</span></div>
+            ${canEdit ? `<button class="spell-cast" data-i="${realIdx}" title="Cast: spend a Lv ${sp.level} slot">Cast</button>` : ''}
             ${sp.dmg ? `<span class="spell-dice" title="Damage at this level">${escapeHtml(spellDiceFor(sp) || '')}</span><button class="spell-roll" data-kind="sp" data-i="${realIdx}" title="Roll damage">Roll</button>` : ''}
             ${canEdit ? `<button class="del" data-i="${realIdx}" data-kind="sp" title="Remove">×</button>` : ''}
           </div>
@@ -6373,9 +6742,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       CHAR_POPUP.targetTokenId = hpTok.id;
       hpCurInp.value = hpTok.current_hp ?? 10;
       hpMaxInp.value = hpTok.max_hp ?? 10;
-      // Treat any non-default value as a manual override so we don't auto-overwrite it
-      const suggested = suggestedMaxHp();
-      CHAR_POPUP.hpMaxManual = (hpTok.max_hp != null && hpTok.max_hp !== suggested);
+      // A saved max HP is the character's real value. Treat it as authoritative
+      // so auto-calc never reverts a manually entered (or previously saved) value.
+      CHAR_POPUP.hpMaxManual = (hpTok.max_hp != null);
       CHAR_POPUP.hpCurManual = true; // current HP is always manual once a token exists
       hpCurInp.disabled = false;
       hpMaxInp.disabled = false;
@@ -6485,6 +6854,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (importPdfBtn) importPdfBtn.style.display = canEdit ? '' : 'none';
     const importPdfHdr = document.getElementById('char-import-pdf-hdr');
     if (importPdfHdr) importPdfHdr.style.display = canEdit ? '' : 'none';
+    const exportHdr = document.getElementById('char-export-hdr');
+    if (exportHdr) exportHdr.style.display = '';
     // Population complete - re-enable auto-save. Use a microtask delay so any
     // pending synthetic events from setting .value get processed first.
     setTimeout(() => { CHAR_POPUP.loading = false; }, 50);
@@ -7471,6 +7842,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (!canEdit) { toast('Read-only sheet', 'error'); return; }
       document.getElementById('char-import-pdf-input').click();
     });
+    document.getElementById('char-export-hdr').addEventListener('click', exportCharacterInfo);
     document.getElementById('char-import-pdf-input').addEventListener('change', (e) => {
       const f = e.target.files[0];
       if (f) importDndBeyondPdf(f);
@@ -7969,6 +8341,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           if (arr && arr[i]) rollSpellDamage(arr[i]);
           return;
         }
+        const castBtn = e.target.closest('button.spell-cast');
+        if (castBtn) {
+          const i = parseInt(castBtn.dataset.i);
+          const sp = CHAR_POPUP.magic && CHAR_POPUP.magic.spells[i];
+          if (sp) castSpellSlot(sp.level);
+          return;
+        }
         const btn = e.target.closest('button.del');
         if (btn) {
           const i = parseInt(btn.dataset.i);
@@ -8219,13 +8598,38 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           if (m.bonus) actions += `<button class="cat-btn primary" data-act="apply-magic" data-i="${idx}">Apply +${m.bonus.mod}</button>`;
           rows += `<div class="cat-row"><div class="cat-info"><div class="cat-name">${escapeHtml(m.n)}<span class="cat-tag">${escapeHtml(tag)}</span></div><div class="cat-sub">${escapeHtml(m.d)}</div></div><div class="cat-actions">${actions}</div></div>`;
         });
+      } else if (CATALOG.tab === 'custom') {
+        const items = STATE.customItems || [];
+        if (!items.length) {
+          rows = `<div style="font-size:12px;color:var(--muted);padding:10px;">${STATE.isHost ? 'No shared items yet. Add one below to share it with the whole table.' : 'No shared items from the DM yet.'}</div>`;
+        } else {
+          items.forEach((it) => {
+            if (q && !(it.name || '').toLowerCase().includes(q)) return;
+            const realIdx = items.indexOf(it);
+            const del = STATE.isHost ? `<button class="cat-btn" data-act="del-custom" data-i="${realIdx}" title="Remove from shared catalog">Remove</button>` : '';
+            rows += `<div class="cat-row"><div class="cat-info"><div class="cat-name">${escapeHtml(it.name)}<span class="cat-tag">${escapeHtml((it.type || 'item').toUpperCase())}</span></div>${it.stats ? `<div class="cat-sub">${escapeHtml(it.stats)}</div>` : ''}</div><div class="cat-actions"><button class="cat-btn primary" data-act="add-custom" data-i="${realIdx}">Add</button>${del}</div></div>`;
+          });
+        }
       }
       list.innerHTML = rows || '<div style="font-size:12px;color:var(--muted);padding:10px;">No matches.</div>';
     }
-    const CAT_TYPE = { weapons: 'weapon', armor: 'armor', gear: 'gear', magic: 'magic' };
-    const CAT_LABEL = { weapons: 'Weapon', armor: 'Armor', gear: 'Gear', magic: 'Magic Item' };
+    STATE._renderCatalog = renderCatalog;
+    async function saveCustomItems() {
+      try { await sb.from('vtt_sessions').update({ custom_items: STATE.customItems }).eq('id', STATE.sessionId); }
+      catch (e) { console.warn('custom items save failed', e); toast('Could not share item. The custom_items column may be missing.', 'error'); }
+    }
+    const CAT_TYPE = { weapons: 'weapon', armor: 'armor', gear: 'gear', magic: 'magic', custom: 'misc' };
+    const CAT_LABEL = { weapons: 'Weapon', armor: 'Armor', gear: 'Gear', magic: 'Magic Item', custom: 'Custom' };
     function updateCatCustomRow() {
       const t = CATALOG.tab;
+      const row = document.querySelector('.cat-custom-row');
+      if (t === 'custom') {
+        if (row) row.style.display = STATE.isHost ? '' : 'none';
+        document.getElementById('cat-custom-name').placeholder = 'Shared item name (DM)';
+        document.getElementById('cat-custom-add').textContent = 'Share Item';
+        return;
+      }
+      if (row) row.style.display = '';
       document.getElementById('cat-custom-name').placeholder = `Custom ${(CAT_LABEL[t] || 'item').toLowerCase()} name`;
       document.getElementById('cat-custom-add').textContent = `Add ${CAT_LABEL[t] || 'Item'}`;
     }
@@ -8244,6 +8648,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const statsEl = document.getElementById('cat-custom-stats');
       const name = nameEl.value.trim();
       if (!name) { toast('Item name required', 'error'); return; }
+      if (CATALOG.tab === 'custom') {
+        if (!STATE.isHost) { toast('Only the DM can add shared items', 'error'); return; }
+        STATE.customItems = STATE.customItems || [];
+        STATE.customItems.push({ name, stats: statsEl.value.trim(), type: 'misc' });
+        saveCustomItems();
+        renderCatalog();
+        nameEl.value = ''; statsEl.value = '';
+        toast(`"${name}" shared with the table`);
+        return;
+      }
       catAddInventory(name, statsEl.value.trim(), CAT_TYPE[CATALOG.tab] || 'misc');
       nameEl.value = ''; statsEl.value = '';
     });
@@ -8265,6 +8679,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       else if (act === 'add-gear') { const g = SRD_GEAR[i]; catAddInventory(g.n, g.note || '', 'gear'); }
       else if (act === 'add-magic') { const m = MAGIC_ITEMS[i]; catAddInventory(m.n, m.d, 'magic'); }
       else if (act === 'apply-magic') { catApplyMagic(MAGIC_ITEMS[i]); }
+      else if (act === 'add-custom') { const it = (STATE.customItems || [])[i]; if (it) catAddInventory(it.name, it.stats || '', it.type || 'misc'); }
+      else if (act === 'del-custom') { if (!STATE.isHost) return; (STATE.customItems || []).splice(i, 1); saveCustomItems(); renderCatalog(); }
     });
 
     // Equipment slot edits (delegated since grid is rebuilt)
@@ -11882,6 +12298,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     locked: true,
     peers: new Map(),       // peerId -> { pc, name, tile }
     pendingIce: new Map(),  // peerId -> [candidate, ...] buffered until remote desc set
+    sharing: false,         // host is sharing their screen
+    screenStream: null, screenTrack: null, screenSenders: null, remoteScreenId: null,
   };
   const RTC_ICE = [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -12068,11 +12486,20 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     tile.innerHTML = `
       <div class="rtc-novid">${escapeHtml(initial)}</div>
       <video autoplay playsinline ${isLocal ? 'muted' : ''}></video>
+      <span class="rtc-speak" title="Speaking"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z"/><path d="M17 11a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></span>
       <span class="rtc-mic-off" title="Muted">x</span>
       <span class="rtc-name">${escapeHtml(isLocal ? (name + ' (you)') : name)}</span>`;
     tiles.appendChild(tile);
+    tile.style.setProperty('--tile-frame', getPlayerClassColor(peerId));
     rtcApplyTileSize();
     return tile;
+  }
+
+  function rtcApplyFrameColors() {
+    document.querySelectorAll('.rtc-tile').forEach(tile => {
+      const pid = tile.id.replace('rtc-tile-', '');
+      tile.style.setProperty('--tile-frame', getPlayerClassColor(pid));
+    });
   }
 
   function rtcAttachStream(peerId, stream, name, isLocal) {
@@ -12081,9 +12508,55 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (video.srcObject !== stream) video.srcObject = stream;
     const hasVideo = stream.getVideoTracks().some(t => t.readyState !== 'ended');
     tile.querySelector('.rtc-novid').style.display = hasVideo ? 'none' : 'flex';
+    rtcWatchSpeaking(peerId, stream);
+  }
+
+  function rtcEnsureSpeakLoop() {
+    if (RTC.speakTimer) return;
+    RTC.speakTimer = setInterval(() => {
+      if (!RTC.speak || RTC.speak.size === 0) return;
+      RTC.speak.forEach((s, pid) => {
+        const tile = document.getElementById('rtc-tile-' + pid);
+        if (!tile) return;
+        s.analyser.getByteTimeDomainData(s.data);
+        let sum = 0;
+        for (let i = 0; i < s.data.length; i++) { const v = (s.data[i] - 128) / 128; sum += v * v; }
+        const rms = Math.sqrt(sum / s.data.length);
+        if (rms > 0.045) s.lastSpoke = Date.now();
+        const active = (Date.now() - (s.lastSpoke || 0)) < 350;
+        tile.classList.toggle('speaking', active && !tile.classList.contains('muted'));
+      });
+    }, 120);
+  }
+
+  function rtcWatchSpeaking(peerId, stream) {
+    try {
+      const audioTrack = stream && stream.getAudioTracks && stream.getAudioTracks()[0];
+      if (!audioTrack) return;
+      if (!RTC.speak) RTC.speak = new Map();
+      const existing = RTC.speak.get(peerId);
+      if (existing && existing.trackId === audioTrack.id) return;
+      if (existing) { try { existing.source.disconnect(); } catch (e) {} }
+      if (!RTC.audioCtx) RTC.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = RTC.audioCtx;
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      const source = ctx.createMediaStreamSource(new MediaStream([audioTrack]));
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      source.connect(analyser);
+      RTC.speak.set(peerId, { source, analyser, data: new Uint8Array(analyser.fftSize), trackId: audioTrack.id, lastSpoke: 0 });
+      rtcEnsureSpeakLoop();
+    } catch (e) { console.warn('speak detect failed', e); }
+  }
+
+  function rtcStopSpeaking(peerId) {
+    if (!RTC.speak) return;
+    const s = RTC.speak.get(peerId);
+    if (s) { try { s.source.disconnect(); } catch (e) {} RTC.speak.delete(peerId); }
   }
 
   function rtcRemoveTile(peerId) {
+    rtcStopSpeaking(peerId);
     const tile = document.getElementById('rtc-tile-' + peerId);
     if (tile) tile.remove();
     rtcApplyTileSize();
@@ -12101,16 +12574,52 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const vt = rtcCurrentVideoTrack();
       if (vt) pc.addTrack(vt, RTC.localStream);
     }
+    // If we are sharing our screen, send it to this (late-joining) peer too.
+    if (RTC.sharing && RTC.screenTrack && RTC.screenStream) {
+      try {
+        const sender = pc.addTrack(RTC.screenTrack, RTC.screenStream);
+        if (!RTC.screenSenders) RTC.screenSenders = new Map();
+        RTC.screenSenders.set(peerId, sender);
+        rtcSend(peerId, 'screen-on', { streamId: RTC.screenStream.id });
+      } catch (e) {}
+    }
     pc.onicecandidate = (e) => {
       if (e.candidate) rtcSend(peerId, 'ice', e.candidate);
     };
     pc.ontrack = (e) => {
       const stream = e.streams[0];
+      if (stream && RTC.remoteScreenId && stream.id === RTC.remoteScreenId) {
+        rtcShowScreen(stream, false);
+        stream.addEventListener('removetrack', () => { if (stream.getVideoTracks().length === 0) rtcHideScreen(); });
+        return;
+      }
       rtcAttachStream(peerId, stream, entry.name, false);
       stream.addEventListener('removetrack', () => rtcAttachStream(peerId, stream, entry.name, false));
     };
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') rtcClosePeer(peerId);
+      if (pc.connectionState === 'closed') rtcClosePeer(peerId);
+    };
+    pc.oniceconnectionstatechange = () => {
+      const st = pc.iceConnectionState;
+      const tile = document.getElementById('rtc-tile-' + peerId);
+      if (st === 'disconnected') {
+        if (tile) tile.classList.add('reconnecting');
+        clearTimeout(entry.recoverTimer);
+        entry.recoverTimer = setTimeout(() => {
+          const s2 = pc.iceConnectionState;
+          if (s2 === 'disconnected' || s2 === 'failed') {
+            if (String(STATE.userId) > String(peerId)) rtcRenegotiate(peerId, { iceRestart: true });
+            else rtcSend(peerId, 'hello', null);
+          }
+        }, 4000);
+      } else if (st === 'failed') {
+        if (tile) tile.classList.add('reconnecting');
+        if (String(STATE.userId) > String(peerId)) rtcRenegotiate(peerId, { iceRestart: true });
+        else rtcSend(peerId, 'hello', null);
+      } else if (st === 'connected' || st === 'completed') {
+        if (tile) tile.classList.remove('reconnecting');
+        clearTimeout(entry.recoverTimer);
+      }
     };
     return entry;
   }
@@ -12161,6 +12670,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       return;
     }
     if (!RTC.inCall) return;
+
+    if (payload.kind === 'screen-on') {
+      RTC.remoteScreenId = payload.data && payload.data.streamId;
+      return;
+    }
+    if (payload.kind === 'screen-off') {
+      rtcHideScreen();
+      return;
+    }
 
     if (payload.kind === 'offer') {
       const entry = rtcGetOrCreatePeer(peerId, name);
@@ -12235,12 +12753,18 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.getElementById('rtc-bar').classList.add('in-call');
     rtcAttachStream(STATE.userId, stream, STATE.username || 'You', true);
     rtcUpdateControls();
+    const shareBtn = document.getElementById('rtc-share');
+    if (shareBtn) shareBtn.style.display = STATE.isHost ? '' : 'none';
     if (Array.from(RTC.peers.keys()).length > 6) toast('Large calls may strain bandwidth', 'error');
     rtcSend(null, 'join', null);   // announce to the table
+    clearInterval(RTC.heartbeat);
+    RTC.heartbeat = setInterval(() => { if (RTC.inCall) rtcSend(null, 'join', null); }, 15000);
   }
 
   function rtcLeaveCall() {
     if (!RTC.inCall) return;
+    clearInterval(RTC.heartbeat);
+    if (RTC.sharing) rtcStopScreenShare();
     rtcSend(null, 'leave', null);
     rtcStopProcessing();
     RTC_BG.mode = 'none';
@@ -12280,6 +12804,77 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     rtcUpdateControls();
   }
 
+  async function rtcRenegotiate(peerId, opts) {
+    const entry = RTC.peers.get(peerId);
+    if (!entry) return;
+    try {
+      const offer = await entry.pc.createOffer(opts || {});
+      await entry.pc.setLocalDescription(offer);
+      rtcSend(peerId, 'offer', offer);
+    } catch (e) { console.error('renegotiate failed', e); }
+  }
+
+  function rtcShowScreen(stream, isLocal) {
+    const pop = document.getElementById('screen-share-popup');
+    const vid = document.getElementById('screen-share-video');
+    const title = document.getElementById('screen-share-title');
+    if (!pop || !vid) return;
+    vid.srcObject = stream;
+    vid.muted = !!isLocal;
+    if (title) title.textContent = isLocal ? 'Your shared screen' : 'Shared Screen';
+    pop.classList.add('active');
+    if (vid.play) vid.play().catch(() => {});
+  }
+
+  function rtcHideScreen() {
+    const pop = document.getElementById('screen-share-popup');
+    const vid = document.getElementById('screen-share-video');
+    if (vid) vid.srcObject = null;
+    if (pop) pop.classList.remove('active');
+    RTC.remoteScreenId = null;
+  }
+
+  async function rtcStartScreenShare() {
+    if (!RTC.inCall) { toast('Join the call first', 'error'); return; }
+    if (RTC.sharing) { rtcStopScreenShare(); return; }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { toast('Screen share not supported in this browser', 'error'); return; }
+    let ds;
+    try {
+      ds = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 15, max: 24 } }, audio: false });
+    } catch (e) { return; } // user cancelled the picker
+    RTC.screenStream = ds;
+    RTC.screenTrack = ds.getVideoTracks()[0];
+    RTC.sharing = true;
+    RTC.screenSenders = new Map();
+    RTC.peers.forEach((entry, pid) => {
+      try { RTC.screenSenders.set(pid, entry.pc.addTrack(RTC.screenTrack, RTC.screenStream)); } catch (e) {}
+    });
+    // Announce the stream id first so receivers can route it, then renegotiate.
+    rtcSend(null, 'screen-on', { streamId: RTC.screenStream.id });
+    RTC.peers.forEach((entry, pid) => rtcRenegotiate(pid));
+    rtcShowScreen(RTC.screenStream, true);
+    RTC.screenTrack.addEventListener('ended', () => rtcStopScreenShare());
+    const btn = document.getElementById('rtc-share');
+    if (btn) { btn.textContent = 'Stop Share'; btn.classList.add('sharing'); }
+  }
+
+  function rtcStopScreenShare() {
+    if (!RTC.sharing) return;
+    RTC.sharing = false;
+    RTC.peers.forEach((entry, pid) => {
+      const sender = RTC.screenSenders && RTC.screenSenders.get(pid);
+      if (sender) { try { entry.pc.removeTrack(sender); } catch (e) {} }
+    });
+    if (RTC.screenSenders) RTC.screenSenders.clear();
+    if (RTC.screenTrack) { try { RTC.screenTrack.stop(); } catch (e) {} }
+    RTC.screenStream = null; RTC.screenTrack = null;
+    rtcSend(null, 'screen-off', null);
+    RTC.peers.forEach((entry, pid) => rtcRenegotiate(pid));
+    rtcHideScreen();
+    const btn = document.getElementById('rtc-share');
+    if (btn) { btn.textContent = 'Share Screen'; btn.classList.remove('sharing'); }
+  }
+
   function rtcUpdateControls() {
     const mic = document.getElementById('rtc-mic');
     const cam = document.getElementById('rtc-cam');
@@ -12313,6 +12908,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.getElementById('rtc-mic').addEventListener('click', rtcToggleMic);
     document.getElementById('rtc-cam').addEventListener('click', rtcToggleCam);
     document.getElementById('rtc-leave').addEventListener('click', rtcLeaveCall);
+    const shareBtn = document.getElementById('rtc-share');
+    if (shareBtn) shareBtn.addEventListener('click', rtcStartScreenShare);
+    const screenClose = document.getElementById('screen-share-close');
+    if (screenClose) screenClose.addEventListener('click', () => {
+      if (RTC.sharing) rtcStopScreenShare();
+      else rtcHideScreen();
+    });
     document.getElementById('rtc-lock').addEventListener('click', () => rtcSetLocked(!RTC.locked));
     document.getElementById('rtc-min').addEventListener('click', () => {
       const hidden = document.getElementById('rtc-bar').classList.toggle('tiles-hidden');
