@@ -97,6 +97,12 @@
   .login-card .field label { display: block; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-soft); margin-bottom: 6px; }
   .login-card .field select { width: 100%; }
   .role-tabs { display: flex; gap: 8px; margin-bottom: 22px; }
+  .auth-msg { font-size: 12px; margin-top: 10px; min-height: 16px; text-align: center; color: var(--danger); }
+  .auth-msg.ok { color: var(--success); }
+  .signed-in-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; font-size: 12px; color: var(--muted); }
+  .signed-in-row #signed-in-as { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .signed-in-row #sign-out-btn { flex-shrink: 0; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 4px; padding: 3px 10px; font-size: 11px; cursor: pointer; }
+  .signed-in-row #sign-out-btn:hover { border-color: var(--gold-soft); color: var(--gold); }
   .role-tabs button { flex: 1; padding: 12px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); border-radius: 5px; transition: border-color 0.15s, color 0.15s, background 0.15s; }
   .role-tabs button:hover { border-color: var(--gold-soft); color: var(--cream); }
   .role-tabs button.active { background: linear-gradient(180deg, #d4a574, #8a6535); border-color: var(--gold); color: #1a1208; font-weight: 700; box-shadow: 0 4px 14px rgba(212,165,116,0.25); }
@@ -1366,45 +1372,72 @@
   <div class="login-card">
     <div class="login-hero"><img id="login-hero-img" alt="Rollenspieler"></div>
     <h1>Rollenspieler</h1>
-    <div class="sub">Choose your role to begin</div>
 
-    <div class="role-tabs">
-      <button id="role-host-btn" class="active">Host (DM)</button>
-      <button id="role-player-btn">Player</button>
+    <div id="auth-block">
+      <div class="sub">Sign in to your account</div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="auth-password" placeholder="At least 6 characters" autocomplete="current-password">
+      </div>
+      <button class="primary" id="auth-login-btn" style="width:100%; padding: 12px; margin-top: 6px;">Log in</button>
+      <button id="auth-signup-btn" style="width:100%; padding: 10px; margin-top: 6px; background: transparent; color: var(--gold); border: 1px solid var(--gold-soft); border-radius: 5px;">Create an account</button>
+      <div class="auth-msg" id="auth-msg"></div>
     </div>
 
-    <div class="field">
-      <label>Your Name</label>
-      <input type="text" id="username-input" placeholder="e.g. Mert" maxlength="20">
-    </div>
+    <div id="entry-block" style="display:none">
+      <div class="signed-in-row">
+        <span id="signed-in-as"></span>
+        <button id="sign-out-btn">Sign out</button>
+      </div>
+      <div class="sub">Choose your role to begin</div>
 
-    <div class="field" id="class-field" style="display:none">
-      <label>Class</label>
-      <select id="class-input" style="width:100%">
-        <option value="">— Select a class —</option>
-        <option value="barbarian">Barbarian</option>
-        <option value="bard">Bard</option>
-        <option value="cleric">Cleric</option>
-        <option value="druid">Druid</option>
-        <option value="fighter">Fighter</option>
-        <option value="monk">Monk</option>
-        <option value="paladin">Paladin</option>
-        <option value="ranger">Ranger</option>
-        <option value="rogue">Rogue</option>
-        <option value="sorcerer">Sorcerer</option>
-        <option value="warlock">Warlock</option>
-        <option value="wizard">Wizard</option>
-      </select>
-    </div>
+      <div class="role-tabs">
+        <button id="role-host-btn" class="active">Host (DM)</button>
+        <button id="role-player-btn">Player</button>
+      </div>
 
-    <div class="field" id="session-field" style="display:block">
-      <label>Resume code (optional)</label>
-      <input type="text" id="session-input" placeholder="Leave empty for a new game" maxlength="4" style="text-transform: uppercase; letter-spacing: 0.2em;">
-    </div>
+      <div class="field">
+        <label>Your Name</label>
+        <input type="text" id="username-input" placeholder="e.g. Mert" maxlength="20">
+      </div>
 
-    <button class="primary" id="enter-btn" style="width:100%; padding: 12px; margin-top: 10px;">Enter</button>
-    <button id="resume-btn" style="width:100%; padding: 10px; margin-top: 6px; display:none; background: transparent; color: var(--gold); border: 1px solid var(--gold-soft);">Continue last session</button>
-    <div class="footer-note">Host: leave the code empty to start a new game, or enter a code to resume one you host. Players enter the host's code to join.</div>
+      <div class="field" id="class-field" style="display:none">
+        <label>Class</label>
+        <select id="class-input" style="width:100%">
+          <option value="">— Select a class —</option>
+          <option value="barbarian">Barbarian</option>
+          <option value="bard">Bard</option>
+          <option value="cleric">Cleric</option>
+          <option value="druid">Druid</option>
+          <option value="fighter">Fighter</option>
+          <option value="monk">Monk</option>
+          <option value="paladin">Paladin</option>
+          <option value="ranger">Ranger</option>
+          <option value="rogue">Rogue</option>
+          <option value="sorcerer">Sorcerer</option>
+          <option value="warlock">Warlock</option>
+          <option value="wizard">Wizard</option>
+        </select>
+      </div>
+
+      <div class="field" id="campaign-name-field" style="display:block">
+        <label>Campaign name (new game)</label>
+        <input type="text" id="campaign-name-input" placeholder="e.g. Curse of the Ember Crown" maxlength="60">
+      </div>
+
+      <div class="field" id="session-field" style="display:block">
+        <label id="session-field-label">Resume code (optional)</label>
+        <input type="text" id="session-input" placeholder="Leave empty for a new game" maxlength="4" style="text-transform: uppercase; letter-spacing: 0.2em;">
+      </div>
+
+      <button class="primary" id="enter-btn" style="width:100%; padding: 12px; margin-top: 10px;">Enter</button>
+      <button id="resume-btn" style="width:100%; padding: 10px; margin-top: 6px; display:none; background: transparent; color: var(--gold); border: 1px solid var(--gold-soft);">Continue last session</button>
+      <div class="footer-note">Host: name your campaign to start a new game, or enter a code to resume one. Players enter the host's code or open the invite link.</div>
+    </div>
     <div class="conn-status" id="conn-status">Connecting...</div>
   </div>
 </div>
@@ -1436,6 +1469,7 @@
       <button id="long-rest-btn" title="Long Rest (8 hours): full HP, full spell slots, half Hit Dice restored, exhaustion reduced by 1.">Long Rest</button>
       <button id="switch-role-btn" style="display:none;" title="Demo mode only">Switch Role</button>
       <button id="leave-btn" class="danger">Leave</button>
+      <button id="logout-btn" title="Sign out of your account">Sign out</button>
     </div>
   </div>
 
@@ -2613,6 +2647,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     role: null,
     username: null,
     userId: null,
+    authUser: null,
     isHost: false,
 
     map: null,             // active map (= maps.get(activeMapSlot))
@@ -2868,7 +2903,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.getElementById('role-player-btn').classList.remove('active');
     document.getElementById('session-field').style.display = 'block';
     document.getElementById('class-field').style.display = 'none';
-    const lbl = document.querySelector('#session-field label');
+    const cf = document.getElementById('campaign-name-field');
+    if (cf) cf.style.display = 'block';
+    const lbl = document.getElementById('session-field-label');
     if (lbl) lbl.textContent = 'Resume code (optional)';
     const si = document.getElementById('session-input');
     if (si) si.placeholder = 'Leave empty for a new game';
@@ -2879,7 +2916,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.getElementById('role-host-btn').classList.remove('active');
     document.getElementById('session-field').style.display = 'block';
     document.getElementById('class-field').style.display = 'block';
-    const lbl = document.querySelector('#session-field label');
+    const cf = document.getElementById('campaign-name-field');
+    if (cf) cf.style.display = 'none';
+    const lbl = document.getElementById('session-field-label');
     if (lbl) lbl.textContent = 'Session Code';
     const si = document.getElementById('session-input');
     if (si) si.placeholder = '4-character code';
@@ -2905,9 +2944,82 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }
   })();
 
+  // ============ EMAIL AUTH (stable identity via auth.uid) ============
+  function showEntryUi(user) {
+    STATE.authUser = user;
+    STATE.userId = user.id;
+    const ab = document.getElementById('auth-block'); if (ab) ab.style.display = 'none';
+    const eb = document.getElementById('entry-block'); if (eb) eb.style.display = 'block';
+    const s = document.getElementById('signed-in-as');
+    if (s) s.textContent = 'Signed in as ' + (user.email || 'your account');
+  }
+  function showAuthUi() {
+    STATE.authUser = null;
+    const ab = document.getElementById('auth-block'); if (ab) ab.style.display = 'block';
+    const eb = document.getElementById('entry-block'); if (eb) eb.style.display = 'none';
+  }
+  async function doAuth(mode) {
+    const email = (document.getElementById('auth-email').value || '').trim();
+    const pw = document.getElementById('auth-password').value || '';
+    const msg = document.getElementById('auth-msg');
+    msg.className = 'auth-msg'; msg.textContent = '';
+    if (!email || !pw) { msg.textContent = 'Enter your email and password.'; return; }
+    if (mode === 'signup' && pw.length < 6) { msg.textContent = 'Password must be at least 6 characters.'; return; }
+    const btn = mode === 'signup' ? document.getElementById('auth-signup-btn') : document.getElementById('auth-login-btn');
+    const orig = btn.textContent; btn.disabled = true; btn.textContent = 'Please wait...';
+    try {
+      const res = mode === 'signup'
+        ? await sb.auth.signUp({ email, password: pw })
+        : await sb.auth.signInWithPassword({ email, password: pw });
+      if (res.error) throw res.error;
+      const user = res.data && res.data.user;
+      const session = res.data && res.data.session;
+      if (mode === 'signup' && !session) {
+        msg.className = 'auth-msg ok';
+        msg.textContent = 'Account created. Confirm your email if asked, then log in.';
+        return;
+      }
+      if (user) showEntryUi(user);
+    } catch (e) {
+      msg.textContent = (e && e.message) || 'Authentication failed.';
+    } finally {
+      btn.disabled = false; btn.textContent = orig;
+    }
+  }
+  {
+    const lb = document.getElementById('auth-login-btn');
+    const sb2 = document.getElementById('auth-signup-btn');
+    const pw = document.getElementById('auth-password');
+    const so = document.getElementById('sign-out-btn');
+    if (lb) lb.addEventListener('click', () => doAuth('login'));
+    if (sb2) sb2.addEventListener('click', () => doAuth('signup'));
+    if (pw) pw.addEventListener('keydown', e => { if (e.key === 'Enter') doAuth('login'); });
+    if (so) so.addEventListener('click', async () => { try { await sb.auth.signOut(); } catch (e) {} showAuthUi(); });
+  }
+  // On load: decide whether to show the auth gate or the entry form.
+  (async () => {
+    if (DEMO_MODE) { showEntryUi({ id: genId(), email: 'demo@local' }); }
+    else {
+      try {
+        const { data } = await sb.auth.getSession();
+        if (data && data.session && data.session.user) showEntryUi(data.session.user);
+        else showAuthUi();
+      } catch (e) { showAuthUi(); }
+    }
+    // Invite link: matteowchan.github.io/dnd/#join=CODE prefills the join code.
+    const m = (location.hash || '').match(/join=([A-Za-z0-9]{4})/);
+    if (m) {
+      const pbtn = document.getElementById('role-player-btn');
+      if (pbtn) pbtn.click();
+      const si = document.getElementById('session-input');
+      if (si) si.value = m[1].toUpperCase();
+    }
+  })();
+
   document.getElementById('enter-btn').addEventListener('click', async () => {
     const name = document.getElementById('username-input').value.trim();
     if (!name) { toast('Please enter a name', 'error'); return; }
+    if (!DEMO_MODE && !(STATE.authUser && STATE.authUser.id)) { toast('Please sign in first', 'error'); return; }
 
     let playerClass = '';
     if (chosenRole === 'player') {
@@ -2921,7 +3033,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
     try {
       STATE.username = name;
-      STATE.userId = genId();
+      if (STATE.authUser && STATE.authUser.id) STATE.userId = STATE.authUser.id;
+      else if (!STATE.userId) STATE.userId = genId();
       STATE.role = chosenRole;
       STATE.isHost = chosenRole === 'host';
       STATE.playerClass = playerClass;
@@ -2955,15 +3068,22 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
             text: `${name} resumed the session.`, ts: nowTs(),
           });
         } else {
-        // Create session
+        // Create a new campaign
+        const campaignName = (document.getElementById('campaign-name-input').value || '').trim();
         STATE.sessionId = genSessionCode();
-        const { error: sErr } = await sb.from('vtt_sessions').insert({
+        STATE.campaignName = campaignName;
+        let ins = await sb.from('vtt_sessions').insert({
           id: STATE.sessionId,
           host_name: name,
+          campaign_name: campaignName || null,
         });
-        if (sErr) throw sErr;
+        if (ins.error && /campaign_name/i.test(ins.error.message || '')) {
+          // Column not present yet, fall back so the game still opens
+          ins = await sb.from('vtt_sessions').insert({ id: STATE.sessionId, host_name: name });
+        }
+        if (ins.error) throw ins.error;
 
-        // Add self as host player
+        // Add self as host player (keyed to the stable account id)
         const { error: pErr } = await sb.from('vtt_players').insert({
           id: STATE.userId,
           session_id: STATE.sessionId,
@@ -2977,9 +3097,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           id: genId(),
           session_id: STATE.sessionId,
           msg_type: 'system',
-          text: `${name} opened the session.`,
+          text: `${name} opened ${campaignName ? '"' + campaignName + '"' : 'the session'}.`,
           ts: nowTs(),
         });
+        STATE._showInviteOnEnter = true;
         }
       } else {
         // Join session
@@ -3007,31 +3128,25 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           }
         }
 
-        // Reuse an existing player row if one with this name (case-insensitive,
-        // trimmed) already exists in the session. Otherwise the same user
-        // rejoining from a new tab / cleared storage / different device gets
-        // a fresh row and the player list shows duplicates.
-        const normalizedName = name.trim().toLowerCase();
-        const { data: existing } = await sb
+        // With a stable account id, find this player's own row by id. The same
+        // account rejoining from any device or tab reuses its row, so the player
+        // list never shows duplicates and the character always carries over.
+        const { data: mine } = await sb
           .from('vtt_players')
-          .select('id, name, is_host')
+          .select('id, name, class')
           .eq('session_id', STATE.sessionId)
-          .eq('is_host', false);
-        const match = (existing || []).find(p => (p.name || '').trim().toLowerCase() === normalizedName);
-        if (match) {
-          // Take over the existing row. Adopt that userId so all downstream
-          // saves (HP, stats, etc.) land on the correct character.
-          STATE.userId = match.id;
+          .eq('id', STATE.userId)
+          .maybeSingle();
+        if (mine) {
+          // Adopt the existing row. Refresh the display name, and only set class
+          // if the row has none (so a level-5 Fighter is not silently demoted).
+          const patch = {};
+          if (name && name !== mine.name) patch.name = name;
+          if (playerClass && !mine.class) patch.class = playerClass;
+          if (Object.keys(patch).length) await sb.from('vtt_players').update(patch).eq('id', STATE.userId);
           saveSessionState();
-          // Only fill in class if the existing row has none. This preserves
-          // a level-5 Fighter from being silently demoted if the user picks
-          // a different class on the join screen by mistake.
-          const { data: rowFull } = await sb.from('vtt_players').select('class').eq('id', match.id).maybeSingle();
-          if (playerClass && rowFull && !rowFull.class) {
-            await sb.from('vtt_players').update({ class: playerClass }).eq('id', match.id);
-          }
         } else {
-          // Brand new player - insert a row with the current userId
+          // First time this account joins this campaign - insert a fresh row.
           await sb.from('vtt_players').insert({
             id: STATE.userId,
             session_id: STATE.sessionId,
@@ -3123,19 +3238,20 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           btn.style.display = 'none';
           return;
         }
+        const uid = (STATE.authUser && STATE.authUser.id) || saved.userId;
         Object.assign(STATE, {
           sessionId: saved.sessionId,
           username: saved.username,
-          userId: saved.userId,
+          userId: uid,
           role: saved.role,
           isHost: saved.isHost,
           playerClass: saved.playerClass,
         });
         // Make sure our player row still exists; if not, recreate it.
-        const { data: meRow } = await sb.from('vtt_players').select('id').eq('id', saved.userId).maybeSingle();
+        const { data: meRow } = await sb.from('vtt_players').select('id').eq('id', uid).eq('session_id', saved.sessionId).maybeSingle();
         if (!meRow) {
           await sb.from('vtt_players').insert({
-            id: saved.userId,
+            id: uid,
             session_id: saved.sessionId,
             name: saved.username,
             is_host: saved.isHost,
@@ -3236,12 +3352,22 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.body.classList.add('right-bar-open');
   }
 
+  function buildInviteLink() {
+    return location.origin + location.pathname + '#join=' + STATE.sessionId;
+  }
+
   async function enterApp() {
     document.getElementById('login').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     if (!DEMO_MODE) { const rb = document.getElementById('rtc-bar'); if (rb) rb.style.display = 'flex'; }
     document.getElementById('session-code-display').textContent = STATE.sessionId;
     document.getElementById('username-display').textContent = STATE.username;
+    if (STATE._showInviteOnEnter) {
+      STATE._showInviteOnEnter = false;
+      const link = buildInviteLink();
+      if (navigator.clipboard) navigator.clipboard.writeText(link).then(() => {}).catch(() => {});
+      toast('Campaign created. Invite link copied to clipboard.', 'success', 4000);
+    }
 
     // Build the right bar by relocating existing components into a single container
     buildRightBar();
@@ -12277,7 +12403,17 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   // ============ COPY SESSION CODE ============
   document.getElementById('session-code-display').addEventListener('click', () => {
-    navigator.clipboard.writeText(STATE.sessionId).then(() => toast('Code copied'));
+    const link = buildInviteLink();
+    navigator.clipboard.writeText(link)
+      .then(() => toast('Invite link copied'))
+      .catch(() => navigator.clipboard.writeText(STATE.sessionId).then(() => toast('Code copied')));
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    if (!confirm('Sign out of your account? You will return to the login screen.')) return;
+    try { await sb.auth.signOut(); } catch (e) {}
+    try { clearSessionState(); } catch (e) {}
+    location.reload();
   });
 
   // ============ LEAVE ============
