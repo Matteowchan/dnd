@@ -21,6 +21,9 @@
     --danger: #a04848;
     --success: #6b8a4a;
     --ember: #e08c3a;
+    /* Map / grid surface, theme-aware so dark mode keeps the grid visible */
+    --map-bg: #15120d;
+    --map-grid: rgba(212,165,116,0.16);
     /* Resizable bars - widths and font scale factors (1.0 = base) */
     --side-w: 280px;
     --rb-w: 380px;
@@ -42,6 +45,8 @@
     --danger: #9a3a3a;
     --success: #4a7a3a;
     --ember: #c46a1a;
+    --map-bg: #f4f0e8;
+    --map-grid: rgba(140,120,90,0.28);
   }
   /* Class themes override --gold and --gold-soft when applied to <html> */
   html.theme-barbarian   { --gold: #D35400; --gold-soft: #8B1E1E; }
@@ -226,13 +231,13 @@
   .adv-btn.active { background: var(--gold); border-color: var(--gold); color: #1a1612; font-weight: 700; }
 
   /* MAP AREA */
-  #mapcontainer { flex: 1; position: relative; overflow: hidden; background: #15120d; cursor: grab; }
+  #mapcontainer { flex: 1; position: relative; overflow: hidden; background: var(--map-bg); cursor: grab; }
   #mapcontainer.panning { cursor: grabbing; }
   #grid { position: absolute; top: 0; left: 0; background-image:
-    linear-gradient(rgba(212,165,116,0.10) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(212,165,116,0.10) 1px, transparent 1px);
+    linear-gradient(var(--map-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--map-grid) 1px, transparent 1px);
     background-size: 50px 50px;
-    background-color: #15120d;
+    background-color: var(--map-bg);
     transform-origin: 0 0;
     width: 4000px; height: 4000px;
   }
@@ -4049,6 +4054,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (chat) {
       chat.forEach(msg => renderChatMessage(msg, { skipAnimate: true }));
     }
+
+    // With no map, start the view centered on the grid instead of the corner.
+    if (!STATE.map) setTimeout(centerViewDefault, 120);
   }
 
   // ============ REAL-TIME SUBSCRIPTION ============
@@ -9526,6 +9534,18 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     applyTransform();
   }
 
+  // Bos izgarada gorunumu izgara alaninin ortasina (2000,2000) yerlestirir.
+  function centerViewDefault() {
+    const cont = document.getElementById('mapcontainer');
+    if (!cont) return;
+    const rect = cont.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    STATE.view.zoom = 1;
+    STATE.view.offsetX = rect.width / 2 - 2000;
+    STATE.view.offsetY = rect.height / 2 - 2000;
+    applyTransform();
+  }
+
   // ============ HOST CONTROLS ============
   document.getElementById('move-map-toggle').addEventListener('click', () => {
     STATE.mapMoveMode = !STATE.mapMoveMode;
@@ -11018,7 +11038,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   document.getElementById('zoom-in').addEventListener('click', () => { STATE.view.zoom = Math.min(3, STATE.view.zoom * 1.2); applyTransform(); });
   document.getElementById('zoom-out').addEventListener('click', () => { STATE.view.zoom = Math.max(0.3, STATE.view.zoom / 1.2); applyTransform(); });
-  document.getElementById('zoom-reset').addEventListener('click', () => { if (STATE.map) { centerViewOnMap(); } else { STATE.view = { offsetX: 0, offsetY: 0, zoom: 1 }; applyTransform(); } });
+  document.getElementById('zoom-reset').addEventListener('click', () => { if (STATE.map) { centerViewOnMap(); } else { centerViewDefault(); } });
 
   document.getElementById('mapcontainer').addEventListener('wheel', (e) => {
     e.preventDefault();
