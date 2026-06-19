@@ -112,6 +112,31 @@
   .conn-status.error { color: var(--danger); }
   .conn-status.demo { color: var(--ember); }
 
+  /* YOUR CAMPAIGNS (returning player list on the entry screen) */
+  .my-campaigns { margin-bottom: 6px; }
+  .mc-title { font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 11px; }
+  .mc-list { display: flex; flex-direction: column; gap: 8px; max-height: 256px; overflow-y: auto; padding-right: 4px; }
+  .mc-list::-webkit-scrollbar { width: 7px; }
+  .mc-list::-webkit-scrollbar-thumb { background: var(--gold-soft); border-radius: 4px; }
+  .mc-list::-webkit-scrollbar-track { background: transparent; }
+  .mc-card { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; background: linear-gradient(180deg, rgba(36,30,23,0.92), rgba(26,22,18,0.92)); border: 1px solid var(--border); border-radius: 6px; transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s, background 0.15s; }
+  .mc-card:hover { border-color: var(--gold-soft); transform: translateY(-1px); box-shadow: 0 8px 22px rgba(0,0,0,0.45), inset 0 1px 0 rgba(212,165,116,0.12); background: linear-gradient(180deg, rgba(46,38,28,0.96), rgba(30,25,20,0.96)); }
+  .mc-card.mc-recent { border-color: var(--gold-soft); }
+  .mc-card.mc-recent::before { content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 3px; background: linear-gradient(180deg, var(--gold), var(--gold-soft)); }
+  .mc-info { min-width: 0; }
+  .mc-name { font-family: 'Cinzel', serif; font-size: 15px; color: var(--cream); letter-spacing: 0.03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mc-meta { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 0.04em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .mc-role { text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; padding: 1px 7px; border-radius: 3px; }
+  .mc-role.host { background: rgba(212,165,116,0.16); color: var(--gold); border: 1px solid var(--gold-soft); }
+  .mc-role.player { background: rgba(107,138,74,0.16); color: #a8c878; border: 1px solid var(--success); }
+  .mc-code { font-family: monospace; letter-spacing: 0.14em; color: var(--gold-soft); }
+  .mc-last { font-style: italic; color: var(--gold-soft); }
+  .mc-enter { flex-shrink: 0; background: transparent; border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 4px; padding: 7px 16px; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.08em; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+  .mc-enter:hover { background: linear-gradient(180deg, #d4a574, #8a6535); color: #1a1208; border-color: var(--gold); }
+  .mc-or { display: flex; align-items: center; text-align: center; color: var(--muted); font-size: 11px; font-style: italic; letter-spacing: 0.08em; margin: 20px 0 18px; }
+  .mc-or::before, .mc-or::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-soft), transparent); }
+  .mc-or span { padding: 0 12px; }
+
   /* DEMO BANNER */
   #demo-banner { background: linear-gradient(90deg, rgba(224,140,58,0.15), rgba(224,140,58,0.05)); border-bottom: 1px solid var(--ember); color: var(--ember); padding: 6px 18px; font-size: 12px; text-align: center; letter-spacing: 0.05em; flex-shrink: 0; }
   #demo-banner b { font-family: 'Cinzel', serif; letter-spacing: 0.15em; }
@@ -1393,6 +1418,13 @@
         <span id="signed-in-as"></span>
         <button id="sign-out-btn">Sign out</button>
       </div>
+
+      <div id="my-campaigns" class="my-campaigns" style="display:none">
+        <div class="mc-title">Your Campaigns</div>
+        <div id="my-campaigns-list" class="mc-list"></div>
+        <div class="mc-or"><span>or start a new one</span></div>
+      </div>
+
       <div class="sub">Choose your role to begin</div>
 
       <div class="role-tabs">
@@ -2952,6 +2984,137 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const eb = document.getElementById('entry-block'); if (eb) eb.style.display = 'block';
     const s = document.getElementById('signed-in-as');
     if (s) s.textContent = 'Signed in as ' + (user.email || 'your account');
+    renderMyCampaigns(user.id);
+  }
+  // Build the "Your Campaigns" list for a signed-in account. Reads every
+  // vtt_players row keyed to this account id, pairs each with its session for
+  // the campaign name, pins the last played one on top, and renders a card per
+  // campaign. Clicking a card reuses the tested Enter flow, so a host resumes
+  // and a player rejoins their own row (no duplicates).
+  async function renderMyCampaigns(uid) {
+    const wrap = document.getElementById('my-campaigns');
+    const list = document.getElementById('my-campaigns-list');
+    if (!wrap || !list) return;
+    wrap.style.display = 'none';
+    list.innerHTML = '';
+    if (!uid || DEMO_MODE) return;
+    try {
+      const { data: rows, error } = await sb
+        .from('vtt_players')
+        .select('session_id, is_host, class, level, name')
+        .eq('id', uid);
+      if (error || !rows || !rows.length) return;
+
+      const bySession = {};
+      for (const r of rows) { if (r.session_id) bySession[r.session_id] = r; }
+      const ids = Object.keys(bySession);
+      if (!ids.length) return;
+
+      const { data: sessions } = await sb
+        .from('vtt_sessions')
+        .select('id, campaign_name, host_name')
+        .in('id', ids);
+      const sessMap = {};
+      (sessions || []).forEach(s => { sessMap[s.id] = s; });
+
+      let lastId = null;
+      try {
+        const ls = JSON.parse(localStorage.getItem('vtt_session_state_v1') || 'null');
+        if (ls && ls.sessionId) lastId = ls.sessionId;
+      } catch (e) { /* ignore */ }
+
+      const items = ids.map(id => {
+        const p = bySession[id];
+        const s = sessMap[id] || {};
+        const cname = (s.campaign_name && s.campaign_name.trim())
+          ? s.campaign_name.trim()
+          : (s.host_name ? (s.host_name + "'s game") : 'Untitled campaign');
+        return {
+          code: id,
+          name: cname,
+          isHost: !!p.is_host,
+          cls: p.class || '',
+          level: p.level || null,
+          playerName: p.name || '',
+          recent: id === lastId,
+        };
+      });
+      items.sort((a, b) => {
+        if (a.recent !== b.recent) return a.recent ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      for (const it of items) {
+        const card = document.createElement('div');
+        card.className = 'mc-card' + (it.recent ? ' mc-recent' : '');
+
+        const info = document.createElement('div');
+        info.className = 'mc-info';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'mc-name';
+        nameEl.textContent = it.name;
+        info.appendChild(nameEl);
+
+        const meta = document.createElement('div');
+        meta.className = 'mc-meta';
+
+        const role = document.createElement('span');
+        role.className = 'mc-role ' + (it.isHost ? 'host' : 'player');
+        role.textContent = it.isHost ? 'DM' : 'Player';
+        meta.appendChild(role);
+
+        if (!it.isHost && it.cls) {
+          const cls = document.createElement('span');
+          const cName = it.cls.charAt(0).toUpperCase() + it.cls.slice(1);
+          cls.textContent = cName + (it.level ? ', Lvl ' + it.level : '');
+          meta.appendChild(cls);
+        }
+
+        const code = document.createElement('span');
+        code.className = 'mc-code';
+        code.textContent = it.code;
+        meta.appendChild(code);
+
+        if (it.recent) {
+          const last = document.createElement('span');
+          last.className = 'mc-last';
+          last.textContent = 'last played';
+          meta.appendChild(last);
+        }
+
+        info.appendChild(meta);
+        card.appendChild(info);
+
+        const btn = document.createElement('button');
+        btn.className = 'mc-enter';
+        btn.textContent = 'Enter';
+        btn.addEventListener('click', () => enterSavedCampaign(it));
+        card.appendChild(btn);
+
+        list.appendChild(card);
+      }
+
+      wrap.style.display = 'block';
+    } catch (e) {
+      // Silent: a failed lookup simply hides the list, the create/join flow stays usable.
+      console.warn('renderMyCampaigns', e);
+    }
+  }
+  // Pre-fill the entry form from a saved campaign and reuse the Enter handler.
+  function enterSavedCampaign(it) {
+    const roleBtn = document.getElementById(it.isHost ? 'role-host-btn' : 'role-player-btn');
+    if (roleBtn) roleBtn.click();
+    const nameInput = document.getElementById('username-input');
+    if (nameInput && it.playerName) nameInput.value = it.playerName;
+    if (!it.isHost && it.cls) {
+      const cl = document.getElementById('class-input');
+      if (cl) cl.value = it.cls;
+    }
+    const si = document.getElementById('session-input');
+    if (si) si.value = it.code;
+    const enter = document.getElementById('enter-btn');
+    if (enter) enter.click();
   }
   function showAuthUi() {
     STATE.authUser = null;
