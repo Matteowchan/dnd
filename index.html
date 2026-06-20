@@ -142,6 +142,26 @@
   .auth-link { display: block; width: 100%; margin-top: 10px; background: transparent; border: none; color: var(--muted); font-size: 12px; letter-spacing: 0.03em; text-align: center; cursor: pointer; transition: color 0.15s; }
   .auth-link:hover { color: var(--gold); background: transparent; }
 
+  /* CHARACTER RECOVERY MODAL */
+  .recovery-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.74); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
+  .recovery-card { width: min(440px, 92vw); max-height: 84vh; overflow-y: auto; background: linear-gradient(180deg, #241e17, #1a1612); border: 1px solid var(--gold-soft); border-radius: 10px; padding: 22px; box-shadow: 0 24px 60px rgba(0,0,0,0.6); }
+  .recovery-card h3 { font-family: 'Cinzel', serif; color: var(--gold); letter-spacing: 0.07em; margin: 0 0 7px; font-size: 18px; }
+  .recovery-sub { color: var(--muted); font-size: 12px; line-height: 1.55; margin-bottom: 16px; }
+  .recovery-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+  .rc-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 13px; border: 1px solid var(--border); border-radius: 6px; background: rgba(36,30,23,0.7); transition: border-color 0.15s; }
+  .rc-row:hover { border-color: var(--gold-soft); }
+  .rc-name { font-family: 'Cinzel', serif; color: var(--cream); font-size: 14px; letter-spacing: 0.02em; }
+  .rc-meta { font-size: 11px; color: var(--muted); margin-top: 3px; letter-spacing: 0.03em; }
+  .rc-restore { flex-shrink: 0; background: transparent; border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 4px; padding: 6px 14px; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.07em; transition: background 0.15s, color 0.15s; }
+  .rc-restore:hover { background: linear-gradient(180deg, #d4a574, #8a6535); color: #1a1208; border-color: var(--gold); }
+  .recovery-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .recovery-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 5px; padding: 8px 16px; font-size: 12px; letter-spacing: 0.04em; transition: border-color 0.15s, color 0.15s; }
+  .recovery-btn:hover { border-color: var(--gold-soft); color: var(--cream); }
+  .recovery-btn.primary { border-color: var(--gold-soft); color: var(--gold); }
+  .recovery-btn.primary:hover { background: linear-gradient(180deg, #d4a574, #8a6535); color: #1a1208; border-color: var(--gold); }
+  .mc-recover { background: transparent; border: none; padding: 0; color: var(--gold-soft); font-size: 11px; letter-spacing: 0.03em; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+  .mc-recover:hover { color: var(--gold); background: transparent; }
+
   /* DEMO BANNER */
   #demo-banner { background: linear-gradient(90deg, rgba(224,140,58,0.15), rgba(224,140,58,0.05)); border-bottom: 1px solid var(--ember); color: var(--ember); padding: 6px 18px; font-size: 12px; text-align: center; letter-spacing: 0.05em; flex-shrink: 0; }
   #demo-banner b { font-family: 'Cinzel', serif; letter-spacing: 0.15em; }
@@ -2685,6 +2705,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     role: null,
     username: null,
     userId: null,
+    accountId: null,
+    _enterCharacterId: null,
+    _forceNewCharacter: null,
     authUser: null,
     isHost: false,
 
@@ -2985,7 +3008,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   // ============ EMAIL AUTH (stable identity via auth.uid) ============
   function showEntryUi(user) {
     STATE.authUser = user;
-    STATE.userId = user.id;
+    STATE.accountId = user.id;
     const ab = document.getElementById('auth-block'); if (ab) ab.style.display = 'none';
     const eb = document.getElementById('entry-block'); if (eb) eb.style.display = 'block';
     const s = document.getElementById('signed-in-as');
@@ -2997,79 +3020,74 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   // the campaign name, pins the last played one on top, and renders a card per
   // campaign. Clicking a card reuses the tested Enter flow, so a host resumes
   // and a player rejoins their own row (no duplicates).
-  async function renderMyCampaigns(uid) {
+  async function renderMyCampaigns(accountId) {
     const wrap = document.getElementById('my-campaigns');
     const list = document.getElementById('my-campaigns-list');
     if (!wrap || !list) return;
     wrap.style.display = 'none';
     list.innerHTML = '';
-    if (!uid || DEMO_MODE) return;
+    if (!accountId || DEMO_MODE) return;
     try {
-      // Try to read the recency stamp. If the column is not there yet, retry
-      // without it so the list still works before the SQL migration is run.
-      let rows = null;
-      let res = await sb
-        .from('vtt_players')
-        .select('session_id, is_host, class, level, name, last_entered_at')
-        .eq('id', uid);
-      if (res.error && /last_entered_at/i.test(res.error.message || '')) {
-        res = await sb
-          .from('vtt_players')
-          .select('session_id, is_host, class, level, name')
-          .eq('id', uid);
+      // Every character this account owns, across campaigns. Falls back to the
+      // legacy id-equals-account scheme, and again without the recency column,
+      // so the list keeps working before the Phase 1 SQL is run.
+      const full = 'id, session_id, is_host, class, level, name, last_entered_at';
+      const lean = 'id, session_id, is_host, class, level, name';
+      let res = await sb.from('vtt_players').select(full).eq('owner_id', accountId);
+      if (res.error && /owner_id/i.test(res.error.message || '')) {
+        res = await sb.from('vtt_players').select(full).eq('id', accountId);
       }
-      rows = res.data;
+      if (res.error && /last_entered_at/i.test(res.error.message || '')) {
+        res = await sb.from('vtt_players').select(lean).eq('owner_id', accountId);
+        if (res.error && /owner_id/i.test(res.error.message || '')) {
+          res = await sb.from('vtt_players').select(lean).eq('id', accountId);
+        }
+      }
+      const rows = res.data;
       if (res.error || !rows || !rows.length) return;
 
-      const bySession = {};
-      for (const r of rows) { if (r.session_id) bySession[r.session_id] = r; }
-      const ids = Object.keys(bySession);
-      if (!ids.length) return;
-
+      const sessionIds = Array.from(new Set(rows.map(r => r.session_id).filter(Boolean)));
+      if (!sessionIds.length) return;
       const { data: sessions } = await sb
         .from('vtt_sessions')
         .select('id, campaign_name, host_name')
-        .in('id', ids);
+        .in('id', sessionIds);
       const sessMap = {};
       (sessions || []).forEach(s => { sessMap[s.id] = s; });
 
-      // Fallback recency when no stamp exists: the locally remembered last session.
       let lastId = null;
       try {
         const ls = JSON.parse(localStorage.getItem('vtt_session_state_v1') || 'null');
         if (ls && ls.sessionId) lastId = ls.sessionId;
       } catch (e) { /* ignore */ }
 
-      const items = ids.map(id => {
-        const p = bySession[id];
-        const s = sessMap[id] || {};
+      const items = rows.filter(r => r.session_id).map(r => {
+        const s = sessMap[r.session_id] || {};
         const cname = (s.campaign_name && s.campaign_name.trim())
           ? s.campaign_name.trim()
           : (s.host_name ? (s.host_name + "'s game") : 'Untitled campaign');
         return {
-          code: id,
-          name: cname,
-          isHost: !!p.is_host,
-          cls: p.class || '',
-          level: p.level || null,
-          playerName: p.name || '',
-          stamp: p.last_entered_at ? Date.parse(p.last_entered_at) : 0,
+          rowId: r.id,
+          code: r.session_id,
+          campaignName: cname,
+          isHost: !!r.is_host,
+          cls: r.class || '',
+          level: r.level || null,
+          charName: r.name || '',
+          stamp: r.last_entered_at ? Date.parse(r.last_entered_at) : 0,
         };
       });
 
       const hasStamps = items.some(i => i.stamp > 0);
       items.sort((a, b) => {
-        if (hasStamps) {
-          if (b.stamp !== a.stamp) return b.stamp - a.stamp;
-        } else {
-          const ar = a.code === lastId, br = b.code === lastId;
-          if (ar !== br) return ar ? -1 : 1;
-        }
-        return a.name.localeCompare(b.name);
+        if (hasStamps) { if (b.stamp !== a.stamp) return b.stamp - a.stamp; }
+        else { const ar = a.code === lastId, br = b.code === lastId; if (ar !== br) return ar ? -1 : 1; }
+        if (a.code !== b.code) return a.campaignName.localeCompare(b.campaignName);
+        return (a.charName || '').localeCompare(b.charName || '');
       });
-      // The top card is the genuine most recent one, so it earns the marker.
       const recentCode = hasStamps ? (items[0] && items[0].stamp > 0 ? items[0].code : null) : lastId;
 
+      const extrasShown = {};
       for (const it of items) {
         const isRecent = it.code === recentCode;
         const card = document.createElement('div');
@@ -3080,7 +3098,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
         const nameEl = document.createElement('div');
         nameEl.className = 'mc-name';
-        nameEl.textContent = it.name;
+        nameEl.textContent = it.campaignName;
         info.appendChild(nameEl);
 
         const meta = document.createElement('div');
@@ -3091,11 +3109,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         role.textContent = it.isHost ? 'DM' : 'Player';
         meta.appendChild(role);
 
-        if (!it.isHost && it.cls) {
-          const cls = document.createElement('span');
-          const cName = it.cls.charAt(0).toUpperCase() + it.cls.slice(1);
-          cls.textContent = cName + (it.level ? ', Lvl ' + it.level : '');
-          meta.appendChild(cls);
+        if (!it.isHost) {
+          const who = document.createElement('span');
+          const cName = it.cls ? (it.cls.charAt(0).toUpperCase() + it.cls.slice(1)) : '';
+          who.textContent = (it.charName || 'Character') + (cName ? (' \u00b7 ' + cName + (it.level ? ' ' + it.level : '')) : '');
+          meta.appendChild(who);
         }
 
         const code = document.createElement('span');
@@ -3110,6 +3128,23 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           meta.appendChild(last);
         }
 
+        // Per-campaign extras (New character, Recover) shown once, on a player card.
+        if (!it.isHost && !extrasShown[it.code]) {
+          extrasShown[it.code] = true;
+          const nw = document.createElement('button');
+          nw.className = 'mc-recover';
+          nw.textContent = 'New character';
+          nw.title = 'Create another character in this campaign';
+          nw.addEventListener('click', () => newCharacterInCampaign(it.code));
+          meta.appendChild(nw);
+          const rec = document.createElement('button');
+          rec.className = 'mc-recover';
+          rec.textContent = 'Recover';
+          rec.title = 'Relink a character made here before email login';
+          rec.addEventListener('click', () => recoverFromCard(it.code, accountId));
+          meta.appendChild(rec);
+        }
+
         info.appendChild(meta);
         card.appendChild(info);
 
@@ -3121,13 +3156,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         leaveBtn.textContent = it.isHost ? 'Delete' : 'Leave';
         leaveBtn.title = it.isHost
           ? 'Delete this campaign for everyone'
-          : 'Remove this campaign and your character in it';
-        leaveBtn.addEventListener('click', () => removeSavedCampaign(it, uid));
+          : 'Remove this character from the campaign';
+        leaveBtn.addEventListener('click', () => removeSavedCampaign(it, accountId));
         actions.appendChild(leaveBtn);
 
         const btn = document.createElement('button');
         btn.className = 'mc-enter';
-        btn.textContent = 'Enter';
+        btn.textContent = it.isHost ? 'Enter' : 'Play';
         btn.addEventListener('click', () => enterSavedCampaign(it));
         actions.appendChild(btn);
 
@@ -3143,9 +3178,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   }
   // Leave a campaign (player: drop your own row and character) or delete it
   // entirely (host: remove the session and every row attached to it).
-  async function removeSavedCampaign(it, uid) {
+  async function removeSavedCampaign(it, accountId) {
     if (it.isHost) {
-      const ok = confirm('Delete "' + it.name + '" for everyone? This erases the map, tokens, characters and chat. This cannot be undone.');
+      const ok = confirm('Delete "' + it.campaignName + '" for everyone? This erases the map, tokens, characters and chat. This cannot be undone.');
       if (!ok) return;
       try {
         const sid = it.code;
@@ -3158,31 +3193,261 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         toast('Could not delete: ' + (e.message || 'unknown error'), 'error', 4000);
       }
     } else {
-      const ok = confirm('Leave "' + it.name + '"? Your character in this campaign will be removed.');
+      const who = it.charName ? ('"' + it.charName + '"') : 'this character';
+      const ok = confirm('Remove ' + who + ' from "' + it.campaignName + '"? This deletes that character.');
       if (!ok) return;
       try {
-        await sb.from('vtt_players').delete().eq('id', uid).eq('session_id', it.code);
-        toast('Left the campaign.', 'success');
+        try { await sb.from('vtt_tokens').delete().eq('session_id', it.code).eq('owner_id', it.rowId); } catch (e) {}
+        await sb.from('vtt_players').delete().eq('id', it.rowId).eq('session_id', it.code);
+        toast('Character removed.', 'success');
       } catch (e) {
-        toast('Could not leave: ' + (e.message || 'unknown error'), 'error', 4000);
+        toast('Could not remove: ' + (e.message || 'unknown error'), 'error', 4000);
       }
     }
-    renderMyCampaigns(uid);
+    renderMyCampaigns(accountId);
   }
   // Pre-fill the entry form from a saved campaign and reuse the Enter handler.
   function enterSavedCampaign(it) {
     const roleBtn = document.getElementById(it.isHost ? 'role-host-btn' : 'role-player-btn');
     if (roleBtn) roleBtn.click();
     const nameInput = document.getElementById('username-input');
-    if (nameInput && it.playerName) nameInput.value = it.playerName;
-    if (!it.isHost && it.cls) {
-      const cl = document.getElementById('class-input');
-      if (cl) cl.value = it.cls;
+    if (nameInput && it.charName) nameInput.value = it.charName;
+    if (!it.isHost) {
+      STATE._enterCharacterId = it.rowId || null;
+      if (it.cls) {
+        const cl = document.getElementById('class-input');
+        if (cl) cl.value = it.cls;
+      }
     }
     const si = document.getElementById('session-input');
     if (si) si.value = it.code;
     const enter = document.getElementById('enter-btn');
     if (enter) enter.click();
+  }
+  // Add another character to a campaign the account is already in.
+  function newCharacterInCampaign(code) {
+    const roleBtn = document.getElementById('role-player-btn');
+    if (roleBtn) roleBtn.click();
+    STATE._forceNewCharacter = true;
+    STATE._enterCharacterId = null;
+    const si = document.getElementById('session-input');
+    if (si) si.value = code;
+    const enter = document.getElementById('enter-btn');
+    if (enter) enter.click();
+  }
+  // ----- Character recovery (relink a pre-auth character to this account) -----
+  // A legacy character has a random id from genId() (no hyphens). An account
+  // character has a UUID id (auth.uid()). So any non-UUID, non-host row in a
+  // session is an unclaimed character that can be relinked to the signed-in user.
+  function isAccountId(id) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id || '');
+  }
+  async function findClaimableCharacters(sessionId) {
+    try {
+      let res = await sb
+        .from('vtt_players')
+        .select('id, name, class, level, owner_id')
+        .eq('session_id', sessionId)
+        .eq('is_host', false);
+      if (res.error && /owner_id/i.test(res.error.message || '')) {
+        res = await sb
+          .from('vtt_players')
+          .select('id, name, class, level')
+          .eq('session_id', sessionId)
+          .eq('is_host', false);
+      }
+      const data = res.data || [];
+      // Orphan = a pre-auth character: non-UUID id and not yet owned by anyone.
+      return data.filter(r => r.id && !isAccountId(r.id) && !r.owner_id);
+    } catch (e) {
+      console.warn('findClaimableCharacters', e);
+      return [];
+    }
+  }
+  // Re-key one orphan row (and its map token) onto the account id. Caller must
+  // ensure no account row already occupies (sessionId, STATE.userId).
+  // Claim a character for the signed-in account by setting its owner. The row
+  // keeps its character id and its token mapping, so nothing else moves.
+  async function claimCharacter(sessionId, rowId) {
+    const { error } = await sb
+      .from('vtt_players')
+      .update({ owner_id: STATE.accountId })
+      .eq('session_id', sessionId)
+      .eq('id', rowId);
+    if (error) throw error;
+  }
+  // All characters this account owns in a session. Falls back to the legacy
+  // id-equals-account scheme when the owner_id column is not present yet, so the
+  // app keeps working before the Phase 1 SQL is run.
+  async function getMyCharacters(sessionId) {
+    try {
+      let res = await sb
+        .from('vtt_players')
+        .select('id, name, class, level, is_host, last_entered_at')
+        .eq('session_id', sessionId)
+        .eq('owner_id', STATE.accountId);
+      if (res.error && /owner_id/i.test(res.error.message || '')) {
+        res = await sb
+          .from('vtt_players')
+          .select('id, name, class, level, is_host, last_entered_at')
+          .eq('session_id', sessionId)
+          .eq('id', STATE.accountId);
+      }
+      return res.data || [];
+    } catch (e) {
+      console.warn('getMyCharacters', e);
+      return [];
+    }
+  }
+  // Promise modal that lists recoverable characters. Resolves with
+  // { action: 'restore', row } | { action: 'fresh' } | { action: 'cancel' }.
+  function showRecoveryModal(orphans, opts) {
+    opts = opts || {};
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.className = 'recovery-overlay';
+      const card = document.createElement('div');
+      card.className = 'recovery-card';
+
+      const h = document.createElement('h3');
+      h.textContent = 'Recover a character';
+      card.appendChild(h);
+
+      const sub = document.createElement('div');
+      sub.className = 'recovery-sub';
+      sub.textContent = 'These characters were created in this campaign before email login and are not linked to any account yet. Restoring one attaches it to your account with all of its stats, inventory and progress.';
+      card.appendChild(sub);
+
+      const list = document.createElement('div');
+      list.className = 'recovery-list';
+      orphans.forEach(o => {
+        const row = document.createElement('div');
+        row.className = 'rc-row';
+        const info = document.createElement('div');
+        const nm = document.createElement('div');
+        nm.className = 'rc-name';
+        nm.textContent = o.name || 'Unnamed character';
+        info.appendChild(nm);
+        const meta = document.createElement('div');
+        meta.className = 'rc-meta';
+        const cls = o.class ? (o.class.charAt(0).toUpperCase() + o.class.slice(1)) : 'No class';
+        meta.textContent = cls + (o.level ? ', Level ' + o.level : '');
+        info.appendChild(meta);
+        row.appendChild(info);
+        const btn = document.createElement('button');
+        btn.className = 'rc-restore';
+        btn.textContent = 'Restore';
+        btn.addEventListener('click', () => { cleanup(); resolve({ action: 'restore', row: o }); });
+        row.appendChild(btn);
+        list.appendChild(row);
+      });
+      card.appendChild(list);
+
+      const actions = document.createElement('div');
+      actions.className = 'recovery-actions';
+      const cancel = document.createElement('button');
+      cancel.className = 'recovery-btn';
+      cancel.textContent = 'Cancel';
+      cancel.addEventListener('click', () => { cleanup(); resolve({ action: 'cancel' }); });
+      actions.appendChild(cancel);
+      if (opts.allowFresh) {
+        const fresh = document.createElement('button');
+        fresh.className = 'recovery-btn primary';
+        fresh.textContent = 'Start a new character';
+        fresh.addEventListener('click', () => { cleanup(); resolve({ action: 'fresh' }); });
+        actions.appendChild(fresh);
+      }
+      card.appendChild(actions);
+
+      overlay.appendChild(card);
+      overlay.addEventListener('click', e => { if (e.target === overlay) { cleanup(); resolve({ action: 'cancel' }); } });
+      document.body.appendChild(overlay);
+      function cleanup() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
+    });
+  }
+  // Promise modal to choose which owned character enters this game. Resolves with
+  // { action: 'character', row } | { action: 'new' } | { action: 'cancel' }.
+  function showCharacterPicker(chars, opts) {
+    opts = opts || {};
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.className = 'recovery-overlay';
+      const card = document.createElement('div');
+      card.className = 'recovery-card';
+
+      const h = document.createElement('h3');
+      h.textContent = 'Choose a character';
+      card.appendChild(h);
+
+      const sub = document.createElement('div');
+      sub.className = 'recovery-sub';
+      sub.textContent = 'You have more than one character in this campaign. Pick the one you want to play, or start a new one.';
+      card.appendChild(sub);
+
+      const list = document.createElement('div');
+      list.className = 'recovery-list';
+      chars.forEach(c => {
+        const row = document.createElement('div');
+        row.className = 'rc-row';
+        const info = document.createElement('div');
+        const nm = document.createElement('div');
+        nm.className = 'rc-name';
+        nm.textContent = c.name || 'Unnamed character';
+        info.appendChild(nm);
+        const meta = document.createElement('div');
+        meta.className = 'rc-meta';
+        const cls = c.class ? (c.class.charAt(0).toUpperCase() + c.class.slice(1)) : 'No class';
+        meta.textContent = cls + (c.level ? ', Level ' + c.level : '');
+        info.appendChild(meta);
+        row.appendChild(info);
+        const btn = document.createElement('button');
+        btn.className = 'rc-restore';
+        btn.textContent = 'Play';
+        btn.addEventListener('click', () => { cleanup(); resolve({ action: 'character', row: c }); });
+        row.appendChild(btn);
+        list.appendChild(row);
+      });
+      card.appendChild(list);
+
+      const actions = document.createElement('div');
+      actions.className = 'recovery-actions';
+      const cancel = document.createElement('button');
+      cancel.className = 'recovery-btn';
+      cancel.textContent = 'Cancel';
+      cancel.addEventListener('click', () => { cleanup(); resolve({ action: 'cancel' }); });
+      actions.appendChild(cancel);
+      if (opts.allowNew) {
+        const fresh = document.createElement('button');
+        fresh.className = 'recovery-btn primary';
+        fresh.textContent = 'Create a new character';
+        fresh.addEventListener('click', () => { cleanup(); resolve({ action: 'new' }); });
+        actions.appendChild(fresh);
+      }
+      card.appendChild(actions);
+
+      overlay.appendChild(card);
+      overlay.addEventListener('click', e => { if (e.target === overlay) { cleanup(); resolve({ action: 'cancel' }); } });
+      document.body.appendChild(overlay);
+      function cleanup() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
+    });
+  }
+  // Recovery from a campaign card: claim an unlinked pre-auth character for this
+  // account. The account can hold several characters, so nothing is replaced.
+  async function recoverFromCard(sessionId, accountId) {
+    const orphans = await findClaimableCharacters(sessionId);
+    if (!orphans.length) {
+      toast('No earlier characters found to recover here.', 'info', 3500);
+      return;
+    }
+    const choice = await showRecoveryModal(orphans, { allowFresh: false });
+    if (choice.action !== 'restore') return;
+    try {
+      await claimCharacter(sessionId, choice.row.id);
+      toast('Character restored to your account.', 'success');
+      renderMyCampaigns(accountId);
+    } catch (e) {
+      toast('Could not restore: ' + (e.message || 'unknown error'), 'error', 4000);
+    }
   }
   function showAuthUi() {
     STATE.authUser = null;
@@ -3271,8 +3536,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
     let playerClass = '';
     if (chosenRole === 'player') {
-      playerClass = document.getElementById('class-input').value;
-      if (!playerClass) { toast('Please choose a class', 'error'); return; }
+      playerClass = document.getElementById('class-input').value || '';
+      // A returning player already has a class saved, so we do not demand it
+      // here. The requirement is enforced later only for a brand-new character.
     }
 
     const btn = document.getElementById('enter-btn');
@@ -3281,8 +3547,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
     try {
       STATE.username = name;
-      if (STATE.authUser && STATE.authUser.id) STATE.userId = STATE.authUser.id;
-      else if (!STATE.userId) STATE.userId = genId();
+      if (STATE.authUser && STATE.authUser.id) STATE.accountId = STATE.authUser.id;
+      else if (!STATE.accountId) STATE.accountId = genId();
+      // STATE.userId is the active character row id, set per branch below.
       STATE.role = chosenRole;
       STATE.isHost = chosenRole === 'host';
       STATE.playerClass = playerClass;
@@ -3305,11 +3572,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           }
           STATE.sessionId = resumeCode;
           // Adopt the existing host identity so the map, tokens and character carry over
-          const { data: hostRow } = await sb.from('vtt_players').select('id').eq('session_id', resumeCode).eq('is_host', true).limit(1).maybeSingle();
+          const { data: hostRow } = await sb.from('vtt_players').select('id, owner_id').eq('session_id', resumeCode).eq('is_host', true).limit(1).maybeSingle();
           if (hostRow && hostRow.id) {
             STATE.userId = hostRow.id;
+            if (!hostRow.owner_id) {
+              try { await sb.from('vtt_players').update({ owner_id: STATE.accountId }).eq('session_id', resumeCode).eq('id', hostRow.id); } catch (e) {}
+            }
           } else {
-            await sb.from('vtt_players').insert({ id: STATE.userId, session_id: resumeCode, name, is_host: true });
+            STATE.userId = genId();
+            await sb.from('vtt_players').insert({ id: STATE.userId, owner_id: STATE.accountId, session_id: resumeCode, name, is_host: true });
           }
           await sb.from('vtt_chat').insert({
             id: genId(), session_id: resumeCode, msg_type: 'system',
@@ -3331,14 +3602,22 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         }
         if (ins.error) throw ins.error;
 
-        // Add self as host player (keyed to the stable account id)
-        const { error: pErr } = await sb.from('vtt_players').insert({
+        // Add self as host player (a character row owned by this account)
+        STATE.userId = genId();
+        let pErrRes = await sb.from('vtt_players').insert({
           id: STATE.userId,
+          owner_id: STATE.accountId,
           session_id: STATE.sessionId,
           name,
           is_host: true,
         });
-        if (pErr) throw pErr;
+        if (pErrRes.error && /owner_id/i.test(pErrRes.error.message || '')) {
+          // owner_id column not present yet, fall back so the game still opens
+          pErrRes = await sb.from('vtt_players').insert({
+            id: STATE.userId, session_id: STATE.sessionId, name, is_host: true,
+          });
+        }
+        if (pErrRes.error) throw pErrRes.error;
 
         // System message
         await sb.from('vtt_chat').insert({
@@ -3376,41 +3655,92 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           }
         }
 
-        // With a stable account id, find this player's own row by id. The same
-        // account rejoining from any device or tab reuses its row, so the player
-        // list never shows duplicates and the character always carries over.
-        const { data: mine } = await sb
-          .from('vtt_players')
-          .select('id, name, class')
-          .eq('session_id', STATE.sessionId)
-          .eq('id', STATE.userId)
-          .maybeSingle();
-        if (mine) {
-          // Adopt the existing row. Refresh the display name, and only set class
-          // if the row has none (so a level-5 Fighter is not silently demoted).
-          const patch = {};
-          if (name && name !== mine.name) patch.name = name;
-          if (playerClass && !mine.class) patch.class = playerClass;
-          if (Object.keys(patch).length) await sb.from('vtt_players').update(patch).eq('id', STATE.userId);
+        // Phase 1: an account can hold several characters in a campaign. Gather
+        // the ones this account already owns, then decide which to play.
+        const myChars = await getMyCharacters(STATE.sessionId);
+        const playerChars = (myChars || []).filter(c => !c.is_host);
+        let effClass = playerClass;
+        let chosenId = null;
+
+        // A campaign card may request a specific character directly.
+        if (STATE._enterCharacterId) {
+          const wanted = playerChars.find(c => c.id === STATE._enterCharacterId);
+          if (wanted) { chosenId = wanted.id; effClass = wanted.class || playerClass; }
+          STATE._enterCharacterId = null;
+        }
+
+        const forceNew = !!STATE._forceNewCharacter;
+        STATE._forceNewCharacter = null;
+
+        if (!chosenId && !forceNew) {
+          if (playerChars.length === 1) {
+            chosenId = playerChars[0].id;
+            effClass = playerChars[0].class || playerClass;
+          } else if (playerChars.length > 1) {
+            const choice = await showCharacterPicker(playerChars, { allowNew: true });
+            if (choice.action === 'cancel') { btn.disabled = false; btn.textContent = 'Enter'; return; }
+            if (choice.action === 'character') { chosenId = choice.row.id; effClass = choice.row.class || playerClass; }
+            // 'new' falls through to creation
+          } else {
+            // No characters yet. Offer to recover a pre-auth character first.
+            const orphans = await findClaimableCharacters(STATE.sessionId);
+            if (orphans.length) {
+              const choice = await showRecoveryModal(orphans, { allowFresh: true });
+              if (choice.action === 'cancel') { btn.disabled = false; btn.textContent = 'Enter'; return; }
+              if (choice.action === 'restore') {
+                await claimCharacter(STATE.sessionId, choice.row.id);
+                chosenId = choice.row.id;
+                effClass = choice.row.class || playerClass;
+              }
+              // 'fresh' falls through to creation
+            }
+          }
+        }
+
+        if (chosenId) {
+          // Play an existing character. Refresh the display name only.
+          STATE.userId = chosenId;
+          STATE.playerClass = effClass;
+          try { await sb.from('vtt_players').update({ name }).eq('session_id', STATE.sessionId).eq('id', chosenId); } catch (e) {}
           saveSessionState();
         } else {
-          // First time this account joins this campaign - insert a fresh row.
-          await sb.from('vtt_players').insert({
+          // Create a brand-new character, owned by this account.
+          if (!playerClass) {
+            toast('Please choose a class', 'error');
+            btn.disabled = false; btn.textContent = 'Enter';
+            return;
+          }
+          STATE.userId = genId();
+          STATE.playerClass = playerClass;
+          effClass = playerClass;
+          let insRes = await sb.from('vtt_players').insert({
             id: STATE.userId,
+            owner_id: STATE.accountId,
             session_id: STATE.sessionId,
             name,
             is_host: false,
             class: playerClass,
-            level: 1,
-            ac: 10,
-            speed: 30,
+            level: 1, ac: 10, speed: 30,
             strength: 10, dexterity: 10, constitution: 10,
             intelligence: 10, wisdom: 10, charisma: 10,
           });
+          if (insRes.error && /owner_id/i.test(insRes.error.message || '')) {
+            insRes = await sb.from('vtt_players').insert({
+              id: STATE.userId,
+              session_id: STATE.sessionId,
+              name,
+              is_host: false,
+              class: playerClass,
+              level: 1, ac: 10, speed: 30,
+              strength: 10, dexterity: 10, constitution: 10,
+              intelligence: 10, wisdom: 10, charisma: 10,
+            });
+          }
+          if (insRes.error) throw insRes.error;
         }
 
         // System message with class
-        const className = playerClass.charAt(0).toUpperCase() + playerClass.slice(1);
+        const className = (effClass || 'adventurer').charAt(0).toUpperCase() + (effClass || 'adventurer').slice(1);
         await sb.from('vtt_chat').insert({
           id: genId(),
           session_id: STATE.sessionId,
@@ -3439,6 +3769,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         sessionId: STATE.sessionId,
         username: STATE.username,
         userId: STATE.userId,
+        accountId: STATE.accountId,
         role: STATE.role,
         isHost: STATE.isHost,
         playerClass: STATE.playerClass,
@@ -3486,20 +3817,22 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           btn.style.display = 'none';
           return;
         }
-        const uid = (STATE.authUser && STATE.authUser.id) || saved.userId;
+        const charId = saved.userId;
+        STATE.accountId = (STATE.authUser && STATE.authUser.id) || saved.accountId || charId;
         Object.assign(STATE, {
           sessionId: saved.sessionId,
           username: saved.username,
-          userId: uid,
+          userId: charId,
           role: saved.role,
           isHost: saved.isHost,
           playerClass: saved.playerClass,
         });
-        // Make sure our player row still exists; if not, recreate it.
-        const { data: meRow } = await sb.from('vtt_players').select('id').eq('id', uid).eq('session_id', saved.sessionId).maybeSingle();
+        // Make sure our character row still exists; if not, recreate it.
+        const { data: meRow } = await sb.from('vtt_players').select('id').eq('id', charId).eq('session_id', saved.sessionId).maybeSingle();
         if (!meRow) {
-          await sb.from('vtt_players').insert({
-            id: uid,
+          let r = await sb.from('vtt_players').insert({
+            id: charId,
+            owner_id: STATE.accountId,
             session_id: saved.sessionId,
             name: saved.username,
             is_host: saved.isHost,
@@ -3508,6 +3841,18 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
             strength: 10, dexterity: 10, constitution: 10,
             intelligence: 10, wisdom: 10, charisma: 10,
           });
+          if (r.error && /owner_id/i.test(r.error.message || '')) {
+            await sb.from('vtt_players').insert({
+              id: charId,
+              session_id: saved.sessionId,
+              name: saved.username,
+              is_host: saved.isHost,
+              class: saved.playerClass || null,
+              level: 1, ac: 10, speed: 30,
+              strength: 10, dexterity: 10, constitution: 10,
+              intelligence: 10, wisdom: 10, charisma: 10,
+            });
+          }
         }
         await enterApp();
       } catch (e) {
@@ -3846,7 +4191,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       grid.querySelectorAll('.dice-set-card').forEach(c => c.classList.toggle('active', c === card));
       updateDiceSetLabel(id);
       try {
-        await sb.from('vtt_players').update({ dice_set: id || null }).eq('id', STATE.userId);
+        await sb.from('vtt_players').update({ dice_set: id || null }).eq('id', STATE.userId).eq('session_id', STATE.sessionId);
       } catch (err) { /* dice_set column might not exist on legacy DBs - ignore */ }
       document.getElementById('dice-set-popup').classList.remove('active');
       toast(id ? `Dice set: ${getDiceSetById(id).name}` : 'Dice set: Default');
@@ -6358,7 +6703,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const pl = STATE.persistedPlayers.find(p => p.id === playerId);
     const json = JSON.stringify(CHAR_POPUP.profile || {});
     if (pl) pl.profile = json;
-    const { error } = await sb.from('vtt_players').update({ profile: json }).eq('id', playerId);
+    const { error } = await sb.from('vtt_players').update({ profile: json }).eq('id', playerId).eq('session_id', STATE.sessionId);
     if (error && /profile/i.test(error.message || '')) PROFILE_OK = false;
   }
 
@@ -6369,7 +6714,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const pl = STATE.persistedPlayers.find(p => p.id === playerId);
     if (pl) pl.hit_dice_used = used;
     if (!HD_OK) return;
-    const { error } = await sb.from('vtt_players').update({ hit_dice_used: used }).eq('id', playerId);
+    const { error } = await sb.from('vtt_players').update({ hit_dice_used: used }).eq('id', playerId).eq('session_id', STATE.sessionId);
     if (error && /hit_dice_used/i.test(error.message || '')) HD_OK = false;
   }
   function renderHitDice() {
@@ -7374,11 +7719,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       conditions: serializeConditions(CHAR_POPUP.conditions, CHAR_POPUP.exhaustionLevel),
     };
 
-    let { error } = await sb.from('vtt_players').update(patch).eq('id', CHAR_POPUP.targetPlayerId);
+    let { error } = await sb.from('vtt_players').update(patch).eq('id', CHAR_POPUP.targetPlayerId).eq('session_id', STATE.sessionId);
     if (error && error.message && /subclass|passive_overrides/i.test(error.message)) {
       // Legacy schema - retry without the optional columns
       const { subclass, passive_overrides, ...minimal } = patch;
-      await sb.from('vtt_players').update(minimal).eq('id', CHAR_POPUP.targetPlayerId);
+      await sb.from('vtt_players').update(minimal).eq('id', CHAR_POPUP.targetPlayerId).eq('session_id', STATE.sessionId);
     } else if (error) {
       console.error('Save player failed', error);
     }
@@ -7515,10 +7860,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (ch.portrait_url) patch.portrait_url = str(ch.portrait_url);
     if (ch.profile != null) patch.profile = jstr(ch.profile, '{}');
 
-    let { error } = await sb.from('vtt_players').update(patch).eq('id', CHAR_POPUP.targetPlayerId);
+    let { error } = await sb.from('vtt_players').update(patch).eq('id', CHAR_POPUP.targetPlayerId).eq('session_id', STATE.sessionId);
     if (error && error.message && /subclass|passive_overrides|portrait_url|profile/i.test(error.message)) {
       const { subclass, passive_overrides, portrait_url, profile, ...minimal } = patch;
-      ({ error } = await sb.from('vtt_players').update(minimal).eq('id', CHAR_POPUP.targetPlayerId));
+      ({ error } = await sb.from('vtt_players').update(minimal).eq('id', CHAR_POPUP.targetPlayerId).eq('session_id', STATE.sessionId));
     }
     if (error) { console.error('import failed', error); toast('Import failed', 'error'); return; }
 
@@ -8437,7 +8782,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         const path = `${STATE.sessionId}/portraits/${CHAR_POPUP.targetPlayerId}-${Date.now()}.jpg`;
         const url = await uploadImage(blob, path);
         document.getElementById('char-portrait').style.backgroundImage = `url('${url}')`;
-        await sb.from('vtt_players').update({ portrait_url: url }).eq('id', CHAR_POPUP.targetPlayerId);
+        await sb.from('vtt_players').update({ portrait_url: url }).eq('id', CHAR_POPUP.targetPlayerId).eq('session_id', STATE.sessionId);
 
         // Auto-create or update the owner's token so the portrait doubles as the token.
         const targetPlayerId = CHAR_POPUP.targetPlayerId;
@@ -9318,7 +9663,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
             renderDeathSaves();
           }
           if (Object.keys(updates).length > 0) {
-            await sb.from('vtt_players').update(updates).eq('id', STATE.userId);
+            await sb.from('vtt_players').update(updates).eq('id', STATE.userId).eq('session_id', STATE.sessionId);
             Object.assign(player, updates);
           }
           await setHitDiceUsed(STATE.userId, restoredTo);
@@ -9364,7 +9709,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           }
           if (player.class === 'Warlock' && magic && magic.slots) {
             Object.keys(magic.slots).forEach(lv => { if (magic.slots[lv]) magic.slots[lv].cur = magic.slots[lv].max || 0; });
-            await sb.from('vtt_players').update({ magic_data: JSON.stringify(magic) }).eq('id', STATE.userId);
+            await sb.from('vtt_players').update({ magic_data: JSON.stringify(magic) }).eq('id', STATE.userId).eq('session_id', STATE.sessionId);
             player.magic_data = JSON.stringify(magic);
             if (CHAR_POPUP.targetPlayerId === STATE.userId) { CHAR_POPUP.magic = magic; if (typeof renderMagic === 'function') renderMagic(CHAR_POPUP.magic); }
           }
@@ -10220,7 +10565,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       }
       player.buffs = JSON.stringify(buffs);
       try {
-        await sb.from('vtt_players').update({ buffs: player.buffs }).eq('id', ownerId);
+        await sb.from('vtt_players').update({ buffs: player.buffs }).eq('id', ownerId).eq('session_id', STATE.sessionId);
       } catch (e) {
         console.error('Buff save failed', e);
       }
@@ -11892,7 +12237,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       buffSummary = (buffSummary ? buffSummary + '; ' : '') + 'Heroic Inspiration ★ (advantage)';
       // Consume inspiration (set to 0)
       try {
-        await sb.from('vtt_players').update({ inspiration: 0 }).eq('id', STATE.userId);
+        await sb.from('vtt_players').update({ inspiration: 0 }).eq('id', STATE.userId).eq('session_id', STATE.sessionId);
         // Update local state too
         if (player) player.inspiration = 0;
         if (CHAR_POPUP.targetPlayerId === STATE.userId) {
