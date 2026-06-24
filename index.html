@@ -342,7 +342,7 @@
   #char-popup .char-vitals { padding: 10px 14px; border-bottom: 1px solid var(--border); }
 
   /* RIGHT BAR - dockable column on the right with Tools, HP, Char Info, Chat */
-  #right-bar { position: fixed; top: 56px; right: 0; bottom: 0; width: var(--rb-w, 380px); background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; z-index: 50; transition: transform 0.18s; font-size: calc(13px * var(--rb-scale, 1) * var(--app-scale, 1)); }
+  #right-bar { position: fixed; top: 56px; right: 0; bottom: 0; width: var(--rb-w, 380px); background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; z-index: 50; transition: transform 0.18s; font-size: calc(13px * var(--rb-scale, 1) * var(--app-scale, 1)); }
   body.right-bar-open #main { padding-right: var(--rb-w, 380px); }
   body.right-bar-open.right-bar-collapsed #main { padding-right: 0; }
   #right-bar.collapsed { transform: translateX(var(--rb-w, 380px)); }
@@ -359,7 +359,7 @@
   #right-bar #chatlog .msg { font-size: calc(12px * var(--rb-scale, 1) * var(--app-scale, 1)); }
 
   /* Tools strip inside right-bar (horizontal compact row) */
-  #right-bar #dm-toolbar { position: static; flex-direction: row; flex-wrap: wrap; padding: 8px; gap: 6px; border: none; border-bottom: 1px solid var(--border); border-radius: 0; backdrop-filter: none; background: var(--panel-light); flex-shrink: 0; }
+  #right-bar #dm-toolbar { position: sticky; top: 0; z-index: 4; flex-direction: row; flex-wrap: wrap; padding: 8px; gap: 6px; border: none; border-bottom: 1px solid var(--border); border-radius: 0; backdrop-filter: none; background: var(--panel-light); flex-shrink: 0; }
   #right-bar .tool-btn { flex: 1 1 27%; min-width: 76px; height: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 8px 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; }
   #right-bar .tool-btn:hover { border-color: var(--gold-soft); background: var(--panel-light); }
   #right-bar .tool-btn.active { background: var(--gold); border-color: var(--gold); color: #1a1612; }
@@ -620,7 +620,7 @@
   #hp-tracker-list-right .hp-row.viewing { border-color: var(--gold); background: rgba(212,175,55,0.12); }
 
   /* Char-popup as an embedded section (not fixed) */
-  #right-bar #char-popup { position: static; width: auto; right: auto; top: auto; bottom: auto; border-left: none; box-shadow: none; flex: 1; min-height: 0; transform: none; transition: none; overflow-y: auto; }
+  #right-bar #char-popup { position: static; width: auto; right: auto; top: auto; bottom: auto; border-left: none; box-shadow: none; flex: none; min-height: 0; transform: none; transition: none; overflow: visible; }
   #right-bar #char-popup > * { flex-shrink: 0; }
   #right-bar #char-popup .char-popup-body { overflow: visible; flex: none; }
   #right-bar #char-popup .char-popup-header { position: sticky; top: 0; z-index: 3; background: var(--panel); }
@@ -5312,6 +5312,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         });
         el.appendChild(disp);
       }
+      el.addEventListener('mousedown', (e) => { if (e.button === 0) startTokenDrag(e, tok); });
       el.addEventListener('touchstart', (e) => startTokenDrag(e, tok), { passive: false });
       layer.appendChild(el);
     });
