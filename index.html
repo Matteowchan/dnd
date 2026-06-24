@@ -3267,8 +3267,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           .eq('is_host', false);
       }
       const data = res.data || [];
-      // Orphan = a pre-auth character: non-UUID id and not yet owned by anyone.
-      return data.filter(r => r.id && !isAccountId(r.id) && !r.owner_id);
+      // Claimable = a legacy pre-auth character: a non-UUID character id that is
+      // not owned by a real account. After the Phase 1 backfill these rows have
+      // owner_id set to their own id (a non-UUID), so we test the owner against
+      // the account-id shape rather than for null, otherwise nothing is offered
+      // and the join flow keeps creating duplicate characters.
+      return data.filter(r => r.id && !isAccountId(r.id) && !isAccountId(r.owner_id));
     } catch (e) {
       console.warn('findClaimableCharacters', e);
       return [];
