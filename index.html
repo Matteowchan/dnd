@@ -159,6 +159,10 @@
   .recovery-btn:hover { border-color: var(--gold-soft); color: var(--cream); }
   .recovery-btn.primary { border-color: var(--gold-soft); color: var(--gold); }
   .recovery-btn.primary:hover { background: linear-gradient(180deg, #d4a574, #8a6535); color: #1a1208; border-color: var(--gold); }
+  .recovery-btn.danger { border-color: #a14b3c; color: #e08b7c; }
+  .recovery-btn.danger:hover { background: linear-gradient(180deg, #b5503f, #7a3328); color: #fff; border-color: #c25a47; }
+  .recovery-input { width: 100%; box-sizing: border-box; margin: 0 0 16px; padding: 9px 11px; background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 5px; color: var(--cream); font-size: 14px; }
+  .recovery-input:focus { outline: none; border-color: var(--gold-soft); }
   .mc-recover { background: transparent; border: none; padding: 0; color: var(--gold-soft); font-size: 11px; letter-spacing: 0.03em; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
   .mc-recover:hover { color: var(--gold); background: transparent; }
 
@@ -3180,7 +3184,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   // entirely (host: remove the session and every row attached to it).
   async function removeSavedCampaign(it, accountId) {
     if (it.isHost) {
-      const ok = confirm('Delete "' + it.campaignName + '" for everyone? This erases the map, tokens, characters and chat. This cannot be undone.');
+      const ok = await confirmModal('Delete "' + it.campaignName + '" for everyone? This erases the map, tokens, characters and chat. This cannot be undone.', { title: 'Delete campaign', danger: true, okText: 'Delete' });
       if (!ok) return;
       try {
         const sid = it.code;
@@ -3194,7 +3198,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       }
     } else {
       const who = it.charName ? ('"' + it.charName + '"') : 'this character';
-      const ok = confirm('Remove ' + who + ' from "' + it.campaignName + '"? This deletes that character.');
+      const ok = await confirmModal('Remove ' + who + ' from "' + it.campaignName + '"? This deletes that character.', { title: 'Remove character', danger: true, okText: 'Remove' });
       if (!ok) return;
       try {
         try { await sb.from('vtt_tokens').delete().eq('session_id', it.code).eq('owner_id', it.rowId); } catch (e) {}
@@ -3298,6 +3302,92 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       console.warn('getMyCharacters', e);
       return [];
     }
+  }
+  // Themed confirmation dialog. Resolves true (confirmed) or false (cancelled).
+  function confirmModal(message, opts) {
+    opts = opts || {};
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.className = 'recovery-overlay';
+      const card = document.createElement('div');
+      card.className = 'recovery-card';
+      if (opts.title) {
+        const h = document.createElement('h3');
+        h.textContent = opts.title;
+        card.appendChild(h);
+      }
+      const sub = document.createElement('div');
+      sub.className = 'recovery-sub';
+      sub.style.marginBottom = '18px';
+      sub.textContent = message;
+      card.appendChild(sub);
+      const actions = document.createElement('div');
+      actions.className = 'recovery-actions';
+      const cancel = document.createElement('button');
+      cancel.className = 'recovery-btn';
+      cancel.textContent = opts.cancelText || 'Cancel';
+      cancel.addEventListener('click', () => { cleanup(); resolve(false); });
+      actions.appendChild(cancel);
+      const ok = document.createElement('button');
+      ok.className = 'recovery-btn primary' + (opts.danger ? ' danger' : '');
+      ok.textContent = opts.okText || 'Confirm';
+      ok.addEventListener('click', () => { cleanup(); resolve(true); });
+      actions.appendChild(ok);
+      card.appendChild(actions);
+      overlay.appendChild(card);
+      overlay.addEventListener('click', e => { if (e.target === overlay) { cleanup(); resolve(false); } });
+      document.addEventListener('keydown', onKey);
+      document.body.appendChild(overlay);
+      ok.focus();
+      function onKey(e) { if (e.key === 'Escape') { cleanup(); resolve(false); } else if (e.key === 'Enter') { cleanup(); resolve(true); } }
+      function cleanup() { document.removeEventListener('keydown', onKey); if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
+    });
+  }
+  // Themed number prompt. Resolves with an integer, or null if left blank/cancelled.
+  function askNumber(message, opts) {
+    opts = opts || {};
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.className = 'recovery-overlay';
+      const card = document.createElement('div');
+      card.className = 'recovery-card';
+      if (opts.title) {
+        const h = document.createElement('h3');
+        h.textContent = opts.title;
+        card.appendChild(h);
+      }
+      const sub = document.createElement('div');
+      sub.className = 'recovery-sub';
+      sub.textContent = message;
+      card.appendChild(sub);
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.className = 'recovery-input';
+      input.min = '1';
+      if (opts.placeholder) input.placeholder = opts.placeholder;
+      card.appendChild(input);
+      const actions = document.createElement('div');
+      actions.className = 'recovery-actions';
+      const cancel = document.createElement('button');
+      cancel.className = 'recovery-btn';
+      cancel.textContent = opts.cancelText || 'Cancel';
+      cancel.addEventListener('click', () => { cleanup(); resolve(null); });
+      actions.appendChild(cancel);
+      const ok = document.createElement('button');
+      ok.className = 'recovery-btn primary';
+      ok.textContent = opts.okText || 'Set';
+      ok.addEventListener('click', submit);
+      actions.appendChild(ok);
+      card.appendChild(actions);
+      overlay.appendChild(card);
+      overlay.addEventListener('click', e => { if (e.target === overlay) { cleanup(); resolve(null); } });
+      document.addEventListener('keydown', onKey);
+      document.body.appendChild(overlay);
+      input.focus();
+      function submit() { const v = parseInt(input.value, 10); cleanup(); resolve(isNaN(v) ? null : v); }
+      function onKey(e) { if (e.key === 'Escape') { cleanup(); resolve(null); } else if (e.key === 'Enter') { submit(); } }
+      function cleanup() { document.removeEventListener('keydown', onKey); if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
+    });
   }
   // Promise modal that lists recoverable characters. Resolves with
   // { action: 'restore', row } | { action: 'fresh' } | { action: 'cancel' }.
@@ -4365,7 +4455,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   async function endInitiative() {
     if (!STATE.isHost) return;
-    if (!confirm('End combat and clear the initiative order?')) return;
+    if (!(await confirmModal('End combat and clear the initiative order?', { title: 'End combat', okText: 'End combat' }))) return;
     STATE.initiative = { active: false, round: 0, turn: 0, entries: [] };
     renderInitiative();
     renderTokens();
@@ -5287,7 +5377,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         del.addEventListener('click', async (ev) => {
           ev.stopPropagation();
           ev.preventDefault();
-          if (!confirm(`Delete "${tok.name}"? This removes the token entirely.`)) return;
+          if (!(await confirmModal(`Delete "${tok.name}"? This removes the token entirely.`, { title: 'Delete token', danger: true, okText: 'Delete' }))) return;
           // Optimistic local removal
           STATE.tokens.delete(tok.id);
           renderTokens();
@@ -5352,7 +5442,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         del.title = 'Delete';
         del.addEventListener('click', async (ev) => {
           ev.stopPropagation();
-          if (!confirm('Delete this token?')) return;
+          if (!(await confirmModal('Delete this token?', { title: 'Delete token', danger: true, okText: 'Delete' }))) return;
           // Local-first: remove from state and re-render immediately so the
           // thumb disappears even if the realtime echo is delayed.
           STATE.tokens.delete(tok.id);
@@ -5438,7 +5528,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   async function kickPlayer(pid, pname) {
     if (!STATE.isHost) return;
     if (pid === STATE.userId) { toast('You cannot remove yourself', 'error'); return; }
-    if (!confirm(`Remove "${pname || 'this player'}" from the session? This deletes their character row and their token.`)) return;
+    if (!(await confirmModal(`Remove "${pname || 'this player'}" from the session? This deletes their character row and their token.`, { title: 'Remove player', danger: true, okText: 'Remove' }))) return;
     try {
       await sb.from('vtt_tokens').delete().eq('session_id', STATE.sessionId).eq('owner_id', pid);
       const { error } = await sb.from('vtt_players').delete().eq('id', pid).eq('session_id', STATE.sessionId);
@@ -7819,7 +7909,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     catch (e) { toast('Invalid JSON file', 'error'); return; }
     const ch = (parsed && parsed.character) ? parsed.character : parsed;
     if (!ch || typeof ch !== 'object' || Array.isArray(ch)) { toast('Unrecognized character file', 'error'); return; }
-    if (!confirm('Import will overwrite this character sheet. Continue?')) return;
+    if (!(await confirmModal('Import will overwrite this character sheet. Continue?', { title: 'Import character', okText: 'Import' }))) return;
     await applyCharacterObject(ch);
   }
 
@@ -8319,7 +8409,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       parsed._proficiencies ? 'Proficiencies & languages: yes' : null,
       `Gold: ${parsed.gold || 0}`,
     ].filter(Boolean).join('\n');
-    if (!confirm('Import this character and overwrite the open sheet?\n\n' + summary)) return;
+    if (!(await confirmModal('Import this character and overwrite the open sheet?\n\n' + summary, { title: 'Import character', okText: 'Import' }))) return;
 
     // Seed from the current row so we do not wipe fields the PDF parser does not cover yet.
     const cur = STATE.persistedPlayers.find(p => p.id === CHAR_POPUP.targetPlayerId) || {};
@@ -9007,17 +9097,17 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       renderTokens(); // refresh token badges
       scheduleSavePlayer();
     });
-    document.getElementById('conditions-grid').addEventListener('contextmenu', (e) => {
+    document.getElementById('conditions-grid').addEventListener('contextmenu', async (e) => {
       const btn = e.target.closest('.cond-toggle');
       if (!btn) return;
       e.preventDefault();
       const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
       if (!canEdit) return;
       const key = btn.dataset.key;
-      const rounds = parseInt(prompt(`How many rounds should "${D5E_CONDITIONS[key].name}" last? (blank = until removed)`));
+      const rounds = await askNumber(`How many rounds should "${D5E_CONDITIONS[key].name}" last?`, { title: 'Condition duration', placeholder: 'e.g. 3', cancelText: 'Until removed', okText: 'Set' });
       const currentRound = (STATE.initiative && STATE.initiative.active) ? STATE.initiative.round : 1;
       const existing = CHAR_POPUP.conditions.find(c => c.key === key);
-      const until = isNaN(rounds) ? null : (currentRound + rounds - 1);
+      const until = (rounds === null || isNaN(rounds)) ? null : (currentRound + rounds - 1);
       if (existing) existing.until_round = until;
       else CHAR_POPUP.conditions.push({ key, until_round: until });
       renderConditionsTab();
@@ -9569,8 +9659,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   });
   document.getElementById('delete-campaign-btn').addEventListener('click', async () => {
     if (!STATE.isHost) return;
-    if (!confirm('WIPE the entire campaign? This deletes ALL tokens, maps, effects, chat, audio, and the log. Players remain registered but everything else is gone. This cannot be undone.')) return;
-    if (!confirm('Are you absolutely sure? Type-confirm not required - clicking OK will delete everything.')) return;
+    if (!(await confirmModal('WIPE the entire campaign? This deletes ALL tokens, maps, effects, chat, audio, and the log. Players stay registered but everything else is gone. This cannot be undone.', { title: 'Wipe campaign', danger: true, okText: 'Wipe everything' }))) return;
     try {
       const sid = STATE.sessionId;
       await sb.from('vtt_tokens').delete().eq('session_id', sid);
@@ -10312,7 +10401,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   });
 
   document.getElementById('clear-tokens-btn').addEventListener('click', async () => {
-    if (!confirm('Clear the map? Tokens return to the tray, all effects are removed.')) return;
+    if (!(await confirmModal('Clear the map? Tokens return to the tray, all effects are removed.', { title: 'Clear map', danger: true, okText: 'Clear map' }))) return;
     // Update locally first so the screen reacts immediately
     const tokensOnMap = Array.from(STATE.tokens.values()).filter(t => t.x != null);
     tokensOnMap.forEach(t => { t.x = null; t.y = null; });
@@ -10373,7 +10462,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   document.getElementById('clear-effects-btn').addEventListener('click', async () => {
     if (!STATE.isHost) { toast('Only the DM can clear all effects. Use the eraser for your own.', 'error'); return; }
-    if (!confirm('Clear ALL effects on the map (including other players\')?')) return;
+    if (!(await confirmModal("Clear ALL effects on the map (including other players')?", { title: 'Clear effects', danger: true, okText: 'Clear effects' }))) return;
     // Local clear for immediate feedback
     STATE.effects.clear();
     renderEffects();
@@ -13022,7 +13111,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   });
 
   document.getElementById('logout-btn').addEventListener('click', async () => {
-    if (!confirm('Sign out of your account? You will return to the login screen.')) return;
+    if (!(await confirmModal('Sign out of your account? You will return to the login screen.', { title: 'Sign out', okText: 'Sign out' }))) return;
     try { await sb.auth.signOut(); } catch (e) {}
     try { clearSessionState(); } catch (e) {}
     location.reload();
@@ -13030,7 +13119,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   // ============ LEAVE ============
   document.getElementById('leave-btn').addEventListener('click', async () => {
-    const choice = confirm('Leave this session?\n\nOK = leave but keep your "Continue last session" shortcut.\nCancel = stay.');
+    const choice = await confirmModal('Leave this session? Your "Continue last session" shortcut will be kept so you can return later.', { title: 'Leave session', okText: 'Leave', cancelText: 'Stay' });
     if (!choice) return;
     try {
       // Post leave message
