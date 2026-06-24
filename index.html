@@ -1394,6 +1394,11 @@
   .rtc-tile .rtc-name { position: absolute; left: 4px; bottom: 3px; font-size: 11px; color: var(--cream); background: rgba(0,0,0,0.55); padding: 1px 6px; border-radius: 3px; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .rtc-tile .rtc-novid { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-size: calc(var(--rtc-tile-h) * 0.28); color: var(--tile-frame, var(--gold-soft)); background: radial-gradient(circle at 50% 40%, #2a231c, #0b0907); }
   .rtc-tile .rtc-mic-off { position: absolute; right: 4px; top: 4px; width: 18px; height: 18px; border-radius: 50%; background: rgba(160,40,40,0.9); display: none; align-items: center; justify-content: center; font-size: 11px; color: #fff; }
+  .rtc-tile .rtc-hand { position: absolute; left: 4px; top: 4px; width: 20px; height: 20px; border-radius: 50%; background: var(--gold); color: #1a1612; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.5); animation: rtc-hand-bob 1.1s ease-in-out infinite; }
+  .rtc-tile.hand-up .rtc-hand { display: flex; }
+  .rtc-tile.hand-up { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 6px 18px rgba(0,0,0,0.5); }
+  @keyframes rtc-hand-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+  #rtc-hand.active { background: var(--gold); color: #1a1612; border-color: var(--gold); }
   .rtc-tile.muted .rtc-mic-off { display: flex; }
   .rtc-tile .rtc-speak { position: absolute; left: 4px; top: 4px; display: flex; align-items: center; justify-content: center; color: var(--cream); opacity: 0.32; transition: opacity 0.12s, color 0.12s, filter 0.12s; pointer-events: none; }
   .rtc-tile.speaking .rtc-speak { opacity: 1; color: #8fe39a; filter: drop-shadow(0 0 5px rgba(143,227,154,0.85)); }
@@ -2178,6 +2183,7 @@
     <div id="rtc-controls">
       <button id="rtc-mic" title="Toggle microphone">Mic On</button>
       <button id="rtc-cam" title="Toggle camera">Cam On</button>
+      <button id="rtc-hand" title="Raise your hand">Raise Hand</button>
       <select id="rtc-bg-mode" title="Background effect">
         <option value="none">BG: None</option>
         <option value="blur">BG: Blur</option>
@@ -4917,6 +4923,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       .on('broadcast', { event: 'effect-clear' }, ({ payload }) => handleRemoteEffectClear(payload))
       .on('broadcast', { event: 'show-image' }, ({ payload }) => showSharedImagePopup(payload))
       .on('broadcast', { event: 'rtc-signal' }, ({ payload }) => handleRtcSignal(payload))
+      .on('broadcast', { event: 'rtc-hand' }, ({ payload }) => { if (payload && payload.userId) rtcSetHand(payload.userId, !!payload.raised); })
       .on('broadcast', { event: 'init-roll' }, ({ payload }) => { if (STATE.isHost) hostApplyInitRoll(payload); })
       .on('presence', { event: 'sync' }, handlePresenceSync)
       .subscribe(async (status) => {
@@ -13388,6 +13395,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       <video autoplay playsinline ${isLocal ? 'muted' : ''}></video>
       <span class="rtc-speak" title="Speaking"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z"/><path d="M17 11a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></span>
       <span class="rtc-mic-off" title="Muted">x</span>
+      <span class="rtc-hand" title="Hand raised"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M13 2a1 1 0 0 0-1 1v7h-1V4a1 1 0 0 0-2 0v8.5L7.5 11A1.2 1.2 0 0 0 6 12.7l2.6 4.9A5 5 0 0 0 13 20h2a4 4 0 0 0 4-4V7a1 1 0 0 0-2 0v3h-1V4a1 1 0 0 0-2 0v6h-1V3a1 1 0 0 0-1-1z"/></svg></span>
       <span class="rtc-name">${escapeHtml(isLocal ? (name + ' (you)') : name)}</span>`;
     tiles.appendChild(tile);
     tile.style.setProperty('--tile-frame', getPlayerClassColor(peerId));
@@ -13663,6 +13671,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   function rtcLeaveCall() {
     if (!RTC.inCall) return;
+    if (RTC.handUp) {
+      RTC.handUp = false;
+      if (STATE.channel) STATE.channel.send({ type: 'broadcast', event: 'rtc-hand', payload: { userId: STATE.userId, raised: false } });
+      rtcSetHand(STATE.userId, false);
+      rtcUpdateControls();
+    }
     clearInterval(RTC.heartbeat);
     if (RTC.sharing) rtcStopScreenShare();
     rtcSend(null, 'leave', null);
@@ -13782,6 +13796,26 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     mic.classList.toggle('off', !RTC.micOn);
     cam.textContent = RTC.camOn ? 'Cam On' : 'Cam Off';
     cam.classList.toggle('off', !RTC.camOn);
+    const hand = document.getElementById('rtc-hand');
+    if (hand) {
+      hand.textContent = RTC.handUp ? 'Lower Hand' : 'Raise Hand';
+      hand.classList.toggle('active', !!RTC.handUp);
+    }
+  }
+
+  // Toggle a tile's raised-hand badge. peerId is the character row id (STATE.userId for self).
+  function rtcSetHand(peerId, raised) {
+    const tile = document.getElementById('rtc-tile-' + peerId);
+    if (tile) tile.classList.toggle('hand-up', !!raised);
+  }
+
+  function rtcToggleHand() {
+    RTC.handUp = !RTC.handUp;
+    rtcSetHand(STATE.userId, RTC.handUp);
+    rtcUpdateControls();
+    if (STATE.channel) {
+      STATE.channel.send({ type: 'broadcast', event: 'rtc-hand', payload: { userId: STATE.userId, raised: RTC.handUp, name: STATE.username } });
+    }
   }
 
   function rtcSetLocked(locked) {
@@ -13807,6 +13841,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (launch) launch.addEventListener('click', rtcJoinCall);
     document.getElementById('rtc-mic').addEventListener('click', rtcToggleMic);
     document.getElementById('rtc-cam').addEventListener('click', rtcToggleCam);
+    const handBtn = document.getElementById('rtc-hand');
+    if (handBtn) handBtn.addEventListener('click', rtcToggleHand);
     document.getElementById('rtc-leave').addEventListener('click', rtcLeaveCall);
     const shareBtn = document.getElementById('rtc-share');
     if (shareBtn) shareBtn.addEventListener('click', rtcStartScreenShare);
