@@ -7802,6 +7802,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     CHAR_POPUP.saveTimeout = setTimeout(saveCharacterChanges, 400);
   }
 
+  // Pulls the offending column name out of a Postgres / PostgREST error so a
+  // save can retry without it instead of losing every edit at once.
+  function extractMissingColumn(error) {
+    const msg = (error && (error.message || error.hint || error.details)) || '';
+    let m = msg.match(/find the '([^']+)' column/i);
+    if (m) return m[1];
+    m = msg.match(/column "([^"]+)"/i);
+    if (m) return m[1];
+    return null;
+  }
   async function saveCharacterChanges() {
     if (!CHAR_POPUP.targetPlayerId) return;
     if (CHAR_POPUP.loading) return;
@@ -7843,13 +7853,18 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       conditions: serializeConditions(CHAR_POPUP.conditions, CHAR_POPUP.exhaustionLevel),
     };
 
-    let { error } = await sb.from('vtt_players').update(patch).eq('id', CHAR_POPUP.targetPlayerId).eq('session_id', STATE.sessionId);
-    if (error && error.message && /subclass|passive_overrides/i.test(error.message)) {
-      // Legacy schema - retry without the optional columns
-      const { subclass, passive_overrides, ...minimal } = patch;
-      await sb.from('vtt_players').update(minimal).eq('id', CHAR_POPUP.targetPlayerId).eq('session_id', STATE.sessionId);
-    } else if (error) {
+    let attempt = { ...patch };
+    for (let i = 0; i < 10; i++) {
+      const { error } = await sb.from('vtt_players').update(attempt).eq('id', CHAR_POPUP.targetPlayerId).eq('session_id', STATE.sessionId);
+      if (!error) break;
+      const miss = extractMissingColumn(error);
+      if (miss && Object.prototype.hasOwnProperty.call(attempt, miss)) {
+        delete attempt[miss];
+        continue;
+      }
       console.error('Save player failed', error);
+      toast('Some changes could not be saved', 'error');
+      break;
     }
 
     // If user changed their own class, re-apply theme
