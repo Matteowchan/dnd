@@ -3589,16 +3589,25 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         } else {
         // Create a new campaign
         const campaignName = (document.getElementById('campaign-name-input').value || '').trim();
-        STATE.sessionId = genSessionCode();
         STATE.campaignName = campaignName;
-        let ins = await sb.from('vtt_sessions').insert({
-          id: STATE.sessionId,
-          host_name: name,
-          campaign_name: campaignName || null,
-        });
-        if (ins.error && /campaign_name/i.test(ins.error.message || '')) {
-          // Column not present yet, fall back so the game still opens
-          ins = await sb.from('vtt_sessions').insert({ id: STATE.sessionId, host_name: name });
+        // Generate a session code and insert it, regenerating if the code is
+        // already taken. The primary key on vtt_sessions.id rejects a duplicate
+        // with a unique violation, so a true collision (or race) simply retries.
+        let ins, codeAttempts = 0;
+        while (true) {
+          STATE.sessionId = genSessionCode();
+          ins = await sb.from('vtt_sessions').insert({
+            id: STATE.sessionId,
+            host_name: name,
+            campaign_name: campaignName || null,
+          });
+          if (ins.error && /campaign_name/i.test(ins.error.message || '')) {
+            // Column not present yet, fall back so the game still opens
+            ins = await sb.from('vtt_sessions').insert({ id: STATE.sessionId, host_name: name });
+          }
+          const dup = ins.error && (ins.error.code === '23505' || /duplicate|unique/i.test(ins.error.message || ''));
+          if (dup && codeAttempts < 8) { codeAttempts++; continue; }
+          break;
         }
         if (ins.error) throw ins.error;
 
