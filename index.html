@@ -1040,6 +1040,22 @@
 
   /* EFFECTS LAYER */
   #effectslayer { position: absolute; top: 0; left: 0; width: 4000px; height: 4000px; transform-origin: 0 0; pointer-events: none; overflow: visible; mix-blend-mode: screen; }
+  #drawlayer { position: absolute; top: 0; left: 0; width: 4000px; height: 4000px; transform-origin: 0 0; pointer-events: none; overflow: visible; }
+  body.draw-mode #drawlayer { pointer-events: auto; cursor: crosshair; }
+  body.draw-mode.draw-erase #drawlayer { cursor: pointer; }
+  #drawlayer path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  body.draw-mode.draw-erase #drawlayer path { pointer-events: stroke; }
+  #draw-bar { position: fixed; left: 10px; bottom: 10px; z-index: 80; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  #draw-bar .draw-tools { display: none; flex-wrap: wrap; gap: 6px; align-items: center; max-width: 280px; padding: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+  #draw-bar.open .draw-tools { display: flex; }
+  #draw-toggle { padding: 8px 14px; background: var(--panel-light); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 6px; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.05em; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
+  #draw-toggle.active { background: var(--gold); color: #1a1612; }
+  .draw-swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.25); cursor: pointer; padding: 0; }
+  .draw-swatch.active { border-color: #fff; box-shadow: 0 0 0 2px var(--gold); }
+  .draw-w { width: 26px; height: 26px; border-radius: 5px; background: var(--panel-light); border: 1px solid var(--border); color: var(--cream); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .draw-w.active { border-color: var(--gold); color: var(--gold); }
+  #draw-bar .draw-act { padding: 5px 9px; background: var(--panel-light); border: 1px solid var(--border); color: var(--cream); border-radius: 5px; cursor: pointer; font-size: 11px; }
+  #draw-bar .draw-act.active { border-color: var(--gold); color: var(--gold); }
   /* Eraser mode: make effects clickable. Hovered effects glow red to signal removal. */
   body.eraser-mode #effectslayer { pointer-events: auto; cursor: not-allowed; }
   body.eraser-mode #effectslayer .fx-anim { pointer-events: auto; cursor: pointer; transition: filter 0.15s; }
@@ -1694,6 +1710,7 @@
         </defs>
       </svg>
       <div id="tokenlayer"></div>
+      <svg id="drawlayer"></svg>
       <svg id="measurement" style="display:none"></svg>
       <svg id="remote-measurements"></svg>
 
@@ -2169,6 +2186,23 @@
 </div>
 
 <button id="char-panel-show" title="Show character panel">Character</button>
+
+<div id="draw-bar">
+  <div class="draw-tools" id="draw-tools">
+    <button class="draw-swatch" data-color="#e23b3b" style="background:#e23b3b" title="Red"></button>
+    <button class="draw-swatch" data-color="#f0b429" style="background:#f0b429" title="Gold"></button>
+    <button class="draw-swatch" data-color="#3bb273" style="background:#3bb273" title="Green"></button>
+    <button class="draw-swatch" data-color="#4a90d9" style="background:#4a90d9" title="Blue"></button>
+    <button class="draw-swatch" data-color="#f5f0e6" style="background:#f5f0e6" title="White"></button>
+    <button class="draw-w" data-width="3" title="Thin">S</button>
+    <button class="draw-w" data-width="6" title="Medium">M</button>
+    <button class="draw-w" data-width="11" title="Thick">L</button>
+    <button class="draw-act" id="draw-erase" title="Tap a line to erase it">Eraser</button>
+    <button class="draw-act" id="draw-clear-mine" title="Remove your own drawings">Clear mine</button>
+    <button class="draw-act" id="draw-clear-all" style="display:none" title="Remove every drawing (DM)">Clear all</button>
+  </div>
+  <button id="draw-toggle" title="Draw on the map">Draw</button>
+</div>
 
 <div id="rtc-bar">
   <button id="rtc-launch" title="Start camera and microphone with the table">Join Voice / Video</button>
@@ -2760,6 +2794,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     measuring: null,        // active measure tool drag state
 
     effects: new Map(),     // id -> effect data
+    drawings: new Map(),    // id -> drawing stroke {id, owner_id, color, width, points}
+    drawColor: '#e23b3b',
+    drawWidth: 6,
+    drawErase: false,
+    drawStroke: null,       // active stroke being drawn
     remoteDrags: new Map(), // userId -> { tokenId, startX, startY, x, y, isMeasure, name }
 
     audio: null,
@@ -3200,7 +3239,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (!ok) return;
       try {
         const sid = it.code;
-        for (const tbl of ['vtt_chat', 'vtt_effects', 'vtt_audio', 'vtt_tokens', 'vtt_maps', 'vtt_players']) {
+        for (const tbl of ['vtt_chat', 'vtt_effects', 'vtt_drawings', 'vtt_audio', 'vtt_tokens', 'vtt_maps', 'vtt_players']) {
           try { await sb.from(tbl).delete().eq('session_id', sid); } catch (e) { console.warn('delete ' + tbl, e); }
         }
         await sb.from('vtt_sessions').delete().eq('id', sid);
@@ -4867,6 +4906,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       renderEffects();
     }
 
+    // Load drawings (gracefully skip if the table is not present yet)
+    try {
+      const { data: drawings } = await sb.from('vtt_drawings').select('*').eq('session_id', STATE.sessionId);
+      if (drawings) {
+        drawings.forEach(d => STATE.drawings.set(d.id, d));
+        renderDrawings();
+      }
+    } catch (e) { /* table missing until the drawings SQL is run */ }
+    updateDrawRole();
+
     // Load background audio state
     const { data: audioData } = await sb.from('vtt_audio').select('*').eq('session_id', STATE.sessionId).maybeSingle();
     if (audioData) {
@@ -4917,6 +4966,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vtt_chat', filter }, handleChatInsert)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_players', filter }, handlePlayerChange)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_effects', filter }, handleEffectChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_drawings', filter }, handleDrawingChange)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_audio', filter }, handleAudioChange)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vtt_sessions', filter: `id=eq.${STATE.sessionId}` }, handleSessionChange)
       .on('broadcast', { event: 'drag' }, ({ payload }) => handleRemoteDrag(payload))
@@ -5324,6 +5374,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           : '<div class="be-inner"><div class="be-title">The scene is being set</div><div class="be-sub">Waiting for the DM to reveal a map.</div></div>';
       }
     }
+    renderDrawings();
     applyTransform();
   }
 
@@ -9714,6 +9765,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const sid = STATE.sessionId;
       await sb.from('vtt_tokens').delete().eq('session_id', sid);
       await sb.from('vtt_effects').delete().eq('session_id', sid);
+      try { await sb.from('vtt_drawings').delete().eq('session_id', sid); } catch (e) {}
       await sb.from('vtt_chat').delete().eq('session_id', sid);
       await sb.from('vtt_maps').delete().eq('session_id', sid);
       await sb.from('vtt_audio').delete().eq('session_id', sid);
@@ -10389,6 +10441,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.getElementById('maplayer').style.transform = t;
     document.getElementById('effectslayer').style.transform = t;
     document.getElementById('tokenlayer').style.transform = t;
+    const dl = document.getElementById('drawlayer');
+    if (dl) dl.style.transform = t;
     renderRemoteMeasurements();  // these use screen coords, redraw on zoom/pan
   }
 
@@ -10611,6 +10665,202 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     layer.innerHTML = svg;
     // Re-attach the in-progress preview on top of the permanent effects
     if (livePreview) layer.appendChild(livePreview);
+  }
+
+  // ============ MAP DRAWING ============
+  // Strokes are stored in vtt_drawings. Points are in map space (offset-independent),
+  // so the offset is added at render time, just like effects, keeping drawings
+  // anchored to the map image when the DM moves it.
+  function strokeToSVG(d, ox, oy) {
+    const pts = Array.isArray(d.points) ? d.points : [];
+    if (!pts.length) return '';
+    let path = 'M ' + (pts[0].x + ox).toFixed(1) + ' ' + (pts[0].y + oy).toFixed(1);
+    for (let i = 1; i < pts.length; i++) path += ' L ' + (pts[i].x + ox).toFixed(1) + ' ' + (pts[i].y + oy).toFixed(1);
+    const color = escapeHtml(String(d.color || '#e23b3b'));
+    const w = Number(d.width) || 6;
+    return `<path d="${path}" stroke="${color}" stroke-width="${w}" data-id="${escapeHtml(String(d.id))}"></path>`;
+  }
+
+  function renderDrawings() {
+    const layer = document.getElementById('drawlayer');
+    if (!layer) return;
+    layer.setAttribute('viewBox', '0 0 4000 4000');
+    layer.setAttribute('preserveAspectRatio', 'none');
+    layer.style.width = '4000px';
+    layer.style.height = '4000px';
+    const live = layer.querySelector('#draw-live');
+    const ox = (STATE.map && STATE.map.offset_x) || 0;
+    const oy = (STATE.map && STATE.map.offset_y) || 0;
+    let svg = '';
+    STATE.drawings.forEach(d => { svg += strokeToSVG(d, ox, oy); });
+    layer.innerHTML = svg;
+    if (live) layer.appendChild(live); // keep the in-progress stroke on top
+  }
+
+  function handleDrawingChange(payload) {
+    if (payload.eventType === 'DELETE') {
+      STATE.drawings.delete(payload.old.id);
+      renderDrawings();
+      return;
+    }
+    STATE.drawings.set(payload.new.id, payload.new);
+    renderDrawings();
+  }
+
+  function setEraseUi() {
+    const e = document.getElementById('draw-erase');
+    if (e) e.classList.toggle('active', STATE.drawErase);
+    document.body.classList.toggle('draw-erase', STATE.drawErase && document.body.classList.contains('draw-mode'));
+  }
+
+  function setDrawMode(on) {
+    document.body.classList.toggle('draw-mode', on);
+    const t = document.getElementById('draw-toggle');
+    const bar = document.getElementById('draw-bar');
+    if (t) t.classList.toggle('active', on);
+    if (bar) bar.classList.toggle('open', on);
+    if (!on) STATE.drawErase = false;
+    setEraseUi();
+  }
+
+  function updateDrawRole() {
+    const ca = document.getElementById('draw-clear-all');
+    if (ca) ca.style.display = STATE.isHost ? '' : 'none';
+  }
+
+  function onDrawPointerDown(e) {
+    if (!document.body.classList.contains('draw-mode')) return;
+    e.preventDefault();
+    if (STATE.drawErase) {
+      const id = e.target && e.target.getAttribute && e.target.getAttribute('data-id');
+      if (id) deleteStroke(id);
+      return;
+    }
+    const layer = document.getElementById('drawlayer');
+    try { layer.setPointerCapture(e.pointerId); } catch (_) {}
+    const mc = getMapCoords(e.clientX, e.clientY);
+    const ox = (STATE.map && STATE.map.offset_x) || 0;
+    const oy = (STATE.map && STATE.map.offset_y) || 0;
+    STATE.drawStroke = { color: STATE.drawColor, width: STATE.drawWidth, points: [{ x: mc.x, y: mc.y }] };
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.id = 'draw-live';
+    p.setAttribute('stroke', STATE.drawColor);
+    p.setAttribute('stroke-width', STATE.drawWidth);
+    p.setAttribute('fill', 'none');
+    p.setAttribute('stroke-linecap', 'round');
+    p.setAttribute('stroke-linejoin', 'round');
+    p.setAttribute('d', `M ${(mc.x + ox).toFixed(1)} ${(mc.y + oy).toFixed(1)}`);
+    layer.appendChild(p);
+    STATE.drawStroke.el = p;
+  }
+
+  function onDrawPointerMove(e) {
+    if (!STATE.drawStroke) return;
+    e.preventDefault();
+    const mc = getMapCoords(e.clientX, e.clientY);
+    const pts = STATE.drawStroke.points;
+    const last = pts[pts.length - 1];
+    if (last && Math.abs(last.x - mc.x) < 1.5 && Math.abs(last.y - mc.y) < 1.5) return;
+    pts.push({ x: mc.x, y: mc.y });
+    const ox = (STATE.map && STATE.map.offset_x) || 0;
+    const oy = (STATE.map && STATE.map.offset_y) || 0;
+    STATE.drawStroke.el.setAttribute('d', STATE.drawStroke.el.getAttribute('d') + ` L ${(mc.x + ox).toFixed(1)} ${(mc.y + oy).toFixed(1)}`);
+  }
+
+  function onDrawPointerUp() {
+    if (!STATE.drawStroke) return;
+    const stroke = STATE.drawStroke;
+    STATE.drawStroke = null;
+    if (stroke.el && stroke.el.parentNode) stroke.el.parentNode.removeChild(stroke.el);
+    if (stroke.points.length < 2) return; // a tap, not a stroke
+    saveStroke(stroke);
+  }
+
+  async function saveStroke(stroke) {
+    const row = {
+      id: genId(),
+      session_id: STATE.sessionId,
+      owner_id: STATE.accountId,
+      color: stroke.color,
+      width: stroke.width,
+      points: stroke.points,
+    };
+    STATE.drawings.set(row.id, row); // local-first so it stays visible at once
+    renderDrawings();
+    try {
+      const { error } = await sb.from('vtt_drawings').insert(row);
+      if (error) {
+        const miss = extractMissingColumn(error);
+        if (miss && Object.prototype.hasOwnProperty.call(row, miss)) {
+          delete row[miss];
+          await sb.from('vtt_drawings').insert(row);
+        } else {
+          console.error('Stroke save failed', error);
+          toast('Drawing could not be saved', 'error');
+        }
+      }
+    } catch (e) { console.error('Stroke save failed', e); }
+  }
+
+  async function deleteStroke(id) {
+    const d = STATE.drawings.get(id);
+    if (!d) return;
+    if (!STATE.isHost && d.owner_id !== STATE.accountId) { toast('You can only erase your own drawings', 'error'); return; }
+    STATE.drawings.delete(id);
+    renderDrawings();
+    try { await sb.from('vtt_drawings').delete().eq('id', id); }
+    catch (e) { console.error('Stroke delete failed', e); }
+  }
+
+  async function clearMyDrawings() {
+    const mine = [];
+    STATE.drawings.forEach((d, id) => { if (d.owner_id === STATE.accountId) mine.push(id); });
+    if (!mine.length) return;
+    mine.forEach(id => STATE.drawings.delete(id));
+    renderDrawings();
+    try { await sb.from('vtt_drawings').delete().eq('session_id', STATE.sessionId).eq('owner_id', STATE.accountId); }
+    catch (e) { console.error(e); }
+  }
+
+  async function clearAllDrawings() {
+    if (!STATE.isHost) return;
+    if (!(await confirmModal('Clear ALL drawings on the map?', { title: 'Clear drawings', danger: true, okText: 'Clear all' }))) return;
+    STATE.drawings.clear();
+    renderDrawings();
+    try { await sb.from('vtt_drawings').delete().eq('session_id', STATE.sessionId); }
+    catch (e) { console.error(e); }
+  }
+
+  function setupDrawing() {
+    const layer = document.getElementById('drawlayer');
+    const bar = document.getElementById('draw-bar');
+    const toggle = document.getElementById('draw-toggle');
+    if (!layer || !bar || !toggle) return;
+    toggle.addEventListener('click', () => setDrawMode(!document.body.classList.contains('draw-mode')));
+    bar.querySelectorAll('.draw-swatch').forEach(sw => {
+      sw.addEventListener('click', () => {
+        STATE.drawColor = sw.dataset.color;
+        bar.querySelectorAll('.draw-swatch').forEach(s => s.classList.toggle('active', s === sw));
+        STATE.drawErase = false; setEraseUi();
+      });
+    });
+    const defSw = bar.querySelector('.draw-swatch[data-color="#e23b3b"]');
+    if (defSw) defSw.classList.add('active');
+    bar.querySelectorAll('.draw-w').forEach(wb => {
+      wb.addEventListener('click', () => {
+        STATE.drawWidth = parseInt(wb.dataset.width, 10) || 6;
+        bar.querySelectorAll('.draw-w').forEach(b => b.classList.toggle('active', b === wb));
+      });
+    });
+    const defW = bar.querySelector('.draw-w[data-width="6"]');
+    if (defW) defW.classList.add('active');
+    document.getElementById('draw-erase').addEventListener('click', () => { STATE.drawErase = !STATE.drawErase; setEraseUi(); });
+    document.getElementById('draw-clear-mine').addEventListener('click', clearMyDrawings);
+    document.getElementById('draw-clear-all').addEventListener('click', clearAllDrawings);
+    layer.addEventListener('pointerdown', onDrawPointerDown);
+    layer.addEventListener('pointermove', onDrawPointerMove);
+    layer.addEventListener('pointerup', onDrawPointerUp);
+    layer.addEventListener('pointercancel', onDrawPointerUp);
   }
 
   // ============ SPELL AREA → TOKEN HIT TEST ============
@@ -11937,6 +12187,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (e.target.closest('.map-token') || e.target.closest('#chatbox') ||
         e.target.closest('#zoom-controls') || e.target.closest('#dm-toolbar') ||
         e.target.closest('.resizer') || e.target.closest('.rb-resizer')) return;
+
+    // While drawing on the map, the draw layer handles the pointer, not panning.
+    if (document.body.classList.contains('draw-mode')) return;
 
     // Measure tool (available to everyone)
     if (STATE.activeTool === 'measure') {
@@ -13923,6 +14176,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     rtcSetLocked(true);
   }
   setupRtcUi();
+  setupDrawing();
 
   // Clean up presence on unload
   window.addEventListener('beforeunload', () => {
