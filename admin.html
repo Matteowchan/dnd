@@ -325,6 +325,7 @@ function render() {
         '<div class="row">' +
           '<a class="btn primary" href="./index.html?s=' + encodeURIComponent(s.id) + '">Open</a>' +
           '<a class="btn ghost" href="./index.html?spectate=' + encodeURIComponent(s.id) + '" title="Silent read-only view. No video. Invisible to the table.">Spectate</a>' +
+          '<button class="btn danger" data-del="' + esc(s.id) + '" title="Permanently delete this campaign and all its data">Delete</button>' +
         '</div>' +
       '</div>';
     });
@@ -368,6 +369,26 @@ function render() {
   // expand/collapse accounts
   document.querySelectorAll('.acct-head').forEach(h => {
     h.addEventListener('click', () => h.parentElement.classList.toggle('open'));
+  });
+
+  // delete a campaign (admin only, enforced again server-side)
+  document.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const code = btn.getAttribute('data-del');
+      const card = btn.closest('.camp');
+      const label = card ? (card.querySelector('.cn') || {}).textContent : code;
+      if (!confirm('Permanently delete "' + (label || code) + '"?\n\nThis removes the map, tokens, drawings, chat, audio, characters and the session itself. This cannot be undone.')) return;
+      btn.disabled = true; btn.textContent = 'Deleting…';
+      const { error } = await sb.rpc('admin_delete_campaign', { p_code: code });
+      if (error) {
+        btn.disabled = false; btn.textContent = 'Delete';
+        alert('Could not delete: ' + (error.message || 'unknown error') + '\n(Has vtt_admin_delete.sql been run?)');
+        return;
+      }
+      if (card) { card.style.opacity = '0.4'; card.style.pointerEvents = 'none'; }
+      loadDashboard();
+    });
   });
 
   applyOnline();

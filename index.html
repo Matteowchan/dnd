@@ -1740,6 +1740,10 @@
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M16 4l4 4-9 9H6l-2-2 12-11z"/><path d="M9 11l4 4"/></svg>
           <span class="tool-btn-label">Eraser</span>
         </button>
+        <button class="tool-btn" id="pen-btn" title="Draw on the map (pen). Pick colour and thickness in the palette.">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11z"/><path d="M14 6l2.5 2.5"/><path d="M16.5 3.5l2.5 2.5"/></svg>
+          <span class="tool-btn-label">Draw</span>
+        </button>
         <button class="tool-btn" id="clear-effects-btn" title="Remove all spell effects on the map (DM only)">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14"/></svg>
           <span class="tool-btn-label">Remove Spell FX</span>
@@ -10607,6 +10611,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const erBtn = document.getElementById('eraser-btn');
     if (erBtn) erBtn.classList.toggle('active', tool === 'eraser');
     document.body.classList.toggle('eraser-mode', tool === 'eraser');
+    // Picking any real tool leaves the pen/draw mode.
+    if (tool && document.body.classList.contains('draw-mode')) setDrawMode(false);
   }
 
   document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
@@ -10768,8 +10774,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.body.classList.toggle('draw-mode', on);
     const t = document.getElementById('draw-toggle');
     const bar = document.getElementById('draw-bar');
+    const pen = document.getElementById('pen-btn');
     if (t) t.classList.toggle('active', on);
     if (bar) bar.classList.toggle('open', on);
+    if (pen) pen.classList.toggle('active', on);
     if (!on) STATE.drawErase = false;
     setEraseUi();
   }
@@ -10889,6 +10897,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const toggle = document.getElementById('draw-toggle');
     if (!layer || !bar || !toggle) return;
     toggle.addEventListener('click', () => setDrawMode(!document.body.classList.contains('draw-mode')));
+    const penBtn = document.getElementById('pen-btn');
+    if (penBtn) penBtn.addEventListener('click', () => {
+      if (document.body.classList.contains('draw-mode')) { setDrawMode(false); setActiveTool('select'); }
+      else { setActiveTool(null); setDrawMode(true); }
+    });
     bar.querySelectorAll('.draw-swatch').forEach(sw => {
       sw.addEventListener('click', () => {
         STATE.drawColor = sw.dataset.color;
