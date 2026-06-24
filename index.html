@@ -163,6 +163,11 @@
   .recovery-btn.danger:hover { background: linear-gradient(180deg, #b5503f, #7a3328); color: #fff; border-color: #c25a47; }
   .recovery-input { width: 100%; box-sizing: border-box; margin: 0 0 16px; padding: 9px 11px; background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 5px; color: var(--cream); font-size: 14px; }
   .recovery-input:focus { outline: none; border-color: var(--gold-soft); }
+  .board-empty { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; pointer-events: none; z-index: 1; }
+  .board-empty .be-inner { text-align: center; background: rgba(20,17,14,0.55); border: 1px solid var(--border); border-radius: 10px; padding: 18px 26px; backdrop-filter: blur(2px); }
+  .board-empty .be-title { font-family: 'Cinzel', serif; letter-spacing: 0.06em; font-size: 15px; color: var(--gold-soft); margin-bottom: 5px; }
+  .board-empty .be-sub { font-family: 'Crimson Pro', serif; font-size: 13px; color: var(--muted); }
+  .chat-empty { color: var(--muted); font-size: 12px; font-style: italic; padding: 14px 10px; text-align: center; }
   .mc-recover { background: transparent; border: none; padding: 0; color: var(--gold-soft); font-size: 11px; letter-spacing: 0.03em; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
   .mc-recover:hover { color: var(--gold); background: transparent; }
 
@@ -1663,6 +1668,7 @@
     <div id="mapcontainer">
       <div id="grid"></div>
       <div id="maplayer"></div>
+      <div id="board-empty" class="board-empty"></div>
       <svg id="effectslayer">
         <defs>
           <filter id="fx-glow-soft" x="-50%" y="-50%" width="200%" height="200%">
@@ -1726,7 +1732,7 @@
             <button id="chat-minimize">−</button>
           </div>
         </div>
-        <div id="chatlog"></div>
+        <div id="chatlog"><div id="chat-empty" class="chat-empty">No messages yet. Say hello or roll the dice.</div></div>
         <div id="chat-whisper-bar" style="display:none">
           <span class="cw-label">Send to:</span>
           <select id="chat-whisper-target">
@@ -4881,6 +4887,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (chat) {
       chat.forEach(msg => renderChatMessage(msg, { skipAnimate: true }));
     }
+    updateChatEmpty();
 
     // With no map, start the view centered on the grid instead of the corner.
     if (!STATE.map) setTimeout(centerViewDefault, 120);
@@ -5296,6 +5303,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       el.style.top = (STATE.map.offset_y || 0) + 'px';
       layer.appendChild(el);
     }
+    const be = document.getElementById('board-empty');
+    if (be) {
+      const hasMap = !!(STATE.map && STATE.map.image_url);
+      be.style.display = hasMap ? 'none' : 'flex';
+      if (!hasMap) {
+        be.innerHTML = STATE.isHost
+          ? '<div class="be-inner"><div class="be-title">No map yet</div><div class="be-sub">Generate or upload a map, then reveal it to your players.</div></div>'
+          : '<div class="be-inner"><div class="be-title">The scene is being set</div><div class="be-sub">Waiting for the DM to reveal a map.</div></div>';
+      }
+    }
     applyTransform();
   }
 
@@ -5468,6 +5485,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     });
   }
 
+  function updateChatEmpty() {
+    const log = document.getElementById('chatlog');
+    const hint = document.getElementById('chat-empty');
+    if (!log || !hint) return;
+    hint.style.display = log.querySelector('.chat-msg') ? 'none' : 'block';
+  }
   function renderChatMessage(msg, opts = {}) {
     if (msg.msg_type === 'rest_request') return; // control message, not a chat line
     if (msg.is_private && !canSeePrivateMsg(msg)) return;
@@ -5514,6 +5537,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }
     log.appendChild(div);
     log.scrollTop = log.scrollHeight;
+    updateChatEmpty();
   }
 
   // Whisper visibility rule: visible to sender, recipient, and the DM.
