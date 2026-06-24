@@ -1041,6 +1041,11 @@
   /* EFFECTS LAYER */
   #effectslayer { position: absolute; top: 0; left: 0; width: 4000px; height: 4000px; transform-origin: 0 0; pointer-events: none; overflow: visible; mix-blend-mode: screen; }
   #drawlayer { position: absolute; top: 0; left: 0; width: 4000px; height: 4000px; transform-origin: 0 0; pointer-events: none; overflow: visible; }
+  /* Silent observer: hide every authoring surface, leave the board to look at. */
+  body.spectator #dm-toolbar, body.spectator #chatinput, body.spectator #draw-bar, body.spectator #rtc-bar { display: none !important; }
+  .role-badge.role-spectator { background: #2a2440; color: #cdbff0; border: 1px solid #5a4f86; }
+  #spectator-banner { display: none; position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 200; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(42,36,64,0.92); border: 1px solid #5a4f86; color: #cdbff0; border-radius: 999px; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.06em; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
+  #spectator-banner .eye { width: 7px; height: 7px; border-radius: 50%; background: #cdbff0; box-shadow: 0 0 8px #cdbff0; }
   body.draw-mode #drawlayer { pointer-events: auto; cursor: crosshair; }
   body.draw-mode.draw-erase #drawlayer { cursor: pointer; }
   #drawlayer path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
@@ -2187,6 +2192,8 @@
 
 <button id="char-panel-show" title="Show character panel">Character</button>
 
+<div id="spectator-banner"><span class="eye"></span>Spectating · invisible to the table · read only</div>
+
 <div id="draw-bar">
   <div class="draw-tools" id="draw-tools">
     <button class="draw-swatch" data-color="#e23b3b" style="background:#e23b3b" title="Red"></button>
@@ -2799,6 +2806,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     drawWidth: 6,
     drawErase: false,
     drawStroke: null,       // active stroke being drawn
+    spectator: false,       // admin silent observer: no row, no presence, read-only
     remoteDrags: new Map(), // userId -> { tokenId, startX, startY, x, y, isMeasure, name }
 
     audio: null,
@@ -3075,6 +3083,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (sc) {
         const si = document.getElementById('session-input');
         if (si) si.value = sc.toUpperCase().slice(0, 4);
+      }
+    } catch (e) {}
+    // Admin-only silent observer: index.html?spectate=ABCD starts a read-only,
+    // invisible board view. Restricted to the keeper account so no one else can
+    // observe a game unseen.
+    try {
+      const spec = new URLSearchParams(location.search).get('spectate');
+      if (spec && (user.email || '').toLowerCase() === 'mertatasal@gmail.com') {
+        spectateSession(spec.toUpperCase().slice(0, 4));
+        return;
       }
     } catch (e) {}
     renderMyCampaigns(user.id);
@@ -4117,7 +4135,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.getElementById('app').style.display = 'flex';
     // Stamp recency on this account's row so "Your Campaigns" can sort by last
     // played across devices. Silently ignored if the column is not present yet.
-    if (!DEMO_MODE && STATE.userId && STATE.sessionId) {
+    if (!DEMO_MODE && !STATE.spectator && STATE.userId && STATE.sessionId) {
       sb.from('vtt_players')
         .update({ last_entered_at: new Date().toISOString() })
         .eq('id', STATE.userId)
@@ -4184,7 +4202,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
     // Open the docked character panel automatically for players. For hosts,
     // leave it closed - it will slide in when they click on a token.
-    if (!STATE.isHost) {
+    if (!STATE.isHost && !STATE.spectator) {
       openCharPopup(STATE.userId);
     }
 
@@ -4202,6 +4220,27 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     renderInitiative();
     // Whisper bar (DM only, but the function checks for that itself)
     setupWhisperBar();
+  }
+
+  // Silent read-only observer. No character row is created and presence is never
+  // tracked, so the table cannot see the observer. All writes are additionally
+  // refused by RLS because an observer is not a member of the session. There is
+  // no video here on purpose: receiving a camera requires the sender's browser to
+  // transmit to you, which would make you visible, so observation stays to the
+  // shared board only.
+  async function spectateSession(code) {
+    STATE.spectator = true;
+    STATE.isHost = false;
+    STATE.role = 'spectator';
+    STATE.sessionId = code;
+    STATE.username = 'Observer';
+    STATE.userId = 'spectator-' + genId(); // local only, never written to the DB
+    document.body.classList.add('spectator');
+    await enterApp();
+    const badge = document.getElementById('role-badge');
+    if (badge) { badge.textContent = 'SPECTATOR'; badge.className = 'role-badge role-spectator'; }
+    const banner = document.getElementById('spectator-banner');
+    if (banner) banner.style.display = 'flex';
   }
 
   // ============ SIDE BAR RESIZERS ============
@@ -4992,11 +5031,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
             ind.textContent = 'Live';
             ind.className = 'connected';
           }
-          await STATE.channel.track({
-            userId: STATE.userId,
-            name: STATE.username,
-            isHost: STATE.isHost,
-          });
+          if (!STATE.spectator) {
+            await STATE.channel.track({
+              userId: STATE.userId,
+              name: STATE.username,
+              isHost: STATE.isHost,
+            });
+          }
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           if (!DEMO_MODE) {
             ind.textContent = 'Disconnected';
@@ -7884,6 +7925,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     return null;
   }
   async function saveCharacterChanges() {
+    if (STATE.spectator) return;
     if (!CHAR_POPUP.targetPlayerId) return;
     if (CHAR_POPUP.loading) return;
     const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
@@ -10786,6 +10828,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   }
 
   async function saveStroke(stroke) {
+    if (STATE.spectator) return;
     const row = {
       id: genId(),
       session_id: STATE.sessionId,
@@ -11472,6 +11515,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   // Broadcast token drag and measurement tool positions so others can see them in realtime
   let lastBroadcastTime = 0;
   function broadcastDrag(payload) {
+    if (STATE.spectator) return;
     if (!STATE.channel) return;
     const now = Date.now();
     // Throttle to ~50ms
@@ -12392,6 +12436,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   }
 
   function startTokenDrag(e, tok) {
+    if (STATE.spectator) { e.preventDefault(); return; }
     // Players cannot move tokens when host has locked them
     if (STATE.tokensLocked && !STATE.isHost) {
       // Allow click to view info but not drag
@@ -13362,6 +13407,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   }
 
   async function sendChat() {
+    if (STATE.spectator) return;
     const inp = document.getElementById('chat-text');
     const text = inp.value.trim();
     if (!text) return;
