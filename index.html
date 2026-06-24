@@ -3068,6 +3068,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const eb = document.getElementById('entry-block'); if (eb) eb.style.display = 'block';
     const s = document.getElementById('signed-in-as');
     if (s) s.textContent = 'Signed in as ' + (user.email || 'your account');
+    // Allow deep links like index.html?s=ABCD (used by the admin page) to
+    // prefill the session code so the keeper can jump straight into a campaign.
+    try {
+      const sc = new URLSearchParams(location.search).get('s');
+      if (sc) {
+        const si = document.getElementById('session-input');
+        if (si) si.value = sc.toUpperCase().slice(0, 4);
+      }
+    } catch (e) {}
     renderMyCampaigns(user.id);
   }
   // Build the "Your Campaigns" list for a signed-in account. Reads every

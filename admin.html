@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rollenspieler · Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #0d0a08;
+    --panel: #1a1612;
+    --panel-light: #241e17;
+    --border: #3a2f24;
+    --gold: #d4a574;
+    --gold-soft: #a8845a;
+    --cream: #e8dcc4;
+    --muted: #8a7c66;
+    --danger: #a04848;
+    --success: #6b8a4a;
+    --ember: #e08c3a;
+    --online: #6fbf5a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(212,165,116,0.08), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(224,140,58,0.06), transparent 60%),
+      var(--bg);
+    color: var(--cream);
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-size: 16px;
+    min-height: 100vh;
+  }
+  a { color: var(--gold); }
+  .cinzel { font-family: 'Cinzel', serif; letter-spacing: 0.06em; }
+
+  /* ---------- Gate (login / denied) ---------- */
+  #gate { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .gate-card {
+    width: 100%; max-width: 380px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 30px 28px; box-shadow: 0 24px 70px rgba(0,0,0,0.6);
+    position: relative; overflow: hidden;
+  }
+  .gate-card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+  .gate-card h1 { font-family: 'Cinzel', serif; font-weight: 700; font-size: 20px; color: var(--gold); margin: 0 0 4px; letter-spacing: 0.08em; }
+  .gate-card .sub { color: var(--muted); font-size: 14px; margin: 0 0 22px; }
+  .gate-card label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 5px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .gate-card input {
+    width: 100%; padding: 11px 12px; background: rgba(0,0,0,0.25); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--cream); font-family: inherit; font-size: 15px;
+  }
+  .gate-card input:focus { outline: none; border-color: var(--gold-soft); }
+  .btn {
+    font-family: 'Cinzel', serif; letter-spacing: 0.05em; cursor: pointer; border-radius: 6px;
+    border: 1px solid var(--gold-soft); background: var(--panel-light); color: var(--gold);
+    padding: 10px 16px; font-size: 13px; transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .btn:hover { background: var(--gold); color: #1a1208; border-color: var(--gold); }
+  .btn.primary { background: linear-gradient(180deg, var(--gold), var(--gold-soft)); color: #1a1208; border-color: var(--gold); }
+  .btn.ghost { background: transparent; }
+  .btn.danger { border-color: var(--danger); color: #e0a3a3; }
+  .btn.danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .gate-card .btn { width: 100%; margin-top: 22px; padding: 12px; }
+  .gate-msg { margin-top: 14px; font-size: 13px; min-height: 18px; }
+  .gate-msg.err { color: #e0a3a3; }
+  .gate-msg.ok { color: #b7d49a; }
+
+  /* ---------- Shell ---------- */
+  #app { display: none; max-width: 1180px; margin: 0 auto; padding: 22px 22px 80px; }
+  header.bar {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 0 0 16px; border-bottom: 1px solid var(--border); margin-bottom: 22px;
+  }
+  header.bar .title { font-family: 'Cinzel', serif; font-weight: 700; font-size: 22px; color: var(--gold); letter-spacing: 0.1em; }
+  header.bar .title small { display: block; font-family: 'Crimson Pro', serif; font-weight: 400; font-size: 12px; color: var(--muted); letter-spacing: 0.18em; text-transform: uppercase; margin-top: 2px; }
+  header.bar .spacer { flex: 1; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; font-size: 13px; color: var(--cream); }
+  .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .pill .dot.live { background: var(--online); box-shadow: 0 0 8px var(--online); }
+
+  /* ---------- Stat tiles ---------- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 26px; }
+  .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; position: relative; overflow: hidden; }
+  .stat::after { content: ""; position: absolute; right: -20px; bottom: -20px; width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle, rgba(212,165,116,0.12), transparent 70%); }
+  .stat .n { font-family: 'Cinzel', serif; font-weight: 700; font-size: 30px; color: var(--gold); line-height: 1; }
+  .stat .n.live { color: var(--online); }
+  .stat .l { font-size: 12px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 8px; }
+
+  /* ---------- Sections ---------- */
+  section { margin-bottom: 30px; }
+  h2.sec { font-family: 'Cinzel', serif; font-size: 16px; color: var(--cream); letter-spacing: 0.08em; margin: 0 0 14px; display: flex; align-items: center; gap: 10px; }
+  h2.sec::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+  h2.sec .count { font-family: 'Crimson Pro', serif; font-size: 13px; color: var(--muted); letter-spacing: 0; }
+
+  /* ---------- Campaign grid ---------- */
+  .camp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+  .camp {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 15px 16px;
+    transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  }
+  .camp:hover { border-color: var(--gold-soft); transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,0,0,0.4); }
+  .camp .cn { font-family: 'Cinzel', serif; font-size: 15px; color: var(--gold); margin-bottom: 3px; word-break: break-word; }
+  .camp .code { font-size: 12px; color: var(--muted); letter-spacing: 0.16em; }
+  .camp .meta { font-size: 13px; color: var(--cream); margin: 10px 0 12px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .camp .meta b { color: var(--gold-soft); font-weight: 600; }
+  .camp .online-badge { color: var(--online); }
+  .camp .row { display: flex; gap: 8px; }
+
+  /* ---------- Accounts ---------- */
+  .acct { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .acct-head { display: flex; align-items: center; gap: 12px; padding: 13px 16px; cursor: pointer; user-select: none; }
+  .acct-head:hover { background: var(--panel-light); }
+  .acct .who { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+  .acct .email { font-size: 15px; color: var(--cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .acct .sub { font-size: 12px; color: var(--muted); }
+  .acct .chev { color: var(--muted); transition: transform 0.18s; }
+  .acct.open .chev { transform: rotate(90deg); }
+  .acct-body { display: none; padding: 4px 16px 16px; border-top: 1px solid var(--border); }
+  .acct.open .acct-body { display: block; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: 0 0 auto; }
+  .dot.live { background: var(--online); box-shadow: 0 0 8px var(--online); }
+
+  .chars { display: flex; flex-direction: column; gap: 7px; margin-top: 12px; }
+  .char { display: flex; align-items: center; gap: 10px; padding: 8px 11px; background: var(--panel-light); border: 1px solid var(--border); border-radius: 7px; }
+  .char .nm { color: var(--cream); font-size: 14px; }
+  .char .tag { font-size: 11px; color: var(--muted); }
+  .char .host { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #1a1208; background: var(--gold); padding: 1px 6px; border-radius: 3px; }
+  .char .spacer { flex: 1; }
+  .char .camp-link { font-size: 12px; }
+  .muted { color: var(--muted); }
+  .empty { color: var(--muted); font-style: italic; padding: 14px 4px; }
+
+  .loader { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 60px; color: var(--muted); }
+  .spinner { width: 26px; height: 26px; border: 3px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 720px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== Gate: login or access denied ===== -->
+<div id="gate">
+  <div class="gate-card">
+    <h1>Rollenspieler</h1>
+    <p class="sub cinzel" style="letter-spacing:0.16em; font-size:11px;">KEEPER'S LEDGER</p>
+    <div id="gate-login">
+      <label>Email</label>
+      <input id="g-email" type="email" autocomplete="username" placeholder="you@example.com">
+      <label>Password</label>
+      <input id="g-pass" type="password" autocomplete="current-password" placeholder="••••••••">
+      <button class="btn primary" id="g-submit">Enter</button>
+      <div class="gate-msg" id="g-msg"></div>
+    </div>
+    <div id="gate-denied" style="display:none;">
+      <p class="sub" style="margin-top:18px;">This ledger is sealed to all but the keeper.</p>
+      <button class="btn danger" id="g-signout">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Dashboard ===== -->
+<div id="app">
+  <header class="bar">
+    <div class="title">Rollenspieler<small>Keeper's Ledger</small></div>
+    <div class="spacer"></div>
+    <span class="pill" id="online-pill"><span class="dot"></span><span id="online-txt">0 online</span></span>
+    <span class="pill" id="who-pill"></span>
+    <button class="btn ghost" id="refresh">Refresh</button>
+    <button class="btn danger" id="signout">Sign out</button>
+  </header>
+
+  <div id="content">
+    <div class="loader"><div class="spinner"></div><span>Consulting the ledger…</span></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://hxhgirhguiuxxtzasebw.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_et2icas63e66Yi_oAggJrg_WqTgEkq7';
+const ADMIN_EMAIL = 'mertatasal@gmail.com';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+let DATA = null;            // last admin_overview payload
+const ONLINE = new Set();   // character ids currently present
+const channels = [];        // presence channels we subscribed to
+
+function relTime(iso) {
+  if (!iso) return 'never';
+  const d = new Date(iso); const s = (Date.now() - d.getTime()) / 1000;
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  if (s < 2592000) return Math.floor(s / 86400) + 'd ago';
+  return d.toLocaleDateString();
+}
+function fmtDate(iso) { if (!iso) return '—'; return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); }
+
+/* ---------- Auth gate ---------- */
+async function boot() {
+  const { data } = await sb.auth.getSession();
+  const user = data.session && data.session.user;
+  if (!user) return showLogin();
+  if ((user.email || '').toLowerCase() !== ADMIN_EMAIL) return showDenied();
+  showApp();
+}
+
+function showLogin() {
+  $('gate').style.display = 'flex';
+  $('app').style.display = 'none';
+  $('gate-login').style.display = 'block';
+  $('gate-denied').style.display = 'none';
+}
+function showDenied() {
+  $('gate').style.display = 'flex';
+  $('app').style.display = 'none';
+  $('gate-login').style.display = 'none';
+  $('gate-denied').style.display = 'block';
+}
+function showApp() {
+  $('gate').style.display = 'none';
+  $('app').style.display = 'block';
+  loadDashboard();
+}
+
+$('g-submit').addEventListener('click', doLogin);
+$('g-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+async function doLogin() {
+  const email = $('g-email').value.trim();
+  const password = $('g-pass').value;
+  const msg = $('g-msg');
+  msg.className = 'gate-msg'; msg.textContent = '';
+  if (!email || !password) { msg.className = 'gate-msg err'; msg.textContent = 'Enter email and password.'; return; }
+  $('g-submit').disabled = true; $('g-submit').textContent = 'Opening…';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  $('g-submit').disabled = false; $('g-submit').textContent = 'Enter';
+  if (error) { msg.className = 'gate-msg err'; msg.textContent = error.message || 'Sign in failed.'; return; }
+  if ((data.user.email || '').toLowerCase() !== ADMIN_EMAIL) { showDenied(); return; }
+  showApp();
+}
+$('g-signout').addEventListener('click', signOut);
+$('signout').addEventListener('click', signOut);
+async function signOut() { teardownPresence(); await sb.auth.signOut(); showLogin(); }
+$('refresh').addEventListener('click', loadDashboard);
+
+/* ---------- Data + render ---------- */
+async function loadDashboard() {
+  $('who-pill').textContent = ADMIN_EMAIL;
+  $('content').innerHTML = '<div class="loader"><div class="spinner"></div><span>Consulting the ledger…</span></div>';
+  const { data, error } = await sb.rpc('admin_overview');
+  if (error) {
+    $('content').innerHTML = '<div class="empty">Could not load the ledger: ' + esc(error.message) +
+      '. Make sure vtt_admin_setup.sql has been run.</div>';
+    return;
+  }
+  DATA = data || {};
+  render();
+  setupPresence();
+}
+
+function sessionMap() {
+  const m = {};
+  (DATA.sessions || []).forEach(s => { m[s.id] = s; });
+  return m;
+}
+function campaignName(s) {
+  if (!s) return null;
+  return (s.campaign_name && s.campaign_name.trim()) ? s.campaign_name : null;
+}
+
+function render() {
+  const accounts = DATA.accounts || [];
+  const sessions = DATA.sessions || [];
+  const unclaimed = DATA.unclaimed_characters || [];
+  const smap = sessionMap();
+
+  // group all characters by session for member counts
+  const bySession = {};
+  const addChar = (c, ownerEmail) => {
+    (bySession[c.session_id] = bySession[c.session_id] || []).push(Object.assign({ ownerEmail }, c));
+  };
+  accounts.forEach(a => (a.characters || []).forEach(c => addChar(c, a.email)));
+  unclaimed.forEach(c => addChar(c, null));
+
+  const totalChars = accounts.reduce((n, a) => n + (a.characters || []).length, 0) + unclaimed.length;
+
+  let html = '';
+
+  // Stat tiles
+  html += '<div class="stats">' +
+    statTile(accounts.length, 'Accounts') +
+    statTile(sessions.length, 'Campaigns') +
+    statTile(totalChars, 'Characters') +
+    statTile('<span id="stat-online">0</span>', 'Online now', true) +
+    '</div>';
+
+  // Campaigns
+  html += '<section><h2 class="sec">Campaigns <span class="count">' + sessions.length + '</span></h2>';
+  if (!sessions.length) {
+    html += '<div class="empty">No campaigns yet.</div>';
+  } else {
+    html += '<div class="camp-grid">';
+    sessions.forEach(s => {
+      const members = bySession[s.id] || [];
+      const host = members.find(m => m.is_host);
+      const cn = campaignName(s);
+      html += '<div class="camp" data-session="' + esc(s.id) + '">' +
+        '<div class="cn">' + esc(cn || ('Untitled · ' + s.id)) + '</div>' +
+        '<div class="code">CODE ' + esc(s.id) + '</div>' +
+        '<div class="meta">' +
+          '<span>DM <b>' + esc((host && (host.ownerEmail || host.name)) || s.host_name || '—') + '</b></span>' +
+          '<span><b>' + members.length + '</b> in party</span>' +
+          '<span class="online-badge" data-camp-online="' + esc(s.id) + '">0 online</span>' +
+        '</div>' +
+        '<div class="row">' +
+          '<a class="btn primary" href="./index.html?s=' + encodeURIComponent(s.id) + '">Open</a>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+  }
+  html += '</section>';
+
+  // Accounts
+  html += '<section><h2 class="sec">Accounts <span class="count">' + accounts.length + '</span></h2>';
+  if (!accounts.length) {
+    html += '<div class="empty">No registered accounts yet.</div>';
+  } else {
+    accounts.forEach((a, i) => {
+      const chars = a.characters || [];
+      html += '<div class="acct" data-acct="' + i + '">' +
+        '<div class="acct-head">' +
+          '<span class="dot" data-acct-dot="' + esc(a.user_id) + '"></span>' +
+          '<div class="who">' +
+            '<span class="email">' + esc(a.email || '(no email)') + '</span>' +
+          '</div>' +
+          '<span class="sub">' + chars.length + ' character' + (chars.length === 1 ? '' : 's') +
+            ' · joined ' + fmtDate(a.created_at) + ' · seen ' + relTime(a.last_sign_in_at) + '</span>' +
+          '<span class="chev">›</span>' +
+        '</div>' +
+        '<div class="acct-body">' + charList(chars, smap) + '</div>' +
+      '</div>';
+    });
+  }
+  html += '</section>';
+
+  // Unclaimed (legacy / pre-auth) characters
+  if (unclaimed.length) {
+    html += '<section><h2 class="sec">Unclaimed characters <span class="count">' + unclaimed.length + '</span></h2>' +
+      '<div class="muted" style="font-size:13px; margin:-6px 0 12px;">Pre-login characters not tied to any account. Players reclaim these on entry.</div>' +
+      '<div class="acct"><div class="acct-body" style="display:block; border-top:none;">' + charList(unclaimed, smap) + '</div></div>' +
+      '</section>';
+  }
+
+  $('content').innerHTML = html;
+
+  // expand/collapse accounts
+  document.querySelectorAll('.acct-head').forEach(h => {
+    h.addEventListener('click', () => h.parentElement.classList.toggle('open'));
+  });
+
+  applyOnline();
+}
+
+function statTile(n, label, live) {
+  return '<div class="stat"><div class="n' + (live ? ' live' : '') + '">' + n + '</div><div class="l">' + label + '</div></div>';
+}
+
+function charList(chars, smap) {
+  if (!chars || !chars.length) return '<div class="empty">No characters.</div>';
+  let h = '<div class="chars">';
+  chars.forEach(c => {
+    const s = smap[c.session_id];
+    const cn = campaignName(s) || ('Code ' + c.session_id);
+    const cls = [c.class, c.level ? ('Lv ' + c.level) : ''].filter(Boolean).join(' · ');
+    h += '<div class="char">' +
+      '<span class="dot" data-char-dot="' + esc(c.id) + '"></span>' +
+      '<span class="nm">' + esc(c.name || 'Unnamed') + '</span>' +
+      (c.is_host ? '<span class="host">DM</span>' : '') +
+      (cls ? '<span class="tag">' + esc(cls) + '</span>' : '') +
+      '<span class="spacer"></span>' +
+      '<span class="tag">' + esc(relTime(c.last_entered_at)) + '</span>' +
+      '<a class="camp-link" href="./index.html?s=' + encodeURIComponent(c.session_id) + '">' + esc(cn) + '</a>' +
+    '</div>';
+  });
+  return h + '</div>';
+}
+
+/* ---------- Live presence ---------- */
+function teardownPresence() {
+  channels.forEach(ch => { try { sb.removeChannel(ch); } catch (e) {} });
+  channels.length = 0;
+  ONLINE.clear();
+}
+
+function setupPresence() {
+  teardownPresence();
+  const sessions = (DATA.sessions || []).slice(0, 60); // sane cap
+  sessions.forEach(s => {
+    const ch = sb.channel('vtt:' + s.id, { config: { presence: { key: 'admin-observer' } } });
+    ch.on('presence', { event: 'sync' }, () => { recomputeOnline(); })
+      .on('presence', { event: 'join' }, () => { recomputeOnline(); })
+      .on('presence', { event: 'leave' }, () => { recomputeOnline(); })
+      .subscribe();
+    ch._sessionId = s.id;
+    channels.push(ch);
+  });
+}
+
+function recomputeOnline() {
+  ONLINE.clear();
+  channels.forEach(ch => {
+    let state = {};
+    try { state = ch.presenceState() || {}; } catch (e) { state = {}; }
+    Object.keys(state).forEach(key => {
+      if (key === 'admin-observer') return;       // ourselves, not a player
+      ONLINE.add(key);                            // presence key is the character id
+    });
+  });
+  applyOnline();
+}
+
+function applyOnline() {
+  // total online count
+  const total = ONLINE.size;
+  const ot = $('online-txt'); if (ot) ot.textContent = total + (total === 1 ? ' online' : ' online');
+  const pillDot = document.querySelector('#online-pill .dot'); if (pillDot) pillDot.classList.toggle('live', total > 0);
+  const so = $('stat-online'); if (so) { so.textContent = total; }
+
+  // character dots
+  document.querySelectorAll('[data-char-dot]').forEach(el => {
+    el.classList.toggle('live', ONLINE.has(el.getAttribute('data-char-dot')));
+  });
+
+  // account dots: live if any of their characters online
+  const accounts = (DATA && DATA.accounts) || [];
+  accounts.forEach(a => {
+    const any = (a.characters || []).some(c => ONLINE.has(c.id));
+    const dot = document.querySelector('[data-acct-dot="' + cssEsc(a.user_id) + '"]');
+    if (dot) dot.classList.toggle('live', any);
+  });
+
+  // per-campaign online counts
+  const smap = {};
+  (DATA && DATA.sessions || []).forEach(s => { smap[s.id] = 0; });
+  const bySession = {};
+  accounts.forEach(a => (a.characters || []).forEach(c => { (bySession[c.session_id] = bySession[c.session_id] || []).push(c.id); }));
+  (DATA && DATA.unclaimed_characters || []).forEach(c => { (bySession[c.session_id] = bySession[c.session_id] || []).push(c.id); });
+  document.querySelectorAll('[data-camp-online]').forEach(el => {
+    const sid = el.getAttribute('data-camp-online');
+    const ids = bySession[sid] || [];
+    const n = ids.filter(id => ONLINE.has(id)).length;
+    el.textContent = n + ' online';
+    el.style.opacity = n > 0 ? '1' : '0.5';
+  });
+}
+
+function cssEsc(s) { return String(s).replace(/"/g, '\\"'); }
+
+boot();
+</script>
+</body>
+</html>
