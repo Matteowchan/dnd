@@ -1060,7 +1060,8 @@
   #draw-color-custom { width: 26px; height: 26px; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: none; cursor: pointer; }
   #draw-color-custom::-webkit-color-swatch-wrapper { padding: 0; }
   #draw-color-custom::-webkit-color-swatch { border: none; border-radius: 50%; }
-  #draw-bar { position: fixed; left: 10px; bottom: 10px; z-index: 80; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  #draw-bar { position: fixed; left: 10px; top: 120px; z-index: 120; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  #draw-toggle { display: none; }
   #draw-bar .draw-tools { display: none; flex-wrap: wrap; gap: 6px; align-items: center; max-width: 280px; padding: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
   #draw-bar.open .draw-tools { display: flex; }
   #draw-toggle { padding: 8px 14px; background: var(--panel-light); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 6px; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.05em; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
@@ -10840,6 +10841,20 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.body.classList.toggle('draw-erase', STATE.drawErase && document.body.classList.contains('draw-mode'));
   }
 
+  function positionDrawBar() {
+    const pen = document.getElementById('pen-btn');
+    const bar = document.getElementById('draw-bar');
+    if (!pen || !bar) return;
+    const r = pen.getBoundingClientRect();
+    if (!r.width && !r.height) return; // pen not visible, leave default
+    bar.style.bottom = 'auto';
+    bar.style.top = (r.bottom + 8) + 'px';
+    const bw = bar.offsetWidth || 280;
+    let left = r.left;
+    if (left + bw > window.innerWidth - 8) left = Math.max(8, window.innerWidth - bw - 8);
+    bar.style.left = left + 'px';
+  }
+
   function setDrawMode(on) {
     document.body.classList.toggle('draw-mode', on);
     const t = document.getElementById('draw-toggle');
@@ -10850,6 +10865,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (pen) pen.classList.toggle('active', on);
     if (!on) STATE.drawErase = false;
     setEraseUi();
+    if (on) positionDrawBar();
   }
 
   function updateDrawRole() {
@@ -11030,6 +11046,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     layer.addEventListener('pointermove', onDrawPointerMove);
     layer.addEventListener('pointerup', onDrawPointerUp);
     layer.addEventListener('pointercancel', onDrawPointerUp);
+    window.addEventListener('resize', () => { if (document.body.classList.contains('draw-mode')) positionDrawBar(); });
     // The toolbar Eraser (eraser tool, outside draw mode) erases strokes too.
     layer.addEventListener('click', (e) => {
       if (STATE.activeTool !== 'eraser') return;
