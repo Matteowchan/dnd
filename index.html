@@ -1050,6 +1050,16 @@
   body.draw-mode.draw-erase #drawlayer { cursor: pointer; }
   #drawlayer path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
   body.draw-mode.draw-erase #drawlayer path { pointer-events: stroke; }
+  /* The toolbar Eraser (eraser tool) also removes painted strokes. */
+  body.eraser-mode #drawlayer path { pointer-events: stroke; cursor: pointer; }
+  body.eraser-mode #drawlayer path:hover { stroke-opacity: 0.45; }
+  .draw-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; width: 100%; }
+  .draw-row + .draw-row { border-top: 1px solid var(--border); padding-top: 7px; margin-top: 1px; }
+  .draw-tool { width: 32px; height: 28px; border-radius: 5px; background: var(--panel-light); border: 1px solid var(--border); color: var(--cream); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .draw-tool.active { border-color: var(--gold); color: var(--gold); background: rgba(212,165,116,0.12); }
+  #draw-color-custom { width: 26px; height: 26px; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: none; cursor: pointer; }
+  #draw-color-custom::-webkit-color-swatch-wrapper { padding: 0; }
+  #draw-color-custom::-webkit-color-swatch { border: none; border-radius: 50%; }
   #draw-bar { position: fixed; left: 10px; bottom: 10px; z-index: 80; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
   #draw-bar .draw-tools { display: none; flex-wrap: wrap; gap: 6px; align-items: center; max-width: 280px; padding: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
   #draw-bar.open .draw-tools { display: flex; }
@@ -2200,17 +2210,42 @@
 
 <div id="draw-bar">
   <div class="draw-tools" id="draw-tools">
-    <button class="draw-swatch" data-color="#e23b3b" style="background:#e23b3b" title="Red"></button>
-    <button class="draw-swatch" data-color="#f0b429" style="background:#f0b429" title="Gold"></button>
-    <button class="draw-swatch" data-color="#3bb273" style="background:#3bb273" title="Green"></button>
-    <button class="draw-swatch" data-color="#4a90d9" style="background:#4a90d9" title="Blue"></button>
-    <button class="draw-swatch" data-color="#f5f0e6" style="background:#f5f0e6" title="White"></button>
-    <button class="draw-w" data-width="3" title="Thin">S</button>
-    <button class="draw-w" data-width="6" title="Medium">M</button>
-    <button class="draw-w" data-width="11" title="Thick">L</button>
-    <button class="draw-act" id="draw-erase" title="Tap a line to erase it">Eraser</button>
-    <button class="draw-act" id="draw-clear-mine" title="Remove your own drawings">Clear mine</button>
-    <button class="draw-act" id="draw-clear-all" style="display:none" title="Remove every drawing (DM)">Clear all</button>
+    <div class="draw-row" id="draw-shapes">
+      <button class="draw-tool active" data-kind="free" title="Freehand pen">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11z"/><path d="M14 6l2.5 2.5"/></svg>
+      </button>
+      <button class="draw-tool" data-kind="line" title="Straight line">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20L20 4"/></svg>
+      </button>
+      <button class="draw-tool" data-kind="arrow" title="Arrow (point at something)">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20L20 4"/><path d="M11 4h9v9"/></svg>
+      </button>
+      <button class="draw-tool" data-kind="rect" title="Rectangle">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="14" rx="1"/></svg>
+      </button>
+      <button class="draw-tool" data-kind="ellipse" title="Circle / ellipse">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="9" ry="7"/></svg>
+      </button>
+    </div>
+    <div class="draw-row">
+      <button class="draw-swatch" data-color="#e23b3b" style="background:#e23b3b" title="Red"></button>
+      <button class="draw-swatch" data-color="#f0b429" style="background:#f0b429" title="Gold"></button>
+      <button class="draw-swatch" data-color="#3bb273" style="background:#3bb273" title="Green"></button>
+      <button class="draw-swatch" data-color="#4a90d9" style="background:#4a90d9" title="Blue"></button>
+      <button class="draw-swatch" data-color="#f5f0e6" style="background:#f5f0e6" title="White"></button>
+      <input type="color" id="draw-color-custom" value="#e23b3b" title="Custom colour">
+    </div>
+    <div class="draw-row">
+      <button class="draw-w" data-width="3" title="Thin">S</button>
+      <button class="draw-w" data-width="6" title="Medium">M</button>
+      <button class="draw-w" data-width="11" title="Thick">L</button>
+      <button class="draw-act" id="draw-undo" title="Undo your last drawing">Undo</button>
+      <button class="draw-act" id="draw-erase" title="Tap a line to erase it">Eraser</button>
+    </div>
+    <div class="draw-row">
+      <button class="draw-act" id="draw-clear-mine" title="Remove your own drawings">Clear mine</button>
+      <button class="draw-act" id="draw-clear-all" style="display:none" title="Remove every drawing (DM)">Clear all</button>
+    </div>
   </div>
   <button id="draw-toggle" title="Draw on the map">Draw</button>
 </div>
@@ -2809,6 +2844,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     drawColor: '#e23b3b',
     drawWidth: 6,
     drawErase: false,
+    drawTool: 'free',       // 'free' | 'line' | 'arrow' | 'rect' | 'ellipse'
+    myStrokeIds: [],        // ids I drew this session, for Undo
     drawStroke: null,       // active stroke being drawn
     spectator: false,       // admin silent observer: no row, no presence, read-only
     remoteDrags: new Map(), // userId -> { tokenId, startX, startY, x, y, isMeasure, name }
@@ -10728,14 +10765,47 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   // Strokes are stored in vtt_drawings. Points are in map space (offset-independent),
   // so the offset is added at render time, just like effects, keeping drawings
   // anchored to the map image when the DM moves it.
+  // Build the SVG path data for a stroke of a given kind. Points are in map
+  // space; the map offset is added here so drawings stay anchored to the image.
+  function geomD(kind, pts, ox, oy, width) {
+    if (!pts || !pts.length) return '';
+    if (kind === 'free' || !kind) {
+      let d = 'M ' + (pts[0].x + ox).toFixed(1) + ' ' + (pts[0].y + oy).toFixed(1);
+      for (let i = 1; i < pts.length; i++) d += ' L ' + (pts[i].x + ox).toFixed(1) + ' ' + (pts[i].y + oy).toFixed(1);
+      return d;
+    }
+    const a = pts[0], b = pts[pts.length - 1];
+    const ax = a.x + ox, ay = a.y + oy, bx = b.x + ox, by = b.y + oy;
+    if (kind === 'line') return `M ${ax.toFixed(1)} ${ay.toFixed(1)} L ${bx.toFixed(1)} ${by.toFixed(1)}`;
+    if (kind === 'arrow') {
+      const ang = Math.atan2(by - ay, bx - ax);
+      const h = 10 + (Number(width) || 6) * 1.6;
+      const p1x = bx - h * Math.cos(ang - Math.PI / 6), p1y = by - h * Math.sin(ang - Math.PI / 6);
+      const p2x = bx - h * Math.cos(ang + Math.PI / 6), p2y = by - h * Math.sin(ang + Math.PI / 6);
+      return `M ${ax.toFixed(1)} ${ay.toFixed(1)} L ${bx.toFixed(1)} ${by.toFixed(1)} ` +
+             `M ${p1x.toFixed(1)} ${p1y.toFixed(1)} L ${bx.toFixed(1)} ${by.toFixed(1)} L ${p2x.toFixed(1)} ${p2y.toFixed(1)}`;
+    }
+    if (kind === 'rect') {
+      const x1 = Math.min(ax, bx), y1 = Math.min(ay, by), x2 = Math.max(ax, bx), y2 = Math.max(ay, by);
+      return `M ${x1.toFixed(1)} ${y1.toFixed(1)} L ${x2.toFixed(1)} ${y1.toFixed(1)} L ${x2.toFixed(1)} ${y2.toFixed(1)} L ${x1.toFixed(1)} ${y2.toFixed(1)} Z`;
+    }
+    if (kind === 'ellipse') {
+      const cx = (ax + bx) / 2, cy = (ay + by) / 2, rx = Math.abs(bx - ax) / 2, ry = Math.abs(by - ay) / 2;
+      if (rx < 0.5 || ry < 0.5) return `M ${ax.toFixed(1)} ${ay.toFixed(1)} L ${bx.toFixed(1)} ${by.toFixed(1)}`;
+      return `M ${(cx - rx).toFixed(1)} ${cy.toFixed(1)} A ${rx.toFixed(1)} ${ry.toFixed(1)} 0 1 0 ${(cx + rx).toFixed(1)} ${cy.toFixed(1)} ` +
+             `A ${rx.toFixed(1)} ${ry.toFixed(1)} 0 1 0 ${(cx - rx).toFixed(1)} ${cy.toFixed(1)} Z`;
+    }
+    return '';
+  }
+
   function strokeToSVG(d, ox, oy) {
     const pts = Array.isArray(d.points) ? d.points : [];
     if (!pts.length) return '';
-    let path = 'M ' + (pts[0].x + ox).toFixed(1) + ' ' + (pts[0].y + oy).toFixed(1);
-    for (let i = 1; i < pts.length; i++) path += ' L ' + (pts[i].x + ox).toFixed(1) + ' ' + (pts[i].y + oy).toFixed(1);
+    const dd = geomD(d.kind || 'free', pts, ox, oy, d.width);
+    if (!dd) return '';
     const color = escapeHtml(String(d.color || '#e23b3b'));
     const w = Number(d.width) || 6;
-    return `<path d="${path}" stroke="${color}" stroke-width="${w}" data-id="${escapeHtml(String(d.id))}"></path>`;
+    return `<path d="${dd}" stroke="${color}" stroke-width="${w}" data-id="${escapeHtml(String(d.id))}"></path>`;
   }
 
   function renderDrawings() {
@@ -10798,9 +10868,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const layer = document.getElementById('drawlayer');
     try { layer.setPointerCapture(e.pointerId); } catch (_) {}
     const mc = getMapCoords(e.clientX, e.clientY);
-    const ox = (STATE.map && STATE.map.offset_x) || 0;
-    const oy = (STATE.map && STATE.map.offset_y) || 0;
-    STATE.drawStroke = { color: STATE.drawColor, width: STATE.drawWidth, points: [{ x: mc.x, y: mc.y }] };
+    STATE.drawStroke = { kind: STATE.drawTool || 'free', color: STATE.drawColor, width: STATE.drawWidth, points: [{ x: mc.x, y: mc.y }] };
     const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     p.id = 'draw-live';
     p.setAttribute('stroke', STATE.drawColor);
@@ -10808,7 +10876,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     p.setAttribute('fill', 'none');
     p.setAttribute('stroke-linecap', 'round');
     p.setAttribute('stroke-linejoin', 'round');
-    p.setAttribute('d', `M ${(mc.x + ox).toFixed(1)} ${(mc.y + oy).toFixed(1)}`);
+    p.setAttribute('d', '');
     layer.appendChild(p);
     STATE.drawStroke.el = p;
   }
@@ -10817,13 +10885,18 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (!STATE.drawStroke) return;
     e.preventDefault();
     const mc = getMapCoords(e.clientX, e.clientY);
-    const pts = STATE.drawStroke.points;
-    const last = pts[pts.length - 1];
-    if (last && Math.abs(last.x - mc.x) < 1.5 && Math.abs(last.y - mc.y) < 1.5) return;
-    pts.push({ x: mc.x, y: mc.y });
+    const s = STATE.drawStroke;
     const ox = (STATE.map && STATE.map.offset_x) || 0;
     const oy = (STATE.map && STATE.map.offset_y) || 0;
-    STATE.drawStroke.el.setAttribute('d', STATE.drawStroke.el.getAttribute('d') + ` L ${(mc.x + ox).toFixed(1)} ${(mc.y + oy).toFixed(1)}`);
+    if (s.kind === 'free') {
+      const pts = s.points;
+      const last = pts[pts.length - 1];
+      if (last && Math.abs(last.x - mc.x) < 1.5 && Math.abs(last.y - mc.y) < 1.5) return;
+      pts.push({ x: mc.x, y: mc.y });
+    } else {
+      s.points[1] = { x: mc.x, y: mc.y }; // shapes are defined by start + current
+    }
+    s.el.setAttribute('d', geomD(s.kind, s.points, ox, oy, s.width));
   }
 
   function onDrawPointerUp() {
@@ -10831,7 +10904,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const stroke = STATE.drawStroke;
     STATE.drawStroke = null;
     if (stroke.el && stroke.el.parentNode) stroke.el.parentNode.removeChild(stroke.el);
-    if (stroke.points.length < 2) return; // a tap, not a stroke
+    if (stroke.kind === 'free') {
+      if (stroke.points.length < 2) return; // a tap, not a stroke
+    } else {
+      if (stroke.points.length < 2) return;
+      const a = stroke.points[0], b = stroke.points[1];
+      if (Math.abs(a.x - b.x) < 3 && Math.abs(a.y - b.y) < 3) return; // too small to keep
+    }
     saveStroke(stroke);
   }
 
@@ -10843,9 +10922,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       owner_id: STATE.accountId,
       color: stroke.color,
       width: stroke.width,
+      kind: stroke.kind || 'free',
       points: stroke.points,
     };
     STATE.drawings.set(row.id, row); // local-first so it stays visible at once
+    STATE.myStrokeIds.push(row.id);
     renderDrawings();
     try {
       const { error } = await sb.from('vtt_drawings').insert(row);
@@ -10870,6 +10951,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     renderDrawings();
     try { await sb.from('vtt_drawings').delete().eq('id', id); }
     catch (e) { console.error('Stroke delete failed', e); }
+  }
+
+  async function undoMyStroke() {
+    while (STATE.myStrokeIds.length) {
+      const id = STATE.myStrokeIds.pop();
+      if (STATE.drawings.has(id)) { await deleteStroke(id); return; }
+    }
   }
 
   async function clearMyDrawings() {
@@ -10902,15 +10990,29 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (document.body.classList.contains('draw-mode')) { setDrawMode(false); setActiveTool('select'); }
       else { setActiveTool(null); setDrawMode(true); }
     });
+    bar.querySelectorAll('.draw-tool').forEach(tb => {
+      tb.addEventListener('click', () => {
+        STATE.drawTool = tb.dataset.kind || 'free';
+        bar.querySelectorAll('.draw-tool').forEach(b => b.classList.toggle('active', b === tb));
+        STATE.drawErase = false; setEraseUi();
+      });
+    });
     bar.querySelectorAll('.draw-swatch').forEach(sw => {
       sw.addEventListener('click', () => {
         STATE.drawColor = sw.dataset.color;
         bar.querySelectorAll('.draw-swatch').forEach(s => s.classList.toggle('active', s === sw));
+        const cc = document.getElementById('draw-color-custom'); if (cc) cc.value = sw.dataset.color;
         STATE.drawErase = false; setEraseUi();
       });
     });
     const defSw = bar.querySelector('.draw-swatch[data-color="#e23b3b"]');
     if (defSw) defSw.classList.add('active');
+    const cc = document.getElementById('draw-color-custom');
+    if (cc) cc.addEventListener('input', () => {
+      STATE.drawColor = cc.value;
+      bar.querySelectorAll('.draw-swatch').forEach(s => s.classList.remove('active'));
+      STATE.drawErase = false; setEraseUi();
+    });
     bar.querySelectorAll('.draw-w').forEach(wb => {
       wb.addEventListener('click', () => {
         STATE.drawWidth = parseInt(wb.dataset.width, 10) || 6;
@@ -10919,6 +11021,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     });
     const defW = bar.querySelector('.draw-w[data-width="6"]');
     if (defW) defW.classList.add('active');
+    const undoBtn = document.getElementById('draw-undo');
+    if (undoBtn) undoBtn.addEventListener('click', undoMyStroke);
     document.getElementById('draw-erase').addEventListener('click', () => { STATE.drawErase = !STATE.drawErase; setEraseUi(); });
     document.getElementById('draw-clear-mine').addEventListener('click', clearMyDrawings);
     document.getElementById('draw-clear-all').addEventListener('click', clearAllDrawings);
@@ -10926,6 +11030,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     layer.addEventListener('pointermove', onDrawPointerMove);
     layer.addEventListener('pointerup', onDrawPointerUp);
     layer.addEventListener('pointercancel', onDrawPointerUp);
+    // The toolbar Eraser (eraser tool, outside draw mode) erases strokes too.
+    layer.addEventListener('click', (e) => {
+      if (STATE.activeTool !== 'eraser') return;
+      const id = e.target && e.target.getAttribute && e.target.getAttribute('data-id');
+      if (id) deleteStroke(id);
+    });
   }
 
   // ============ SPELL AREA → TOKEN HIT TEST ============
