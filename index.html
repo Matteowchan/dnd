@@ -10244,7 +10244,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   // ============ SPELLS POPUP ============
   const SPELL_DRAFT = { fx: null, color: null, buff: null, name: null };
   const SPELL_FX = { loaded: false, loading: null, error: null, items: [], byCat: {}, cats: [], curCat: null };
-  const FX_BUCKET_BASE = SUPABASE_URL + '/storage/v1/object/public/vtt-assets/';
+  const FX_BUCKET_BASE = 'https://matteowchan.github.io/vtt-assets/';
   function parseFxFile(file) {
     const base = file.replace(/\.webm$/i, '');
     const parts = base.split('_');
@@ -10272,9 +10272,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (SPELL_FX.loading) return SPELL_FX.loading;
     SPELL_FX.loading = (async () => {
       try {
-        const { data, error } = await sb.storage.from('vtt-assets').list('', { limit: 1000, sortBy: { column: 'name', order: 'asc' } });
-        if (error) throw error;
-        const items = (data || []).filter(f => /\.webm$/i.test(f.name)).map(f => parseFxFile(f.name));
+        const res = await fetch(FX_BUCKET_BASE + 'index.json', { cache: 'no-cache' });
+        if (!res.ok) throw new Error('manifest ' + res.status);
+        const names = await res.json();
+        const items = (names || []).filter(n => /\.webm$/i.test(n)).map(n => parseFxFile(n));
         SPELL_FX.items = items;
         SPELL_FX.byCat = {};
         items.forEach(it => { (SPELL_FX.byCat[it.cat] = SPELL_FX.byCat[it.cat] || []).push(it); });
@@ -10288,7 +10289,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   function renderSpellShapeList() {
     const el = document.getElementById('spell-shape-list');
     if (!el) return;
-    if (!SPELL_FX.loaded) { el.innerHTML = '<div class="sp-empty">' + (SPELL_FX.error ? 'Could not load effects. Make sure the vtt-assets bucket allows listing.' : 'Loading effects...') + '</div>'; return; }
+    if (!SPELL_FX.loaded) { el.innerHTML = '<div class="sp-empty">' + (SPELL_FX.error ? 'Could not load effects.' : 'Loading effects...') + '</div>'; return; }
     if (!SPELL_FX.cats.length) { el.innerHTML = '<div class="sp-empty">No effects found in the bucket.</div>'; return; }
     el.innerHTML = SPELL_FX.cats.map(c => `<button class="spell-shape${c === SPELL_FX.curCat ? ' active' : ''}" data-cat="${escapeHtml(c)}"><div class="sp-info"><div class="sp-name">${escapeHtml(c)}</div><div class="sp-hint">${SPELL_FX.byCat[c].length} effects</div></div></button>`).join('');
     el.querySelectorAll('.spell-shape').forEach(b => b.addEventListener('click', () => { SPELL_FX.curCat = b.dataset.cat; renderSpellShapeList(); renderSpellFxList(); }));
@@ -10305,7 +10306,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       el.querySelectorAll('.spell-element').forEach(x => x.classList.toggle('active', x === b));
       const pv = document.getElementById('spell-fx-preview');
       const pvv = document.getElementById('spell-fx-preview-vid');
-      if (pv && pvv) { pvv.src = FX_BUCKET_BASE + it.file; pv.style.display = 'block'; pvv.play().catch(() => {}); }
+      if (pv && pvv) { pvv.src = FX_BUCKET_BASE + encodeURIComponent(it.file); pv.style.display = 'block'; pvv.play().catch(() => {}); }
       updateSpellsPreview();
     }));
   }
@@ -11193,7 +11194,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     // Real video effect: color packed as "webm|<filename>"
     if (typeof elem === 'string' && elem.indexOf('webm|') === 0) {
       const file = elem.split('|')[1] || '';
-      const url = SUPABASE_URL + '/storage/v1/object/public/vtt-assets/' + file;
+      const url = FX_BUCKET_BASE + encodeURIComponent(file);
       const vid = '<video src="' + url + '" autoplay loop muted playsinline style="width:100%;height:100%;object-fit:contain;display:block;mix-blend-mode:screen;"></video>';
       const idAttr = 'data-fx-id="' + (fx.id || '') + '" data-fx-user="' + (fx.user_id || '') + '"';
       const aim = ['breath', 'beam', 'arrow', 'rocket', 'sword'].indexOf(fx.type) >= 0;
