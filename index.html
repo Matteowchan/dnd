@@ -14410,14 +14410,103 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }
   }
 
+  // ============ JITSI VIDEO (replaces the custom mesh WebRTC) ============
+  // The old peer-to-peer mesh had no TURN server, so players behind symmetric
+  // NAT/firewalls could never connect. Jitsi Meet (free, hosted, with its own
+  // SFU + TURN) is embedded per session instead: the room is derived from the
+  // session code so everyone at the table lands in the same call. Free, no
+  // backend, no tokens. The old mesh functions stay defined but unused.
+  const JITSI = { api: null, loading: null };
+  function loadJitsiApi() {
+    if (window.JitsiMeetExternalAPI) return Promise.resolve();
+    if (JITSI.loading) return JITSI.loading;
+    JITSI.loading = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://meet.jit.si/external_api.js';
+      s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => { JITSI.loading = null; reject(new Error('Jitsi failed to load')); };
+      document.head.appendChild(s);
+    });
+    return JITSI.loading;
+  }
+  async function jitsiJoinCall() {
+    if (JITSI.api) return;                 // already in the call
+    if (!STATE.sessionId) { toast('Join a session first', 'error'); return; }
+    const bar = document.getElementById('rtc-bar');
+    const panel = document.getElementById('rtc-panel');
+    const launch = document.getElementById('rtc-launch');
+    const tiles = document.getElementById('rtc-tiles');
+    const controls = document.getElementById('rtc-controls');
+    if (launch) launch.style.display = 'none';
+    if (controls) controls.style.display = 'none';   // Jitsi shows its own toolbar
+    if (panel) panel.classList.add('active');
+    if (bar) { bar.classList.add('in-call'); bar.classList.remove('tiles-hidden'); }
+    if (tiles) tiles.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;width:360px;height:280px;color:var(--muted);font-size:13px;">Connecting video…</div>';
+    try {
+      await loadJitsiApi();
+    } catch (e) {
+      console.error(e);
+      toast('Video failed to load', 'error');
+      jitsiLeaveCall();
+      return;
+    }
+    if (!tiles) return;
+    tiles.innerHTML = '';
+    // Room name is derived only from the session code so every participant lands
+    // in the same room; the prefix reduces collisions with unrelated jitsi rooms.
+    const room = 'dndvtt-' + STATE.sessionId;
+    try {
+      JITSI.api = new JitsiMeetExternalAPI('meet.jit.si', {
+        roomName: room,
+        parentNode: tiles,
+        width: 360,
+        height: 280,
+        userInfo: { displayName: STATE.username || 'Player' },
+        configOverwrite: {
+          startWithAudioMuted: true,
+          startWithVideoMuted: false,
+          prejoinPageEnabled: false,
+          disableDeepLinking: true,
+        },
+        interfaceConfigOverwrite: {
+          MOBILE_APP_PROMO: false,
+          SHOW_JITSI_WATERMARK: false,
+          SHOW_WATERMARK_FOR_GUESTS: false,
+          SHOW_CHROME_EXTENSION_BANNER: false,
+          TOOLBAR_BUTTONS: ['microphone', 'camera', 'desktop', 'tileview', 'raisehand', 'settings', 'fullscreen', 'hangup'],
+        },
+      });
+      JITSI.api.addEventListener('readyToClose', jitsiLeaveCall);
+    } catch (e) {
+      console.error('Jitsi init failed', e);
+      toast('Could not start video', 'error');
+      jitsiLeaveCall();
+    }
+  }
+  function jitsiLeaveCall() {
+    try { if (JITSI.api) JITSI.api.dispose(); } catch (e) {}
+    JITSI.api = null;
+    const tiles = document.getElementById('rtc-tiles');
+    if (tiles) tiles.innerHTML = '';
+    const panel = document.getElementById('rtc-panel');
+    if (panel) panel.classList.remove('active');
+    const bar = document.getElementById('rtc-bar');
+    if (bar) bar.classList.remove('in-call');
+    const controls = document.getElementById('rtc-controls');
+    if (controls) controls.style.display = '';
+    const launch = document.getElementById('rtc-launch');
+    if (launch) launch.style.display = '';
+  }
+
   function setupRtcUi() {
     const launch = document.getElementById('rtc-launch');
-    if (launch) launch.addEventListener('click', rtcJoinCall);
+    if (launch) launch.addEventListener('click', jitsiJoinCall);
     document.getElementById('rtc-mic').addEventListener('click', rtcToggleMic);
     document.getElementById('rtc-cam').addEventListener('click', rtcToggleCam);
     const handBtn = document.getElementById('rtc-hand');
     if (handBtn) handBtn.addEventListener('click', rtcToggleHand);
-    document.getElementById('rtc-leave').addEventListener('click', rtcLeaveCall);
+    document.getElementById('rtc-leave').addEventListener('click', jitsiLeaveCall);
     const shareBtn = document.getElementById('rtc-share');
     if (shareBtn) shareBtn.addEventListener('click', rtcStartScreenShare);
     const screenClose = document.getElementById('screen-share-close');
@@ -14511,6 +14600,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   window.addEventListener('pagehide', flushPendingSaves);
   window.addEventListener('beforeunload', () => {
     flushPendingSaves();
+    try { jitsiLeaveCall(); } catch (e) {}
     try { rtcLeaveCall(); } catch (e) {}
     if (STATE.channel) STATE.channel.unsubscribe();
   });
