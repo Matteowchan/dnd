@@ -3304,10 +3304,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   // entirely (host: remove the session and every row attached to it).
   async function removeSavedCampaign(it, accountId) {
     if (it.isHost) {
-      const ok = await confirmModal('Delete "' + it.campaignName + '" for everyone? This erases the map, tokens, characters and chat. This cannot be undone.', { title: 'Delete campaign', danger: true, okText: 'Delete' });
+      const ok = await confirmModal('Delete "' + it.campaignName + '" for everyone? This erases the map, tokens, characters and chat. A JSON backup of all characters will be downloaded first. This cannot be undone.', { title: 'Delete campaign', danger: true, okText: 'Delete' });
       if (!ok) return;
       try {
         const sid = it.code;
+        await backupPlayersBeforeDelete(sid);
         for (const tbl of ['vtt_chat', 'vtt_effects', 'vtt_drawings', 'vtt_audio', 'vtt_tokens', 'vtt_maps', 'vtt_players']) {
           try { await sb.from(tbl).delete().eq('session_id', sid); } catch (e) { console.warn('delete ' + tbl, e); }
         }
@@ -3318,9 +3319,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       }
     } else {
       const who = it.charName ? ('"' + it.charName + '"') : 'this character';
-      const ok = await confirmModal('Remove ' + who + ' from "' + it.campaignName + '"? This deletes that character.', { title: 'Remove character', danger: true, okText: 'Remove' });
+      const ok = await confirmModal('Remove ' + who + ' from "' + it.campaignName + '"? A JSON backup will be downloaded first. This deletes that character.', { title: 'Remove character', danger: true, okText: 'Remove' });
       if (!ok) return;
       try {
+        await backupPlayersBeforeDelete(it.code, it.rowId);
         try { await sb.from('vtt_tokens').delete().eq('session_id', it.code).eq('owner_id', it.rowId); } catch (e) {}
         await sb.from('vtt_players').delete().eq('id', it.rowId).eq('session_id', it.code);
         toast('Character removed.', 'success');
@@ -4053,6 +4055,17 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         // Make sure our character row still exists; if not, recreate it.
         const { data: meRow } = await sb.from('vtt_players').select('id').eq('id', charId).eq('session_id', saved.sessionId).maybeSingle();
         if (!meRow) {
+          // A missing player row means the character was removed (kicked/expired).
+          // Don't silently overwrite the loss with a blank sheet — ask first, so the
+          // user can instead cancel and restore from a JSON backup. Host rows carry
+          // no sheet, so those are still recreated silently.
+          if (!saved.isHost) {
+            const proceed = await confirmModal(
+              `Your character "${saved.username}" was not found in this campaign — it may have been removed by the host. Create a NEW blank character? Cancel to keep the slot and restore from a JSON backup (Import) instead.`,
+              { title: 'Character not found', danger: true, okText: 'Create new' }
+            );
+            if (!proceed) { btn.disabled = false; btn.textContent = 'Continue'; return; }
+          }
           let r = await sb.from('vtt_players').insert({
             id: charId,
             owner_id: STATE.accountId,
@@ -5759,8 +5772,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   async function kickPlayer(pid, pname) {
     if (!STATE.isHost) return;
     if (pid === STATE.userId) { toast('You cannot remove yourself', 'error'); return; }
-    if (!(await confirmModal(`Remove "${pname || 'this player'}" from the session? This deletes their character row and their token.`, { title: 'Remove player', danger: true, okText: 'Remove' }))) return;
+    if (!(await confirmModal(`Remove "${pname || 'this player'}" from the session? A JSON backup will be downloaded first. This deletes their character row and their token.`, { title: 'Remove player', danger: true, okText: 'Remove' }))) return;
     try {
+      await backupPlayersBeforeDelete(STATE.sessionId, pid);
       await sb.from('vtt_tokens').delete().eq('session_id', STATE.sessionId).eq('owner_id', pid);
       const { error } = await sb.from('vtt_players').delete().eq('id', pid).eq('session_id', STATE.sessionId);
       if (error) throw error;
@@ -8170,6 +8184,39 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast('Character exported');
+  }
+
+  // Safety net for every character delete (kick / leave / campaign wipe): pull the
+  // affected vtt_players rows and stash them as a downloaded JSON file AND in a
+  // localStorage trash bin, so a deletion is always recoverable. Best-effort:
+  // never blocks the delete itself.
+  async function backupPlayersBeforeDelete(sessionId, playerId) {
+    try {
+      let q = sb.from('vtt_players').select('*').eq('session_id', sessionId);
+      if (playerId) q = q.eq('id', playerId);
+      const { data: rows } = await q;
+      if (!rows || !rows.length) return;
+      const backup = { app: 'embervault-character-backup', version: 1, exported_at: new Date().toISOString(), session_id: sessionId, characters: rows };
+      try {
+        const label = playerId ? (rows[0].name || 'character') : (sessionId + '-all');
+        const safe = String(label).replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'characters';
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `dnd-backup-${safe}-${Date.now()}.json`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (e) {}
+      try {
+        const key = 'vtt_char_trash';
+        let trash = [];
+        try { trash = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { trash = []; }
+        if (!Array.isArray(trash)) trash = [];
+        trash.push(backup);
+        while (trash.length > 20) trash.shift();
+        localStorage.setItem(key, JSON.stringify(trash));
+      } catch (e) {}
+    } catch (e) { console.error('character backup failed', e); }
   }
 
   async function importCharacterFile(file) {
