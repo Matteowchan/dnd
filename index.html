@@ -11857,9 +11857,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const eyScreen = (d.y + oy) * STATE.view.zoom + STATE.view.offsetY;
       const midX = (sxScreen + exScreen) / 2;
       const midY = (syScreen + eyScreen) / 2;
-      const dx = d.x - d.startX, dy = d.y - d.startY;
-      const squares = Math.max(Math.abs(dx), Math.abs(dy)) / STATE.gridSize;
-      const distFt = Math.round(squares) * STATE.gridFt;
+      const sdx = snapToGridCenter(d.x + ox) - snapToGridCenter(d.startX + ox);
+      const sdy = snapToGridCenter(d.y + oy) - snapToGridCenter(d.startY + oy);
+      const squares = Math.round(Math.max(Math.abs(sdx), Math.abs(sdy)) / STATE.gridSize);
+      const distFt = squares * STATE.gridFt;
       const label = d.name ? `${d.name}: ${distFt} ft` : `${distFt} ft`;
       html += `<g class="remote-measure"><line x1="${sxScreen}" y1="${syScreen}" x2="${exScreen}" y2="${eyScreen}"/><circle cx="${exScreen}" cy="${eyScreen}" r="5" fill="var(--gold)"/><text x="${midX}" y="${midY - 12}" text-anchor="middle">${label}</text></g>`;
     });
@@ -12745,6 +12746,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.getElementById('measurement').style.display = 'block';
   }
 
+  // Snap a coordinate (in grid space) to the nearest grid cell CENTER, so a token
+  // lands exactly on a square. Cells are STATE.gridSize wide with their origin at
+  // map (0,0); centers sit at gridSize*(n+0.5). Keeps token positions and the
+  // distance readout consistent (a move of N squares always reads N*gridFt).
+  function snapToGridCenter(v) {
+    const c = STATE.gridSize || 50;
+    return (Math.round(v / c - 0.5) + 0.5) * c;
+  }
   function updateTokenDrag(e) {
     if (!STATE.dragging) return;
     const pos = getEventPos(e);
@@ -12758,8 +12767,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const ox = (STATE.map && STATE.map.offset_x) || 0;
     const oy = (STATE.map && STATE.map.offset_y) || 0;
     const tok = STATE.dragging.token;
-    tok.x = mp.x - STATE.dragging.offsetX - ox;
-    tok.y = mp.y - STATE.dragging.offsetY - oy;
+    // Snap the token centre to the grid live (in grid space = stored coord + offset),
+    // so what you see is where it lands and the measurement is exact.
+    tok.x = snapToGridCenter(mp.x - STATE.dragging.offsetX) - ox;
+    tok.y = snapToGridCenter(mp.y - STATE.dragging.offsetY) - oy;
     const el = document.querySelector(`.map-token[data-id="${tok.id}"]`);
     if (el) {
       el.style.left = (tok.x + ox - 25) + 'px';
@@ -12784,9 +12795,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const tok = STATE.dragging.token;
     const sx = STATE.dragging.startX, sy = STATE.dragging.startY;
     if (sx == null) { document.getElementById('measurement').style.display = 'none'; return; }
-    const dx = tok.x - sx, dy = tok.y - sy;
-    const squares = Math.max(Math.abs(dx), Math.abs(dy)) / STATE.gridSize;
-    const distFt = Math.round(squares) * STATE.gridFt;
+    const ox0 = (STATE.map && STATE.map.offset_x) || 0;
+    const oy0 = (STATE.map && STATE.map.offset_y) || 0;
+    // Measure between snapped cell centres so the readout is always a whole number
+    // of squares (N squares = N*gridFt), even from a legacy off-grid start. 5e uses
+    // Chebyshev distance (a diagonal costs the same as a straight step).
+    const sdx = snapToGridCenter(tok.x + ox0) - snapToGridCenter(sx + ox0);
+    const sdy = snapToGridCenter(tok.y + oy0) - snapToGridCenter(sy + oy0);
+    const squares = Math.round(Math.max(Math.abs(sdx), Math.abs(sdy)) / STATE.gridSize);
+    const distFt = squares * STATE.gridFt;
 
     const svg = document.getElementById('measurement');
     const rect = document.getElementById('mapcontainer').getBoundingClientRect();
@@ -12819,6 +12836,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.querySelector(`.map-token[data-id="${tok.id}"]`)?.classList.remove('dragging');
     document.getElementById('measurement').style.display = 'none';
     const finalX = tok.x, finalY = tok.y, id = tok.id;
+    const startX = STATE.dragging.startX, startY = STATE.dragging.startY;
     STATE.dragging = null;
 
     // Tell others to stop showing our drag line
@@ -12837,12 +12855,20 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       existing.y = finalY;
     }
 
-    // Persist
-    await sb.from('vtt_tokens').update({
+    // Persist. supabase-js resolves with {error} rather than throwing, so check it:
+    // a failed move (RLS/network) now reverts locally with a toast instead of the
+    // token silently snapping back only after a reload.
+    const { error } = await sb.from('vtt_tokens').update({
       x: finalX,
       y: finalY,
       updated_at: new Date().toISOString(),
     }).eq('id', id);
+    if (error) {
+      console.error('Token move failed', error);
+      toast('Move not saved', 'error');
+      const t = STATE.tokens.get(id);
+      if (t) { t.x = startX; t.y = startY; renderTokens(); renderHpTracker(); }
+    }
   }
 
   document.addEventListener('mousemove', updateTokenDrag);
@@ -12858,7 +12884,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const mp = screenToMap(e.clientX, e.clientY);
     const ox = (STATE.map && STATE.map.offset_x) || 0;
     const oy = (STATE.map && STATE.map.offset_y) || 0;
-    const x = mp.x - ox, y = mp.y - oy;
+    // Snap a newly dropped token to the grid, same as dragging one.
+    const x = snapToGridCenter(mp.x) - ox, y = snapToGridCenter(mp.y) - oy;
 
     // Kutuphaneden surukленen NPC/token: haritada yeni token olustur
     const assetRaw = e.dataTransfer.getData('application/x-vtt-asset');
