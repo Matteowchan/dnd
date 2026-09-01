@@ -525,6 +525,28 @@
   .dm-rules-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cream); cursor: pointer; }
   .dm-rules-toggle input { accent-color: var(--gold); }
 
+  /* Compendium (rules & reference) */
+  #compendium-popup { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); width: 760px; max-width: 94vw; height: 78vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 8px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  #compendium-popup.active { display: flex; }
+  .cmp-body { padding: 0; display: flex; flex-direction: column; min-height: 0; flex: 1; }
+  .cmp-search-row { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  #cmp-search { width: 100%; box-sizing: border-box; background: var(--bg); border: 1px solid var(--border); color: var(--cream); padding: 9px 12px; border-radius: 5px; font-family: 'Crimson Pro', serif; font-size: 14px; outline: none; }
+  #cmp-search:focus { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(212,165,116,0.18); }
+  .cmp-layout { display: flex; flex: 1; min-height: 0; }
+  .cmp-tabs { width: 180px; flex: 0 0 180px; border-right: 1px solid var(--border); overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 2px; }
+  .cmp-tab { text-align: left; background: transparent; border: 1px solid transparent; color: var(--cream); padding: 8px 10px; border-radius: 5px; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.03em; cursor: pointer; }
+  .cmp-tab:hover { background: rgba(212,165,116,0.08); }
+  .cmp-tab.active { background: rgba(212,165,116,0.14); border-color: var(--gold-soft); color: var(--gold); }
+  .cmp-tab-count { color: var(--muted); font-size: 10px; margin-left: 4px; }
+  .cmp-content { flex: 1; overflow-y: auto; padding: 14px 18px; }
+  .cmp-entry { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid rgba(212,165,116,0.10); }
+  .cmp-entry:last-child { border-bottom: none; }
+  .cmp-entry-name { font-family: 'Cinzel', serif; color: var(--gold-soft); font-size: 14px; letter-spacing: 0.02em; margin-bottom: 4px; }
+  .cmp-entry-meta { font-size: 11px; color: var(--muted); font-style: italic; margin-bottom: 5px; }
+  .cmp-entry-text { font-family: 'Crimson Pro', serif; font-size: 13.5px; line-height: 1.55; color: var(--cream); }
+  .cmp-entry-text b { color: var(--gold-soft); font-weight: 600; }
+  .cmp-empty { color: var(--muted); font-style: italic; padding: 24px; text-align: center; }
+
   /* Violation warning popup */
   #dm-rules-warning { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 440px; max-width: 92vw; background: linear-gradient(180deg, rgba(60,20,20,0.98), rgba(40,10,10,0.98)); border: 2px solid var(--danger); border-radius: 8px; box-shadow: 0 0 60px rgba(160,72,72,0.5), 0 20px 60px rgba(0,0,0,0.8); z-index: 2000; display: none; flex-direction: column; align-items: center; padding: 24px; text-align: center; gap: 12px; animation: dmw-pulse 1.2s ease-in-out infinite; }
   #dm-rules-warning.active { display: flex; }
@@ -1578,6 +1600,7 @@
         <svg id="theme-icon-light" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" fill="none"/></svg>
       </button>
       <button id="recap-btn" title="Campaign Log / Recap">Recap</button>
+      <button id="compendium-btn" title="Rules &amp; reference: conditions, actions, weapons, armor, and core rules">Compendium</button>
       <button id="dm-rules-btn" title="Special DM rules - will alert when violated">DM Rules</button>
       <button id="short-rest-btn" title="Short Rest (1 hour): spend Hit Dice to heal; some class features recharge. No spell slots restored (except Warlock).">Short Rest</button>
       <button id="long-rest-btn" title="Long Rest (8 hours): full HP, full spell slots, half Hit Dice restored, exhaustion reduced by 1.">Long Rest</button>
@@ -2557,6 +2580,22 @@
 </div>
 
 <!-- DM Special Rules popup -->
+<div id="compendium-popup">
+  <div class="char-popup-header">
+    <span class="ttl">Compendium</span>
+    <button id="compendium-close">×</button>
+  </div>
+  <div class="char-popup-body cmp-body">
+    <div class="cmp-search-row">
+      <input id="cmp-search" type="text" placeholder="Search conditions, actions, weapons, armor, rules..." autocomplete="off" spellcheck="false">
+    </div>
+    <div class="cmp-layout">
+      <div class="cmp-tabs" id="cmp-tabs"></div>
+      <div class="cmp-content" id="cmp-content"></div>
+    </div>
+  </div>
+</div>
+
 <div id="dm-rules-popup">
   <div class="char-popup-header">
     <span class="ttl">Special DM Rules</span>
@@ -14657,6 +14696,165 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   setupDrawing();
 
   // Clean up presence on unload
+  // ============ COMPENDIUM (in-app rules & reference) ============
+  // Original, plainly-worded reference so a table never has to leave the site to
+  // look up a rule. Game mechanics are facts; the wording here is our own.
+  const COMPENDIUM = [
+    { key: 'conditions', title: 'Conditions', entries: [
+      { n: 'Blinded', t: `You can't see. You automatically fail any check that needs sight, and attack rolls against you have <b>advantage</b> while your own attacks have <b>disadvantage</b>.` },
+      { n: 'Charmed', t: `You can't attack the charmer or target them with harmful effects. The charmer has advantage on social checks made to interact with you.` },
+      { n: 'Deafened', t: `You can't hear and automatically fail any check that relies on hearing.` },
+      { n: 'Frightened', t: `While the source of your fear is in line of sight you have <b>disadvantage</b> on ability checks and attack rolls, and you can't willingly move closer to it.` },
+      { n: 'Grappled', t: `Your speed becomes 0 and can't benefit from bonuses to speed. It ends if the grappler is incapacitated or if something removes you from reach.` },
+      { n: 'Incapacitated', t: `You can't take actions or reactions.` },
+      { n: 'Invisible', t: `You can't be seen without special senses. You count as heavily obscured; attacks against you have <b>disadvantage</b> and your attacks have <b>advantage</b>.` },
+      { n: 'Paralyzed', t: `You are <b>incapacitated</b> and can't move or speak. You auto-fail Strength and Dexterity saves, attacks against you have advantage, and any hit from within 5 ft is a <b>critical hit</b>.` },
+      { n: 'Petrified', t: `You are turned to solid substance, incapacitated, unaware of surroundings, and your weight increases ×10. Attacks against you have advantage; you auto-fail Str and Dex saves and have resistance to all damage.` },
+      { n: 'Poisoned', t: `You have <b>disadvantage</b> on attack rolls and ability checks.` },
+      { n: 'Prone', t: `You can only crawl unless you stand (costing half your movement). You have disadvantage on attacks; attacks against you have advantage if the attacker is within 5 ft, otherwise disadvantage.` },
+      { n: 'Restrained', t: `Your speed is 0. Attacks against you have advantage, your attacks have disadvantage, and you have <b>disadvantage</b> on Dexterity saves.` },
+      { n: 'Stunned', t: `You are <b>incapacitated</b>, can't move, and can speak only falteringly. You auto-fail Str and Dex saves and attacks against you have advantage.` },
+      { n: 'Unconscious', t: `You are <b>incapacitated</b>, drop what you hold, and fall <b>prone</b>. You auto-fail Str and Dex saves, attacks have advantage, and any hit from within 5 ft is a critical.` },
+      { n: 'Exhaustion', m: 'Measured in 6 levels; effects stack', t: `<b>1</b> disadvantage on ability checks. <b>2</b> speed halved. <b>3</b> disadvantage on attacks and saves. <b>4</b> hit point maximum halved. <b>5</b> speed becomes 0. <b>6</b> death. A long rest removes one level (if you also eat and drink).` },
+    ]},
+    { key: 'actions', title: 'Combat Actions', entries: [
+      { n: 'Attack', t: `Make one melee or ranged attack. Some features (Extra Attack) let you make more than one attack with this action.` },
+      { n: 'Cast a Spell', t: `Cast a spell with a casting time of 1 action. A spell with a casting time of 1 bonus action or 1 reaction is cast with that, not your action.` },
+      { n: 'Dash', t: `Gain extra movement equal to your speed for the turn (after any modifiers).` },
+      { n: 'Disengage', t: `Your movement doesn't provoke <b>opportunity attacks</b> for the rest of the turn.` },
+      { n: 'Dodge', t: `Until your next turn, attacks against you have <b>disadvantage</b> (if you can see the attacker) and you make Dexterity saves with advantage. Lost if incapacitated or speed 0.` },
+      { n: 'Help', t: `Give an ally advantage on their next ability check, or on their next attack against a creature within 5 ft of you (before your next turn).` },
+      { n: 'Hide', t: `Make a Dexterity (Stealth) check. If it beats the passive Perception of foes who can't see you, you become <b>unseen</b> and gain advantage on your next attack.` },
+      { n: 'Ready', t: `Choose a trigger and a response (an action or your movement). When the trigger occurs before your next turn, you may use your <b>reaction</b> to act. A readied spell must be held with concentration.` },
+      { n: 'Search', t: `Devote your attention to finding something — a Wisdom (Perception) or Intelligence (Investigation) check.` },
+      { n: 'Use an Object', t: `Interact with a second object (the first free interaction each turn is normally free) or use an object that requires an action.` },
+      { n: 'Grapple (special attack)', t: `Replace one attack with a grab. Make a Strength (Athletics) check contested by the target's Athletics or Acrobatics. On success the target is <b>grappled</b>.` },
+      { n: 'Shove (special attack)', t: `Replace one attack. Strength (Athletics) contested by Athletics/Acrobatics; on success, push the target 5 ft or knock it <b>prone</b>.` },
+      { n: 'Opportunity Attack', t: `A <b>reaction</b>: when a creature you can see leaves your reach, make one melee attack against it. Avoided by taking the <b>Disengage</b> action.` },
+      { n: 'Two-Weapon Fighting', t: `When you Attack with a light melee weapon in one hand, use a <b>bonus action</b> to attack with a different light weapon in the other. Add your ability modifier to that damage only with the Two-Weapon Fighting style.` },
+    ]},
+    { key: 'weapons', title: 'Weapon Properties', entries: [
+      { n: 'Simple vs Martial', t: `<b>Simple</b> weapons are easy to use — most classes are proficient. <b>Martial</b> weapons hit harder or add tricks but need training. Being proficient adds your <b>proficiency bonus</b> to attack rolls.` },
+      { n: 'Ammunition', t: `Needs ammo (arrows, bolts, needles) to make ranged attacks. You draw one piece as part of the attack; recover about half after a fight.` },
+      { n: 'Finesse', t: `Choose Strength or <b>Dexterity</b> for the attack and damage rolls — pick whichever is higher.` },
+      { n: 'Heavy', t: `Small creatures have <b>disadvantage</b> on attacks with it, being too large to wield comfortably.` },
+      { n: 'Light', t: `Small and balanced — ideal for fighting with a weapon in each hand (see Two-Weapon Fighting).` },
+      { n: 'Loading', t: `You can fire only <b>one piece of ammunition</b> per action (or bonus action / reaction), no matter how many attacks you could normally make.` },
+      { n: 'Range', t: `Listed as normal/long (e.g. 80/320). Beyond normal range you attack with <b>disadvantage</b>; you can't attack past long range.` },
+      { n: 'Reach', t: `Adds 5 ft to your reach for attacks and for opportunity attacks with it.` },
+      { n: 'Thrown', t: `You can throw it to make a ranged attack, using the same ability modifier as a melee attack with it.` },
+      { n: 'Two-Handed', t: `Requires two hands to attack with.` },
+      { n: 'Versatile', t: `Usable in one or two hands. The larger die (shown in parentheses) applies when wielded two-handed.` },
+      { n: 'Monk', t: `Counts as a monk weapon, so a Monk can use Dexterity and their Martial Arts die with it.` },
+      { n: 'Special', t: `The weapon has unusual rules described in its own entry (e.g. the lance or net).` },
+    ]},
+    { key: 'armor', title: 'Armor & Shields', entries: [
+      { n: 'Armor Class from armor', t: `Your <b>AC</b> is set by your armor. Light armor adds your full Dex modifier; medium adds Dex up to <b>+2</b>; heavy uses a fixed number and ignores Dex.` },
+      { n: 'Light Armor', t: `AC = armor base + your full <b>Dexterity</b> modifier. Favored by those who rely on agility (e.g. padded, leather, studded leather).` },
+      { n: 'Medium Armor', t: `AC = armor base + Dexterity modifier (<b>max +2</b>). A balance of protection and mobility (e.g. hide, chain shirt, breastplate, half plate).` },
+      { n: 'Heavy Armor', t: `AC is a fixed value; Dexterity doesn't help. The heaviest sets need a minimum <b>Strength</b> or your speed drops by 10 ft (e.g. ring mail, chain mail, plate).` },
+      { n: 'Shields', t: `A shield held in one hand raises your AC by <b>+2</b>. You only benefit from one shield at a time.` },
+      { n: 'Stealth', t: `Some heavier armors impose <b>disadvantage</b> on Dexterity (Stealth) checks.` },
+      { n: 'Proficiency', t: `Wearing armor you aren't proficient with gives <b>disadvantage</b> on any check, save, or attack that uses Strength or Dexterity, and you can't cast spells.` },
+      { n: 'Donning & Doffing', t: `Putting armor on or taking it off takes time — from 1 minute for light armor up to 10 minutes for heavy (halved to take off).` },
+      { n: 'Unarmored Defense', t: `Some classes compute AC without armor — Barbarians add Constitution, Monks add Wisdom, to 10 + Dexterity modifier.` },
+    ]},
+    { key: 'core', title: 'Core Rules', entries: [
+      { n: 'Advantage & Disadvantage', t: `Roll <b>two d20</b> and take the higher (advantage) or lower (disadvantage). They don't stack — you either have it or you don't — and if you have both, they cancel to a single normal roll.` },
+      { n: 'Ability Checks', t: `Roll d20 + ability modifier, adding your <b>proficiency bonus</b> if proficient in the relevant skill or tool, against a Difficulty Class (DC).` },
+      { n: 'Saving Throws', t: `A reflexive roll to resist an effect: d20 + ability modifier (+ proficiency if the class grants that save) versus the effect's DC.` },
+      { n: 'Proficiency Bonus', t: `A single bonus that scales with level (<b>+2</b> at levels 1-4, rising to +6 at 17-20). Add it once to anything you're proficient with.` },
+      { n: 'Passive Checks', t: `A check with no roll: <b>10 + all modifiers</b>. Passive Perception is the usual measure of noticing hidden things.` },
+      { n: 'Cover', t: `<b>Half cover</b> +2 AC and Dex saves; <b>three-quarters cover</b> +5; <b>total cover</b> can't be targeted directly.` },
+      { n: 'Death Saving Throws', t: `At 0 HP, on your turn roll a d20: <b>10+</b> succeeds, under 10 fails. Three successes = stable; three failures = dead. A natural <b>1</b> counts as two failures, a natural <b>20</b> revives you at 1 HP. Damage while down is an automatic failure (a critical hit is two).` },
+      { n: 'Concentration', t: `Some spells last only while you concentrate. You lose it if you cast another concentration spell, are incapacitated, or fail a <b>Constitution save</b> (DC 10 or half the damage taken, whichever is higher) after taking damage.` },
+      { n: 'Short Rest', t: `About 1 hour. Spend <b>Hit Dice</b> to heal (roll + Con per die) and recover features that recharge on a short rest.` },
+      { n: 'Long Rest', t: `About 8 hours. Regain all <b>HP</b> and spell slots, recover up to half your Hit Dice, and reduce exhaustion by one. You benefit from only one long rest per 24 hours.` },
+      { n: 'Movement & Difficult Terrain', t: `Move up to your speed, split as you like. <b>Difficult terrain</b> (rubble, undergrowth, deep snow) costs 2 ft of movement per 1 ft.` },
+      { n: 'Initiative & Surprise', t: `At the start of combat everyone rolls <b>Dexterity (Initiative)</b>; act from highest to lowest. A creature that didn't notice the ambush is <b>surprised</b> and can't move or act on its first turn.` },
+      { n: 'Actions per Turn', t: `On your turn you get one <b>action</b>, any movement up to your speed, and one <b>free object interaction</b>. A <b>bonus action</b> or <b>reaction</b> is only available when a feature grants it.` },
+      { n: 'Falling', t: `<b>1d6 bludgeoning</b> per 10 ft fallen (max 20d6), and you land prone unless the fall was very short.` },
+    ]},
+    { key: 'skills', title: 'Skills', entries: [
+      { n: 'Athletics', m: 'Strength', t: `Climbing, jumping, swimming, and physical contests like grappling and shoving.` },
+      { n: 'Acrobatics', m: 'Dexterity', t: `Balance, tumbling, and staying on your feet in tricky situations.` },
+      { n: 'Sleight of Hand', m: 'Dexterity', t: `Pickpocketing, palming objects, and other quick, subtle hand-work.` },
+      { n: 'Stealth', m: 'Dexterity', t: `Moving quietly and hiding from notice.` },
+      { n: 'Arcana', m: 'Intelligence', t: `Knowledge of magic, spells, magic items, and planar lore.` },
+      { n: 'History', m: 'Intelligence', t: `Recalling past events, peoples, kingdoms, wars, and legends.` },
+      { n: 'Investigation', m: 'Intelligence', t: `Deducing from clues, searching for hidden details, and reasoning things out.` },
+      { n: 'Nature', m: 'Intelligence', t: `Knowledge of terrain, plants, animals, weather, and natural cycles.` },
+      { n: 'Religion', m: 'Intelligence', t: `Knowledge of deities, rites, holy symbols, and the practices of the faithful.` },
+      { n: 'Animal Handling', m: 'Wisdom', t: `Calming, reading, or controlling animals and mounts.` },
+      { n: 'Insight', m: 'Wisdom', t: `Reading intentions, sensing lies, and predicting behavior.` },
+      { n: 'Medicine', m: 'Wisdom', t: `Stabilizing the dying and diagnosing illness or injury.` },
+      { n: 'Perception', m: 'Wisdom', t: `Noticing things with your senses — the most common way to spot danger.` },
+      { n: 'Survival', m: 'Wisdom', t: `Tracking, foraging, navigating the wilds, and predicting weather.` },
+      { n: 'Deception', m: 'Charisma', t: `Lying convincingly and hiding your true intentions.` },
+      { n: 'Intimidation', m: 'Charisma', t: `Influencing through threats, hostility, and force of presence.` },
+      { n: 'Performance', m: 'Charisma', t: `Entertaining an audience with music, dance, acting, or storytelling.` },
+      { n: 'Persuasion', m: 'Charisma', t: `Influencing with tact, warmth, and good-faith argument.` },
+    ]},
+  ];
+  let CMP_TAB = 'conditions';
+  function cmpEntryHtml(e) {
+    return '<div class="cmp-entry"><div class="cmp-entry-name">' + e.n + '</div>' +
+      (e.m ? '<div class="cmp-entry-meta">' + e.m + '</div>' : '') +
+      '<div class="cmp-entry-text">' + e.t + '</div></div>';
+  }
+  function cmpRender() {
+    const tabsEl = document.getElementById('cmp-tabs');
+    const contentEl = document.getElementById('cmp-content');
+    if (!tabsEl || !contentEl) return;
+    const q = (document.getElementById('cmp-search').value || '').trim().toLowerCase();
+    tabsEl.innerHTML = COMPENDIUM.map(s =>
+      `<button class="cmp-tab${!q && s.key === CMP_TAB ? ' active' : ''}" data-key="${s.key}">${s.title}<span class="cmp-tab-count">${s.entries.length}</span></button>`
+    ).join('');
+    tabsEl.querySelectorAll('.cmp-tab').forEach(b => b.addEventListener('click', () => {
+      CMP_TAB = b.dataset.key;
+      const s = document.getElementById('cmp-search'); if (s) s.value = '';
+      cmpRender();
+    }));
+    if (q) {
+      let html = '';
+      COMPENDIUM.forEach(s => {
+        const hits = s.entries.filter(e => (e.n + ' ' + (e.m || '') + ' ' + e.t).replace(/<[^>]+>/g, '').toLowerCase().includes(q));
+        if (hits.length) html += `<div class="cmp-section-head" style="font-family:'Cinzel',serif;color:var(--gold);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin:6px 0 8px;opacity:0.8;">${s.title}</div>` + hits.map(cmpEntryHtml).join('');
+      });
+      contentEl.innerHTML = html || '<div class="cmp-empty">No matches. Try another word.</div>';
+    } else {
+      const s = COMPENDIUM.find(x => x.key === CMP_TAB) || COMPENDIUM[0];
+      contentEl.innerHTML = s.entries.map(cmpEntryHtml).join('');
+      contentEl.scrollTop = 0;
+    }
+  }
+  function openCompendium() {
+    const p = document.getElementById('compendium-popup');
+    if (!p) return;
+    p.classList.add('active');
+    cmpRender();
+    const s = document.getElementById('cmp-search');
+    if (s) { s.value = ''; setTimeout(() => s.focus(), 30); }
+  }
+  function closeCompendium() {
+    const p = document.getElementById('compendium-popup');
+    if (p) p.classList.remove('active');
+  }
+  (function setupCompendium() {
+    const btn = document.getElementById('compendium-btn');
+    if (btn) btn.addEventListener('click', openCompendium);
+    const close = document.getElementById('compendium-close');
+    if (close) close.addEventListener('click', closeCompendium);
+    const search = document.getElementById('cmp-search');
+    if (search) search.addEventListener('input', cmpRender);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const p = document.getElementById('compendium-popup');
+        if (p && p.classList.contains('active')) closeCompendium();
+      }
+    });
+  })();
+
   // Flush any debounced character-sheet / profile save so the last edit isn't
   // lost when the tab closes or refreshes inside the debounce window.
   function flushPendingSaves() {
