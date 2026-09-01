@@ -5035,6 +5035,53 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (!STATE.map) setTimeout(centerViewDefault, 120);
   }
 
+  // After a dropped realtime connection we may have missed DELETE/UPDATE events,
+  // leaving ghosts (e.g. a token deleted while we were offline still on the board).
+  // Rebuild the shared board collections from scratch so removals take effect.
+  // Chat is append-only and left to the live subscription to avoid duplicates.
+  async function resyncBoardState() {
+    try {
+      STATE.tokens.clear();
+      STATE.effects.clear();
+      STATE.drawings.clear();
+      STATE.maps.clear();
+
+      const { data: session } = await sb.from('vtt_sessions').select('*').eq('id', STATE.sessionId).maybeSingle();
+      if (session) {
+        STATE.session = session;
+        if (session.active_map_slot) { STATE.activeMapSlot = session.active_map_slot; STATE.publishedSlot = session.active_map_slot; }
+        try {
+          const ini = JSON.parse(session.initiative || '{}');
+          if (ini && typeof ini === 'object') STATE.initiative = { active: !!ini.active, round: ini.round || 0, turn: ini.turn || 0, entries: Array.isArray(ini.entries) ? ini.entries : [] };
+        } catch (e) {}
+      }
+
+      const { data: mapRows } = await sb.from('vtt_maps').select('*').eq('session_id', STATE.sessionId);
+      if (mapRows) mapRows.forEach(m => STATE.maps.set(m.slot || 1, m));
+      STATE.map = STATE.maps.get(STATE.activeMapSlot) || null;
+      if (STATE.map) { STATE.gridFt = STATE.map.grid_ft || 5; STATE.tokensLocked = !!STATE.map.tokens_locked; updateLockTokensButtonLabel(); }
+      renderMapSlotButtons();
+      renderMap();
+
+      const { data: tokens } = await sb.from('vtt_tokens').select('*').eq('session_id', STATE.sessionId);
+      if (tokens) tokens.forEach(t => STATE.tokens.set(t.id, t));
+      renderTokens(); renderTokenTray(); renderHpTracker();
+
+      const { data: effects } = await sb.from('vtt_effects').select('*').eq('session_id', STATE.sessionId);
+      if (effects) effects.forEach(fx => STATE.effects.set(fx.id, fx));
+      renderEffects();
+
+      try {
+        const { data: drawings } = await sb.from('vtt_drawings').select('*').eq('session_id', STATE.sessionId);
+        if (drawings) drawings.forEach(d => STATE.drawings.set(d.id, d));
+        renderDrawings();
+      } catch (e) {}
+
+      const { data: players } = await sb.from('vtt_players').select('*').eq('session_id', STATE.sessionId);
+      if (players) { STATE.persistedPlayers = players; renderPlayers(); }
+    } catch (e) { console.error('resyncBoardState failed', e); }
+  }
+
   // ============ REAL-TIME SUBSCRIPTION ============
   function setupRealtime() {
     const filter = `session_id=eq.${STATE.sessionId}`;
@@ -5073,7 +5120,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
               isHost: STATE.isHost,
             });
           }
+          // If this SUBSCRIBED follows a drop, we may have missed events while
+          // offline — rebuild the board so ghosts/removals reconcile. Skipped on
+          // the first subscribe (loadInitialState already ran at join).
+          if (STATE._rtDisconnected) {
+            STATE._rtDisconnected = false;
+            resyncBoardState();
+          }
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          STATE._rtDisconnected = true;
           if (!DEMO_MODE) {
             ind.textContent = 'Disconnected';
             ind.className = 'disconnected';
@@ -5397,10 +5452,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         // Re-render tokens so border colors reflect updated classes
         renderTokens();
         rtcApplyFrameColors();
-        // If the open character popup is showing a player that just changed, refresh it
+        // If the open character popup is showing a player that just changed, refresh it —
+        // but never while an input is focused OR an edit is still pending an unsaved
+        // debounce, or we'd overwrite the in-progress local edit with an older remote
+        // value (which the diff-save would then never persist). The pending save runs
+        // and the sheet re-syncs on next open.
         if (CHAR_POPUP.targetPlayerId) {
           const inputsFocused = document.activeElement && document.activeElement.closest('#char-popup');
-          if (!inputsFocused) {
+          const dirty = !!CHAR_POPUP.saveTimeout || !!_profileTimer;
+          if (!inputsFocused && !dirty) {
             openCharPopup(CHAR_POPUP.targetPlayerId, CHAR_POPUP.targetTokenId);
           }
         }
@@ -14388,7 +14448,17 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   setupDrawing();
 
   // Clean up presence on unload
+  // Flush any debounced character-sheet / profile save so the last edit isn't
+  // lost when the tab closes or refreshes inside the debounce window.
+  function flushPendingSaves() {
+    try {
+      if (CHAR_POPUP.saveTimeout) { clearTimeout(CHAR_POPUP.saveTimeout); CHAR_POPUP.saveTimeout = null; saveCharacterChanges(); }
+      if (_profileTimer) { clearTimeout(_profileTimer); _profileTimer = null; saveProfile(CHAR_POPUP.targetPlayerId || STATE.userId); }
+    } catch (e) {}
+  }
+  window.addEventListener('pagehide', flushPendingSaves);
   window.addEventListener('beforeunload', () => {
+    flushPendingSaves();
     try { rtcLeaveCall(); } catch (e) {}
     if (STATE.channel) STATE.channel.unsubscribe();
   });
