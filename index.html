@@ -164,7 +164,8 @@
   .recovery-input { width: 100%; box-sizing: border-box; margin: 0 0 16px; padding: 9px 11px; background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 5px; color: var(--cream); font-size: 14px; }
   .recovery-input:focus { outline: none; border-color: var(--gold-soft); }
   .board-empty { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; pointer-events: none; z-index: 1; }
-  .board-empty .be-inner { text-align: center; background: rgba(20,17,14,0.55); border: 1px solid var(--border); border-radius: 10px; padding: 18px 26px; backdrop-filter: blur(2px); }
+  .board-empty .be-inner { text-align: center; background: rgba(20,17,14,0.55); border: 1px solid var(--border); border-radius: 10px; padding: 22px 30px; backdrop-filter: blur(2px); }
+  .board-empty .be-icon { color: var(--gold-soft); opacity: 0.8; margin-bottom: 10px; }
   .board-empty .be-title { font-family: 'Cinzel', serif; letter-spacing: 0.06em; font-size: 15px; color: var(--gold-soft); margin-bottom: 5px; }
   .board-empty .be-sub { font-family: 'Crimson Pro', serif; font-size: 13px; color: var(--muted); }
   .chat-empty { color: var(--muted); font-size: 12px; font-style: italic; padding: 14px 10px; text-align: center; }
@@ -5550,9 +5551,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const hasMap = !!(STATE.map && STATE.map.image_url);
       be.style.display = hasMap ? 'none' : 'flex';
       if (!hasMap) {
+        const compass = '<svg class="be-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 11 11 8.5 15.5 13 13 15.5 8.5" fill="currentColor" stroke="none" opacity="0.9"/></svg>';
+        const hourglass = '<svg class="be-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12M6 21h12"/><path d="M7 3c0 4 4 5 5 9 1-4 5-5 5-9M7 21c0-4 4-5 5-9 1 4 5 5 5 9"/></svg>';
         be.innerHTML = STATE.isHost
-          ? '<div class="be-inner"><div class="be-title">No map yet</div><div class="be-sub">Generate or upload a map, then reveal it to your players.</div></div>'
-          : '<div class="be-inner"><div class="be-title">The scene is being set</div><div class="be-sub">Waiting for the DM to reveal a map.</div></div>';
+          ? '<div class="be-inner">' + compass + '<div class="be-title">No map yet</div><div class="be-sub">Generate or upload a map, then reveal it to your players.</div></div>'
+          : '<div class="be-inner">' + hourglass + '<div class="be-title">The scene is being set</div><div class="be-sub">Waiting for the DM to reveal a map.</div></div>';
       }
     }
     renderDrawings();
