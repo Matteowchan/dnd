@@ -256,7 +256,11 @@
   .token-tray { display: flex; flex-wrap: wrap; gap: 8px; }
   .token-thumb { width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--border); background-size: cover; background-position: center; cursor: grab; position: relative; transition: border-color 0.15s; }
   .token-thumb:hover { border-color: var(--gold); }
-  .token-thumb.on-map { opacity: 0.4; cursor: default; }
+  .token-thumb.on-map { opacity: 0.4; }
+  .token-thumb.placeable { cursor: pointer; }
+  .token-thumb.armed { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold), 0 0 12px rgba(212,165,116,0.6); opacity: 1; transform: scale(1.06); }
+  #mapcontainer.placing-token { cursor: copy; }
+  #mapcontainer.placing-token #grid { outline: 2px dashed rgba(212,165,116,0.4); outline-offset: -2px; }
   .token-thumb .del-btn { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: var(--danger); color: white; border: 1px solid #1a1612; padding: 0; font-size: 13px; line-height: 1; cursor: pointer; opacity: 0.7; transition: opacity 0.15s, transform 0.15s; z-index: 2; }
   .token-thumb:hover .del-btn { opacity: 1; transform: scale(1.1); }
 
@@ -5738,7 +5742,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const thumb = document.createElement('div');
       thumb.className = 'token-thumb' + (onMap ? ' on-map' : '');
       thumb.style.backgroundImage = `url(${tok.image_url})`;
-      thumb.title = tok.name + (onMap ? ' (on map)' : ' - drag to place');
+      thumb.title = tok.name + (onMap ? ' (on map) - click then click the map to move' : ' - click, then click the map to place (or drag)');
       thumb.dataset.id = tok.id;
       if (!onMap) {
         thumb.draggable = true;
@@ -5746,6 +5750,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           e.dataTransfer.setData('text/plain', tok.id);
         });
       }
+      // Click-to-place / click-to-move (touch-friendly; HTML5 drag never fires on touch)
+      const canControl = (tok.owner_id === STATE.userId) || STATE.isHost;
+      if (canControl) {
+        thumb.classList.add('placeable');
+        thumb.addEventListener('click', (e) => {
+          if (e.target.closest('.del-btn')) return;
+          armTrayToken(tok.id);
+        });
+      }
+      if (STATE.armedTokenId === tok.id) thumb.classList.add('armed');
       if (tok.owner_id === STATE.userId || STATE.isHost) {
         const del = document.createElement('button');
         del.className = 'del-btn';
@@ -12939,8 +12953,54 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   document.addEventListener('mouseup', endTokenDrag);
   document.addEventListener('touchend', endTokenDrag);
 
-  // ============ DROP TOKEN ONTO MAP ============
+  // ============ DROP / CLICK-TO-PLACE TOKENS ONTO MAP ============
   const mapContainer = document.getElementById('mapcontainer');
+
+  // Place a token at a map-space point (snapped to the grid), local-first with a
+  // checked save that reverts on failure. Shared by drag-drop and click-to-place.
+  async function placeTokenAt(id, mapX, mapY) {
+    const tok = STATE.tokens.get(id);
+    if (!tok) return;
+    const ox = (STATE.map && STATE.map.offset_x) || 0;
+    const oy = (STATE.map && STATE.map.offset_y) || 0;
+    const prevX = tok.x, prevY = tok.y;
+    tok.x = snapToGridCenter(mapX) - ox;
+    tok.y = snapToGridCenter(mapY) - oy;
+    renderTokens(); renderTokenTray(); renderHpTracker();
+    const { error } = await sb.from('vtt_tokens').update({ x: tok.x, y: tok.y, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) {
+      console.error('Token place failed', error);
+      toast('Could not place token', 'error');
+      tok.x = prevX; tok.y = prevY; renderTokens(); renderTokenTray(); renderHpTracker();
+    }
+  }
+  // Click-to-place: arm a tray token, then click the map to drop it there. Works on
+  // touch, where HTML5 drag-and-drop does not fire at all.
+  function armTrayToken(id) {
+    STATE.armedTokenId = (STATE.armedTokenId === id) ? null : id;
+    document.querySelectorAll('#token-tray .token-thumb').forEach(t => t.classList.toggle('armed', t.dataset.id === STATE.armedTokenId));
+    if (mapContainer) mapContainer.classList.toggle('placing-token', !!STATE.armedTokenId);
+    if (STATE.armedTokenId) toast('Click the map to place this token', 'info', 1800);
+  }
+  function disarmToken() {
+    STATE.armedTokenId = null;
+    document.querySelectorAll('#token-tray .token-thumb.armed').forEach(t => t.classList.remove('armed'));
+    if (mapContainer) mapContainer.classList.remove('placing-token');
+  }
+  let _mapDownPt = null;
+  mapContainer.addEventListener('mousedown', (e) => { _mapDownPt = { x: e.clientX, y: e.clientY }; });
+  mapContainer.addEventListener('click', (e) => {
+    if (!STATE.armedTokenId) return;
+    if (e.target.closest('.map-token')) return;
+    // Ignore clicks that were really a pan/drag.
+    if (_mapDownPt && Math.hypot(e.clientX - _mapDownPt.x, e.clientY - _mapDownPt.y) > 6) return;
+    const mp = screenToMap(e.clientX, e.clientY);
+    const id = STATE.armedTokenId;
+    disarmToken();
+    placeTokenAt(id, mp.x, mp.y);
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && STATE.armedTokenId) disarmToken(); });
+
   mapContainer.addEventListener('dragover', (e) => e.preventDefault());
   mapContainer.addEventListener('drop', async (e) => {
     e.preventDefault();
@@ -12974,10 +13034,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     // Mevcut tepsi token'i: konumunu guncelle
     const id = e.dataTransfer.getData('text/plain');
     if (!id) return;
-    await sb.from('vtt_tokens').update({
-      x, y,
-      updated_at: new Date().toISOString(),
-    }).eq('id', id);
+    placeTokenAt(id, mp.x, mp.y);
   });
 
   // ============ DICE ROLLING ============
