@@ -1535,7 +1535,7 @@
 
       <div class="field" id="session-field" style="display:block">
         <label id="session-field-label">Resume code (optional)</label>
-        <input type="text" id="session-input" placeholder="Leave empty for a new game" maxlength="4" style="text-transform: uppercase; letter-spacing: 0.2em;">
+        <input type="text" id="session-input" placeholder="Leave empty for a new game" maxlength="12" style="text-transform: uppercase; letter-spacing: 0.2em;">
       </div>
 
       <button class="primary" id="enter-btn" style="width:100%; padding: 12px; margin-top: 10px;">Enter</button>
@@ -2880,11 +2880,20 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   // ============ UTILITIES ============
   function genId() { return Math.random().toString(36).substr(2, 9) + Date.now().toString(36); }
   function genSessionCode() {
+    // 8 chars from a 32-symbol alphabet ~= 40 bits, drawn from a CSPRNG, so codes
+    // can't be enumerated/brute-forced the way the old 4-char (~1M) space could.
+    // Old 4-char codes still join (validation accepts 4-12).
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = '';
-    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    const rnd = (window.crypto && window.crypto.getRandomValues) ? window.crypto.getRandomValues(new Uint32Array(8)) : null;
+    for (let i = 0; i < 8; i++) {
+      const r = rnd ? rnd[i] : Math.floor(Math.random() * 0xffffffff);
+      code += chars[r % chars.length];
+    }
     return code;
   }
+  // A session code is 4-12 chars of the uppercase code alphabet (old games used 4).
+  function isValidSessionCode(c) { return /^[A-Z0-9]{4,12}$/.test(c || ''); }
   function toast(msg, type = 'info', duration = 2500) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -3087,7 +3096,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const lbl = document.getElementById('session-field-label');
     if (lbl) lbl.textContent = 'Session Code';
     const si = document.getElementById('session-input');
-    if (si) si.placeholder = '4-character code';
+    if (si) si.placeholder = 'Session code';
   });
 
   // Connection test
@@ -3124,7 +3133,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const sc = new URLSearchParams(location.search).get('s');
       if (sc) {
         const si = document.getElementById('session-input');
-        if (si) si.value = sc.toUpperCase().slice(0, 4);
+        if (si) si.value = sc.toUpperCase().slice(0, 12);
       }
     } catch (e) {}
     // Admin-only silent observer: index.html?spectate=ABCD starts a read-only,
@@ -3133,7 +3142,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     try {
       const spec = new URLSearchParams(location.search).get('spectate');
       if (spec && (user.email || '').toLowerCase() === 'mertatasal@gmail.com') {
-        spectateSession(spec.toUpperCase().slice(0, 4));
+        spectateSession(spec.toUpperCase().slice(0, 12));
         return;
       }
     } catch (e) {}
@@ -3736,7 +3745,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       } catch (e) { showAuthUi(); }
     }
     // Invite link: matteowchan.github.io/dnd/#join=CODE prefills the join code.
-    const m = (location.hash || '').match(/join=([A-Za-z0-9]{4})/);
+    const m = (location.hash || '').match(/join=([A-Za-z0-9]{4,12})/);
     if (m) {
       const pbtn = document.getElementById('role-player-btn');
       if (pbtn) pbtn.click();
@@ -3774,8 +3783,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         let resumeCode = document.getElementById('session-input').value.trim().toUpperCase();
         if (resumeCode) {
           // Resume a game you already host instead of opening a new one
-          if (resumeCode.length !== 4) {
-            toast('Enter a valid 4-character code', 'error');
+          if (!isValidSessionCode(resumeCode)) {
+            toast('Enter a valid session code', 'error');
             btn.disabled = false; btn.textContent = 'Enter';
             return;
           }
@@ -3787,9 +3796,17 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
             return;
           }
           STATE.sessionId = resumeCode;
-          // Adopt the existing host identity so the map, tokens and character carry over
+          // Adopt the existing host identity so the map, tokens and character carry over —
+          // but only if this account actually owns that host row. Refuse to adopt a host
+          // row owned by a different account (that would be a takeover). A legacy host row
+          // with no owner can still be claimed (RLS gates this via the orphan policy).
           const { data: hostRow } = await sb.from('vtt_players').select('id, owner_id').eq('session_id', resumeCode).eq('is_host', true).limit(1).maybeSingle();
           if (hostRow && hostRow.id) {
+            if (hostRow.owner_id && hostRow.owner_id !== STATE.accountId) {
+              toast('This game is hosted by a different account', 'error');
+              btn.disabled = false; btn.textContent = 'Enter';
+              return;
+            }
             STATE.userId = hostRow.id;
             if (!hostRow.owner_id) {
               try { await sb.from('vtt_players').update({ owner_id: STATE.accountId }).eq('session_id', resumeCode).eq('id', hostRow.id); } catch (e) {}
@@ -3859,8 +3876,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         let code = document.getElementById('session-input').value.trim().toUpperCase();
         // In demo mode, no code needed - use a fixed DEMO session
         if (DEMO_MODE && !code) code = 'DEMO';
-        if (!code || code.length !== 4) {
-          toast('Enter a valid 4-character code', 'error');
+        if (!isValidSessionCode(code)) {
+          toast('Enter a valid session code', 'error');
           btn.disabled = false; btn.textContent = 'Enter';
           return;
         }
