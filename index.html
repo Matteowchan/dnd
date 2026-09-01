@@ -4049,6 +4049,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     btn.style.display = 'block';
     btn.textContent = `Continue as ${saved.username} (${saved.sessionId})`;
     btn.addEventListener('click', async () => {
+      const origLabel = btn.textContent;
       btn.disabled = true; btn.textContent = 'Resuming...';
       try {
         // Verify the session still exists; if it does, jump straight in
@@ -4081,7 +4082,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
               `Your character "${saved.username}" was not found in this campaign — it may have been removed by the host. Create a NEW blank character? Cancel to keep the slot and restore from a JSON backup (Import) instead.`,
               { title: 'Character not found', danger: true, okText: 'Create new' }
             );
-            if (!proceed) { btn.disabled = false; btn.textContent = 'Continue'; return; }
+            if (!proceed) { btn.disabled = false; btn.textContent = origLabel; return; }
           }
           let r = await sb.from('vtt_players').insert({
             id: charId,
@@ -4111,7 +4112,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       } catch (e) {
         console.error(e);
         toast('Resume failed', 'error');
-        btn.disabled = false;
+        btn.disabled = false; btn.textContent = origLabel;
       }
     });
   })();
@@ -5474,9 +5475,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }
   }
 
+  let _playerRefetchSeq = 0;
   function handlePlayerChange(payload) {
-    // Refetch persisted players
+    // Refetch persisted players. Guard against out-of-order responses: a slower
+    // earlier refetch must not overwrite the result of a newer one.
+    const seq = ++_playerRefetchSeq;
     sb.from('vtt_players').select('*').eq('session_id', STATE.sessionId).then(({ data }) => {
+      if (seq !== _playerRefetchSeq) return;
       if (data) {
         STATE.persistedPlayers = data;
         renderPlayers();
@@ -8121,7 +8126,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
     for (let i = 0; i < 10; i++) {
       const { error } = await sb.from('vtt_players').update(attempt).eq('id', CHAR_POPUP.targetPlayerId).eq('session_id', STATE.sessionId);
-      if (!error) { CHAR_POPUP.baseline = { ...base, ...attempt }; break; }
+      if (!error) {
+        CHAR_POPUP.baseline = { ...base, ...attempt };
+        // Keep the local cache in sync so a re-render before the realtime refetch
+        // doesn't briefly flash the pre-edit values.
+        const idx = STATE.persistedPlayers.findIndex(p => p.id === CHAR_POPUP.targetPlayerId);
+        if (idx >= 0) STATE.persistedPlayers[idx] = { ...STATE.persistedPlayers[idx], ...attempt };
+        break;
+      }
       const miss = extractMissingColumn(error);
       if (miss && Object.prototype.hasOwnProperty.call(attempt, miss)) {
         delete attempt[miss];
