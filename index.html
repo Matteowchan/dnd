@@ -4878,14 +4878,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         }),
       };
       STATE.tokens.set(tokenId, tok);
-      try {
-        // Send only the columns that exist; legacy schemas may not have monster_data
-        await sb.from('vtt_tokens').insert(tok);
-      } catch (e) {
-        // Retry without the new columns if they're missing
-        const minimal = { id: tok.id, session_id: tok.session_id, name: tok.name, image_url: tok.image_url, x: tok.x, y: tok.y, owner_id: tok.owner_id, current_hp: tok.current_hp, max_hp: tok.max_hp };
-        try { await sb.from('vtt_tokens').insert(minimal); } catch (e2) { console.error('Token insert failed', e2); }
-      }
+      if (!(await insertTokenRow(tok))) { STATE.tokens.delete(tokenId); toast('Token could not be saved', 'error'); }
       renderTokens();
       renderTokenTray();
     }
@@ -7872,7 +7865,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (exportHdr) exportHdr.style.display = '';
     // Population complete - re-enable auto-save. Use a microtask delay so any
     // pending synthetic events from setting .value get processed first.
-    setTimeout(() => { CHAR_POPUP.loading = false; }, 50);
+    setTimeout(() => { CHAR_POPUP.baseline = buildCharPatch(); CHAR_POPUP.loading = false; }, 50);
   }
 
   function closeCharPopup() {
@@ -7966,14 +7959,24 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (m) return m[1];
     return null;
   }
-  async function saveCharacterChanges() {
-    if (STATE.spectator) return;
-    if (!CHAR_POPUP.targetPlayerId) return;
-    if (CHAR_POPUP.loading) return;
-    const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
-    if (!canEdit) return;
-
-    const patch = {
+  // Persists a token row. supabase-js resolves with {error} instead of throwing,
+  // so the old try/catch around the await never fired and failed inserts were
+  // silently lost (token showed locally, gone on reload). Check the result and,
+  // on a legacy-schema error, retry with only the base columns. Returns success.
+  async function insertTokenRow(tok) {
+    let { error } = await sb.from('vtt_tokens').insert(tok);
+    if (error) {
+      const minimal = { id: tok.id, session_id: tok.session_id, name: tok.name, image_url: tok.image_url, x: tok.x, y: tok.y, owner_id: tok.owner_id, current_hp: tok.current_hp, max_hp: tok.max_hp };
+      ({ error } = await sb.from('vtt_tokens').insert(minimal));
+    }
+    if (error) { console.error('Token insert failed', error); return false; }
+    return true;
+  }
+  // Reads the whole character sheet out of the DOM/CHAR_POPUP into a flat patch.
+  // Used both to compute a save and to snapshot the loaded baseline so we can
+  // diff and write only what changed (see saveCharacterChanges / openCharPopup).
+  function buildCharPatch() {
+    return {
       name: document.getElementById('char-name').value.trim() || 'Unnamed',
       level: parseInt(document.getElementById('char-level').value) || 1,
       class: document.getElementById('char-class').value,
@@ -8007,14 +8010,30 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       death_saves: serializeDeathSaves(CHAR_POPUP.deathSaves),
       conditions: serializeConditions(CHAR_POPUP.conditions, CHAR_POPUP.exhaustionLevel),
     };
+  }
+  async function saveCharacterChanges() {
+    if (STATE.spectator) return;
+    if (!CHAR_POPUP.targetPlayerId) return;
+    if (CHAR_POPUP.loading) return;
+    const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+    if (!canEdit) return;
 
-    let attempt = { ...patch };
+    const patch = buildCharPatch();
+    // Only write fields that actually changed since the sheet was loaded. A stale
+    // view (e.g. the DM's open copy of a player's sheet) must never re-write columns
+    // it never touched — that was silently wiping inventory/notes on concurrent edits.
+    const base = CHAR_POPUP.baseline || {};
+    const attempt = {};
+    for (const k in patch) { if (patch[k] !== base[k]) attempt[k] = patch[k]; }
+    if (Object.keys(attempt).length === 0) return; // nothing changed → nothing to write
+
     for (let i = 0; i < 10; i++) {
       const { error } = await sb.from('vtt_players').update(attempt).eq('id', CHAR_POPUP.targetPlayerId).eq('session_id', STATE.sessionId);
-      if (!error) break;
+      if (!error) { CHAR_POPUP.baseline = { ...base, ...attempt }; break; }
       const miss = extractMissingColumn(error);
       if (miss && Object.prototype.hasOwnProperty.call(attempt, miss)) {
         delete attempt[miss];
+        if (Object.keys(attempt).length === 0) break;
         continue;
       }
       console.error('Save player failed', error);
@@ -9044,13 +9063,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
               is_npc: true,
             };
             STATE.tokens.set(tokenId, tok);
-            try {
-              await sb.from('vtt_tokens').insert(tok);
-            } catch (err) {
-              // Legacy schema fallback (no is_npc/monster_data columns)
-              const minimal = { id: tok.id, session_id: tok.session_id, name: tok.name, image_url: tok.image_url, x: tok.x, y: tok.y, owner_id: tok.owner_id, current_hp: tok.current_hp, max_hp: tok.max_hp };
-              try { await sb.from('vtt_tokens').insert(minimal); } catch (e2) { console.error('Token insert failed', e2); STATE.tokens.delete(tokenId); continue; }
-            }
+            if (!(await insertTokenRow(tok))) { STATE.tokens.delete(tokenId); continue; }
             ok++;
           } catch (err) {
             console.error('DM token upload failed for', file.name, err);
