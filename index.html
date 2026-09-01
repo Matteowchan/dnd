@@ -5742,18 +5742,18 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }
 
     if (msg.msg_type === 'system') {
-      div.innerHTML = `<span style="color:var(--muted); font-style:italic">${escapeHtml(msg.text)}</span> <span class="ts">${msg.ts || ''}</span>`;
+      div.innerHTML = `<span style="color:var(--muted); font-style:italic">${escapeHtml(msg.text)}</span> <span class="ts">${escapeHtml(msg.ts || '')}</span>`;
     } else if (msg.msg_type === 'roll') {
       const userCls = msg.is_host ? 'user host' : 'user';
       const privTag = (msg.is_private && !isWhisper) ? '<span class="priv-tag">[GM]</span> ' : '';
-      const rolls = (msg.rolls || []).map(r => `<span class="roll-result">${r}</span>`).join('');
-      const mod = msg.modifier || 0;
+      const rolls = (msg.rolls || []).map(r => `<span class="roll-result">${escapeHtml(String(r))}</span>`).join('');
+      const mod = Number(msg.modifier) || 0;
       const modText = mod !== 0 ? ` ${mod > 0 ? '+' : ''}${mod}` : '';
       const buffLine = msg.text ? `<div class="roll-buffs">${escapeHtml(msg.text)}</div>` : '';
-      div.innerHTML = `${whisperBadge}${privTag}<span class="${userCls}">${escapeHtml(msg.user_name)}</span> rolled <b>${msg.dice_count}d${msg.sides}${modText}</b> ${rolls} = <span class="roll-total">${msg.total}</span> <span class="ts">${msg.ts || ''}</span>${buffLine}`;
+      div.innerHTML = `${whisperBadge}${privTag}<span class="${userCls}">${escapeHtml(msg.user_name)}</span> rolled <b>${Number(msg.dice_count) || 0}d${Number(msg.sides) || 0}${modText}</b> ${rolls} = <span class="roll-total">${Number(msg.total) || 0}</span> <span class="ts">${escapeHtml(msg.ts || '')}</span>${buffLine}`;
     } else {
       const userCls = msg.is_host ? 'user host' : 'user';
-      div.innerHTML = `${whisperBadge}<span class="${userCls}">${escapeHtml(msg.user_name)}:</span> ${escapeHtml(msg.text)} <span class="ts">${msg.ts || ''}</span>`;
+      div.innerHTML = `${whisperBadge}<span class="${userCls}">${escapeHtml(msg.user_name)}:</span> ${escapeHtml(msg.text)} <span class="ts">${escapeHtml(msg.ts || '')}</span>`;
     }
     log.appendChild(div);
     log.scrollTop = log.scrollHeight;
@@ -13675,9 +13675,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     inp.value = '';
     const id = genId();
     STATE.myMsgIds.add(id);
-    // Whisper target: only the DM can pick a target. Players always send public.
+    // Whisper target: the DM can pick any player; a player can only pick "Whisper
+    // to DM". Honor whatever the (role-appropriate) dropdown offers — previously a
+    // player's whisper was forced public while the UI said "private", leaking it to
+    // the whole table. Client-side filtering (canSeePrivateMsg/handleChatInsert)
+    // hides private messages from non-participants; DB-level privacy lands with RLS.
     const targetSel = document.getElementById('chat-whisper-target');
-    const targetUserId = (STATE.isHost && targetSel) ? targetSel.value : '';
+    const targetUserId = targetSel ? targetSel.value : '';
     const isWhisper = !!targetUserId;
     const msg = {
       id,
