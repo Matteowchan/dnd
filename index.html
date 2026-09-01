@@ -4551,10 +4551,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   async function saveInitiative() {
     if (!STATE.isHost) return;
-    try {
-      await sb.from('vtt_sessions').update({ initiative: JSON.stringify(STATE.initiative) }).eq('id', STATE.sessionId);
-    } catch (e) {
-      console.error('Initiative save failed', e);
+    // supabase-js resolves with {error} rather than throwing, so the try/catch
+    // never fired — a failed save silently dropped the initiative order. Check it.
+    const { error } = await sb.from('vtt_sessions').update({ initiative: JSON.stringify(STATE.initiative) }).eq('id', STATE.sessionId);
+    if (error) {
+      console.error('Initiative save failed', error);
       toast('Initiative sync failed', 'error');
     }
   }
