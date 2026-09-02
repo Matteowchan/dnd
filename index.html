@@ -334,6 +334,8 @@
   .map-token .token-x-btn:hover { opacity: 1; transform: scale(1.18); }
   .map-token.smooth-move { transition: left 0.25s ease, top 0.25s ease; }
   .map-token.dragging { cursor: grabbing; z-index: 100; transform: scale(1.1); transition: none; }
+  @keyframes token-pop { 0% { transform: scale(0.3); opacity: 0.2; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
+  .map-token.token-pop { animation: token-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1); }
   .map-token .name-tag { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: var(--cream); padding: 2px 8px; border-radius: 3px; font-size: 11px; white-space: nowrap; font-family: 'Cinzel', serif; }
 
   /* CHARACTER POPUP */
@@ -12967,6 +12969,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     tok.x = snapToGridCenter(mapX) - ox;
     tok.y = snapToGridCenter(mapY) - oy;
     renderTokens(); renderTokenTray(); renderHpTracker();
+    // Pop the freshly placed token in.
+    const _pel = document.querySelector(`.map-token[data-id="${id}"]`);
+    if (_pel) { _pel.classList.add('token-pop'); _pel.addEventListener('animationend', () => _pel.classList.remove('token-pop'), { once: true }); }
     const { error } = await sb.from('vtt_tokens').update({ x: tok.x, y: tok.y, updated_at: new Date().toISOString() }).eq('id', id);
     if (error) {
       console.error('Token place failed', error);
