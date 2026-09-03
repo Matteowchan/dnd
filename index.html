@@ -948,8 +948,8 @@
 
   /* Char vitals - HP gets a wider first column (2x) so its inputs have room.
    * Remaining 4 cols are AC, Speed, Init, Inspiration. */
-  .char-vitals { display: grid; grid-template-columns: 1.7fr 1fr 1fr 1fr 1fr; gap: 5px; margin-bottom: 12px; align-items: stretch; }
-  .vital-box { background: linear-gradient(180deg, rgba(212,165,116,0.07), rgba(0,0,0,0.32)); border: 1px solid var(--border); border-radius: 3px; padding: 5px 4px; text-align: center; min-width: 0; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; }
+  .char-vitals { display: grid; grid-template-columns: 1.7fr 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; align-items: stretch; }
+  .vital-box { background: linear-gradient(180deg, rgba(212,165,116,0.07), rgba(0,0,0,0.32)); border: 1px solid var(--border); border-radius: 4px; padding: 7px 5px; text-align: center; min-width: 0; min-height: 46px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; }
   .vital-box label { display: block; font-size: calc(9px * var(--app-scale, 1)); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
   .vital-box .vital-val { font-family: 'Cinzel', serif; font-size: calc(14px * var(--app-scale, 1)); color: var(--gold); font-weight: 600; }
   .vital-box input { width: 100%; background: transparent; border: none; color: var(--gold); font-family: 'Cinzel', serif; font-size: calc(13px * var(--app-scale, 1)); font-weight: 600; text-align: center; padding: 0; }
@@ -5723,8 +5723,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           ev.preventDefault();
           tok.disposition = (tok.disposition === 'friendly') ? 'enemy' : 'friendly';
           renderTokens();
-          try { await sb.from('vtt_tokens').update({ disposition: tok.disposition }).eq('id', tok.id); }
-          catch (e) { console.warn('disposition save failed (add column?)', e); }
+          { const { error } = await sb.from('vtt_tokens').update({ disposition: tok.disposition }).eq('id', tok.id);
+            if (error) { console.warn('disposition save failed', error); toast('Disposition not saved', 'error'); } }
         });
         el.appendChild(disp);
       }
@@ -8405,7 +8405,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         tok.max_hp = hpMax;
         tok.current_hp = isNaN(hpCur) ? hpMax : Math.min(hpCur, hpMax);
         STATE.tokens.set(tok.id, tok);
-        try { await sb.from('vtt_tokens').update({ current_hp: tok.current_hp, max_hp: tok.max_hp, updated_at: new Date().toISOString() }).eq('id', tok.id); } catch (e) { console.warn(e); }
+        { const { error } = await sb.from('vtt_tokens').update({ current_hp: tok.current_hp, max_hp: tok.max_hp, updated_at: new Date().toISOString() }).eq('id', tok.id); if (error) { console.warn('token HP sync failed', error); toast('HP not synced', 'error'); } }
       }
     }
 
