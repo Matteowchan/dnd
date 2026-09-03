@@ -265,6 +265,7 @@
   .token-thumb.placeable { cursor: pointer; }
   .token-thumb.armed { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold), 0 0 12px rgba(212,165,116,0.6); opacity: 1; transform: scale(1.06); }
   #mapcontainer.placing-token { cursor: copy; }
+  #mapcontainer.fog-painting { cursor: crosshair; }
   #mapcontainer.placing-token #grid { outline: 2px dashed rgba(212,165,116,0.4); outline-offset: -2px; }
   .token-thumb .del-btn { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: var(--danger); color: white; border: 1px solid #1a1612; padding: 0; font-size: calc(13px * var(--app-scale, 1)); line-height: 1; cursor: pointer; opacity: 0.7; transition: opacity 0.15s, transform 0.15s; z-index: 2; }
   .token-thumb:hover .del-btn { opacity: 1; transform: scale(1.1); }
@@ -1643,6 +1644,12 @@
           <button id="lock-tokens-toggle" style="width: 100%;">Lock Tokens: <b>Off</b></button>
           <button id="clear-tokens-btn" style="width: 100%;" class="danger">Clear Map</button>
         </div>
+        <div id="fog-controls" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--border); padding-top: 8px;">
+          <button id="fog-toggle" style="width:100%;">Fog of War: <b>Off</b></button>
+          <button id="fog-brush-toggle" style="width:100%;">Reveal Brush: <b>Off</b></button>
+          <button id="fog-cover-all" style="width:100%;" class="danger">Re-cover All</button>
+          <div style="font-size: calc(11px * var(--app-scale,1)); color: var(--muted); font-style: italic; line-height:1.4;">Turn fog on, enable the brush, then drag on the map to reveal. Shift-drag re-hides.</div>
+        </div>
       </div>
 
       <div class="panel-section">
@@ -1770,6 +1777,7 @@
         </defs>
       </svg>
       <div id="tokenlayer"></div>
+      <div id="foglayer" style="position:absolute; top:0; left:0; pointer-events:none; transform-origin:0 0; z-index:3;"><canvas id="fogcanvas" style="position:absolute; top:0; left:0;"></canvas></div>
       <svg id="drawlayer"></svg>
       <svg id="measurement" style="display:none"></svg>
       <svg id="remote-measurements"></svg>
@@ -4225,7 +4233,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       </div>
       <div class="init-body" id="init-body">
         <div class="init-controls" id="init-controls" style="display:none">
-          <button id="init-roll-all" class="init-mini-btn" title="Roll initiative for all tokens on the map">Roll All</button>
+          <button id="init-roll-all" class="init-mini-btn" title="Roll initiative for every token on the map and start combat">Roll Init</button>
           <button id="init-add-npc" class="init-mini-btn" title="Add a custom NPC entry">+ NPC</button>
           <button id="init-next-turn" class="init-mini-btn primary" title="Advance to next turn">Next ▸</button>
           <button id="init-clear" class="init-mini-btn danger" title="End combat / clear initiative">End</button>
@@ -5620,6 +5628,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }
     renderDrawings();
     applyTransform();
+    if (!STATE.fogPaint) fogLoad();
+    renderFog();
   }
 
   function renderTokens() {
@@ -10804,10 +10814,106 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.getElementById('maplayer').style.transform = t;
     document.getElementById('effectslayer').style.transform = t;
     document.getElementById('tokenlayer').style.transform = t;
+    { const fl = document.getElementById('foglayer'); if (fl) fl.style.transform = t; }
     const dl = document.getElementById('drawlayer');
     if (dl) dl.style.transform = t;
     renderRemoteMeasurements();  // these use screen coords, redraw on zoom/pan
   }
+
+  // ============ FOG OF WAR ============
+  // Fog is stored per map slot in vtt_maps.fog = { on, reveals:[{x,y,r}] } (map-image
+  // coords). Players see opaque fog over unrevealed areas; the host sees it dimmed.
+  let _fogSaveT = null;
+  function fogLoad() {
+    let f = STATE.map && STATE.map.fog;
+    if (typeof f === 'string') { try { f = JSON.parse(f); } catch (e) { f = null; } }
+    STATE.fog = (f && typeof f === 'object') ? { on: !!f.on, reveals: Array.isArray(f.reveals) ? f.reveals : [] } : { on: false, reveals: [] };
+    updateFogButtons();
+  }
+  function renderFog() {
+    const cvs = document.getElementById('fogcanvas');
+    const fl = document.getElementById('foglayer');
+    if (!cvs || !fl) return;
+    const map = STATE.map;
+    const fog = STATE.fog || { on: false, reveals: [] };
+    if (!map || !map.width || !map.height || !fog.on) { fl.style.display = 'none'; return; }
+    fl.style.display = 'block';
+    const ox = map.offset_x || 0, oy = map.offset_y || 0;
+    const w = Math.round(map.width), h = Math.round(map.height);
+    if (cvs.width !== w) cvs.width = w;
+    if (cvs.height !== h) cvs.height = h;
+    cvs.style.left = ox + 'px'; cvs.style.top = oy + 'px';
+    cvs.style.width = w + 'px'; cvs.style.height = h + 'px';
+    const ctx = cvs.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = STATE.isHost ? 'rgba(6,7,12,0.60)' : 'rgba(3,4,7,0.995)';
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = 'destination-out';
+    (fog.reveals || []).forEach(c => {
+      const g = ctx.createRadialGradient(c.x, c.y, Math.max(1, c.r * 0.55), c.x, c.y, c.r);
+      g.addColorStop(0, 'rgba(0,0,0,1)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  function fogSave() {
+    if (!STATE.isHost || !STATE.map) return;
+    STATE.map.fog = STATE.fog;
+    clearTimeout(_fogSaveT);
+    _fogSaveT = setTimeout(async () => {
+      const { error } = await sb.from('vtt_maps').update({ fog: STATE.fog, updated_at: new Date().toISOString() }).eq('session_id', STATE.sessionId).eq('slot', STATE.activeMapSlot);
+      if (error) { console.error('fog save failed', error); toast('Fog not saved', 'error'); }
+    }, 350);
+  }
+  function updateFogButtons() {
+    const fc = document.getElementById('fog-controls'); if (fc) fc.style.display = STATE.isHost ? '' : 'none';
+    const t = document.getElementById('fog-toggle'); if (t) t.innerHTML = 'Fog of War: <b>' + ((STATE.fog && STATE.fog.on) ? 'On' : 'Off') + '</b>';
+    const b = document.getElementById('fog-brush-toggle'); if (b) { b.innerHTML = 'Reveal Brush: <b>' + (STATE.fogPaint ? 'On' : 'Off') + '</b>'; b.classList.toggle('primary', !!STATE.fogPaint); }
+    const mc = document.getElementById('mapcontainer'); if (mc) mc.classList.toggle('fog-painting', !!STATE.fogPaint);
+  }
+  function fogPaintAt(clientX, clientY, erase) {
+    if (!STATE.map) return;
+    const mp = screenToMap(clientX, clientY);
+    const ox = STATE.map.offset_x || 0, oy = STATE.map.offset_y || 0;
+    const x = Math.round(mp.x - ox), y = Math.round(mp.y - oy);
+    const r = Math.round((STATE.gridSize || 50) * 1.4);
+    if (!STATE.fog) STATE.fog = { on: true, reveals: [] };
+    STATE.fog.on = true;
+    STATE.fog.reveals = STATE.fog.reveals || [];
+    if (erase) {
+      STATE.fog.reveals = STATE.fog.reveals.filter(c => Math.hypot(c.x - x, c.y - y) > c.r * 0.6);
+    } else {
+      STATE.fog.reveals.push({ x, y, r });
+      if (STATE.fog.reveals.length > 5000) STATE.fog.reveals.splice(0, STATE.fog.reveals.length - 5000);
+    }
+    renderFog();
+  }
+  (function setupFog() {
+    const mc = document.getElementById('mapcontainer');
+    const tog = document.getElementById('fog-toggle');
+    if (tog) tog.addEventListener('click', () => { if (!STATE.fog) STATE.fog = { on: false, reveals: [] }; STATE.fog.on = !STATE.fog.on; updateFogButtons(); renderFog(); fogSave(); });
+    const brush = document.getElementById('fog-brush-toggle');
+    if (brush) brush.addEventListener('click', () => { STATE.fogPaint = !STATE.fogPaint; if (STATE.fogPaint) { if (!STATE.fog) STATE.fog = { on: true, reveals: [] }; STATE.fog.on = true; renderFog(); fogSave(); } updateFogButtons(); });
+    const cover = document.getElementById('fog-cover-all');
+    if (cover) cover.addEventListener('click', () => { if (!STATE.fog) STATE.fog = { on: true, reveals: [] }; STATE.fog.on = true; STATE.fog.reveals = []; updateFogButtons(); renderFog(); fogSave(); });
+    if (mc) {
+      mc.addEventListener('mousedown', (e) => {
+        if (!STATE.fogPaint || !STATE.isHost) return;
+        if (e.target.closest('.map-token')) return;
+        e.preventDefault(); e.stopPropagation();
+        let painting = true; const erase = e.shiftKey || e.button === 2;
+        fogPaintAt(e.clientX, e.clientY, erase);
+        const move = (ev) => { if (painting) fogPaintAt(ev.clientX, ev.clientY, erase); };
+        const up = () => { painting = false; document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); fogSave(); };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', up);
+      }, true);
+      mc.addEventListener('contextmenu', (e) => { if (STATE.fogPaint) e.preventDefault(); });
+    }
+  })();
 
   // Haritayi gorunur alanin ortasina yerlestirir, tamami sigacak kadar fit eder (1x ustune cikmaz).
   function centerViewOnMap() {
