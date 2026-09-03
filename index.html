@@ -72,6 +72,11 @@
   button.primary:hover { background: linear-gradient(180deg, #d4a574, #a8845a); }
   button.danger { color: #e8a0a0; border-color: var(--danger); }
   button.danger:hover { background: var(--danger); color: var(--cream); }
+  /* Hide the browser number-input spinner arrows — they crowd the small stat/HP
+     inputs and made the digits look clipped. */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   /* --- micro-interaction polish --- */
   button:active:not(:disabled) { transform: translateY(1px); }
   button.primary { box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
