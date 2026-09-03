@@ -14852,11 +14852,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (launch) launch.addEventListener('click', livekitJoinCall);
     document.getElementById('rtc-mic').addEventListener('click', livekitToggleMic);
     document.getElementById('rtc-cam').addEventListener('click', livekitToggleCam);
+    // Raise Hand and Share Screen were mesh-only; hide them on the LiveKit call
+    // instead of leaving dead buttons.
     const handBtn = document.getElementById('rtc-hand');
-    if (handBtn) handBtn.addEventListener('click', rtcToggleHand);
+    if (handBtn) handBtn.style.display = 'none';
     document.getElementById('rtc-leave').addEventListener('click', livekitLeaveCall);
     const shareBtn = document.getElementById('rtc-share');
-    if (shareBtn) shareBtn.addEventListener('click', rtcStartScreenShare);
+    if (shareBtn) shareBtn.style.display = 'none';
     const screenClose = document.getElementById('screen-share-close');
     if (screenClose) screenClose.addEventListener('click', () => {
       if (RTC.sharing) rtcStopScreenShare();
