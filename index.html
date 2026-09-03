@@ -9815,6 +9815,28 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const where = item.bonus.kind === 'ac' ? 'AC' : item.bonus.kind === 'acsave' ? 'AC and saves' : 'attack and damage';
       toast(`${item.n} applied as a buff (${where}). Toggle or remove it in the Buffs tab.`, 'success');
     }
+    // Plain-English tooltips for weapon property codes (hover a weapon to read them
+    // without leaving the catalog). Fuller rules live in the Compendium.
+    const WEAPON_PROP_TIP = {
+      ammunition: 'Ammunition: needs arrows/bolts; draw one per attack.',
+      finesse: 'Finesse: use Strength or Dexterity, whichever is higher.',
+      heavy: 'Heavy: Small creatures attack with it at disadvantage.',
+      light: 'Light: ideal for fighting with two weapons.',
+      loading: 'Loading: only one shot per action.',
+      reach: 'Reach: adds 5 ft to your reach.',
+      thrown: 'Thrown: can be thrown for a ranged attack.',
+      'two-handed': 'Two-Handed: requires both hands.',
+      versatile: 'Versatile: larger damage die when used two-handed.',
+      monk: 'Monk: counts as a monk weapon (Dex + Martial Arts die).',
+      special: 'Special: has its own unique rules.',
+    };
+    function weaponTip(w) {
+      const parts = [`${w.cat === 'simple' ? 'Simple' : 'Martial'} weapon — ${w.d || 'no damage'}.`];
+      (w.p || '').split(',').map(s => s.trim()).filter(Boolean).forEach(p => {
+        if (WEAPON_PROP_TIP[p]) parts.push(WEAPON_PROP_TIP[p]);
+      });
+      return parts.join('\n');
+    }
     function renderCatalog() {
       const q = (CATALOG.query || '').toLowerCase();
       const list = document.getElementById('catalog-list');
@@ -9823,7 +9845,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         SRD_WEAPONS.filter(w => w.n.toLowerCase().includes(q)).forEach(w => {
           const idx = SRD_WEAPONS.indexOf(w);
           const sub = `${w.d || '—'} · ${w.cat}${w.p ? ' · ' + w.p : ''}`;
-          rows += `<div class="cat-row"><div class="cat-info"><div class="cat-name">${escapeHtml(w.n)}</div><div class="cat-sub">${escapeHtml(sub)}</div></div><div class="cat-actions"><button class="cat-btn primary" data-act="add-weapon" data-i="${idx}">Add</button></div></div>`;
+          rows += `<div class="cat-row" title="${escapeHtml(weaponTip(w))}"><div class="cat-info"><div class="cat-name">${escapeHtml(w.n)}</div><div class="cat-sub">${escapeHtml(sub)}</div></div><div class="cat-actions"><button class="cat-btn primary" data-act="add-weapon" data-i="${idx}">Add</button></div></div>`;
         });
       } else if (CATALOG.tab === 'armor') {
         SRD_ARMOR.filter(a => a.n.toLowerCase().includes(q)).forEach(a => {
