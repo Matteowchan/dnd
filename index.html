@@ -14692,12 +14692,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   function setupRtcUi() {
     const launch = document.getElementById('rtc-launch');
-    if (launch) launch.addEventListener('click', jitsiJoinCall);
+    if (launch) launch.addEventListener('click', rtcJoinCall);
     document.getElementById('rtc-mic').addEventListener('click', rtcToggleMic);
     document.getElementById('rtc-cam').addEventListener('click', rtcToggleCam);
     const handBtn = document.getElementById('rtc-hand');
     if (handBtn) handBtn.addEventListener('click', rtcToggleHand);
-    document.getElementById('rtc-leave').addEventListener('click', jitsiLeaveCall);
+    document.getElementById('rtc-leave').addEventListener('click', rtcLeaveCall);
     const shareBtn = document.getElementById('rtc-share');
     if (shareBtn) shareBtn.addEventListener('click', rtcStartScreenShare);
     const screenClose = document.getElementById('screen-share-close');
