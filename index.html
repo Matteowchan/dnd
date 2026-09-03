@@ -14799,10 +14799,52 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   async function livekitToggleMic() { if (!LK.room) return; LK.micOn = !LK.micOn; try { await LK.room.localParticipant.setMicrophoneEnabled(LK.micOn); } catch (e) {} updateRtcButtons(); }
   async function livekitToggleCam() { if (!LK.room) return; LK.camOn = !LK.camOn; try { await LK.room.localParticipant.setCameraEnabled(LK.camOn); } catch (e) {} updateRtcButtons(); }
   function livekitLeaveCall() {
+    try { livekitStopBg(); } catch (e) {}
     if (LK.room) { try { LK.room.disconnect(); } catch (e) {} LK.room = null; }
     LK.tiles.clear();
     const tiles = document.getElementById('rtc-tiles'); if (tiles) tiles.innerHTML = '';
     const bar = document.getElementById('rtc-bar'); if (bar) bar.classList.remove('in-call');
+  }
+  function livekitStopBg() {
+    try { rtcStopProcessing(); } catch (e) {}
+    if (LK._rawCam) { try { LK._rawCam.getTracks().forEach(t => t.stop()); } catch (e) {} LK._rawCam = null; }
+  }
+  // Background blur / image for LiveKit: reuse the app's MediaPipe pipeline
+  // (rtcStartProcessing) on a raw camera stream, then publish the processed canvas
+  // track to LiveKit in place of the plain camera.
+  async function livekitApplyBg(mode) {
+    if (!LK.room) { return; }
+    const LKC = window.LivekitClient || window.LiveKitClient;
+    const lp = LK.room.localParticipant;
+    RTC_BG.mode = mode;
+    try {
+      if (mode === 'none') {
+        if (LK._bgTrack) { try { await lp.unpublishTrack(LK._bgTrack, true); } catch (e) {} LK._bgTrack = null; }
+        livekitStopBg();
+        await lp.setCameraEnabled(LK.camOn);
+        return;
+      }
+      // ensure a raw camera stream for the pipeline to read
+      if (!LK._rawCam) {
+        LK._rawCam = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+      }
+      RTC.localStream = LK._rawCam;          // rtcStartProcessing reads the raw track from here
+      RTC.camOn = true;
+      if (RTC_BG.running) { try { rtcStopProcessing(); } catch (e) {} }
+      const ok = await rtcStartProcessing();
+      if (!ok || !RTC_BG.processedStream) throw new Error('processing unavailable');
+      const track = RTC_BG.processedStream.getVideoTracks()[0];
+      if (!track) throw new Error('no processed track');
+      // swap the LiveKit camera for the processed track
+      await lp.setCameraEnabled(false);
+      if (LK._bgTrack) { try { await lp.unpublishTrack(LK._bgTrack, true); } catch (e) {} }
+      LK._bgTrack = new LKC.LocalVideoTrack(track);
+      await lp.publishTrack(LK._bgTrack, { source: LKC.Track.Source.Camera });
+    } catch (e) {
+      console.error('background effect failed', e);
+      toast('Background effect failed', 'error');
+      const sel = document.getElementById('rtc-bg-mode'); if (sel) sel.value = 'none';
+    }
   }
 
   function setupRtcUi() {
@@ -14826,18 +14868,20 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       document.getElementById('rtc-min').textContent = hidden ? 'Show' : 'Hide';
     });
 
-    document.getElementById('rtc-bg-mode').addEventListener('change', (e) => rtcSetBgMode(e.target.value));
+    document.getElementById('rtc-bg-mode').addEventListener('change', (e) => {
+      const v = e.target.value;
+      if (v === 'image' && !RTC_BG.image) { document.getElementById('rtc-bg-image').click(); return; }
+      livekitApplyBg(v);
+    });
     document.getElementById('rtc-bg-image').addEventListener('change', (e) => {
       const f = e.target.files[0];
       e.target.value = '';
       if (!f) { document.getElementById('rtc-bg-mode').value = RTC_BG.mode; return; }
       const img = new Image();
-      img.onload = async () => {
+      img.onload = () => {
         RTC_BG.image = img;
-        RTC_BG.mode = 'image';
         document.getElementById('rtc-bg-mode').value = 'image';
-        const ok = await rtcStartProcessing();
-        if (!ok) { RTC_BG.mode = 'none'; document.getElementById('rtc-bg-mode').value = 'none'; }
+        livekitApplyBg('image');
       };
       img.onerror = () => toast('Could not load image', 'error');
       img.src = URL.createObjectURL(f);
