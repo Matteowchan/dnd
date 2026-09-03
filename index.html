@@ -1889,7 +1889,8 @@
         </select>
       </div>
       <div class="char-subline-2">
-        <input type="text" id="char-subclass" placeholder="Subclass (e.g. Battle Master, Life Domain)" maxlength="40">
+        <input type="text" id="char-subclass" placeholder="Subclass — pick or type" maxlength="40" list="char-subclass-list" autocomplete="off">
+        <datalist id="char-subclass-list"></datalist>
       </div>
       <div id="race-traits" class="race-traits"></div>
       <button id="race-asi-btn" class="race-asi-btn" type="button" style="display:none;"></button>
@@ -7157,6 +7158,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const { error } = await sb.from('vtt_players').update({ hit_dice_used: used }).eq('id', playerId).eq('session_id', STATE.sessionId);
     if (error && /hit_dice_used/i.test(error.message || '')) HD_OK = false;
   }
+  // Fill the subclass suggestion list (datalist) from SUBCLASSES for the current
+  // class, so subclasses can be picked instead of typed by hand (free text still works).
+  function populateSubclassList() {
+    const dl = document.getElementById('char-subclass-list');
+    if (!dl) return;
+    const cls = (document.getElementById('char-class').value || '').toLowerCase();
+    const subs = (typeof SUBCLASSES !== 'undefined' && SUBCLASSES[cls]) || [];
+    dl.innerHTML = subs.map(s => `<option value="${escapeHtml(s.n)}">${escapeHtml(s.f || '')}</option>`).join('');
+  }
   function renderHitDice() {
     const wrap = document.getElementById('char-hitdice');
     if (!wrap) return;
@@ -7642,6 +7652,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     renderSpellcasting();
     renderHitDice();
     refreshHpAutoCalc();
+    populateSubclassList();
   }
 
   // 5e average-HP formula: level 1 = HD max + CON mod;
@@ -9227,6 +9238,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     // ability, refresh the hit die. Swaps cleanly when the class changes.
     document.getElementById('char-class').addEventListener('change', (e) => {
       const cls = e.target.value;
+      populateSubclassList();
       const c = D5E_CLASSES[cls];
       CHAR_POPUP.profile = CHAR_POPUP.profile || {};
       CHAR_POPUP.saveProfs = CHAR_POPUP.saveProfs || new Set();
