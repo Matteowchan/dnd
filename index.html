@@ -5305,7 +5305,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     renderMap();
     renderTokens();
     if (persist && STATE.isHost) {
-      sb.from('vtt_sessions').update({ active_map_slot: slot }).eq('id', STATE.sessionId);
+      sb.from('vtt_sessions').update({ active_map_slot: slot }).eq('id', STATE.sessionId)
+        .then(({ error }) => { if (error) { console.error('active slot save failed', error); toast('Map slot sync failed', 'error'); } });
     }
   }
 
@@ -5342,9 +5343,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (!STATE.isHost) return;
     if (!STATE.map || !STATE.map.image_url) { toast('No map to reveal', 'error'); return; }
     STATE.publishedSlot = STATE.activeMapSlot;
-    try {
-      await sb.from('vtt_sessions').update({ active_map_slot: STATE.activeMapSlot }).eq('id', STATE.sessionId);
-    } catch (e) { console.error('publish map failed', e); }
+    const { error } = await sb.from('vtt_sessions').update({ active_map_slot: STATE.activeMapSlot }).eq('id', STATE.sessionId);
+    if (error) { console.error('publish map failed', error); toast('Reveal failed — ' + (error.message || 'check host permissions'), 'error'); return; }
     toast(`Map ${STATE.activeMapSlot} revealed to players`);
     renderMapSlotButtons();
   }
@@ -7498,6 +7498,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     rollDamage(dice, `${sp.name}${sp.dmg && sp.dmg.t ? ' (' + sp.dmg.t + ')' : ''}`);
   }
 
+  // Resolve a spell/cantrip description for display. Prefer the stored .info
+  // (set by the spell picker), but fall back to the SRD/non-SRD catalog by name
+  // so spells added without info (PDF import, manual add, legacy saves) still show.
+  function spellInfoFor(sp) {
+    if (!sp) return '';
+    if (sp.info) return sp.info;
+    const cat = getCatalogSpellByName(sp.name);
+    return (cat && cat.d) || '';
+  }
+
   function renderMagic(magic) {
     const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
     const m = magic || emptyMagicData();
@@ -7575,15 +7585,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (cantList) {
       cantList.innerHTML = '';
       m.cantrips.forEach((c, i) => {
+        const info = spellInfoFor(c);
         const row = document.createElement('div');
-        row.className = 'magic-row' + (c.info ? ' has-info' : '');
+        row.className = 'magic-row' + (info ? ' has-info' : '');
         row.innerHTML = `
           <div class="mr-head">
             <div class="name">${escapeHtml(c.name)} <span class="meta">${escapeHtml(c.desc || '')}</span></div>
             ${c.dmg ? `<span class="spell-dice" title="Damage at your level">${escapeHtml(spellDiceFor(c) || '')}</span><button class="spell-roll" data-kind="cant" data-i="${i}" title="Roll damage">Roll</button>` : ''}
             ${canEdit ? `<button class="del" data-i="${i}" data-kind="cant" title="Remove">×</button>` : ''}
           </div>
-          ${c.info ? `<div class="mr-desc" hidden>${escapeHtml(c.info)}</div>` : ''}
+          ${info ? `<div class="mr-desc" hidden>${escapeHtml(info)}</div>` : ''}
         `;
         cantList.appendChild(row);
       });
@@ -7597,8 +7608,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const sorted = m.spells.slice().sort((a, b) => (a.level || 1) - (b.level || 1) || (a.name || '').localeCompare(b.name || ''));
       sorted.forEach((sp) => {
         const realIdx = m.spells.indexOf(sp);
+        const info = spellInfoFor(sp);
         const row = document.createElement('div');
-        row.className = 'magic-row' + (sp.info ? ' has-info' : '');
+        row.className = 'magic-row' + (info ? ' has-info' : '');
         row.innerHTML = `
           <div class="mr-head">
             <input type="checkbox" class="prep-check" data-i="${realIdx}" ${sp.prepared ? 'checked' : ''} ${canEdit ? '' : 'disabled'} title="Prepared">
@@ -7607,7 +7619,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
             ${sp.dmg ? `<span class="spell-dice" title="Damage at this level">${escapeHtml(spellDiceFor(sp) || '')}</span><button class="spell-roll" data-kind="sp" data-i="${realIdx}" title="Roll damage">Roll</button>` : ''}
             ${canEdit ? `<button class="del" data-i="${realIdx}" data-kind="sp" title="Remove">×</button>` : ''}
           </div>
-          ${sp.info ? `<div class="mr-desc" hidden>${escapeHtml(sp.info)}</div>` : ''}
+          ${info ? `<div class="mr-desc" hidden>${escapeHtml(info)}</div>` : ''}
         `;
         spList.appendChild(row);
       });
@@ -9884,8 +9896,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }
     STATE._renderCatalog = renderCatalog;
     async function saveCustomItems() {
-      try { await sb.from('vtt_sessions').update({ custom_items: STATE.customItems }).eq('id', STATE.sessionId); }
-      catch (e) { console.warn('custom items save failed', e); toast('Could not share item. The custom_items column may be missing.', 'error'); }
+      const { error } = await sb.from('vtt_sessions').update({ custom_items: STATE.customItems }).eq('id', STATE.sessionId);
+      if (error) { console.warn('custom items save failed', error); toast('Could not share item — ' + (error.message || 'check host permissions / custom_items column'), 'error'); }
     }
     const CAT_TYPE = { weapons: 'weapon', armor: 'armor', gear: 'gear', magic: 'magic', custom: 'misc' };
     const CAT_LABEL = { weapons: 'Weapon', armor: 'Armor', gear: 'Gear', magic: 'Magic Item', custom: 'Custom' };
@@ -9981,7 +9993,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           max_hp: Math.max(1, parseInt(hpMax.value) || 1),
           updated_at: new Date().toISOString(),
         };
-        await sb.from('vtt_tokens').update(patch).eq('id', CHAR_POPUP.targetTokenId);
+        const { error } = await sb.from('vtt_tokens').update(patch).eq('id', CHAR_POPUP.targetTokenId);
+        if (error) { console.error('HP save failed', error); toast('HP not saved', 'error'); }
       }, 400);
     };
     hpCur.addEventListener('input', saveHpToToken);
@@ -10073,9 +10086,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const val = document.getElementById('recap-textarea').value;
       if (!STATE.session) STATE.session = { id: STATE.sessionId };
       STATE.session.campaign_log = val;
-      try {
-        await sb.from('vtt_sessions').update({ campaign_log: val }).eq('id', STATE.sessionId);
-      } catch (e) { console.warn('Recap save failed', e); }
+      const { error } = await sb.from('vtt_sessions').update({ campaign_log: val }).eq('id', STATE.sessionId);
+      if (error) { console.error('Recap save failed', error); toast('Recap save failed — ' + (error.message || 'check host permissions'), 'error'); }
     }, 500);
   });
   document.getElementById('recap-new-entry').addEventListener('click', () => {
@@ -10095,13 +10107,17 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (!(await confirmModal('WIPE the entire campaign? This deletes ALL tokens, maps, effects, chat, audio, and the log. Players stay registered but everything else is gone. This cannot be undone.', { title: 'Wipe campaign', danger: true, okText: 'Wipe everything' }))) return;
     try {
       const sid = STATE.sessionId;
-      await sb.from('vtt_tokens').delete().eq('session_id', sid);
-      await sb.from('vtt_effects').delete().eq('session_id', sid);
-      try { await sb.from('vtt_drawings').delete().eq('session_id', sid); } catch (e) {}
-      await sb.from('vtt_chat').delete().eq('session_id', sid);
-      await sb.from('vtt_maps').delete().eq('session_id', sid);
-      await sb.from('vtt_audio').delete().eq('session_id', sid);
-      await sb.from('vtt_sessions').update({ campaign_log: '', active_map_slot: 1, initiative: '{}' }).eq('id', sid);
+      const results = await Promise.all([
+        sb.from('vtt_tokens').delete().eq('session_id', sid),
+        sb.from('vtt_effects').delete().eq('session_id', sid),
+        sb.from('vtt_drawings').delete().eq('session_id', sid),
+        sb.from('vtt_chat').delete().eq('session_id', sid),
+        sb.from('vtt_maps').delete().eq('session_id', sid),
+        sb.from('vtt_audio').delete().eq('session_id', sid),
+        sb.from('vtt_sessions').update({ campaign_log: '', active_map_slot: 1, initiative: '{}' }).eq('id', sid),
+      ]);
+      const failed = results.find(r => r && r.error);
+      if (failed) { console.error('wipe failed', failed.error); toast('Wipe failed: ' + (failed.error.message || 'check host permissions'), 'error'); return; }
       toast('Campaign wiped. Reloading...', 'success', 2000);
       setTimeout(() => location.reload(), 1500);
     } catch (e) {
@@ -10196,7 +10212,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
             renderDeathSaves();
           }
           if (Object.keys(updates).length > 0) {
-            await sb.from('vtt_players').update(updates).eq('id', STATE.userId).eq('session_id', STATE.sessionId);
+            const { error } = await sb.from('vtt_players').update(updates).eq('id', STATE.userId).eq('session_id', STATE.sessionId);
+            if (error) { console.error('Long rest save failed', error); toast('Rest changes not saved', 'error'); }
             Object.assign(player, updates);
           }
           await setHitDiceUsed(STATE.userId, restoredTo);
@@ -10467,17 +10484,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (!STATE.isHost) return;
     const rules = document.getElementById('dm-rules-textarea').value;
     const enabled = document.getElementById('dm-rules-enabled').checked;
-    try {
-      await sb.from('vtt_sessions').update({ dm_rules: rules, dm_rules_enabled: enabled }).eq('id', STATE.sessionId);
-      if (!STATE.session) STATE.session = { id: STATE.sessionId };
-      STATE.session.dm_rules = rules;
-      STATE.session.dm_rules_enabled = enabled;
-      toast(enabled ? 'Rules saved and active' : 'Rules saved (disabled)', 'success');
-      document.getElementById('dm-rules-popup').classList.remove('active');
-    } catch (e) {
-      console.error(e);
-      toast('Save failed: ' + (e.message || 'error'), 'error');
-    }
+    const { error } = await sb.from('vtt_sessions').update({ dm_rules: rules, dm_rules_enabled: enabled }).eq('id', STATE.sessionId);
+    if (error) { console.error('dm rules save failed', error); toast('Save failed: ' + (error.message || 'check host permissions'), 'error'); return; }
+    if (!STATE.session) STATE.session = { id: STATE.sessionId };
+    STATE.session.dm_rules = rules;
+    STATE.session.dm_rules_enabled = enabled;
+    toast(enabled ? 'Rules saved and active' : 'Rules saved (disabled)', 'success');
+    document.getElementById('dm-rules-popup').classList.remove('active');
   });
 
   // ============ SPELLS POPUP ============
@@ -10822,10 +10835,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   document.getElementById('lock-tokens-toggle').addEventListener('click', async () => {
     if (!STATE.map) { toast('Upload a map first', 'error'); return; }
     const newState = !STATE.tokensLocked;
-    await sb.from('vtt_maps').update({
+    const { error: lockErr } = await sb.from('vtt_maps').update({
       tokens_locked: newState,
       updated_at: new Date().toISOString(),
     }).eq('session_id', STATE.sessionId).eq('slot', STATE.activeMapSlot);
+    if (lockErr) { console.error('lock tokens failed', lockErr); toast('Lock toggle failed', 'error'); return; }
     // Realtime will update local state and button label
     // System message
     await sb.from('vtt_chat').insert({
@@ -11395,11 +11409,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         });
       }
       player.buffs = JSON.stringify(buffs);
-      try {
-        await sb.from('vtt_players').update({ buffs: player.buffs }).eq('id', ownerId).eq('session_id', STATE.sessionId);
-      } catch (e) {
-        console.error('Buff save failed', e);
-      }
+      const { error } = await sb.from('vtt_players').update({ buffs: player.buffs }).eq('id', ownerId).eq('session_id', STATE.sessionId);
+      if (error) { console.error('Buff save failed', error); toast('Buff not saved', 'error'); }
     }
     // Re-render tokens so the aura shows up immediately
     renderTokens();
@@ -11855,23 +11866,29 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   async function hostToggleAudioPlay() {
     if (!STATE.audio || !STATE.audio.audio_url) return;
     const newPlaying = !STATE.audio.is_playing;
-    await sb.from('vtt_audio').upsert({
-      session_id: STATE.sessionId,
-      audio_url: STATE.audio.audio_url,
-      audio_name: STATE.audio.audio_name,
-      is_playing: newPlaying,
-      updated_at: new Date().toISOString(),
-    });
+    {
+      const { error } = await sb.from('vtt_audio').upsert({
+        session_id: STATE.sessionId,
+        audio_url: STATE.audio.audio_url,
+        audio_name: STATE.audio.audio_name,
+        is_playing: newPlaying,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) { console.error('Audio toggle failed', error); toast('Audio state not synced', 'error'); }
+    }
   }
 
   async function hostStopAudio() {
-    await sb.from('vtt_audio').upsert({
-      session_id: STATE.sessionId,
-      audio_url: null,
-      audio_name: null,
-      is_playing: false,
-      updated_at: new Date().toISOString(),
-    });
+    {
+      const { error } = await sb.from('vtt_audio').upsert({
+        session_id: STATE.sessionId,
+        audio_url: null,
+        audio_name: null,
+        is_playing: false,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) { console.error('Audio stop failed', error); toast('Audio state not synced', 'error'); }
+    }
   }
 
   function setLocalAudioVolume(v) {
@@ -12473,7 +12490,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         tokens_locked: false,
         updated_at: new Date().toISOString(),
       };
-      await sb.from('vtt_maps').upsert(row);
+      const { error } = await sb.from('vtt_maps').upsert(row);
+      if (error) { console.error('Map publish failed', error); toast('Map not saved', 'error'); return; }
       STATE.maps.set(slot, row);
       switchToMapSlot(slot, false);
       showImggenStatus(`Added as Map ${slot}. Use Reveal to show players.`);
@@ -12495,15 +12513,18 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const labelMap = { character: 'NPC', creature: 'Creature', item: 'Item', map: 'Image' };
       const customName = (document.getElementById('imggen-name').value || '').trim();
       const tokenName = customName || labelMap[imgGenState.type] || 'Token';
-      await sb.from('vtt_tokens').insert({
-        id: tokenId,
-        session_id: STATE.sessionId,
-        name: tokenName,
-        image_url: url,
-        x: null, y: null,
-        owner_id: STATE.userId,
-        current_hp: 10, max_hp: 10,
-      });
+      {
+        const { error } = await sb.from('vtt_tokens').insert({
+          id: tokenId,
+          session_id: STATE.sessionId,
+          name: tokenName,
+          image_url: url,
+          x: null, y: null,
+          owner_id: STATE.userId,
+          current_hp: 10, max_hp: 10,
+        });
+        if (error) { console.error('token gen insert failed', error); toast('Token not saved', 'error'); return; }
+      }
       showImggenStatus(`"${tokenName}" added to tray`);
     } catch (err) {
       console.error(err);
@@ -12750,10 +12771,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       STATE.effects.set(id, effect);
       renderEffects();
       // Persist
-      try {
-        await sb.from('vtt_effects').insert(effect);
-      } catch (e) {
-        console.error('Effect persist failed:', e);
+      {
+        const { error } = await sb.from('vtt_effects').insert(effect);
+        if (error) { console.error('Effect persist failed:', error); toast('Effect not saved', 'error'); }
       }
       // If the caster attached a buff, apply it to every token whose center
       // sits inside the spell area. Each affected token gets the buff added
@@ -13043,8 +13063,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       let asset;
       try { asset = JSON.parse(assetRaw); } catch (err) { return; }
       if (!asset || !asset.url) return;
-      try {
-        await sb.from('vtt_tokens').insert({
+      {
+        const { error } = await sb.from('vtt_tokens').insert({
           id: genId(),
           session_id: STATE.sessionId,
           name: asset.name || 'Token',
@@ -13054,7 +13074,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           current_hp: 10,
           max_hp: 10,
         });
-      } catch (err) { console.error('place asset failed', err); toast('Could not place token', 'error'); }
+        if (error) { console.error('place asset failed', error); toast('Could not place token', 'error'); }
+      }
       return;
     }
 
