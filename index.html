@@ -898,6 +898,8 @@
   .race-traits { font-size: calc(11px * var(--app-scale, 1)); color: var(--muted); margin-top: 6px; line-height: 1.45; max-width: 100%; }
   .race-traits b { color: var(--gold-soft); font-weight: 600; }
   .race-asi-btn { margin-top: 7px; font-size: calc(11px * var(--app-scale, 1)); padding: 5px 10px; border: 1px solid var(--gold-soft); background: var(--panel-light); color: var(--gold); border-radius: 4px; cursor: pointer; }
+  .class-kit-btn { flex-shrink: 0; font-size: calc(10px * var(--app-scale, 1)); padding: 4px 9px; border: 1px solid var(--gold-soft); background: rgba(212,165,116,0.12); color: var(--gold); border-radius: 4px; cursor: pointer; font-family: 'Cinzel', serif; letter-spacing: 0.03em; white-space: nowrap; }
+  .class-kit-btn:hover { background: rgba(212,165,116,0.22); }
   .race-asi-btn:hover { background: var(--gold-soft); color: var(--bg); }
   .race-asi-btn.on { background: var(--gold); color: var(--bg); border-color: var(--gold); }
 
@@ -1933,6 +1935,7 @@
       <div class="char-subline-2">
         <input type="text" id="char-subclass" placeholder="Subclass — pick or type" maxlength="40" list="char-subclass-list" autocomplete="off">
         <datalist id="char-subclass-list"></datalist>
+        <button id="apply-class-kit-btn" class="class-kit-btn" type="button" title="Fill in this class's saving throws, proficiencies, and level-1 features">Apply Class Kit</button>
       </div>
       <div id="race-traits" class="race-traits"></div>
       <button id="race-asi-btn" class="race-asi-btn" type="button" style="display:none;"></button>
@@ -6567,6 +6570,99 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   function capClass(c) { c = (c || '').trim(); return c ? c.charAt(0).toUpperCase() + c.slice(1).toLowerCase() : ''; }
   function isClass(pc, name) { return (pc || '').trim().toLowerCase() === name.toLowerCase(); }
 
+  // Templated class "kits": one tap fills a class's proficiencies and its level-1
+  // signature features onto the sheet (saves/hit die/spell ability come from the
+  // class <select> change handler). Keyed by the lowercase <option> value.
+  const CLASS_KITS = {
+    barbarian: { prof: 'Light and medium armor, shields; simple and martial weapons.', feats: [
+      { name: 'Rage', desc: 'As a bonus action, enter a rage for up to 1 minute: advantage on Strength checks and saves, bonus melee damage, and resistance to bludgeoning, piercing, and slashing damage. You cannot cast or concentrate on spells while raging.' },
+      { name: 'Unarmored Defense', desc: 'While not wearing armor, your AC equals 10 + your Dexterity modifier + your Constitution modifier. You can still use a shield.' },
+    ]},
+    bard: { prof: 'Light armor; simple weapons, hand crossbows, longswords, rapiers, shortswords; three musical instruments.', feats: [
+      { name: 'Bardic Inspiration (d6)', desc: 'As a bonus action, give another creature a d6 it can add to one ability check, attack roll, or saving throw within 10 minutes. Uses equal to your Charisma modifier, regained on a long rest.' },
+      { name: 'Spellcasting', desc: 'You cast Charisma-based spells from the bard list, known rather than prepared, using spell slots. You also know cantrips that scale with level.' },
+    ]},
+    cleric: { prof: 'Light and medium armor, shields; simple weapons.', feats: [
+      { name: 'Spellcasting', desc: 'You prepare and cast Wisdom-based spells from the cleric list, choosing a fresh set of prepared spells after each long rest, plus cantrips.' },
+      { name: 'Divine Domain', desc: 'Choose a domain (Life, War, Light, Trickery, and so on) that grants bonus spells and features tied to your deity.' },
+    ]},
+    druid: { prof: 'Light and medium armor and shields (nonmetal only); clubs, daggers, darts, javelins, maces, quarterstaffs, scimitars, sickles, slings, spears; herbalism kit.', feats: [
+      { name: 'Druidic', desc: 'You know Druidic, the secret language of druids, and can leave hidden messages that others rarely notice.' },
+      { name: 'Spellcasting', desc: 'You prepare and cast Wisdom-based spells from the druid list, refreshing prepared spells after a long rest, plus cantrips.' },
+    ]},
+    fighter: { prof: 'All armor, shields; simple and martial weapons.', feats: [
+      { name: 'Fighting Style', desc: 'Adopt a specialty such as Archery (+2 to ranged attacks), Defense (+1 AC in armor), Dueling, Great Weapon Fighting, Protection, or Two-Weapon Fighting.' },
+      { name: 'Second Wind', desc: 'Once per short or long rest, use a bonus action to regain 1d10 + your fighter level in hit points.' },
+    ]},
+    monk: { prof: "Simple weapons, shortswords; one artisan's tool or one musical instrument.", feats: [
+      { name: 'Unarmored Defense', desc: 'While unarmored and not using a shield, your AC equals 10 + your Dexterity modifier + your Wisdom modifier.' },
+      { name: 'Martial Arts', desc: 'Use Dexterity for unarmed strikes and monk weapons, deal a d4 (scaling) in place of normal damage, and make one unarmed strike as a bonus action after you Attack.' },
+    ]},
+    paladin: { prof: 'All armor, shields; simple and martial weapons.', feats: [
+      { name: 'Divine Sense', desc: 'As an action, sense celestials, fiends, and undead within 60 feet, and consecrated or desecrated places, until the end of your next turn. Uses equal to 1 + your Charisma modifier per long rest.' },
+      { name: 'Lay on Hands', desc: 'A pool of healing equal to five times your paladin level. As an action, touch a creature to restore hit points from the pool, or spend 5 points to cure one disease or neutralize one poison.' },
+    ]},
+    ranger: { prof: 'Light and medium armor, shields; simple and martial weapons.', feats: [
+      { name: 'Favored Enemy', desc: 'Choose a type of foe you have studied: advantage on tracking and recalling lore about them, and you learn a related language.' },
+      { name: 'Natural Explorer', desc: 'Choose a favored terrain where travel is easier — you are not slowed by difficult terrain, keep your wits while tracking, and find extra food and information.' },
+    ]},
+    rogue: { prof: 'Light armor; simple weapons, hand crossbows, longswords, rapiers, shortswords; thieves\' tools.', feats: [
+      { name: 'Expertise', desc: 'Double your proficiency bonus for two chosen skills (or one skill and thieves\' tools).' },
+      { name: 'Sneak Attack', desc: 'Once per turn, deal extra damage (1d6 at level 1, rising as you level) to a target you hit with a finesse or ranged weapon when you have advantage, or when an ally is adjacent to the target.' },
+      { name: 'Thieves\' Cant', desc: 'A secret mix of dialect, jargon, and signs that lets you hide messages in seemingly normal conversation.' },
+    ]},
+    sorcerer: { prof: 'Daggers, darts, slings, quarterstaffs, light crossbows.', feats: [
+      { name: 'Spellcasting', desc: 'You cast Charisma-based spells from the sorcerer list, known rather than prepared, plus cantrips.' },
+      { name: 'Sorcerous Origin', desc: 'The source of your innate magic (Draconic Bloodline, Wild Magic, and so on), granting features from level 1.' },
+    ]},
+    warlock: { prof: 'Light armor; simple weapons.', feats: [
+      { name: 'Otherworldly Patron', desc: 'A powerful being (the Fiend, the Great Old One, the Archfey, and so on) grants you magic and features tied to your pact.' },
+      { name: 'Pact Magic', desc: 'You cast Charisma-based spells with a small number of slots that are always your highest available level and recharge on a short rest.' },
+    ]},
+    wizard: { prof: 'Daggers, darts, slings, quarterstaffs, light crossbows.', feats: [
+      { name: 'Spellcasting', desc: 'You prepare Intelligence-based spells from your spellbook after a long rest, and cast them with spell slots, plus cantrips.' },
+      { name: 'Arcane Recovery', desc: 'Once per day on a short rest, recover expended spell slots with a combined level up to half your wizard level (rounded up).' },
+    ]},
+    artificer: { prof: "Light and medium armor, shields; simple weapons; thieves' tools, tinker's tools, one type of artisan's tools.", feats: [
+      { name: 'Magical Tinkering', desc: 'Imbue tiny nonmagical objects with a minor magical property — light, a recorded message, a smell, or a sound.' },
+      { name: 'Spellcasting', desc: 'You cast Intelligence-based spells from the artificer list using tools as a focus, preparing a fresh list after a long rest.' },
+    ]},
+  };
+  function applyClassKit() {
+    const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+    if (!canEdit) { toast('Cannot edit this character', 'error'); return; }
+    const clsSel = document.getElementById('char-class');
+    const clsVal = (clsSel && clsSel.value || '').toLowerCase();
+    if (!clsVal) { toast('Pick a class first', 'error'); return; }
+    // Apply saves, hit die and suggested spell ability via the existing handler.
+    clsSel.dispatchEvent(new Event('change', { bubbles: true }));
+    const kit = CLASS_KITS[clsVal];
+    CHAR_POPUP.profile = CHAR_POPUP.profile || {};
+    let addedFeats = 0, filledProf = false;
+    if (kit && kit.prof) {
+      const profEl = document.getElementById('char-proficiencies');
+      if (profEl && !(profEl.value || '').trim()) {
+        profEl.value = kit.prof;
+        profEl.dispatchEvent(new Event('input', { bubbles: true }));
+        filledProf = true;
+      }
+    }
+    if (kit && Array.isArray(kit.feats)) {
+      if (!Array.isArray(CHAR_POPUP.profile.features)) CHAR_POPUP.profile.features = [];
+      kit.feats.forEach(f => {
+        const exists = CHAR_POPUP.profile.features.some(x => (x.name || '').toLowerCase() === f.name.toLowerCase());
+        if (!exists) { CHAR_POPUP.profile.features.push({ name: f.name, desc: f.desc }); addedFeats++; }
+      });
+      if (typeof renderFeatures === 'function') renderFeatures();
+    }
+    scheduleSaveProfile();
+    scheduleSavePlayer();
+    const bits = ['saving throws'];
+    if (filledProf) bits.push('proficiencies');
+    if (addedFeats) bits.push(addedFeats + ' feature' + (addedFeats > 1 ? 's' : ''));
+    toast(`${capClass(clsVal)} kit applied: ${bits.join(', ')}.`, 'success');
+  }
+
   function setRaceTraits(raceKey) {
     const el = document.getElementById('race-traits');
     if (!el) return;
@@ -9493,6 +9589,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       scheduleSaveProfile();
       scheduleSavePlayer();
     });
+
+    const classKitBtn = document.getElementById('apply-class-kit-btn');
+    if (classKitBtn) classKitBtn.addEventListener('click', applyClassKit);
 
     // Portrait upload (separate from token image)
     // DM-only: upload one or more images as freestanding tokens in the tray.
