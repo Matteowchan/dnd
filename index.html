@@ -741,7 +741,9 @@
   .equipment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .eq-slot { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; }
   .eq-slot.filled { border-color: var(--gold-soft); }
-  .eq-slot-label { font-size: calc(9px * var(--app-scale, 1)); color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; font-family: 'Cinzel', serif; margin-bottom: 3px; }
+  .eq-slot-label { font-size: calc(9px * var(--app-scale, 1)); color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; font-family: 'Cinzel', serif; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+  .eq-slot-label .eq-unequip { background: transparent; border: 1px solid var(--border); color: var(--gold-soft); border-radius: 3px; padding: 0 5px; font-size: calc(11px * var(--app-scale, 1)); line-height: 1.4; cursor: pointer; }
+  .eq-slot-label .eq-unequip:hover { border-color: var(--gold-soft); background: rgba(212,165,116,0.12); }
   .eq-slot .eq-name { width: 100%; padding: 3px 5px; background: var(--panel); border: 1px solid var(--border); color: var(--cream); border-radius: 2px; font-size: calc(12px * var(--app-scale, 1)); font-family: inherit; margin-bottom: 2px; }
   .eq-slot .eq-stats { width: 100%; padding: 3px 5px; background: var(--panel); border: 1px solid var(--border); color: var(--gold); border-radius: 2px; font-size: calc(10px * var(--app-scale, 1)); font-family: inherit; font-style: italic; }
   .eq-slot input:focus { outline: none; border-color: var(--gold); }
@@ -877,6 +879,9 @@
   .inv-qty-ctl .inv-qty { color: var(--gold); font-weight: 700; min-width: 20px; text-align: center; }
   .inv-row .inv-del { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 1px 7px; font-size: calc(13px * var(--app-scale, 1)); line-height: 1; cursor: pointer; border-radius: 2px; flex-shrink: 0; }
   .inv-row .inv-use { background: rgba(111,191,115,0.14); border: 1px solid rgba(111,191,115,0.5); color: #9fe0a0; padding: 3px 9px; font-size: calc(11px * var(--app-scale, 1)); line-height: 1; cursor: pointer; border-radius: 4px; flex-shrink: 0; font-family: 'Cinzel', serif; letter-spacing: 0.04em; }
+  .inv-row .inv-equip { background: rgba(212,165,116,0.12); border: 1px solid var(--gold-soft); color: var(--gold); padding: 3px 9px; font-size: calc(11px * var(--app-scale, 1)); line-height: 1; cursor: pointer; border-radius: 4px; flex-shrink: 0; font-family: 'Cinzel', serif; letter-spacing: 0.04em; }
+  .inv-row .inv-equip:hover { background: rgba(212,165,116,0.22); }
+  .inv-summary { font-size: calc(10px * var(--app-scale, 1)); color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; font-family: 'Cinzel', serif; padding: 2px 2px 6px; }
   .inv-row .inv-use:hover { border-color: #6fbf73; background: rgba(111,191,115,0.24); }
   .inv-row .inv-del:hover { color: var(--danger); border-color: var(--danger); }
   .inv-add-row { display: flex; gap: 5px; margin-top: 8px; }
@@ -7173,7 +7178,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (/boots|slippers|sandals|\bshoes\b|greaves/.test(n)) return 'boots';
     if (type === 'armor') return /shield/.test(n) ? 'offhand' : 'chest';
     if (type === 'weapon') return 'weapon';
-    return null; // gear, potions, bags, rods, cloaks (no slot) -> inventory
+    // Name-based fallback so hand-typed items (added as 'misc') still equip.
+    if (/\bshield\b/.test(n)) return 'offhand';
+    if (/armor|armour|\bmail\b|plate|breastplate|scale mail|\bhide\b|studded|cuirass|brigandine/.test(n)) return 'chest';
+    if (/sword|blade|\baxe\b|greataxe|handaxe|battleaxe|\bmace\b|dagger|\bbow\b|crossbow|spear|javelin|hammer|warhammer|maul|flail|glaive|halberd|rapier|scimitar|\bclub\b|quarterstaff|\bstaff\b|morningstar|trident|lance|\bpike\b|whip|sickle|\bwand\b|scythe/.test(n)) return 'weapon';
+    return null; // gear, potions, bags, rods (no slot) -> inventory
   }
   // Auto-equip into the matching slot if free, otherwise drop into the bag.
   function autoEquipOrBag(name, stats, type) {
@@ -7236,20 +7245,71 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     scheduleSavePlayer();
   }
 
+  // Move one of a bag item into its matching equipment slot (if free). Keeps the
+  // bag and the Equipped grid in sync so players can gear up with one tap.
+  function equipFromBag(idx) {
+    const it = CHAR_POPUP.inventory[idx];
+    if (!it) return;
+    CHAR_POPUP.equipment = CHAR_POPUP.equipment || {};
+    const occupied = k => { const e = CHAR_POPUP.equipment[k]; return !!(e && (e.name || e.stats)); };
+    let slot = slotForItem(it.name, it.type);
+    if (!slot) { toast('This item has no equip slot — keep it in the bag.', 'error'); return; }
+    if (slot === 'ring1' && occupied('ring1')) slot = 'ring2';
+    if (slot === 'weapon' && occupied('weapon')) slot = 'offhand';
+    if (occupied(slot)) { toast('That slot is taken — unequip it first.', 'error'); return; }
+    CHAR_POPUP.equipment[slot] = { name: it.name, stats: it.stats || '' };
+    it.qty = (it.qty || 1) - 1;
+    if (it.qty <= 0) CHAR_POPUP.inventory.splice(idx, 1);
+    renderInventory(CHAR_POPUP.inventory);
+    renderEquipment(CHAR_POPUP.equipment);
+    scheduleSavePlayer();
+    const label = (EQUIPMENT_SLOTS.find(s => s.key === slot) || {}).label || slot;
+    toast(`${it.name} equipped to ${label}`, 'success');
+  }
+  // Move a worn item back into the bag and free the slot.
+  function unequipSlot(slotKey) {
+    const e = CHAR_POPUP.equipment && CHAR_POPUP.equipment[slotKey];
+    if (!e || !(e.name || e.stats)) return;
+    addInvItem(e.name || 'Item', 1, e.stats || '', 'misc'); // addInvItem re-renders bag + saves
+    CHAR_POPUP.equipment[slotKey] = { name: '', stats: '' };
+    renderEquipment(CHAR_POPUP.equipment);
+    scheduleSavePlayer();
+    toast(`${e.name || 'Item'} moved to bag`);
+  }
+
+  // Item type sort order so the bag groups weapons, armor, gear, magic, then misc.
+  const INV_TYPE_ORDER = { weapon: 0, armor: 1, gear: 2, magic: 3, misc: 4 };
   function renderInventory(items) {
     const list = document.getElementById('inventory-list');
     list.innerHTML = '';
+    const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
     if (!items.length) {
       list.innerHTML = '<div style="font-size: calc(11px * var(--app-scale, 1)); color: var(--muted); padding: 6px 0;">Empty. Browse the catalog or add an item below.</div>';
       return;
     }
-    items.forEach((it, idx) => {
+    // Summary line: distinct items + total pieces carried.
+    const pieces = items.reduce((a, it) => a + (parseInt(it.qty) || 1), 0);
+    const summary = document.createElement('div');
+    summary.className = 'inv-summary';
+    summary.textContent = `${items.length} item${items.length === 1 ? '' : 's'} · ${pieces} piece${pieces === 1 ? '' : 's'} carried`;
+    list.appendChild(summary);
+    // Render in a stable, grouped order without mutating the stored array (so
+    // qty/delete still map to the real index).
+    const order = items.map((it, i) => i).sort((a, b) => {
+      const ta = INV_TYPE_ORDER[items[a].type] ?? 4, tb = INV_TYPE_ORDER[items[b].type] ?? 4;
+      if (ta !== tb) return ta - tb;
+      return (items[a].name || '').localeCompare(items[b].name || '');
+    });
+    order.forEach((idx) => {
+      const it = items[idx];
       const row = document.createElement('div');
       row.className = 'inv-row';
       const statsHtml = it.stats ? `<div class="inv-stats">${escapeHtml(it.stats)}</div>` : '';
+      const canEquip = canEdit && !!slotForItem(it.name, it.type);
       row.innerHTML = `
         ${invTag(it.type)}
         <div class="inv-body"><div class="inv-name">${escapeHtml(it.name)}</div>${statsHtml}</div>
+        ${canEquip ? '<button class="inv-equip" title="Equip into its slot">Equip</button>' : ''}
         ${invIsConsumable(it) ? '<button class="inv-use" title="Use one">Use</button>' : ''}
         <div class="inv-qty-ctl">
           <button class="inv-minus" title="Less">−</button>
@@ -7258,6 +7318,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         </div>
         <button class="inv-del" title="Remove">×</button>
       `;
+      const equipBtn = row.querySelector('.inv-equip');
+      if (equipBtn) equipBtn.addEventListener('click', () => equipFromBag(idx));
       const useBtn = row.querySelector('.inv-use');
       if (useBtn) useBtn.addEventListener('click', () => invUseItem(idx));
       row.querySelector('.inv-minus').addEventListener('click', () => {
@@ -7286,10 +7348,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const div = document.createElement('div');
       div.className = 'eq-slot' + (filled ? ' filled' : '');
       div.innerHTML = `
-        <div class="eq-slot-label">${slot.label}</div>
+        <div class="eq-slot-label">${slot.label}${filled && canEdit ? `<button class="eq-unequip" data-slot="${slot.key}" title="Move back to bag">↩</button>` : ''}</div>
         <input type="text" class="eq-name" data-slot="${slot.key}" placeholder="Empty" value="${escapeHtml(cur.name || '')}" ${canEdit ? '' : 'readonly'}>
         <input type="text" class="eq-stats" data-slot="${slot.key}" placeholder="Stats" value="${escapeHtml(cur.stats || '')}" ${canEdit ? '' : 'readonly'}>
       `;
+      const un = div.querySelector('.eq-unequip');
+      if (un) un.addEventListener('click', () => unequipSlot(slot.key));
       grid.appendChild(div);
     });
   }
