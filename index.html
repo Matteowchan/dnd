@@ -6561,6 +6561,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     'Wizard':    { saves: ['int', 'wis'], spell: 'int' },
     'Artificer': { saves: ['con', 'int'], spell: 'int' },
   };
+  // The #char-class <option> values are lowercase ('barbarian'), but D5E_CLASSES,
+  // hitDieForClass and the Warlock checks key on the capitalised name. Normalise so
+  // hit dice, class saves, spell ability and pact-slot recovery actually apply.
+  function capClass(c) { c = (c || '').trim(); return c ? c.charAt(0).toUpperCase() + c.slice(1).toLowerCase() : ''; }
+  function isClass(pc, name) { return (pc || '').trim().toLowerCase() === name.toLowerCase(); }
 
   function setRaceTraits(raceKey) {
     const el = document.getElementById('race-traits');
@@ -9465,7 +9470,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.getElementById('char-class').addEventListener('change', (e) => {
       const cls = e.target.value;
       populateSubclassList();
-      const c = D5E_CLASSES[cls];
+      const c = D5E_CLASSES[capClass(cls)];
       CHAR_POPUP.profile = CHAR_POPUP.profile || {};
       CHAR_POPUP.saveProfs = CHAR_POPUP.saveProfs || new Set();
       (CHAR_POPUP.profile.classSaves || []).forEach(s => CHAR_POPUP.saveProfs.delete(s));
@@ -10389,7 +10394,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       'Bard': 8, 'Cleric': 8, 'Druid': 8, 'Monk': 8, 'Rogue': 8, 'Warlock': 8,
       'Sorcerer': 6, 'Wizard': 6, 'Artificer': 8,
     };
-    return dice[cls] || 8;
+    return dice[capClass(cls)] || 8;
   }
 
   // Compute the changes a rest would apply to the current user. Returns a
@@ -10492,7 +10497,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         intro: `A brief respite. Spend Hit Dice (each d${hd} ${conMod >= 0 ? '+' : ''}${conMod}) to heal. Spell slots do NOT restore, Warlock excepted.`,
         interactive: true,
         hd, conMod, maxSpend: remHd, totalHd, usedHd, hasToken, curHp, maxHp,
-        warlock: player.class === 'Warlock',
+        warlock: isClass(player.class, 'Warlock'),
         applyShort: async (count) => {
           count = Math.max(0, Math.min(remHd, parseInt(count) || 0));
           if (!hasToken) count = 0; // need a token on the map to track healing
@@ -10510,7 +10515,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
             await setHitDiceUsed(STATE.userId, usedHd + count);
             if (CHAR_POPUP.targetPlayerId === STATE.userId) renderHitDice();
           }
-          if (player.class === 'Warlock' && magic && magic.slots) {
+          if (isClass(player.class, 'Warlock') && magic && magic.slots) {
             Object.keys(magic.slots).forEach(lv => { if (magic.slots[lv]) magic.slots[lv].cur = magic.slots[lv].max || 0; });
             const { error } = await sb.from('vtt_players').update({ magic_data: JSON.stringify(magic) }).eq('id', STATE.userId).eq('session_id', STATE.sessionId);
             if (error) { console.warn('pact slot restore failed', error); toast('Pact slots restored on your sheet, but did not save.', 'error'); }
@@ -10520,9 +10525,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           const who = player.name || STATE.username;
           let text;
           if (count > 0) {
-            text = `${who} took a Short Rest: spent ${count} Hit Di${count > 1 ? 'ce' : 'e'} (d${hd}) [${rolls.join(', ')}] ${conMod >= 0 ? '+' : ''}${conMod} each = ${sum} HP${player.class === 'Warlock' ? ', Pact slots restored' : ''}.`;
+            text = `${who} took a Short Rest: spent ${count} Hit Di${count > 1 ? 'ce' : 'e'} (d${hd}) [${rolls.join(', ')}] ${conMod >= 0 ? '+' : ''}${conMod} each = ${sum} HP${isClass(player.class, 'Warlock') ? ', Pact slots restored' : ''}.`;
           } else {
-            text = `${who} took a Short Rest${player.class === 'Warlock' ? ', Pact slots restored' : ' (no Hit Dice spent)'}.`;
+            text = `${who} took a Short Rest${isClass(player.class, 'Warlock') ? ', Pact slots restored' : ' (no Hit Dice spent)'}.`;
           }
           await sb.from('vtt_chat').insert({
             id: genId(), session_id: STATE.sessionId, user_id: STATE.userId,
