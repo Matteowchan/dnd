@@ -216,6 +216,9 @@
   .theme-toggle:hover { background: var(--panel-light); color: var(--gold); border-color: var(--gold-soft); }
   #topbar button:not(.theme-toggle):not(.font-size-btn):not(#leave-btn) { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 7px 13px; transition: border-color 0.15s, background 0.15s; }
   #topbar button:not(.theme-toggle):not(.font-size-btn):not(#leave-btn):hover { border-color: var(--gold-soft); background: var(--panel-light); }
+  /* Handbook is the flagship rules reference — mark it as the primary of the pair. */
+  #topbar #handbook-btn { border-color: var(--gold-soft); color: var(--gold); background: rgba(212,165,116,0.08); }
+  #topbar #handbook-btn:hover { border-color: var(--gold); background: rgba(212,165,116,0.16); }
 
   #main { flex: 1; display: flex; overflow: hidden; transition: padding-right 0.18s ease; }
 
@@ -10173,14 +10176,34 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       toast(`${a.n} equipped to ${label}, AC set to ${newAc}`, 'success');
     }
     function catApplyMagic(item) {
-      if (!item.bonus) return;
-      CHAR_POPUP.buffs = CHAR_POPUP.buffs || [];
-      if (CHAR_POPUP.buffs.find(b => b.name === item.n)) { toast('Already applied', 'error'); return; }
-      CHAR_POPUP.buffs.push({ name: item.n, mod: item.bonus.mod, active: true });
-      renderBuffs(CHAR_POPUP.buffs);
-      scheduleSavePlayer();
-      const where = item.bonus.kind === 'ac' ? 'AC' : item.bonus.kind === 'acsave' ? 'AC and saves' : 'attack and damage';
-      toast(`${item.n} applied as a buff (${where}). Toggle or remove it in the Buffs tab.`, 'success');
+      const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) { toast('Cannot edit this character', 'error'); return; }
+      // Flat numeric bonuses (AC / AC+saves / attack+damage) apply as a toggleable buff.
+      if (item.bonus) {
+        CHAR_POPUP.buffs = CHAR_POPUP.buffs || [];
+        if (CHAR_POPUP.buffs.find(b => b.name === item.n)) { toast('Already applied', 'error'); return; }
+        CHAR_POPUP.buffs.push({ name: item.n, mod: item.bonus.mod, active: true });
+        renderBuffs(CHAR_POPUP.buffs);
+        scheduleSavePlayer();
+        const where = item.bonus.kind === 'ac' ? 'AC' : item.bonus.kind === 'acsave' ? 'AC and saves' : 'attack and damage';
+        toast(`${item.n} applied as a buff (${where}). Toggle or remove it in the Buffs tab.`, 'success');
+        return;
+      }
+      // Items that SET an ability score (Amulet of Health, Giant Strength belts):
+      // raise the matching score to the item's value if it is higher (5e never
+      // lowers it). Reversible by editing the field when the item comes off.
+      if (item.setAbility) {
+        const ab = item.setAbility.ability, score = item.setAbility.score;
+        const el = document.getElementById('char-' + ab);
+        if (!el) return;
+        const cur = parseInt(el.value) || 10;
+        if (cur >= score) { toast(`Your ${ab.toUpperCase()} is already ${cur} (this item sets it to ${score}).`, 'error'); return; }
+        el.value = score;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        scheduleSavePlayer();
+        toast(`${item.n}: ${ab.toUpperCase()} set to ${score} (was ${cur}). Edit the ${ab.toUpperCase()} field back if you unequip it.`, 'success');
+      }
     }
     // Plain-English tooltips for weapon property codes (hover a weapon to read them
     // without leaving the catalog). Fuller rules live in the Compendium.
@@ -10232,6 +10255,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           const tag = `${m.r}${m.att ? ' · attune' : ''}`;
           let actions = `<button class="cat-btn" data-act="add-magic" data-i="${idx}">Add</button>`;
           if (m.bonus) actions += `<button class="cat-btn primary" data-act="apply-magic" data-i="${idx}">Apply +${m.bonus.mod}</button>`;
+          else if (m.setAbility) actions += `<button class="cat-btn primary" data-act="apply-magic" data-i="${idx}">Set ${m.setAbility.ability.toUpperCase()} ${m.setAbility.score}</button>`;
           rows += `<div class="cat-row"><div class="cat-info"><div class="cat-name">${escapeHtml(m.n)}<span class="cat-tag">${escapeHtml(tag)}</span></div><div class="cat-sub">${escapeHtml(m.d)}</div></div><div class="cat-actions">${actions}</div></div>`;
         });
       } else if (CATALOG.tab === 'custom') {
