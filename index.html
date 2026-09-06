@@ -3585,7 +3585,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   (async () => {
     const status = document.getElementById('conn-status');
     if (DEMO_MODE) {
-      status.textContent = 'Demo mode - no multiplayer sync';
+      try { status.textContent = t('Demo mode - no multiplayer sync'); } catch (e) { status.textContent = 'Demo mode - no multiplayer sync'; }
       status.className = 'conn-status demo';
       return;
     }
@@ -6338,7 +6338,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const mod = Number(msg.modifier) || 0;
       const modText = mod !== 0 ? ` ${mod > 0 ? '+' : ''}${mod}` : '';
       const buffLine = msg.text ? `<div class="roll-buffs">${escapeHtml(msg.text)}</div>` : '';
-      div.innerHTML = `${whisperBadge}${privTag}<span class="${userCls}"${nameStyle}>${escapeHtml(msg.user_name)}</span> rolled <b>${Number(msg.dice_count) || 0}d${Number(msg.sides) || 0}${modText}</b> ${rolls} = <span class="roll-total">${Number(msg.total) || 0}</span> <span class="ts">${escapeHtml(msg.ts || '')}</span>${buffLine}`;
+      div.innerHTML = `${whisperBadge}${privTag}<span class="${userCls}"${nameStyle}>${escapeHtml(msg.user_name)}</span> ${t('rolled')} <b>${Number(msg.dice_count) || 0}${LANG === 'de' ? 'W' : 'd'}${Number(msg.sides) || 0}${modText}</b> ${rolls} = <span class="roll-total">${Number(msg.total) || 0}</span> <span class="ts">${escapeHtml(msg.ts || '')}</span>${buffLine}`;
     } else {
       const userCls = msg.is_host ? 'user host' : 'user';
       const nameStyle = chatNameStyle(msg);
@@ -11400,7 +11400,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   function renderSpellShapeList() {
     const el = document.getElementById('spell-shape-list');
     if (!el) return;
-    if (!SPELL_FX.loaded) { el.innerHTML = '<div class="sp-empty">' + (SPELL_FX.error ? 'Could not load effects.' : 'Loading effects...') + '</div>'; return; }
+    if (!SPELL_FX.loaded) { el.innerHTML = '<div class="sp-empty">' + (SPELL_FX.error ? t('Could not load effects.') : t('Loading effects...')) + '</div>'; return; }
     if (!SPELL_FX.cats.length) { el.innerHTML = '<div class="sp-empty">No effects found in the bucket.</div>'; return; }
     el.innerHTML = SPELL_FX.cats.map(c => `<button class="spell-shape${c === SPELL_FX.curCat ? ' active' : ''}" data-cat="${escapeHtml(c)}"><div class="sp-info"><div class="sp-name">${escapeHtml(t(c))}</div><div class="sp-hint">${SPELL_FX.byCat[c].length} ${t('effects')}</div></div></button>`).join('');
     el.querySelectorAll('.spell-shape').forEach(b => b.addEventListener('click', () => { SPELL_FX.curCat = b.dataset.cat; renderSpellShapeList(); renderSpellFxList(); }));
@@ -11440,11 +11440,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (name) {
       label.textContent = name;
       btn.disabled = false;
-      btn.textContent = 'Activate ' + name;
+      btn.textContent = t('Activate') + ' ' + name;
     } else {
-      label.textContent = 'Pick a shape and effect';
+      label.textContent = t('Pick a shape and effect');
       btn.disabled = true;
-      btn.textContent = 'Activate';
+      btn.textContent = t('Activate');
     }
   }
   async function spellsOpen() {
@@ -20205,6 +20205,37 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Ocean swirls of teal and white": "Ozeanwirbel in Türkis und Weiß",
   "Default": "Standard",
   "Dice set:": "Würfelset:",
+  "Demo mode - no multiplayer sync": "Demo-Modus – keine Mehrspieler-Synchronisierung",
+  "rolled": "würfelte",
+  "Loading effects...": "Effekte werden geladen…",
+  "Could not load effects.": "Effekte konnten nicht geladen werden.",
+  "Pick a shape and effect": "Wähle eine Form und einen Effekt",
+  "Someone": "Jemand",
+  "Token": "Figur",
+  "attacks with": "greift an mit",
+  "uses": "nutzt",
+  "roll under": "unterwürfeln",
+  "Attack succeeds on a 1d20": "Der Angriff gelingt bei einem 1W20",
+  "at or under": "gleich oder unter",
+  "(1 = critical, 20 = botch). Damage is reduced by the target's Protection (RS).": "(1 = kritisch, 20 = Patzer). Der Schaden wird um die Rüstung (RS) des Ziels verringert.",
+  "Saving throw": "Rettungswurf",
+  "Target makes a DC": "Das Ziel legt einen SG",
+  "save. Roll damage, then apply full or half.": "Rettungswurf ab. Würfle Schaden und wende dann vollen oder halben an.",
+  "Attack — Roll AT": "Angriff — AT würfeln",
+  "Cast — Roll Attack": "Wirken — Angriff würfeln",
+  "Attack — Roll to Hit": "Angriff — Trefferwurf",
+  "the target": "das Ziel",
+  "no target": "kein Ziel",
+  "MISS (natural 1)": "FEHLSCHLAG (natürliche 1)",
+  "to hit": "zum Treffen",
+  "Damage:": "Schaden:",
+  "damage": "Schaden",
+  "crit": "krit",
+  "to": "auf",
+  "saved": "gerettet",
+  "The DM can apply this to": "Der SL kann dies anwenden auf",
+  "casts": "wirkt",
+  "Applied": "Angewendet",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
@@ -20920,39 +20951,39 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const box = document.getElementById('ar-body');
     const isDsa = RESOLVER.kind === 'dsa-attack';
     const attacker = isDsa
-      ? ((DSA_SHEET.data && DSA_SHEET.data.name) || STATE.username || 'Someone')
-      : ((document.getElementById('char-name') && document.getElementById('char-name').value) || STATE.username || 'Someone');
+      ? ((DSA_SHEET.data && DSA_SHEET.data.name) || STATE.username || t('Someone'))
+      : ((document.getElementById('char-name') && document.getElementById('char-name').value) || STATE.username || t('Someone'));
     const toks = onMapTokens();
-    const targetOpts = ['<option value="">— choose a target —</option>'].concat(toks.map(t => {
-      const tag = isDsa ? getTokenRS(t.id) : getTokenAC(t.id);
+    const targetOpts = [`<option value="">${t('— choose a target —')}</option>`].concat(toks.map(tk => {
+      const tag = isDsa ? getTokenRS(tk.id) : getTokenAC(tk.id);
       const lbl = isDsa ? (tag != null ? ' (RS ' + tag + ')' : '') : (tag != null ? ' (AC ' + tag + ')' : '');
-      return `<option value="${t.id}"${RESOLVER.targetId === t.id ? ' selected' : ''}>${escapeHtml(t.name || 'Token')}${lbl}</option>`;
+      return `<option value="${tk.id}"${RESOLVER.targetId === tk.id ? ' selected' : ''}>${escapeHtml(tk.name || t('Token'))}${lbl}</option>`;
     })).join('');
     const isSpell = RESOLVER.kind === 'spell';
     const spellSave = isSpell && RESOLVER.spellMode === 'save';
     let html = `
-      <div class="ar-line"><span class="ar-attacker">${escapeHtml(attacker)}</span> ${isDsa ? 'attacks with' : 'uses'} <b>${escapeHtml(RESOLVER.name)}</b>${isDsa ? ' <span class="ar-dmg-detail">(AT ' + (RESOLVER.at || 0) + ', roll under)</span>' : ''}</div>
-      <label class="ar-label">Target</label>
+      <div class="ar-line"><span class="ar-attacker">${escapeHtml(attacker)}</span> ${isDsa ? t('attacks with') : t('uses')} <b>${escapeHtml(RESOLVER.name)}</b>${isDsa ? ' <span class="ar-dmg-detail">(AT ' + (RESOLVER.at || 0) + ', ' + t('roll under') + ')</span>' : ''}</div>
+      <label class="ar-label">${t('Target')}</label>
       <select id="ar-target" class="ar-input">${targetOpts}</select>`;
     if (isDsa) {
-      html += `<div class="ar-savenote">Attack succeeds on a 1d20 <b>at or under ${RESOLVER.at || 0}</b> (1 = critical, 20 = botch). Damage is reduced by the target\\'s Protection (RS).</div>`;
+      html += `<div class="ar-savenote">${t('Attack succeeds on a 1d20')} <b>${t('at or under')} ${RESOLVER.at || 0}</b> ${t("(1 = critical, 20 = botch). Damage is reduced by the target's Protection (RS).")}</div>`;
     }
     if (isSpell) {
       html += `<div class="ar-seg ar-spellmode">
-        <button data-sm="attack" class="${RESOLVER.spellMode !== 'save' ? 'on' : ''}">Spell attack</button>
-        <button data-sm="save" class="${RESOLVER.spellMode === 'save' ? 'on' : ''}">Saving throw</button>
+        <button data-sm="attack" class="${RESOLVER.spellMode !== 'save' ? 'on' : ''}">${t('Spell attack')}</button>
+        <button data-sm="save" class="${RESOLVER.spellMode === 'save' ? 'on' : ''}">${t('Saving throw')}</button>
       </div>`;
     }
     if (!spellSave && !isDsa) {
-      html += `<label class="ar-label">Roll</label><div class="ar-seg ar-mode">
-        <button data-mode="dis" class="${RESOLVER.mode === 'dis' ? 'on' : ''}">Disadvantage</button>
-        <button data-mode="normal" class="${RESOLVER.mode === 'normal' ? 'on' : ''}">Normal</button>
-        <button data-mode="adv" class="${RESOLVER.mode === 'adv' ? 'on' : ''}">Advantage</button>
+      html += `<label class="ar-label">${t('Roll')}</label><div class="ar-seg ar-mode">
+        <button data-mode="dis" class="${RESOLVER.mode === 'dis' ? 'on' : ''}">${t('Disadvantage')}</button>
+        <button data-mode="normal" class="${RESOLVER.mode === 'normal' ? 'on' : ''}">${t('Normal')}</button>
+        <button data-mode="adv" class="${RESOLVER.mode === 'adv' ? 'on' : ''}">${t('Advantage')}</button>
       </div>`;
     } else if (spellSave) {
-      html += `<div class="ar-savenote">Target makes a DC <b>${RESOLVER.saveDc || '?'}</b> ${escapeHtml((RESOLVER.saveAbility || '').toUpperCase())} save. Roll damage, then apply full or half.</div>`;
+      html += `<div class="ar-savenote">${t('Target makes a DC')} <b>${RESOLVER.saveDc || '?'}</b> ${escapeHtml((RESOLVER.saveAbility || '').toUpperCase())} ${t('save. Roll damage, then apply full or half.')}</div>`;
     }
-    html += `<button id="ar-roll" class="ar-roll-btn">${isDsa ? 'Attack — Roll AT' : (spellSave ? 'Roll Damage' : (isSpell ? 'Cast — Roll Attack' : 'Attack — Roll to Hit'))}</button>`;
+    html += `<button id="ar-roll" class="ar-roll-btn">${isDsa ? t('Attack — Roll AT') : (spellSave ? t('Roll Damage') : (isSpell ? t('Cast — Roll Attack') : t('Attack — Roll to Hit')))}</button>`;
     html += `<div id="ar-result" class="ar-result"></div>`;
     box.innerHTML = html;
     const tsel = document.getElementById('ar-target');
@@ -20968,7 +20999,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const tsel = document.getElementById('ar-target');
     RESOLVER.targetId = tsel ? tsel.value : '';
     const target = RESOLVER.targetId ? STATE.tokens.get(RESOLVER.targetId) : null;
-    const targetName = target ? (target.name || 'the target') : 'no target';
+    const targetName = target ? (target.name || t('the target')) : t('no target');
     const isSpell = RESOLVER.kind === 'spell';
     const isDsa = RESOLVER.kind === 'dsa-attack';
     const spellSave = isSpell && RESOLVER.spellMode === 'save';
@@ -20978,14 +21009,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const r = 1 + Math.floor(Math.random() * 20);
       crit = r === 1; const botch = r === 20;
       hit = crit || (!botch && r <= at);
-      const verdict = crit ? 'CRITICAL HIT' : botch ? 'BOTCH' : (hit ? 'HIT' : 'MISS');
+      const verdict = crit ? t('CRITICAL HIT') : botch ? t('BOTCH') : (hit ? t('HIT') : t('MISS'));
       resultHtml += `<div class="ar-roll-line"><b>AT d20[${r}]</b> vs ${at} — <span class="ar-verdict ${hit ? 'hit' : 'miss'}">${verdict}</span></div>`;
       cardBits.push(`AT d20[${r}]/${at} ${verdict}`);
       if (hit) {
         const dmg = rollDamageDetailed(RESOLVER.dmg || '', false);
         const rs = target ? (getTokenRS(RESOLVER.targetId) || 0) : 0;
         applyAmt = Math.max(0, dmg.total - rs);
-        resultHtml += `<div class="ar-dmg-line">Damage: <b>${applyAmt}</b> <span class="ar-dmg-detail">(${escapeHtml(dmg.detail)}${rs ? ' − RS ' + rs : ''})</span></div>`;
+        resultHtml += `<div class="ar-dmg-line">${t('Damage:')} <b>${applyAmt}</b> <span class="ar-dmg-detail">(${escapeHtml(dmg.detail)}${rs ? ' − RS ' + rs : ''})</span></div>`;
         cardBits.push(`${applyAmt} TP${rs ? ' (−RS ' + rs + ')' : ''}`);
       }
     } else {
@@ -20999,7 +21030,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         if (isFumble) hit = false; else if (crit) hit = true; else if (ac != null) hit = total >= ac; else hit = true;
         const rollTxt = d.rolls.length > 1 ? `d20[${d.rolls.join(',')}]→${d.kept}` : `d20[${d.kept}]`;
         const vsTxt = ac != null ? ` vs AC ${ac}` : '';
-        const verdict = isFumble ? 'MISS (natural 1)' : crit ? 'CRITICAL HIT' : (ac != null ? (hit ? 'HIT' : 'MISS') : 'to hit');
+        const verdict = isFumble ? t('MISS (natural 1)') : crit ? t('CRITICAL HIT') : (ac != null ? (hit ? t('HIT') : t('MISS')) : t('to hit'));
         resultHtml += `<div class="ar-roll-line"><b>${rollTxt} ${bonus >= 0 ? '+' : ''}${bonus} = ${total}</b>${vsTxt} — <span class="ar-verdict ${hit ? 'hit' : 'miss'}">${verdict}</span></div>`;
         cardBits.push(`${rollTxt}${bonus >= 0 ? '+' : ''}${bonus}=${total}${vsTxt} ${verdict}`);
       }
@@ -21008,8 +21039,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         if (dmgExpr) {
           const dmg = rollDamageDetailed(dmgExpr, crit);
           applyAmt = dmg.total;
-          resultHtml += `<div class="ar-dmg-line">Damage: <b>${dmg.total}</b> <span class="ar-dmg-detail">(${escapeHtml(dmg.detail)}${crit ? ', crit' : ''})</span></div>`;
-          cardBits.push(`${dmg.total} damage${crit ? ' (crit)' : ''}`);
+          resultHtml += `<div class="ar-dmg-line">${t('Damage:')} <b>${dmg.total}</b> <span class="ar-dmg-detail">(${escapeHtml(dmg.detail)}${crit ? ', ' + t('crit') : ''})</span></div>`;
+          cardBits.push(`${dmg.total} ${t('damage')}${crit ? ' (' + t('crit') + ')' : ''}`);
         }
       }
     }
@@ -21017,9 +21048,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const canApply = target && applyAmt > 0 && (STATE.isHost || target.owner_id === STATE.userId);
     if (target && applyAmt > 0) {
       if (canApply) {
-        resultHtml += `<div class="ar-apply-row"><button id="ar-apply-full">Apply ${applyAmt} to ${escapeHtml(targetName)}</button>${spellSave ? `<button id="ar-apply-half">Apply ${Math.floor(applyAmt / 2)} (saved)</button>` : ''}</div>`;
+        resultHtml += `<div class="ar-apply-row"><button id="ar-apply-full">${t('Apply')} ${applyAmt} ${t('to')} ${escapeHtml(targetName)}</button>${spellSave ? `<button id="ar-apply-half">${t('Apply')} ${Math.floor(applyAmt / 2)} (${t('saved')})</button>` : ''}</div>`;
       } else {
-        resultHtml += `<div class="ar-apply-note">The DM can apply this to ${escapeHtml(targetName)}.</div>`;
+        resultHtml += `<div class="ar-apply-note">${t('The DM can apply this to')} ${escapeHtml(targetName)}.</div>`;
       }
     }
     RESOLVER.result = resultHtml;
@@ -21029,8 +21060,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const half = document.getElementById('ar-apply-half');
     if (half) half.addEventListener('click', () => resolverApply(Math.floor(applyAmt / 2)));
     // Post a chat card for the whole table
-    const attacker = (document.getElementById('char-name') && document.getElementById('char-name').value) || STATE.username || 'Someone';
-    const verb = isSpell ? 'casts' : 'attacks with';
+    const attacker = (document.getElementById('char-name') && document.getElementById('char-name').value) || STATE.username || t('Someone');
+    const verb = isSpell ? t('casts') : t('attacks with');
     const tgtTxt = target ? ` → ${targetName}` : '';
     const text = `${attacker} ${verb} ${RESOLVER.name}${tgtTxt}: ${cardBits.join(' · ')}`;
     try { await sb.from('vtt_chat').insert({ id: genId(), session_id: STATE.sessionId, user_id: STATE.userId, user_name: attacker, is_host: STATE.isHost, msg_type: 'system', text, ts: nowTs() }); } catch (e) {}
@@ -21042,7 +21073,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     renderTokens();
     renderHpTracker && renderHpTracker();
     if (STATE.initiative && STATE.initiative.active) renderInitiative();
-    toast(`Applied ${Math.abs(amount)} damage`, 'success');
+    toast(`${t('Applied')} ${Math.abs(amount)} ${t('damage')}`, 'success');
     closeActionResolver();
   }
   // ===== DSA data tables (spliced in at build time; empty until then) =====
