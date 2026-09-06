@@ -17919,20 +17919,28 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   // ================= COMMAND PALETTE (Ctrl/Cmd+K) =================
   // In-app search across rules, spells, items, monsters and conditions, plus
   // quick session actions — so a player or DM rarely needs to leave the table.
-  let CMDP_INDEX = null, CMDP_FLAT = [], CMDP_SEL = 0;
+  let CMDP_INDEX = null, CMDP_INDEX_RS = null, CMDP_FLAT = [], CMDP_SEL = 0;
   function cmdpBuildIndex() {
-    if (CMDP_INDEX) return CMDP_INDEX;
+    if (CMDP_INDEX && CMDP_INDEX_RS === STATE.ruleset) return CMDP_INDEX;
     const idx = [];
-    try { HANDBOOK.forEach(ch => (ch.sections || []).forEach(s => idx.push({ group: 'Handbook', ic: '❦', title: s.h, sub: ch.title, kind: 'handbook', text: String(s.body || '').replace(/<[^>]+>/g, ' ') }))); } catch (e) {}
-    try { COMPENDIUM.forEach(c => (c.entries || []).forEach(e => idx.push({ group: 'Reference', ic: '§', title: e.n, sub: c.title, kind: 'compendium', tab: c.key, text: e.t, meta: e.m }))); } catch (e) {}
-    try {
-      const spells = [].concat(typeof SRD_SPELLS !== 'undefined' ? SRD_SPELLS : [], typeof NONSRD_SPELLS !== 'undefined' ? NONSRD_SPELLS : []);
-      spells.forEach(sp => idx.push({ group: 'Spells', ic: '✦', title: sp.n, sub: (sp.l === 0 ? 'Cantrip' : 'Level ' + sp.l) + (sp.e ? ' · ' + sp.e : ''), kind: 'spell', data: sp }));
-    } catch (e) {}
-    try { MAGIC_ITEMS.forEach(m => idx.push({ group: 'Items', ic: '⚔', title: m.n, sub: (m.r || '') + (m.t ? ' · ' + m.t : ''), kind: 'item', data: m })); } catch (e) {}
-    try { MONSTER_PRESETS.forEach(mo => idx.push({ group: 'Monsters', ic: '☠', title: mo.name, sub: 'CR ' + mo.cr + ' · AC ' + mo.ac + ' · ' + mo.hp + ' HP', kind: 'monster', data: mo })); } catch (e) {}
-    try { Object.keys(D5E_CONDITIONS).forEach(k => { const c = D5E_CONDITIONS[k]; idx.push({ group: 'Conditions', ic: '✷', title: c.name, sub: 'Condition', kind: 'condition', text: c.desc }); }); } catch (e) {}
-    CMDP_INDEX = idx;
+    if (STATE.ruleset === 'dsa') {
+      try { DSA_HANDBOOK.forEach(ch => (ch.sections || []).forEach(s => idx.push({ group: 'Handbook', ic: '❦', title: s.h, sub: ch.title, kind: 'handbook', text: String(s.body || '').replace(/<[^>]+>/g, ' ') }))); } catch (e) {}
+      try { DSA_BESTIARY.forEach(mo => idx.push({ group: 'Monsters', ic: '☠', title: mo.n, sub: 'LP ' + mo.lp + ' · AT ' + mo.at + ' · PA ' + mo.pa + ' · RS ' + mo.rs, kind: 'dsacreature', data: mo })); } catch (e) {}
+      try { DSA_WEAPONS.forEach(w => idx.push({ group: 'Weapons', ic: '⚔', title: w.n, sub: (w.dmg || '') + ' · ' + (w.tech || ''), kind: 'dsaweapon', data: w })); } catch (e) {}
+      try { DSA_ARMOR.forEach(a => idx.push({ group: 'Armor', ic: '⛊', title: a.n, sub: 'PRO ' + a.pro + ' · ENC ' + a.enc, kind: 'dsaarmor', data: a })); } catch (e) {}
+      try { DSA_TALENTS.forEach(t => idx.push({ group: 'Talents', ic: '✦', title: t.n, sub: t.g + ' · ' + t.a.join('/'), kind: 'dsatalent', data: t })); } catch (e) {}
+    } else {
+      try { HANDBOOK.forEach(ch => (ch.sections || []).forEach(s => idx.push({ group: 'Handbook', ic: '❦', title: s.h, sub: ch.title, kind: 'handbook', text: String(s.body || '').replace(/<[^>]+>/g, ' ') }))); } catch (e) {}
+      try { COMPENDIUM.forEach(c => (c.entries || []).forEach(e => idx.push({ group: 'Reference', ic: '§', title: e.n, sub: c.title, kind: 'compendium', tab: c.key, text: e.t, meta: e.m }))); } catch (e) {}
+      try {
+        const spells = [].concat(typeof SRD_SPELLS !== 'undefined' ? SRD_SPELLS : [], typeof NONSRD_SPELLS !== 'undefined' ? NONSRD_SPELLS : []);
+        spells.forEach(sp => idx.push({ group: 'Spells', ic: '✦', title: sp.n, sub: (sp.l === 0 ? 'Cantrip' : 'Level ' + sp.l) + (sp.e ? ' · ' + sp.e : ''), kind: 'spell', data: sp }));
+      } catch (e) {}
+      try { MAGIC_ITEMS.forEach(m => idx.push({ group: 'Items', ic: '⚔', title: m.n, sub: (m.r || '') + (m.t ? ' · ' + m.t : ''), kind: 'item', data: m })); } catch (e) {}
+      try { MONSTER_PRESETS.forEach(mo => idx.push({ group: 'Monsters', ic: '☠', title: mo.name, sub: 'CR ' + mo.cr + ' · AC ' + mo.ac + ' · ' + mo.hp + ' HP', kind: 'monster', data: mo })); } catch (e) {}
+      try { Object.keys(D5E_CONDITIONS).forEach(k => { const c = D5E_CONDITIONS[k]; idx.push({ group: 'Conditions', ic: '✷', title: c.name, sub: 'Condition', kind: 'condition', text: c.desc }); }); } catch (e) {}
+    }
+    CMDP_INDEX = idx; CMDP_INDEX_RS = STATE.ruleset;
     return idx;
   }
   function cmdpActions() {
@@ -18002,6 +18010,19 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       html += '<h3>' + escapeHtml(mo.name) + '</h3><div class="cmdp-detail-meta">CR ' + escapeHtml(mo.cr) + ' · AC ' + mo.ac + ' · ' + mo.hp + ' HP · Speed ' + mo.speed + ' ft · Init ' + (mo.init >= 0 ? '+' : '') + mo.init + '</div><div class="cmdp-statgrid">' + st + '</div><div class="cmdp-detail-text">' + atks + '</div>';
     } else if (item.kind === 'condition') {
       html += '<h3>' + escapeHtml(item.title) + '</h3><div class="cmdp-detail-meta">Condition</div><div class="cmdp-detail-text"><p>' + escapeHtml(item.text || '') + '</p></div>';
+    } else if (item.kind === 'dsacreature') {
+      const mo = item.data;
+      const st = ['MU', 'KL', 'IN', 'CH', 'FF', 'GE', 'KO', 'KK'].map(k => '<div class="st"><b>' + k + '</b><span>' + ((mo.attrs && mo.attrs[k]) != null ? mo.attrs[k] : '–') + '</span></div>').join('');
+      html += '<h3>' + escapeHtml(mo.n) + '</h3><div class="cmdp-detail-meta">LP ' + mo.lp + ' · AT ' + mo.at + ' · PA ' + mo.pa + ' · RS ' + mo.rs + ' · INI ' + mo.ini + ' · Speed ' + (mo.gs || '?') + '</div><div class="cmdp-statgrid">' + st + '</div><div class="cmdp-detail-text"><p><b>Damage:</b> ' + escapeHtml(mo.dmg || '') + '</p><p>' + escapeHtml(mo.notes || '') + '</p></div>';
+    } else if (item.kind === 'dsaweapon') {
+      const w = item.data;
+      html += '<h3>' + escapeHtml(w.n) + '</h3><div class="cmdp-detail-meta">' + escapeHtml((w.tech || '') + (w.reach ? ' · reach ' + w.reach : '') + (w.twoH ? ' · two-handed' : '')) + '</div><div class="cmdp-detail-text"><p><b>Damage:</b> ' + escapeHtml(w.dmg || '') + '</p><p><b>AT mod:</b> ' + (w.atMod >= 0 ? '+' : '') + (w.atMod || 0) + ' &nbsp; <b>PA mod:</b> ' + (w.paMod >= 0 ? '+' : '') + (w.paMod || 0) + '</p></div>';
+    } else if (item.kind === 'dsaarmor') {
+      const a = item.data;
+      html += '<h3>' + escapeHtml(a.n) + '</h3><div class="cmdp-detail-meta">Armor</div><div class="cmdp-detail-text"><p><b>Protection (PRO):</b> ' + a.pro + ' &nbsp; <b>Encumbrance (ENC):</b> ' + a.enc + '</p></div>';
+    } else if (item.kind === 'dsatalent') {
+      const t = item.data;
+      html += '<h3>' + escapeHtml(t.n) + '</h3><div class="cmdp-detail-meta">' + escapeHtml(t.g) + ' talent</div><div class="cmdp-detail-text"><p><b>Check:</b> 3d20 against ' + t.a.join(' / ') + '</p></div>';
     }
     box.className = 'cmdp-detail';
     box.innerHTML = html;
@@ -18014,7 +18035,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     q = (q || '').trim().toLowerCase();
     const items = q ? cmdpActions().concat(cmdpBuildIndex()) : cmdpActions();
     const matched = q ? items.filter(it => (it.title + ' ' + (it.sub || '') + ' ' + (it.text || '')).toLowerCase().includes(q)) : items;
-    const ORDER = ['Actions', 'Generate', 'Dice', 'Handbook', 'Reference', 'Spells', 'Items', 'Monsters', 'Conditions'];
+    const ORDER = ['Actions', 'Generate', 'Dice', 'Handbook', 'Reference', 'Spells', 'Items', 'Weapons', 'Armor', 'Talents', 'Monsters', 'Conditions'];
     const LIMIT = { Handbook: 6, Reference: 6, Spells: 8, Items: 8, Monsters: 6, Conditions: 6 };
     CMDP_FLAT = []; CMDP_SEL = 0;
     let html = '';
