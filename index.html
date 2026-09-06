@@ -1182,6 +1182,11 @@
   .magic-add-row { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
   .magic-add-row input, .magic-add-row select { padding: 5px 7px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; font-size: calc(12px * var(--app-scale, 1)); font-family: inherit; }
   .magic-row { display: block; padding: 5px 6px; border-bottom: 1px solid rgba(58,47,36,0.4); font-size: calc(12px * var(--app-scale, 1)); }
+  .spells-controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 2px 6px; }
+  .spells-prep-count { font-family: 'Cinzel', serif; font-size: calc(10px * var(--app-scale, 1)); letter-spacing: 0.04em; color: var(--gold-soft); text-transform: uppercase; }
+  .spells-prep-filter { font-size: calc(11px * var(--app-scale, 1)); color: var(--muted); display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+  .magic-row.is-prepared { background: rgba(212,165,116,0.09); border-left: 2px solid var(--gold-soft); }
+  .magic-row.is-prepared .name > b { color: var(--gold); }
   .magic-row .mr-head { display: flex; gap: 6px; align-items: center; }
   .magic-row.has-info .mr-head { cursor: pointer; }
   .magic-row.has-info .name::after { content: ' ▸'; color: var(--muted); font-size: calc(9px * var(--app-scale, 1)); }
@@ -2454,6 +2459,10 @@
       </div>
       <div class="char-section">
         <div class="char-section-head">Spells <span class="hint">(check to mark prepared)</span></div>
+        <div class="spells-controls">
+          <span id="spells-prepared-count" class="spells-prep-count"></span>
+          <label class="spells-prep-filter"><input type="checkbox" id="spells-prepared-only"> Prepared only</label>
+        </div>
         <div id="spells-list"></div>
         <div class="magic-add-row">
           <input type="text" id="spell-add-name" placeholder="Spell name" maxlength="40">
@@ -8362,13 +8371,19 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const spList = document.getElementById('spells-list');
     if (spList) {
       spList.innerHTML = '';
-      // Sort by level then name
-      const sorted = m.spells.slice().sort((a, b) => (a.level || 1) - (b.level || 1) || (a.name || '').localeCompare(b.name || ''));
+      const prepCount = m.spells.filter(s => s.prepared).length;
+      const cntEl = document.getElementById('spells-prepared-count');
+      if (cntEl) cntEl.textContent = t('Prepared') + ': ' + prepCount + ' / ' + m.spells.length;
+      const onlyPrep = !!(document.getElementById('spells-prepared-only') || {}).checked;
+      // Prepared first, then by level, then name
+      let sorted = m.spells.slice().sort((a, b) => (b.prepared ? 1 : 0) - (a.prepared ? 1 : 0) || (a.level || 1) - (b.level || 1) || (a.name || '').localeCompare(b.name || ''));
+      if (onlyPrep) sorted = sorted.filter(s => s.prepared);
+      if (onlyPrep && !sorted.length) spList.innerHTML = '<div class="dsa-empty" style="padding:6px 0;">' + t('No prepared spells.') + '</div>';
       sorted.forEach((sp) => {
         const realIdx = m.spells.indexOf(sp);
         const info = spellInfoFor(sp);
         const row = document.createElement('div');
-        row.className = 'magic-row' + (info ? ' has-info' : '');
+        row.className = 'magic-row' + (info ? ' has-info' : '') + (sp.prepared ? ' is-prepared' : '');
         row.innerHTML = `
           <div class="mr-head">
             <input type="checkbox" class="prep-check" data-i="${realIdx}" ${sp.prepared ? 'checked' : ''} ${canEdit ? '' : 'disabled'} title="Prepared">
@@ -10424,8 +10439,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (CHAR_POPUP.magic && CHAR_POPUP.magic.spells[i]) {
         CHAR_POPUP.magic.spells[i].prepared = e.target.checked;
         scheduleSavePlayer();
+        const row = e.target.closest('.magic-row'); if (row) row.classList.toggle('is-prepared', e.target.checked);
+        const prep = CHAR_POPUP.magic.spells.filter(s => s.prepared).length;
+        const cntEl = document.getElementById('spells-prepared-count'); if (cntEl) cntEl.textContent = t('Prepared') + ': ' + prep + ' / ' + CHAR_POPUP.magic.spells.length;
+        if (!e.target.checked && (document.getElementById('spells-prepared-only') || {}).checked && row) row.style.display = 'none';
       }
     });
+    { const po = document.getElementById('spells-prepared-only'); if (po) po.addEventListener('change', () => { if (CHAR_POPUP.magic) renderMagic(CHAR_POPUP.magic); }); }
 
     // Saving throw and skill proficiency cycle (none → proficient → expertise → none).
     // Delegated since the rows are rebuilt.
