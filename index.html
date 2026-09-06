@@ -1096,6 +1096,14 @@
   .spellcast-stat .lbl { font-size: calc(9px * var(--app-scale, 1)); letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
   .spellcast-stat span:not(.lbl) { font-size: calc(17px * var(--app-scale, 1)); color: var(--gold); font-weight: 700; }
   .spellcast-roll { cursor: pointer; }
+  .concentration-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 6px 10px; background: rgba(178,38,255,0.08); border: 1px solid rgba(178,38,255,0.4); border-radius: 6px; }
+  .concentration-row .conc-dot { width: 8px; height: 8px; border-radius: 50%; background: #b026ff; box-shadow: 0 0 8px #b026ff; flex-shrink: 0; animation: conc-pulse 1.8s ease-in-out infinite; }
+  @keyframes conc-pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+  .concentration-row .conc-label { flex: 1; font-family: 'Crimson Pro', serif; font-size: calc(13px * var(--app-scale, 1)); color: var(--cream); }
+  .concentration-row .conc-label b { color: #d7a0ff; }
+  .concentration-row .conc-btn { background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 4px; padding: 3px 9px; font-size: calc(10.5px * var(--app-scale, 1)); cursor: pointer; font-family: 'Cinzel', serif; }
+  .concentration-row .conc-btn:hover { border-color: var(--gold-soft); }
+  .concentration-row .conc-btn.danger:hover { border-color: var(--danger); color: #e07a6a; }
   .spellcast-roll:hover { border-color: var(--gold-soft); background: rgba(212,165,116,0.08); }
   .lib-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
   .lib-search { flex: 1; min-width: 140px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 5px; padding: 7px 9px; font-size: calc(13px * var(--app-scale, 1)); font-family: inherit; }
@@ -2334,6 +2342,12 @@
           <div class="spellcast-stat"><span class="lbl">Save DC</span><span id="spell-save-dc">—</span></div>
           <div class="spellcast-stat spellcast-roll" id="spell-attack-roll" title="Roll spell attack"><span class="lbl">Spell Atk</span><span id="spell-atk-bonus">—</span></div>
           <label class="spellcast-bonus">+Bonus <input type="number" id="spell-misc-bonus" value="0"></label>
+        </div>
+        <div id="concentration-row" class="concentration-row" style="display:none;">
+          <span class="conc-dot"></span>
+          <span class="conc-label">Concentrating: <b id="conc-name"></b></span>
+          <button id="conc-save-btn" class="conc-btn" title="Roll a Constitution save to keep concentration">CON save</button>
+          <button id="conc-drop-btn" class="conc-btn danger" title="Drop concentration">Drop</button>
         </div>
       </div>
       <div class="char-section">
@@ -8145,6 +8159,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const canEdit = !CHAR_POPUP.targetPlayerId || (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
     const m = magic || emptyMagicData();
     renderSpellcasting();
+    renderConcentration();
 
     // Spell slots grid: only render levels the user has activated. Default
     // state has no levels - the user clicks "+ Add slot level" to add one.
@@ -10236,6 +10251,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       scheduleSavePlayer();
     });
 
+    { const cs = document.getElementById('conc-save-btn'); if (cs) cs.addEventListener('click', rollConcentrationSave);
+      const cd = document.getElementById('conc-drop-btn'); if (cd) cd.addEventListener('click', dropConcentration); }
+
     // Delegated delete and prepared toggle for attacks/cantrips/spells lists
     ['attacks-list', 'cantrips-list', 'spells-list'].forEach(listId => {
       document.getElementById(listId).addEventListener('click', (e) => {
@@ -10257,7 +10275,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         if (castBtn) {
           const i = parseInt(castBtn.dataset.i);
           const sp = CHAR_POPUP.magic && CHAR_POPUP.magic.spells[i];
-          if (sp) castSpellSlot(sp.level);
+          if (sp) { castSpellSlot(sp.level); if (isConcentrationSpell(sp)) setConcentration(sp.name); }
           return;
         }
         const btn = e.target.closest('button.del');
@@ -17064,6 +17082,43 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (!p) return;
     renderResolver();
     p.classList.add('active');
+  }
+  // ---- Concentration tracking (bookkeeping helper, not auto-enforced) ----
+  function isConcentrationSpell(sp) {
+    if (!sp) return false;
+    if (sp.conc) return true;
+    const meta = ((sp.e || '') + ' ' + (sp.desc || '')).toLowerCase();
+    if (/concentration|\bconc\b/.test(meta)) return true;
+    try { const cat = (typeof getCatalogSpellByName === 'function') && getCatalogSpellByName(sp.name); if (cat) { const m = ((cat.e || '') + ' ' + (cat.d || '')).toLowerCase(); if (/concentration|\bconc\b/.test(m)) return true; } } catch (e) {}
+    return false;
+  }
+  function renderConcentration() {
+    const row = document.getElementById('concentration-row');
+    if (!row) return;
+    const c = CHAR_POPUP.profile && CHAR_POPUP.profile.concentration;
+    if (c && c.name) { row.style.display = ''; const n = document.getElementById('conc-name'); if (n) n.textContent = c.name; }
+    else row.style.display = 'none';
+  }
+  function setConcentration(name) {
+    if (!CHAR_POPUP.profile) CHAR_POPUP.profile = {};
+    const prev = CHAR_POPUP.profile.concentration;
+    CHAR_POPUP.profile.concentration = { name };
+    renderConcentration();
+    scheduleSaveProfile();
+    if (prev && prev.name && prev.name !== name) toast(`Concentration moved to ${name} — ${prev.name} dropped.`);
+    else toast(`Concentrating on ${name}.`);
+  }
+  function dropConcentration() {
+    if (CHAR_POPUP.profile) CHAR_POPUP.profile.concentration = null;
+    renderConcentration();
+    scheduleSaveProfile();
+    toast('Concentration dropped.');
+  }
+  function rollConcentrationSave() {
+    let bonus = statMod(getCharStat('con'));
+    try { if (CHAR_POPUP.saveProfs && CHAR_POPUP.saveProfs.has('con')) bonus += getProfBonus(); } catch (e) {}
+    try { bonus += parseInt(CHAR_POPUP.saveOverrides && CHAR_POPUP.saveOverrides.con) || 0; } catch (e) {}
+    rollDice(20, 1, bonus, false, 'Concentration (CON save)');
   }
   function openSpellResolver(sp) {
     const atkTxt = ((document.getElementById('spell-atk-bonus') || {}).textContent || '');
