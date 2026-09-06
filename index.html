@@ -677,6 +677,46 @@
   .enc-chip button { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: calc(13px * var(--app-scale, 1)); line-height: 1; padding: 0; }
   .enc-chip button:hover { color: #e07a6a; }
 
+  /* ---- DSA character sheet ---- */
+  #dsa-char-popup { position: fixed; inset: 0; z-index: 2000; display: none; align-items: flex-start; justify-content: center; background: rgba(6,7,12,0.6); backdrop-filter: blur(2px); }
+  #dsa-char-popup.active { display: flex; }
+  .dsa-sheet-box { margin-top: 5vh; width: 720px; max-width: 96vw; height: 88vh; background: linear-gradient(180deg, var(--panel-light), var(--panel)); border: 1px solid var(--gold); border-radius: 10px; box-shadow: 0 24px 70px rgba(0,0,0,0.75); display: flex; flex-direction: column; overflow: hidden; }
+  #dsa-char-close { padding: 2px 10px; font-size: calc(14px * var(--app-scale, 1)); background: transparent; border: 1px solid var(--border); border-radius: 5px; color: var(--muted); cursor: pointer; }
+  .dsa-body { padding: 14px 16px; overflow-y: auto; }
+  .dsa-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .dsa-input { flex: 1; min-width: 120px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); padding: 7px 9px; border-radius: 5px; font-family: 'Crimson Pro', serif; font-size: calc(13.5px * var(--app-scale, 1)); box-sizing: border-box; }
+  .dsa-input:focus { border-color: var(--gold); outline: none; }
+  textarea.dsa-input { width: 100%; resize: vertical; }
+  .dsa-ap-l { display: inline-flex; align-items: center; gap: 5px; font-family: 'Cinzel', serif; font-size: calc(10px * var(--app-scale, 1)); color: var(--muted); }
+  .dsa-mini { width: 52px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); padding: 4px 5px; border-radius: 4px; text-align: center; font-family: 'Cinzel', serif; font-size: calc(12px * var(--app-scale, 1)); }
+  .dsa-attrs { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin: 10px 0; }
+  .dsa-attr { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .dsa-attr-lbl { font-family: 'Cinzel', serif; font-size: calc(11px * var(--app-scale, 1)); color: var(--gold); background: rgba(212,165,116,0.1); border: 1px solid var(--gold-soft); border-radius: 4px; padding: 3px 0; width: 100%; cursor: pointer; letter-spacing: 0.04em; }
+  .dsa-attr-lbl:hover { background: rgba(212,165,116,0.22); }
+  .dsa-attr-val { width: 100%; box-sizing: border-box; background: var(--bg); border: 1px solid var(--border); color: var(--cream); padding: 5px 0; border-radius: 4px; text-align: center; font-family: 'Cinzel', serif; font-size: calc(15px * var(--app-scale, 1)); font-weight: 600; }
+  .dsa-derived { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; align-items: center; }
+  .dsa-pool { display: flex; align-items: center; gap: 3px; border: 1px solid var(--gold-soft); border-radius: 6px; padding: 4px 8px; background: rgba(212,165,116,0.05); }
+  .dsa-pool-lbl { font-family: 'Cinzel', serif; font-size: calc(10px * var(--app-scale, 1)); color: var(--gold); margin-right: 3px; }
+  .dsa-pool-sep { color: var(--muted); }
+  .dsa-stat { display: flex; flex-direction: column; align-items: center; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; min-width: 46px; }
+  .dsa-stat span { font-size: calc(9px * var(--app-scale, 1)); color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Cinzel', serif; }
+  .dsa-stat b { color: var(--gold); font-family: 'Cinzel', serif; font-size: calc(15px * var(--app-scale, 1)); }
+  .dsa-sech { font-family: 'Cinzel', serif; color: var(--gold); font-size: calc(13px * var(--app-scale, 1)); letter-spacing: 0.04em; margin: 14px 0 6px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+  .dsa-hint { color: var(--muted); font-size: calc(10px * var(--app-scale, 1)); font-family: 'Crimson Pro', serif; letter-spacing: 0; }
+  .dsa-tgroup { font-family: 'Cinzel', serif; font-size: calc(10px * var(--app-scale, 1)); color: var(--gold-soft); text-transform: uppercase; letter-spacing: 0.08em; margin: 8px 0 3px; opacity: 0.85; }
+  .dsa-tlist { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 14px; }
+  .dsa-talent { display: flex; align-items: center; gap: 6px; }
+  .dsa-t-name { flex: 1; font-family: 'Crimson Pro', serif; font-size: calc(12.5px * var(--app-scale, 1)); color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dsa-t-attrs { font-size: calc(9px * var(--app-scale, 1)); color: var(--muted); font-family: 'Cinzel', serif; }
+  .dsa-t-check, .dsa-btn { background: rgba(212,165,116,0.12); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 4px; padding: 3px 8px; font-size: calc(10px * var(--app-scale, 1)); cursor: pointer; font-family: 'Cinzel', serif; }
+  .dsa-t-check:hover, .dsa-btn:hover { background: rgba(212,165,116,0.24); }
+  .dsa-weapon { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px solid rgba(212,165,116,0.08); flex-wrap: wrap; }
+  .dsa-w-name { font-family: 'Cinzel', serif; color: var(--gold-soft); font-size: calc(12.5px * var(--app-scale, 1)); }
+  .dsa-w-meta { color: var(--muted); font-size: calc(11px * var(--app-scale, 1)); flex: 1; }
+  .dsa-w-l { display: inline-flex; align-items: center; gap: 3px; font-size: calc(9px * var(--app-scale, 1)); color: var(--muted); font-family: 'Cinzel', serif; }
+  .dsa-w-del { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 4px; padding: 2px 7px; cursor: pointer; }
+  .dsa-empty { color: var(--muted); font-style: italic; font-size: calc(12px * var(--app-scale, 1)); padding: 4px 0; }
+
   /* ---- Ruleset chip (D&D / DSA switch) ---- */
   .ruleset-chip { font-family: 'Cinzel', serif; font-size: calc(10px * var(--app-scale, 1)); letter-spacing: 0.05em; color: var(--gold); background: rgba(212,165,116,0.1); border: 1px solid var(--gold-soft); border-radius: 4px; padding: 2px 8px; cursor: pointer; margin-left: 4px; }
   .ruleset-chip:hover { background: rgba(212,165,116,0.2); }
@@ -2894,6 +2934,13 @@
     <div class="cmdp-foot">
       <span><b>↑↓</b> navigate</span><span><b>Enter</b> open</span><span><b>Ctrl/Cmd K</b> toggle</span>
     </div>
+  </div>
+</div>
+
+<div id="dsa-char-popup">
+  <div class="dsa-sheet-box">
+    <div class="char-popup-header"><span class="ttl">Character — DSA</span><button id="dsa-char-close">×</button></div>
+    <div id="dsa-body" class="dsa-body"></div>
   </div>
 </div>
 
@@ -10739,6 +10786,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   // Char "show" button - kept for backward compatibility, simply uncollapses
   document.getElementById('char-panel-show').addEventListener('click', () => {
+    if (STATE.ruleset === 'dsa') { openDsaSheet(CHAR_POPUP.targetPlayerId || STATE.userId); return; }
     const popup = document.getElementById('char-popup');
     popup.classList.remove('collapsed');
     if (!CHAR_POPUP.targetPlayerId && !STATE.isHost) {
@@ -16439,12 +16487,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const body = String(sec.body || '').replace(/<table class="hb-table">/g, '<div class="hb-table-wrap"><table class="hb-table">').replace(/<\/table>/g, '</table></div>');
     return '<div class="hb-section"><div class="hb-section-h">' + sec.h + '</div><div class="hb-section-body">' + body + '</div></div>';
   }
+  function activeHandbook() { return (STATE.ruleset === 'dsa' && DSA_HANDBOOK && DSA_HANDBOOK.length) ? DSA_HANDBOOK : HANDBOOK; }
   function hbRender() {
     const tabsEl = document.getElementById('hb-tabs');
     const contentEl = document.getElementById('hb-content');
     if (!tabsEl || !contentEl) return;
+    const HB = activeHandbook();
+    if (!HB.find(x => x.key === HB_TAB)) HB_TAB = (HB[0] && HB[0].key) || '';
     const q = (document.getElementById('hb-search').value || '').trim().toLowerCase();
-    tabsEl.innerHTML = HANDBOOK.map(c =>
+    tabsEl.innerHTML = HB.map(c =>
       `<button class="cmp-tab${!q && c.key === HB_TAB ? ' active' : ''}" data-key="${c.key}">${c.title}<span class="cmp-tab-count">${c.sections.length}</span></button>`
     ).join('');
     tabsEl.querySelectorAll('.cmp-tab').forEach(b => b.addEventListener('click', () => {
@@ -16454,14 +16505,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }));
     if (q) {
       let html = '';
-      HANDBOOK.forEach(c => {
+      HB.forEach(c => {
         const hits = c.sections.filter(sec => (sec.h + ' ' + String(sec.body).replace(/<[^>]+>/g, ' ')).toLowerCase().includes(q));
         if (hits.length) html += '<div class="hb-chapter-head-search">' + c.title + '</div>' + hits.map(hbSectionHtml).join('');
       });
       contentEl.innerHTML = html || '<div class="cmp-empty">No matches. Try another word.</div>';
       contentEl.scrollTop = 0;
     } else {
-      const c = HANDBOOK.find(x => x.key === HB_TAB) || HANDBOOK[0];
+      const c = HB.find(x => x.key === HB_TAB) || HB[0];
       if (!c) { contentEl.innerHTML = '<div class="cmp-empty">Handbook unavailable.</div>'; return; }
       contentEl.innerHTML = '<h3 class="hb-chapter-title">' + c.title + '</h3><hr class="hb-chapter-rule">' + c.sections.map(hbSectionHtml).join('');
       contentEl.scrollTop = 0;
@@ -17284,6 +17335,506 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     toast(`Applied ${Math.abs(amount)} damage`, 'success');
     closeActionResolver();
   }
+  // ===== DSA data tables (spliced in at build time; empty until then) =====
+  let DSA_TALENTS = [
+{ n: "Flying", g: "Physical", a: ["MU","IN","GE"] },
+  { n: "Acrobatics", g: "Physical", a: ["MU","CH","FF"] },
+  { n: "Climbing", g: "Physical", a: ["MU","GE","KK"] },
+  { n: "Body Control", g: "Physical", a: ["GE","GE","KO"] },
+  { n: "Feat of Strength", g: "Physical", a: ["KO","KK","KK"] },
+  { n: "Riding", g: "Physical", a: ["CH","GE","KK"] },
+  { n: "Swimming", g: "Physical", a: ["GE","KO","KK"] },
+  { n: "Self-Control", g: "Physical", a: ["MU","MU","KO"] },
+  { n: "Singing", g: "Physical", a: ["KL","CH","KO"] },
+  { n: "Perception", g: "Physical", a: ["KL","IN","IN"] },
+  { n: "Dancing", g: "Physical", a: ["KL","CH","GE"] },
+  { n: "Pickpocket", g: "Physical", a: ["MU","FF","GE"] },
+  { n: "Stealth", g: "Physical", a: ["MU","IN","GE"] },
+  { n: "Carousing", g: "Physical", a: ["KL","KO","KK"] },
+  { n: "Persuasion", g: "Social", a: ["MU","KL","CH"] },
+  { n: "Seduction", g: "Social", a: ["MU","CH","CH"] },
+  { n: "Intimidation", g: "Social", a: ["MU","IN","CH"] },
+  { n: "Etiquette", g: "Social", a: ["KL","IN","CH"] },
+  { n: "Streetwise", g: "Social", a: ["KL","IN","CH"] },
+  { n: "Empathy", g: "Social", a: ["KL","IN","CH"] },
+  { n: "Fast-Talk", g: "Social", a: ["MU","IN","CH"] },
+  { n: "Willpower", g: "Social", a: ["MU","MU","CH"] },
+  { n: "Tracking", g: "Nature", a: ["MU","IN","GE"] },
+  { n: "Ropes", g: "Nature", a: ["KL","FF","KK"] },
+  { n: "Fishing", g: "Nature", a: ["FF","GE","KO"] },
+  { n: "Orienting", g: "Nature", a: ["KL","IN","IN"] },
+  { n: "Plant Lore", g: "Nature", a: ["KL","FF","KO"] },
+  { n: "Animal Lore", g: "Nature", a: ["MU","IN","CH"] },
+  { n: "Survival", g: "Nature", a: ["MU","GE","KO"] },
+  { n: "Divine Lore", g: "Knowledge", a: ["KL","KL","IN"] },
+  { n: "Geography", g: "Knowledge", a: ["KL","KL","IN"] },
+  { n: "History", g: "Knowledge", a: ["KL","KL","IN"] },
+  { n: "Magical Lore", g: "Knowledge", a: ["KL","KL","IN"] },
+  { n: "Law", g: "Knowledge", a: ["KL","KL","IN"] },
+  { n: "Myths & Legends", g: "Knowledge", a: ["KL","KL","IN"] },
+  { n: "Mechanics", g: "Knowledge", a: ["KL","KL","FF"] },
+  { n: "Sphere Lore", g: "Knowledge", a: ["KL","KL","IN"] },
+  { n: "Astronomy", g: "Knowledge", a: ["KL","KL","IN"] },
+  { n: "Math", g: "Knowledge", a: ["KL","KL","IN"] },
+  { n: "Warfare", g: "Knowledge", a: ["MU","KL","IN"] },
+  { n: "Spirit Lore", g: "Knowledge", a: ["KL","KL","IN"] },
+  { n: "Arcane Lore", g: "Knowledge", a: ["KL","KL","IN"] },
+  { n: "Metalworking", g: "Craft", a: ["FF","KO","KK"] },
+  { n: "Woodworking", g: "Craft", a: ["FF","GE","KK"] },
+  { n: "Alchemy", g: "Craft", a: ["MU","KL","FF"] },
+  { n: "Sailing", g: "Craft", a: ["FF","GE","KK"] },
+  { n: "Driving", g: "Craft", a: ["CH","FF","KO"] },
+  { n: "Prepare Food", g: "Craft", a: ["IN","FF","FF"] },
+  { n: "Locks & Picking", g: "Craft", a: ["IN","FF","FF"] },
+  { n: "Treat Poison", g: "Craft", a: ["MU","KL","IN"] },
+  { n: "Treat Disease", g: "Craft", a: ["MU","IN","KO"] },
+  { n: "Treat Soul", g: "Craft", a: ["IN","CH","KO"] },
+  { n: "Treat Wounds", g: "Craft", a: ["KL","FF","FF"] },
+  { n: "Earthencraft", g: "Craft", a: ["FF","FF","KK"] },
+  { n: "Clothworking", g: "Craft", a: ["KL","FF","FF"] },
+  { n: "Commerce", g: "Craft", a: ["KL","IN","CH"] },
+  { n: "Music", g: "Craft", a: ["CH","FF","KO"] },
+  { n: "Leatherworking", g: "Craft", a: ["FF","GE","KO"] },
+  { n: "Painting", g: "Craft", a: ["IN","FF","FF"] }
+];
+  let DSA_COMBAT_TECHNIQUES = [
+"Brawling",
+  "Chained Weapons",
+  "Daggers",
+  "Fencing Weapons",
+  "Impact Weapons",
+  "Lances",
+  "Pikes",
+  "Two-Handed Impact Weapons",
+  "Two-Handed Swords",
+  "Polearms",
+  "Shields",
+  "Swords",
+  "Blowguns",
+  "Crossbows",
+  "Bows",
+  "Slings",
+  "Thrown Weapons"
+];
+  let DSA_WEAPONS = [
+{ n: "Dagger", tech: "Daggers", dmg: "1d6+1", atMod: 0, paMod: -1, reach: "short", twoH: false },
+  { n: "Rondel Dagger", tech: "Daggers", dmg: "1d6+2", atMod: 0, paMod: -1, reach: "short", twoH: false },
+  { n: "Main Gauche", tech: "Daggers", dmg: "1d6+1", atMod: 0, paMod: 1, reach: "short", twoH: false },
+  { n: "Shortsword", tech: "Swords", dmg: "1d6+3", atMod: 0, paMod: 0, reach: "short", twoH: false },
+  { n: "Longsword", tech: "Swords", dmg: "1d6+4", atMod: 0, paMod: 0, reach: "medium", twoH: false },
+  { n: "Rapier", tech: "Fencing Weapons", dmg: "1d6+3", atMod: 1, paMod: 0, reach: "medium", twoH: false },
+  { n: "Sabre", tech: "Swords", dmg: "1d6+3", atMod: 0, paMod: 0, reach: "medium", twoH: false },
+  { n: "Scimitar", tech: "Swords", dmg: "1d6+4", atMod: 0, paMod: 0, reach: "medium", twoH: false },
+  { n: "Foil", tech: "Fencing Weapons", dmg: "1d6+2", atMod: 1, paMod: 1, reach: "medium", twoH: false },
+  { n: "Two-Hander", tech: "Two-Handed Swords", dmg: "2d6+4", atMod: 0, paMod: -1, reach: "long", twoH: true },
+  { n: "Great Sword", tech: "Two-Handed Swords", dmg: "2d6+3", atMod: 0, paMod: -1, reach: "long", twoH: true },
+  { n: "Club", tech: "Impact Weapons", dmg: "1d6+2", atMod: 0, paMod: 0, reach: "short", twoH: false },
+  { n: "Mace", tech: "Impact Weapons", dmg: "1d6+3", atMod: 0, paMod: -1, reach: "short", twoH: false },
+  { n: "Warhammer", tech: "Impact Weapons", dmg: "1d6+4", atMod: 0, paMod: -2, reach: "short", twoH: false },
+  { n: "Morningstar", tech: "Impact Weapons", dmg: "1d6+4", atMod: 0, paMod: -2, reach: "medium", twoH: false },
+  { n: "Flail", tech: "Chained Weapons", dmg: "1d6+3", atMod: 0, paMod: -2, reach: "medium", twoH: false },
+  { n: "War Flail", tech: "Chained Weapons", dmg: "2d6+1", atMod: 0, paMod: -3, reach: "medium", twoH: true },
+  { n: "Great Mace", tech: "Two-Handed Impact Weapons", dmg: "2d6+4", atMod: 0, paMod: -2, reach: "medium", twoH: true },
+  { n: "Two-Handed Warhammer", tech: "Two-Handed Impact Weapons", dmg: "2d6+5", atMod: 0, paMod: -3, reach: "medium", twoH: true },
+  { n: "Battleaxe", tech: "Impact Weapons", dmg: "1d6+4", atMod: 0, paMod: -1, reach: "medium", twoH: false },
+  { n: "Great Axe", tech: "Two-Handed Impact Weapons", dmg: "2d6+4", atMod: 0, paMod: -2, reach: "medium", twoH: true },
+  { n: "Spear", tech: "Polearms", dmg: "1d6+3", atMod: 0, paMod: 0, reach: "long", twoH: true },
+  { n: "Glaive", tech: "Polearms", dmg: "1d6+5", atMod: 0, paMod: -1, reach: "long", twoH: true },
+  { n: "Halberd", tech: "Polearms", dmg: "1d6+5", atMod: 0, paMod: -1, reach: "long", twoH: true },
+  { n: "Partisan", tech: "Polearms", dmg: "1d6+4", atMod: 0, paMod: 0, reach: "long", twoH: true },
+  { n: "Pike", tech: "Polearms", dmg: "1d6+4", atMod: -1, paMod: -1, reach: "long", twoH: true },
+  { n: "Quarterstaff", tech: "Polearms", dmg: "1d6+2", atMod: 0, paMod: 1, reach: "long", twoH: true },
+  { n: "War Whip", tech: "Chained Weapons", dmg: "1d6", atMod: 0, paMod: -2, reach: "long", twoH: false },
+  { n: "Cavalry Lance", tech: "Lances", dmg: "2d6+1", atMod: 0, paMod: -3, reach: "long", twoH: true },
+  { n: "Fist", tech: "Brawling", dmg: "1d6", atMod: 0, paMod: 0, reach: "short", twoH: false },
+  { n: "Brass Knuckles", tech: "Brawling", dmg: "1d6+1", atMod: 0, paMod: 0, reach: "short", twoH: false },
+  { n: "Buckler", tech: "Shields", dmg: "1d6", atMod: 0, paMod: 2, reach: "short", twoH: false },
+  { n: "Wooden Shield", tech: "Shields", dmg: "1d6+1", atMod: -1, paMod: 3, reach: "short", twoH: false },
+  { n: "Throwing Knife", tech: "Thrown Weapons", dmg: "1d6+1", atMod: 0, paMod: 0, reach: "medium", twoH: false },
+  { n: "Throwing Axe", tech: "Thrown Weapons", dmg: "1d6+3", atMod: 0, paMod: 0, reach: "medium", twoH: false },
+  { n: "Javelin", tech: "Thrown Weapons", dmg: "1d6+3", atMod: 0, paMod: 0, reach: "long", twoH: false },
+  { n: "Shortbow", tech: "Bows", dmg: "1d6+3", atMod: 0, paMod: 0, reach: "long", twoH: true },
+  { n: "Longbow", tech: "Bows", dmg: "1d6+5", atMod: 0, paMod: 0, reach: "long", twoH: true },
+  { n: "Composite Bow", tech: "Bows", dmg: "1d6+4", atMod: 0, paMod: 0, reach: "long", twoH: true },
+  { n: "Light Crossbow", tech: "Crossbows", dmg: "1d6+5", atMod: 0, paMod: 0, reach: "long", twoH: true },
+  { n: "Heavy Crossbow", tech: "Crossbows", dmg: "2d6+4", atMod: -1, paMod: 0, reach: "long", twoH: true },
+  { n: "Repeating Crossbow", tech: "Crossbows", dmg: "1d6+3", atMod: 0, paMod: 0, reach: "long", twoH: true },
+  { n: "Sling", tech: "Slings", dmg: "1d6+1", atMod: 0, paMod: 0, reach: "long", twoH: false },
+  { n: "Staff Sling", tech: "Slings", dmg: "1d6+3", atMod: -1, paMod: 0, reach: "long", twoH: true },
+  { n: "Blowgun", tech: "Blowguns", dmg: "1d6", atMod: 0, paMod: 0, reach: "long", twoH: true }
+];
+  let DSA_ARMOR = [
+{ n: "Cloth Armor", pro: 1, enc: 0 },
+  { n: "Quilted Armor", pro: 2, enc: 1 },
+  { n: "Leather Armor", pro: 2, enc: 1 },
+  { n: "Studded Leather Armor", pro: 3, enc: 1 },
+  { n: "Scale Armor", pro: 4, enc: 2 },
+  { n: "Chain Shirt", pro: 4, enc: 2 },
+  { n: "Chainmail Hauberk", pro: 6, enc: 4 },
+  { n: "Brigandine", pro: 5, enc: 3 },
+  { n: "Breastplate", pro: 6, enc: 3 },
+  { n: "Half Plate", pro: 7, enc: 4 },
+  { n: "Plate Armor", pro: 8, enc: 5 },
+  { n: "Buckler", pro: 1, enc: 0 },
+  { n: "Wooden Shield", pro: 2, enc: 1 },
+  { n: "Tower Shield", pro: 4, enc: 3 }
+];
+  let DSA_SPECIES = [
+{ n: "Human", lp: 5, sk: -5, tk: -5, gs: 8, mods: "No attribute maxima adjustments; two free advantage picks common.", traits: "Versatile; no darkvision.", desc: "The most widespread of the peoples, humans adapt to almost any climate and calling. Their short lives are balanced by boundless ambition and a knack for reinvention." },
+  { n: "Elf", lp: 2, sk: -4, tk: -6, gs: 8, mods: "GE maximum raised by 1; KO maximum lowered by 1.", traits: "Twilight sight; keen senses; poor at haggling.", desc: "Slender and long-lived, elves move through the wild with an unhurried grace. They favor intuition and agility over brute force, and feel most at home beneath open sky or old trees." },
+  { n: "Half-Elf", lp: 5, sk: -4, tk: -5, gs: 8, mods: "One attribute maximum raised by 1 (player choice).", traits: "Twilight sight; caught between two heritages.", desc: "Born of elven and human parents, half-elves inherit sharpened senses and a longer life than humankind. They often wander, belonging fully to neither world that shaped them." },
+  { n: "Dwarf", lp: 8, sk: -4, tk: -4, gs: 6, mods: "KO and KK maxima raised by 1; GE maximum lowered by 1.", traits: "Darkvision; stout; slow but tireless.", desc: "Broad, bearded, and stubborn, dwarves are master crafters and miners who prize honor and good stone. What they lack in speed they repay in endurance and unshakable resolve." },
+  { n: "Gnome", lp: 3, sk: -4, tk: -6, gs: 6, mods: "FF maximum raised by 1; KK maximum lowered by 2.", traits: "Small; nimble fingers; hard to intimidate.", desc: "Diminutive and quick-witted, gnomes delight in tinkering, trade, and cleverness. Their small stature hides an outsized curiosity and a memory for every debt and favor." },
+  { n: "Half-Orc", lp: 6, sk: -6, tk: -3, gs: 8, mods: "KK maximum raised by 1; CH maximum lowered by 1.", traits: "Darkvision; powerful build; distrusted by many.", desc: "Strong and hardy children of two rival bloodlines, half-orcs endure prejudice on all sides. Many turn their formidable strength toward soldiering, guarding, or the hunt." },
+  { n: "Goblin", lp: 3, sk: -5, tk: -5, gs: 9, mods: "GE maximum raised by 1; KK maximum lowered by 1.", traits: "Darkvision; small and fast; skittish.", desc: "Wiry and fleet-footed, goblins survive by cunning, speed, and knowing when to flee. Underestimated by taller folk, they thrive at the edges of the world's settled places." }
+];
+  let DSA_CULTURES = [
+{ n: "Wilderness Folk", talents: ["Survival", "Tracking", "Orienting", "Plant Lore", "Animal Lore"], desc: "Raised far from walls and markets, these people read weather, spoor, and starlight as easily as townsfolk read coin. Self-reliance is less a virtue to them than a daily necessity." },
+  { n: "Village Folk", talents: ["Plant Lore", "Animal Lore", "Perception", "Commerce", "Riding"], desc: "Bound to field, byre, and season, village folk value steady work and neighborly trust. Their world is small but well understood, from the mill wheel to the market road." },
+  { n: "City Dweller", talents: ["Streetwise", "Commerce", "Etiquette", "Perception", "History"], desc: "Shaped by crowded streets and quick dealings, city dwellers learn early to gauge a stranger and haggle a price. Opportunity and danger share the same alley here." },
+  { n: "Nomads", talents: ["Riding", "Survival", "Orienting", "Animal Lore", "Perception"], desc: "Following herds and grazing grounds across open country, nomads carry their homes with them. Hospitality and endurance are the twin laws of the road they never leave." },
+  { n: "Seafarers", talents: ["Swimming", "Orienting", "Perception", "Commerce", "Survival"], desc: "Born within sight of tide and sail, seafarers reckon distance in horizons and trust in rope and knot. The sea gives generously and takes without warning, and they respect both." },
+  { n: "Highland Clans", talents: ["Survival", "Tracking", "Warfare", "Perception", "History"], desc: "Rooted in cold uplands and old feuds, highland clans prize kinship, memory, and a readiness to fight. Their loyalties run as deep and stubborn as the mountain roots beneath them." },
+  { n: "Court and Nobility", talents: ["Etiquette", "History", "Commerce", "Riding", "Warfare"], desc: "Reared amid rank, ritual, and quiet rivalry, the courtly learn that a well-placed word cuts sharper than a blade. Their manners are armor and their alliances are currency." },
+  { n: "Wandering Folk", talents: ["Streetwise", "Perception", "Etiquette", "Survival", "Commerce"], desc: "Traveling players, tinkers, and traders who belong to the road itself, wandering folk trade news, songs, and small wonders from town to town. Suspicion follows them, but so does welcome." }
+];
+  let DSA_PROFESSIONS = [
+{ n: "Warrior", mainTalents: ["Body Control", "Perception", "Intimidation"], combat: ["Swords", "Shields", "Polearms"], caster: "none", desc: "A disciplined fighter drilled in formation and single combat alike. Warriors trade flourish for reliability, trusting sound footwork and a well-kept blade over luck." },
+  { n: "Mercenary", mainTalents: ["Body Control", "Intimidation", "Gambling"], combat: ["Swords", "Two-Handed Weapons", "Crossbows"], caster: "none", desc: "A soldier who sells the skill of arms to the highest bidder. Hardened by many camps and contracts, the mercenary values pay, plunder, and staying alive to spend both." },
+  { n: "Hunter", mainTalents: ["Tracking", "Survival", "Stealth"], combat: ["Bows", "Daggers"], caster: "none", desc: "A tracker and provider equally at ease stalking game or reading a broken trail. Patient and observant, the hunter turns wilderness knowledge into a quiet, deadly advantage." },
+  { n: "Rogue", mainTalents: ["Stealth", "Streetwise", "Perception"], combat: ["Daggers", "Fencing Weapons"], caster: "none", desc: "A nimble opportunist who thrives on locks, shadows, and misplaced trust. Rogues prefer wit and a fast exit to open confrontation, striking only when the odds are theirs." },
+  { n: "Scholar", mainTalents: ["History", "Plant Lore", "Perception"], combat: ["Brawling"], caster: "none", desc: "A student of texts, tongues, and old questions who prizes knowledge above gold. What the scholar lacks in muscle is often outweighed by a well-timed fact." },
+  { n: "Mage", mainTalents: ["History", "Perception", "Body Control"], combat: ["Staves", "Daggers"], caster: "arcane", desc: "A formally trained wielder of arcane force, schooled in theory before spellwork. Mages shape reality through study and discipline, guarding their formulae as jealously as their power." },
+  { n: "Elementalist", mainTalents: ["Plant Lore", "Animal Lore", "Survival"], combat: ["Staves"], caster: "arcane", desc: "A spellcaster attuned to raw natural forces rather than bookish tradition. The elementalist coaxes fire, water, wind, and stone to answer, trusting instinct as much as instruction." },
+  { n: "Priest", mainTalents: ["Etiquette", "History", "Perception"], combat: ["Maces and Clubs"], caster: "divine", desc: "A consecrated servant granted power through faith and rite. The priest tends the spirits of the community, calling on the blessings of the divine to heal, guide, or smite." },
+  { n: "Bard", mainTalents: ["Singing", "Etiquette", "Streetwise"], combat: ["Fencing Weapons", "Daggers"], caster: "arcane", desc: "A performer whose songs and stories carry a subtle enchantment. Charming and quick-tongued, the bard opens doors and loosens purses long before drawing a blade." },
+  { n: "Merchant", mainTalents: ["Commerce", "Etiquette", "Streetwise"], combat: ["Daggers", "Crossbows"], caster: "none", desc: "A dealer in goods and information who measures the world in margins and contacts. The merchant's sharpest tools are a ledger, a smile, and an eye for a bad bargain." },
+  { n: "Sailor", mainTalents: ["Swimming", "Orienting", "Body Control"], combat: ["Swords", "Brawling"], caster: "none", desc: "A hand skilled with rope, sail, and the moods of the sea. Sailors work hard, brawl harder, and read a coming squall in the color of the sky." },
+  { n: "Healer", mainTalents: ["Treat Wounds", "Plant Lore", "Perception"], combat: ["Daggers"], caster: "none", desc: "A tender of the sick and injured versed in herbs, poultices, and steady hands. The healer's calling is mending what battle and misfortune break." },
+  { n: "Artisan", mainTalents: ["Woodworking", "Metalworking", "Commerce"], combat: ["Brawling"], caster: "none", desc: "A skilled maker whose living depends on craft and reputation. Whether at forge, bench, or wheel, the artisan turns raw material into things of use and worth." }
+];
+  let DSA_BESTIARY = [
+{ n: "Wolf", lp: 25, at: 12, pa: 8, rs: 1, ini: 15, dmg: "1d6+2", gs: 12, attrs: { MU: 14, KL: 2, IN: 14, CH: 8, FF: 8, GE: 14, KO: 13, KK: 12 }, notes: "Pack hunter; harries the weakest quarry until it stumbles." },
+{ n: "Boar", lp: 30, at: 11, pa: 6, rs: 2, ini: 12, dmg: "1d6+3", gs: 9, attrs: { MU: 15, KL: 2, IN: 13, CH: 6, FF: 6, GE: 11, KO: 15, KK: 14 }, notes: "Charges in a straight line, tusks lowered to gore." },
+{ n: "Bear", lp: 45, at: 13, pa: 8, rs: 3, ini: 13, dmg: "1d6+5", gs: 8, attrs: { MU: 16, KL: 3, IN: 14, CH: 8, FF: 8, GE: 12, KO: 17, KK: 18 }, notes: "A single swipe of its paw can shatter a shield arm." },
+{ n: "Giant Rat", lp: 12, at: 9, pa: 4, rs: 0, ini: 14, dmg: "1d3+1", gs: 8, attrs: { MU: 9, KL: 2, IN: 12, CH: 4, FF: 8, GE: 13, KO: 10, KK: 6 }, notes: "Swarms in the dark and carries filth in its bite." },
+{ n: "Giant Spider", lp: 20, at: 12, pa: 7, rs: 1, ini: 16, dmg: "1d6+1", gs: 9, attrs: { MU: 12, KL: 3, IN: 13, CH: 5, FF: 15, GE: 14, KO: 11, KK: 10 }, notes: "Its venomous bite leaves prey slow and shaking." },
+{ n: "Goblin", lp: 18, at: 10, pa: 6, rs: 2, ini: 13, dmg: "1d6", gs: 8, attrs: { MU: 10, KL: 10, IN: 12, CH: 8, FF: 12, GE: 13, KO: 11, KK: 9 }, notes: "Cowardly alone, but vicious and cunning in a mob." },
+{ n: "Orc Warrior", lp: 32, at: 14, pa: 9, rs: 4, ini: 13, dmg: "1d6+4", gs: 8, attrs: { MU: 15, KL: 9, IN: 11, CH: 8, FF: 12, GE: 12, KO: 15, KK: 15 }, notes: "Disciplined brute who fights hardest when wounded." },
+{ n: "Skeleton", lp: 20, at: 11, pa: 7, rs: 2, ini: 10, dmg: "1d6+2", gs: 7, attrs: { MU: 18, KL: 1, IN: 8, CH: 1, FF: 10, GE: 11, KO: 15, KK: 12 }, notes: "Feels neither fear nor pain, and never tires of the blade." },
+{ n: "Zombie", lp: 28, at: 9, pa: 4, rs: 1, ini: 6, dmg: "1d6+2", gs: 5, attrs: { MU: 18, KL: 1, IN: 6, CH: 1, FF: 6, GE: 6, KO: 18, KK: 14 }, notes: "Slow and clumsy, yet it soaks up wounds that would fell a man." },
+{ n: "Ghoul", lp: 26, at: 12, pa: 7, rs: 1, ini: 14, dmg: "1d6+3", gs: 9, attrs: { MU: 16, KL: 4, IN: 12, CH: 3, FF: 11, GE: 14, KO: 14, KK: 13 }, notes: "Its raking claws carry a paralyzing chill from the grave." },
+{ n: "Bandit", lp: 26, at: 12, pa: 9, rs: 3, ini: 14, dmg: "1d6+2", gs: 8, attrs: { MU: 12, KL: 11, IN: 12, CH: 11, FF: 13, GE: 13, KO: 12, KK: 12 }, notes: "Strikes from ambush and flees the moment the odds turn." },
+{ n: "Mercenary", lp: 32, at: 14, pa: 11, rs: 5, ini: 15, dmg: "1d6+4", gs: 8, attrs: { MU: 14, KL: 12, IN: 13, CH: 11, FF: 14, GE: 13, KO: 14, KK: 14 }, notes: "A seasoned blade who fights coldly for whoever pays best." },
+{ n: "Kobold", lp: 14, at: 9, pa: 5, rs: 1, ini: 15, dmg: "1d3+1", gs: 9, attrs: { MU: 9, KL: 12, IN: 13, CH: 10, FF: 14, GE: 15, KO: 9, KK: 7 }, notes: "Tiny trickster that fights with snares, traps, and spite." },
+{ n: "Ogre", lp: 55, at: 14, pa: 8, rs: 4, ini: 11, dmg: "2d6+4", gs: 9, attrs: { MU: 16, KL: 5, IN: 10, CH: 6, FF: 8, GE: 10, KO: 18, KK: 20 }, notes: "One blow of its club can hurl a grown warrior aside." },
+{ n: "Troll", lp: 80, at: 15, pa: 9, rs: 6, ini: 11, dmg: "2d6+6", gs: 10, attrs: { MU: 17, KL: 4, IN: 11, CH: 5, FF: 8, GE: 10, KO: 22, KK: 24 }, notes: "A towering giant whose flesh knits shut before your eyes." },
+{ n: "Giant Snake", lp: 35, at: 13, pa: 8, rs: 2, ini: 15, dmg: "1d6+3", gs: 8, attrs: { MU: 14, KL: 2, IN: 13, CH: 6, FF: 14, GE: 15, KO: 15, KK: 16 }, notes: "Coils to crush the breath from its prey, then swallows it whole." },
+{ n: "Wyvern", lp: 60, at: 15, pa: 10, rs: 5, ini: 16, dmg: "2d6+3", gs: 14, attrs: { MU: 16, KL: 4, IN: 14, CH: 8, FF: 13, GE: 16, KO: 17, KK: 18 }, notes: "A winged reptile that dives from above and lashes with a venomed tail." },
+{ n: "Young Dragon", lp: 90, at: 16, pa: 12, rs: 7, ini: 17, dmg: "2d6+6", gs: 12, attrs: { MU: 18, KL: 14, IN: 16, CH: 15, FF: 13, GE: 15, KO: 20, KK: 20 }, notes: "Still growing, yet its breath already melts armor to slag." },
+{ n: "Ghost", lp: 30, at: 13, pa: 0, rs: 8, ini: 16, dmg: "1d6+2", gs: 10, attrs: { MU: 16, KL: 10, IN: 15, CH: 14, FF: 12, GE: 15, KO: 12, KK: 4 }, notes: "Passes through walls and steel alike; only enchanted weapons touch it." },
+{ n: "Swamp Creature", lp: 40, at: 12, pa: 7, rs: 3, ini: 12, dmg: "1d6+3", gs: 7, attrs: { MU: 14, KL: 3, IN: 12, CH: 4, FF: 10, GE: 11, KO: 16, KK: 15 }, notes: "A dripping horror of mud and roots that drags victims under the mire." },
+{ n: "Golem", lp: 70, at: 13, pa: 9, rs: 9, ini: 8, dmg: "2d6+4", gs: 6, attrs: { MU: 20, KL: 1, IN: 8, CH: 1, FF: 6, GE: 7, KO: 22, KK: 22 }, notes: "A crafted servant of stone that follows its last order without pause." },
+{ n: "Harpy", lp: 24, at: 12, pa: 8, rs: 1, ini: 16, dmg: "1d6+2", gs: 13, attrs: { MU: 13, KL: 6, IN: 13, CH: 9, FF: 14, GE: 16, KO: 12, KK: 10 }, notes: "Swoops on beating wings to rake faces with filthy talons." },
+{ n: "Giant Scorpion", lp: 34, at: 13, pa: 9, rs: 5, ini: 14, dmg: "1d6+3", gs: 9, attrs: { MU: 14, KL: 2, IN: 12, CH: 4, FF: 13, GE: 13, KO: 15, KK: 15 }, notes: "Armored claws pin the prey while the sting delivers its poison." },
+{ n: "Dire Wolf", lp: 38, at: 14, pa: 9, rs: 2, ini: 16, dmg: "1d6+4", gs: 14, attrs: { MU: 16, KL: 3, IN: 15, CH: 8, FF: 9, GE: 16, KO: 15, KK: 15 }, notes: "A wolf grown to monstrous size; its jaws crack bone with ease." }
+];
+  let DSA_HANDBOOK = [
+{ key: "dsa-basics", title: "How DSA Works", sections: [
+  { h: "Roll Low, Not High", body: `<p>If you have played the most common tabletop games, you are used to rolling a twenty-sided die and hoping for a <b>high</b> number, then comparing it to a target. This system works the other way around. Almost every meaningful action is a <b>roll-under</b> test: you roll dice and want the result to land <b>at or below</b> a value you already possess, usually one of your attributes.</p>
+<p>The philosophy behind this is that your numbers describe how capable you already are. A high attribute is a wider net, so a wider range of dice results still counts as a success. Instead of the die telling you how good you were on a scale from bottom to top, the die asks a simpler question: was this moment within your competence or not? A low roll means you comfortably stayed inside your ability; a high roll means the situation slipped past it.</p>
+<p>This one idea colors everything else. When you read later that an attack "succeeds on a 1d20 roll at or under your combat technique", or that a spell is cast by "rolling 3d20 against three attributes", you are always looking at the same underlying gesture: roll, then check whether you came in under your own number.</p>` },
+  { h: "The Eight Attributes", body: `<p>Every character is defined first by <b>eight attributes</b>, each written as a two-letter code. They are the raw material from which nearly every check is built. Starting characters usually sit in the range of <b>8 to 14</b>, with 8 being noticeably weak, 11 to 12 being solidly average for an adventurer, and a value near the human ceiling of about <b>19</b> being remarkable.</p>
+<table class="hb-table"><thead><tr><th>Code</th><th>Attribute</th><th>What it governs</th></tr></thead><tbody>
+<tr><td><b>MU</b></td><td>Courage</td><td>Nerve under pressure, resisting fear, standing your ground, bold action.</td></tr>
+<tr><td><b>KL</b></td><td>Sagacity</td><td>Reasoning, memory, book learning, deduction and problem solving.</td></tr>
+<tr><td><b>IN</b></td><td>Intuition</td><td>Instinct, perception, reading a room, gut feeling and awareness.</td></tr>
+<tr><td><b>CH</b></td><td>Charisma</td><td>Force of personality, persuasion, presence, leadership and performance.</td></tr>
+<tr><td><b>FF</b></td><td>Dexterity</td><td>Fine motor control, steady hands, craftwork, lockpicking, precise aim.</td></tr>
+<tr><td><b>GE</b></td><td>Agility</td><td>Whole-body coordination, balance, acrobatics, footwork and dodging.</td></tr>
+<tr><td><b>KO</b></td><td>Constitution</td><td>Stamina, resilience, health, resistance to poison, fatigue and pain.</td></tr>
+<tr><td><b>KK</b></td><td>Strength</td><td>Raw physical power, carrying, forcing, and the muscle behind melee blows.</td></tr>
+</tbody></table>
+<p>Notice that the codes are drawn from the original names, so they do not always match the English word. It is worth memorizing them early, because the rest of the rules refer to attributes almost exclusively by code.</p>` },
+  { h: "Adventure Points and Growth", body: `<p>Characters improve by spending <b>Adventure Points (AP)</b>. AP is the single currency of advancement: you earn it by playing, and you spend it to raise attributes, improve skills, learn new abilities, and unlock special talents. Because everything shares one pool, growth is a series of deliberate choices rather than automatic level-ups.</p>
+<p>AP is also how a character is <b>built</b> in the first place. A starting hero is assembled from a fixed budget, so the same points that later push a skill from good to excellent are the ones you originally used to decide what kind of person this hero is. Raising something high costs progressively more, which naturally encourages well-rounded characters and makes true mastery a meaningful investment.</p>
+<p>There are no character classes in the rigid sense. A profession is just a convenient starting package of skills and abilities; from the first session onward, what your character becomes is entirely a matter of where the AP goes.</p>` },
+  { h: "The Core Loop", body: `<p>Play settles into a repeating rhythm. The game master describes a situation, the players say what their characters attempt, and whenever the outcome is uncertain and interesting, the rules resolve it with a check. The loop looks like this:</p>
+<ol>
+<li>The game master frames a scene and a challenge.</li>
+<li>A player declares an action for their character.</li>
+<li>If success is not automatic, the relevant check is rolled, usually against attributes and a skill.</li>
+<li>The result, including how <i>well</i> it went, feeds back into the story.</li>
+<li>Over time, earned AP is spent to make the character better at the actions they keep attempting.</li>
+</ol>
+<p>Combat, magic, and social scenes are all just specialized versions of this same loop. Once you understand the roll-under check and the eight attributes, every other chapter is a set of variations on those two ideas.</p>` }
+] },
+{ key: "dsa-checks", title: "Skill Checks", sections: [
+  { h: "The 3d20 Check", body: `<p>The heart of the system is the <b>skill check</b>, and it is more involved than a single roll because it uses <b>three</b> dice at once. Every skill is tied to <b>three attributes</b>. To make a check you roll <b>3d20</b>, and you compare each die separately to its own paired attribute. The three dice are not added together and there is no single target number; instead you look at how each die fared against its attribute.</p>
+<p>A die that lands at or under its attribute costs you nothing. A die that lands <b>over</b> its attribute has overshot, and the amount by which it overshot must be paid for out of a resource called the <b>Skill Value</b>. If you can pay for every point of overshoot, the check succeeds. If the overshoot exceeds what you can pay, the check fails.</p>` },
+  { h: "Spending the Skill Value", body: `<p>Each skill has a <b>Skill Value</b>, written as <b>FW</b> or <b>SF</b> (the two labels mean the same thing here). Think of it as a buffer of expertise that absorbs bad dice. Before the roll you have the full Skill Value available; as dice overshoot their attributes, you subtract the excess from that buffer.</p>
+<p>Here is a worked example. Suppose a skill is tied to <b>KL 13</b>, <b>IN 12</b>, and <b>FF 11</b>, and its Skill Value is <b>8</b>. You roll <b>3d20</b> and get <b>10, 15, 14</b>.</p>
+<ul>
+<li>First die <b>10</b> versus KL 13: at or under, so no cost.</li>
+<li>Second die <b>15</b> versus IN 12: over by <b>3</b>, so pay 3.</li>
+<li>Third die <b>14</b> versus FF 11: over by <b>3</b>, so pay 3.</li>
+</ul>
+<p>Total overshoot is <b>6</b>. Your Skill Value was 8, so you can cover it with <b>2 points to spare</b>. The check succeeds, and those leftover points determine how well it went.</p>` },
+  { h: "Quality Levels", body: `<p>A successful check is not simply pass or fail; it produces a <b>Quality Level (QL)</b> from <b>1 to 6</b> that measures how good the result was. The QL is derived from the Skill Value you had <b>left over</b> after paying for all the overshoot. More points remaining means a higher QL, which the game master reads as a cleaner, more impressive, or more productive success. In the example above, 2 points remained, which yields <b>QL 1</b>.</p>
+<table class="hb-table"><thead><tr><th>Points remaining</th><th>Quality Level</th></tr></thead><tbody>
+<tr><td>0 to 3</td><td>QL 1</td></tr>
+<tr><td>4 to 6</td><td>QL 2</td></tr>
+<tr><td>7 to 9</td><td>QL 3</td></tr>
+<tr><td>10 to 12</td><td>QL 4</td></tr>
+<tr><td>13 to 15</td><td>QL 5</td></tr>
+<tr><td>16 or more</td><td>QL 6</td></tr>
+</tbody></table>
+<p>Even a bare success where every point was spent still earns <b>QL 1</b>: you got the job done, if only barely. Many skills spell out concrete benefits that scale with QL, such as how much you produce, how much you learn, or how long an effect lasts.</p>` },
+  { h: "Routine Checks", body: `<p>Rolling dice for trivial tasks is dull, so the rules allow a <b>routine check</b>. When a character is highly skilled and the circumstances are calm and unpressured, a check can simply be treated as an automatic modest success without any dice. The requirement is a comfortably high Skill Value relative to the difficulty, so that failure would only ever come from a genuinely unlucky roll.</p>
+<p>Routine checks keep the pace brisk by reserving actual rolls for moments that are hard, dangerous, or dramatically important. A master locksmith need not roll to open an ordinary door; a master locksmith absolutely rolls when the door is unfamiliar, warded, and the guards are coming.</p>` },
+  { h: "Critical Success and Botch", body: `<p>The dice can also produce dramatic swings. Rolling a natural <b>1 on two or more of the three dice</b> is a <b>critical success</b>: the action goes exceptionally well, often improving the Quality Level or granting an extra benefit. Rolling a natural <b>20 on two or more dice</b> is a <b>botch</b>: the action fails badly, frequently with an unwelcome complication the game master introduces.</p>
+<p>A single 1 or a single 20 is not special on its own; it is only a die that happened to land low or high against its attribute. It is the <b>pairing</b> of extreme results that marks the truly lucky or truly disastrous outcome, which keeps genuine criticals rare and memorable.</p>` },
+  { h: "Modifiers", body: `<p>Circumstances shift the odds through <b>modifiers</b>, which adjust the check before the dice are read. A <b>facilitated</b> check carries a bonus, written with a plus, such as <b>+2</b>. A <b>hampered</b> check carries a penalty, written with a minus, such as <b>-3</b>. Good light, proper tools, and preparation facilitate; darkness, poor equipment, distraction, and haste hamper.</p>
+<p>Mechanically, a positive modifier is added to your available Skill Value for that check, giving you more of a buffer to absorb overshoot, while a negative modifier subtracts from it, leaving you less to spend. A large enough penalty can drop your effective Skill Value below zero, at which point the task is essentially impossible under those conditions, exactly as intuition would suggest.</p>` }
+] },
+{ key: "dsa-combat", title: "Combat", sections: [
+  { h: "Initiative and the Round", body: `<p>When talk fails and steel is drawn, time is divided into <b>combat rounds</b> of a few seconds each. Before the first round every combatant determines <b>Initiative (INI)</b>, a derived value that fixes the order of action from highest to lowest. Acting earlier lets you strike, move, or reposition before slower opponents can respond, so a high Initiative is a real advantage.</p>
+<p>On your turn in the round you generally get one main action, such as an attack, together with limited movement. Defending against incoming blows happens reactively, when it is someone else's turn to strike at you, so combat is a constant back-and-forth rather than a series of isolated turns.</p>` },
+  { h: "Attacking", body: `<p>An attack is a <b>1d20 roll-under</b> check against your rating in the relevant <b>Combat Technique</b>, expressed as an <b>Attack (AT)</b> value. Combat techniques group weapons by how they are used, so your skill with, say, swords or bows is a single number that applies across similar arms. Roll one die; if it lands <b>at or under</b> your AT, the blow is on target and threatens to connect.</p>
+<p>As with skill checks, the extremes matter. A natural <b>1</b> is a critical hit that can lead to extra damage, while a natural <b>20</b> is a fumble that misses and may invite trouble. Circumstances apply the same facilitated and hampered modifiers described earlier, shifting your effective AT up or down.</p>` },
+  { h: "Defending", body: `<p>A successful attack is not yet a wound, because the target may defend. The two options are <b>Parry (PA)</b> and <b>Dodge</b>. A parry is a <b>1d20 roll-under</b> against your Parry value for the weapon or shield you are using, representing a deliberate block or deflection. A dodge is instead a roll-under against your Dodge value, representing getting your whole body out of the way, and is useful when you are unarmed or facing something you would rather not block.</p>
+<p>If the defense succeeds, the blow is turned aside and deals no damage. If it fails, or if the defender chooses not to or cannot react, the attack lands and moves on to damage. Because defending uses up your reactions, being swarmed by several attackers is dangerous even for a skilled fighter.</p>` },
+  { h: "Damage, Protection, and Life", body: `<p>A landed hit deals <b>Damage (TP)</b>, rolled from the weapon's damage expression, for example <b>1d6+4</b>. Armor then reduces this: every piece provides <b>Protection</b>, written as <b>RS</b> or <b>PRO</b>, which is <b>subtracted</b> from the incoming damage. Whatever remains is deducted from the target's <b>Life Points (LP)</b>.</p>
+<p>So a blow rolling 1d6+4 that comes up as a 3, for a total of 7, striking armor worth 4 Protection, inflicts <b>3</b> points of Life loss. Heavy armor can shrug off light weapons entirely, which is why choosing the right weapon for the right foe matters. <b>Reach (RE)</b> also plays a role: weapons are rated <b>short</b>, <b>medium</b>, or <b>long</b>, and the fighter with greater reach has the advantage when the distance first closes.</p>` },
+  { h: "Wounds, States, and Falling", body: `<p>Beyond simple Life loss, a single heavy blow can cross a <b>wound threshold</b> and impose a lasting injury that penalizes the victim until it is treated. Combat can also inflict <b>states and conditions</b>, graded effects such as pain, fear, confusion, or being stunned; each level makes a character less effective, and enough stacked levels can incapacitate them entirely.</p>
+<p>When Life Points reach <b>0</b>, the character collapses, unconscious and dying. Without prompt aid the situation worsens and death follows, so 0 LP is a genuine crisis rather than a soft reset. The table below summarizes one full exchange of blows.</p>
+<table class="hb-table"><thead><tr><th>Step</th><th>What happens</th></tr></thead><tbody>
+<tr><td>1. Order</td><td>Initiative sets who acts when, highest first.</td></tr>
+<tr><td>2. Attack</td><td>Attacker rolls 1d20 at or under their Attack value.</td></tr>
+<tr><td>3. Defense</td><td>Defender rolls 1d20 at or under Parry or Dodge.</td></tr>
+<tr><td>4. Damage</td><td>If undefended, roll weapon damage (TP).</td></tr>
+<tr><td>5. Protection</td><td>Subtract armor Protection from the damage.</td></tr>
+<tr><td>6. Life</td><td>Deduct the remainder from Life Points; check wounds and states.</td></tr>
+</tbody></table>` }
+] },
+{ key: "dsa-character", title: "Creating a Character", sections: [
+  { h: "Species, Culture, Profession", body: `<p>A character is built in layers, and the first three answer who this person is. <b>Species</b> sets the broad physical template and comes with baseline traits; typical choices are generic peoples such as Human, Elf, Dwarf, and Half-Elf, each with its own leanings and small advantages. <b>Culture</b> describes where and how the character was raised, granting familiarity with certain skills and knowledge. <b>Profession</b> is the trade or calling they trained in, such as Warrior, Mage, or Hunter, and supplies a starting package of skills, combat techniques, and sometimes special abilities.</p>
+<p>These three layers are packages of <b>starting values and Adventure Point costs</b>, not permanent cages. They define the launch point; everything afterward is shaped by how you spend AP in play.</p>` },
+  { h: "Distributing Attributes", body: `<p>Next you set the <b>eight attributes</b> (MU, KL, IN, CH, FF, GE, KO, KK) by spending from your build budget. Most starting values land in the <b>8 to 14</b> band, and pushing any single attribute high costs progressively more, which discourages dumping everything into one number. Species can raise or cap particular attributes, so the template you chose gently steers where your peaks and valleys fall.</p>
+<p>Because attributes feed directly into checks, combat, and the derived stats below, this is the most consequential set of choices in the whole build. It is worth deciding first what your character should reliably be <b>good</b> at, then arranging the attributes to support it.</p>` },
+  { h: "Derived Statistics", body: `<p>Several important values are <b>calculated</b> from your attributes rather than chosen directly. These are your derived statistics, and they update whenever the underlying attributes change. The formulas below use the attribute codes; species and professional traits can add fixed bonuses on top.</p>
+<table class="hb-table"><thead><tr><th>Stat</th><th>Meaning</th><th>Typical basis</th></tr></thead><tbody>
+<tr><td><b>LP</b></td><td>Life Points</td><td>Built on KO, roughly KO doubled plus modifiers.</td></tr>
+<tr><td><b>AE</b></td><td>Arcane Energy</td><td>For spellcasters, based on a lead attribute such as CH plus modifiers.</td></tr>
+<tr><td><b>KP</b></td><td>Karma Points</td><td>For the blessed, based on a lead attribute plus modifiers.</td></tr>
+<tr><td><b>SK</b></td><td>Spirit</td><td>Mental resistance, from the average of MU, KL and IN, minus a base.</td></tr>
+<tr><td><b>TK</b></td><td>Toughness</td><td>Physical resistance, from the average of KO twice and KK, minus a base.</td></tr>
+<tr><td>Dodge</td><td>Evasion value</td><td>Derived from GE, commonly GE divided by two.</td></tr>
+<tr><td>INI</td><td>Initiative</td><td>From the average of MU and GE, setting combat order.</td></tr>
+<tr><td>Speed</td><td>Movement rate</td><td>A base value adjusted by GE and encumbrance.</td></tr>
+</tbody></table>
+<p>Spirit and Toughness in particular act as saving-throw-like buffers against magical and physical hardship, so they matter even for characters who never intend to fight.</p>` },
+  { h: "Skills and Combat Techniques", body: `<p>Finally you assign <b>starting Skill Values</b> across the skill list, deciding what your character actually knows how to do, and set your <b>Combat Techniques</b>, deciding which weapons they can use well. Both are paid for from the same build budget, and both continue to grow later through Adventure Points.</p>
+<p>Skills are grouped into broad families such as physical, social, nature, knowledge, and craft, and each is checked against its three governing attributes as described in the checks chapter. Combat techniques group weapons by handling, so raising one lifts your Attack and Parry with every weapon in that group. A well-built starting character usually has a small number of signature strengths rated clearly above the rest, rather than a flat spread of mediocrity.</p>` }
+] },
+{ key: "dsa-magic", title: "Magic & Blessings", sections: [
+  { h: "Two Kinds of Power", body: `<p>The supernatural comes in two distinct flavors. <b>Arcane spellcasters</b> bend reality through learned technique, drawing on a personal reservoir of <b>Astral Energy (AE)</b>. <b>Blessed characters</b> instead channel the favor of a higher power, drawing on <b>Karma Energy (KP)</b> to perform sacred acts. The two use separate resources and separate ability lists, and a given character normally follows one path, not both.</p>
+<p>Despite the different flavor, both work through the same familiar machinery you already know from ordinary skill checks. A spell or a blessing is, mechanically, another kind of check with a cost attached.</p>` },
+  { h: "Casting Spells", body: `<p>An arcane <b>spell</b> is learned much like a skill and has its own Skill Value. Casting it is a <b>3d20 check</b> against the spell's three associated attributes, resolved exactly as any skill check: each die is compared to its attribute, overshoot is paid from the spell's Skill Value, and success produces a <b>Quality Level</b> that often determines how strong or lasting the effect is.</p>
+<p>What sets casting apart is the price. Every spell has an <b>AE cost</b> that is spent from your Astral Energy when you cast, whether or not the check succeeds spectacularly. When your AE runs dry, you simply cannot cast until it recovers, which makes magic a limited and precious resource rather than an unlimited tool. A botched casting can misfire with consequences beyond mere failure.</p>` },
+  { h: "Liturgies and Blessings", body: `<p>A blessed character's equivalent of a spell is a <b>liturgy</b>. Liturgies are also resolved as <b>3d20 checks</b> against three attributes, with overshoot paid from the liturgy's Skill Value and success rated by Quality Level. The difference is the fuel: a liturgy spends <b>Karma Energy (KP)</b> rather than Astral Energy.</p>
+<p>Smaller, everyday acts of faith are lighter and cheaper, while grand miracles demand a great deal of Karma and often stricter conditions. As with AE, once Karma Energy is exhausted the character must wait for it to return, so the blessed also ration their power carefully.</p>` },
+  { h: "Concentration and Modifications", body: `<p>Many effects are not instantaneous. Some require <b>concentration</b> to maintain, meaning the caster must keep focus while the effect persists; taking damage, being distracted, or attempting something demanding can break that focus and end the effect early. This gives opponents a way to disrupt magic without ever landing a killing blow.</p>
+<p>Casters can also apply <b>modifications</b> to reshape an effect on the fly, for instance extending its range, stretching its duration, or speeding up the casting. Each modification makes the underlying check <b>harder</b>, applying a penalty in the usual way, so bending a spell to fit the moment is a trade between flexibility and reliability.</p>` },
+  { h: "Traditions at a Glance", body: `<p>Practitioners of the supernatural belong to <b>traditions</b>, which are the schools, orders, and doctrines that teach and constrain their art. A tradition shapes what a caster or blessed one can learn, which attributes and abilities they favor, and the customs and taboos they must respect. Two casters producing a similar effect may do so through entirely different traditions, with different assumptions about how and why it works.</p>
+<p>At a high level, traditions serve two purposes. They give each magical or blessed character a coherent identity and style, and they act as gatekeepers, so that certain powers, techniques, and special abilities are available only to those trained within the right tradition. The specific named traditions belong to a given setting; mechanically, what matters is that your tradition defines your toolkit and your limits.</p>` }
+] }
+];
+  const DSA_ATTR_CODES = ['MU', 'KL', 'IN', 'CH', 'FF', 'GE', 'KO', 'KK'];
+  const DSA_ATTR_NAMES = { MU: 'Courage', KL: 'Sagacity', IN: 'Intuition', CH: 'Charisma', FF: 'Dexterity', GE: 'Agility', KO: 'Constitution', KK: 'Strength' };
+
+  // ---- Shared DSA check math ----
+  function dsaComputeAttr(val, mod) {
+    const r = 1 + Math.floor(Math.random() * 20);
+    const eff = (val || 0) + (mod || 0);
+    return { r, eff, crit: r === 1, botch: r === 20, ok: r === 1 || (r !== 20 && r <= eff) };
+  }
+  function dsaComputeSkill(attrVals, fw, mod) {
+    const dice = [0, 0, 0].map(() => 1 + Math.floor(Math.random() * 20));
+    let over = 0;
+    const perDie = dice.map((die, i) => { const need = Math.max(0, die - ((attrVals[i] || 0) + (mod || 0))); over += need; return { die, need }; });
+    const ones = dice.filter(d => d === 1).length, twenties = dice.filter(d => d === 20).length;
+    const crit = ones >= 2, botch = twenties >= 2;
+    const remaining = (fw || 0) - over;
+    let ok = remaining >= 0; if (crit) ok = true; if (botch) ok = false;
+    const qs = ok ? Math.max(1, Math.min(6, Math.ceil(Math.max(0, remaining) / 3))) : 0;
+    return { dice, perDie, over, remaining, ok, qs, crit, botch };
+  }
+  async function dsaPostCheck(text) {
+    const who = (DSA_SHEET.data && DSA_SHEET.data.name) || STATE.username || 'Someone';
+    try { await sb.from('vtt_chat').insert({ id: genId(), session_id: STATE.sessionId, user_id: STATE.userId, user_name: who, is_host: STATE.isHost, msg_type: 'system', text: `${who} — ${text}`, ts: nowTs() }); } catch (e) {}
+  }
+
+  // ===== DSA character sheet =====
+  let DSA_SHEET = { playerId: null, data: null, profile: null };
+  let _dsaSaveTimer = null;
+  function dsaDefaultChar() { const attrs = {}; DSA_ATTR_CODES.forEach(c => attrs[c] = 10); return { name: '', species: 'Human', culture: '', profession: '', ap: 1100, attrs, lp: { cur: 30, max: 30 }, ae: { cur: 0, max: 0 }, kp: { cur: 0, max: 0 }, rs: 0, talents: {}, weapons: [], notes: '' }; }
+  function dsaSpeciesData(name) { return DSA_SPECIES.find(s => s.n === name) || { lp: 5, sk: -5, tk: -5, gs: 8 }; }
+  function dsaDerived(c) {
+    const a = c.attrs, sp = dsaSpeciesData(c.species);
+    return {
+      lpMax: (sp.lp != null ? sp.lp : 5) + 2 * (a.KO || 0),
+      sk: (sp.sk || 0) + Math.round(((a.MU || 0) + (a.KL || 0) + (a.IN || 0)) / 6),
+      tk: (sp.tk || 0) + Math.round((2 * (a.KO || 0) + (a.KK || 0)) / 6),
+      aw: Math.round((a.GE || 0) / 2),
+      ini: Math.round(((a.MU || 0) + (a.GE || 0)) / 2),
+      gs: sp.gs || 8,
+      wt: Math.round((a.KO || 0) / 2),
+    };
+  }
+  function dsaCanEdit() { return !DSA_SHEET.playerId || DSA_SHEET.playerId === STATE.userId || STATE.isHost; }
+  function dsaLoad(playerId) {
+    const pl = STATE.persistedPlayers.find(p => p.id === playerId);
+    let prof = {};
+    try { prof = pl && pl.profile ? (typeof pl.profile === 'string' ? JSON.parse(pl.profile) : pl.profile) : {}; } catch (e) { prof = {}; }
+    const data = Object.assign(dsaDefaultChar(), prof.dsa || {});
+    if (!data.attrs) data.attrs = dsaDefaultChar().attrs;
+    if (!data.lp) data.lp = { cur: 30, max: 30 };
+    if (!data.ae) data.ae = { cur: 0, max: 0 };
+    if (!data.kp) data.kp = { cur: 0, max: 0 };
+    if (!data.talents) data.talents = {};
+    if (!Array.isArray(data.weapons)) data.weapons = [];
+    DSA_SHEET = { playerId, profile: prof, data };
+  }
+  function scheduleDsaSave() { if (_dsaSaveTimer) clearTimeout(_dsaSaveTimer); _dsaSaveTimer = setTimeout(dsaSave, 500); }
+  async function dsaSave() {
+    if (!DSA_SHEET.playerId || !dsaCanEdit()) return;
+    const prof = DSA_SHEET.profile || {};
+    prof.dsa = DSA_SHEET.data;
+    DSA_SHEET.profile = prof;
+    const json = JSON.stringify(prof);
+    const pl = STATE.persistedPlayers.find(p => p.id === DSA_SHEET.playerId);
+    if (pl) pl.profile = json;
+    const { error } = await sb.from('vtt_players').update({ profile: json }).eq('id', DSA_SHEET.playerId).eq('session_id', STATE.sessionId);
+    if (error) { console.warn('DSA save failed', error); toast('DSA sheet not saved — check your connection.', 'error'); }
+  }
+  function dsaOpts(list, cur, placeholder) {
+    return `<option value="">${placeholder}</option>` + (list || []).map(n => `<option value="${escapeHtml(n)}"${n === cur ? ' selected' : ''}>${escapeHtml(n)}</option>`).join('');
+  }
+  function dsaPoolHtml(label, key, c, max, edit) {
+    const ro = edit ? '' : 'readonly';
+    return `<div class="dsa-pool"><span class="dsa-pool-lbl">${label}</span><input class="dsa-mini" type="number" data-pool="${key}" value="${(c[key] && c[key].cur) || 0}" ${ro}><span class="dsa-pool-sep">/</span><input class="dsa-mini" type="number" data-poolmax="${key}" value="${max || 0}" ${key === 'lp' ? 'readonly title="auto from Constitution"' : ro}></div>`;
+  }
+  function dsaTalentsHtml(c, edit) {
+    if (!DSA_TALENTS.length) return '<div class="dsa-sech">Talents</div><div class="dsa-empty">Talent list loading…</div>';
+    const groups = {};
+    DSA_TALENTS.forEach(t => { (groups[t.g] = groups[t.g] || []).push(t); });
+    let h = '<div class="dsa-sech">Talents <span class="dsa-hint">(set skill value, then Check = 3d20)</span></div>';
+    Object.keys(groups).forEach(g => {
+      h += `<div class="dsa-tgroup">${escapeHtml(g)}</div><div class="dsa-tlist">`;
+      groups[g].forEach(t => {
+        const fw = (c.talents && c.talents[t.n]) || 0;
+        h += `<div class="dsa-talent"><span class="dsa-t-name">${escapeHtml(t.n)}</span><span class="dsa-t-attrs">${t.a.join('/')}</span><input class="dsa-mini" type="number" data-talent="${escapeHtml(t.n)}" value="${fw}" ${edit ? '' : 'readonly'}><button class="dsa-t-check" data-talent-check="${escapeHtml(t.n)}">Check</button></div>`;
+      });
+      h += '</div>';
+    });
+    return h;
+  }
+  function dsaWeaponsHtml(c, edit) {
+    let h = '<div class="dsa-sech">Weapons <span class="dsa-hint">(AT/PA are 1d20 roll-under)</span></div>';
+    if (edit && DSA_WEAPONS.length) {
+      h += `<div class="dsa-row"><select id="dsa-wpn-pick" class="dsa-input">${dsaOpts(DSA_WEAPONS.map(w => w.n), '', 'Add a weapon…')}</select><button id="dsa-wpn-add" class="dsa-btn">Add</button></div>`;
+    }
+    if (!c.weapons.length) { h += '<div class="dsa-empty">No weapons yet.</div>'; return h; }
+    h += c.weapons.map((w, i) => `<div class="dsa-weapon"><span class="dsa-w-name">${escapeHtml(w.name)}</span><span class="dsa-w-meta">${escapeHtml(w.dmg || '')}${w.tech ? ' · ' + escapeHtml(w.tech) : ''}</span>
+      <label class="dsa-w-l">AT<input class="dsa-mini" type="number" data-wpn-at="${i}" value="${w.at || 0}" ${edit ? '' : 'readonly'}></label>
+      <label class="dsa-w-l">PA<input class="dsa-mini" type="number" data-wpn-pa="${i}" value="${w.pa || 0}" ${edit ? '' : 'readonly'}></label>
+      <button class="dsa-t-check" data-wpn-atk="${i}">Attack</button><button class="dsa-t-check" data-wpn-par="${i}">Parry</button>${edit ? `<button class="dsa-w-del" data-wpn-del="${i}">×</button>` : ''}</div>`).join('');
+    return h;
+  }
+  function dsaRenderSheet() {
+    const c = DSA_SHEET.data; if (!c) return;
+    const der = dsaDerived(c); const edit = dsaCanEdit(); const ro = edit ? '' : 'readonly'; const dis = edit ? '' : 'disabled';
+    c.lp.max = der.lpMax;
+    let h = `<div class="dsa-row">
+      <input class="dsa-input" data-f="name" value="${escapeHtml(c.name)}" placeholder="Character name" ${ro}>
+      <label class="dsa-ap-l">AP<input class="dsa-mini" type="number" data-f="ap" value="${c.ap | 0}" ${ro}></label>
+    </div>
+    <div class="dsa-row">
+      <select class="dsa-input" data-f="species" ${dis}>${dsaOpts(DSA_SPECIES.map(s => s.n), c.species, 'Species')}</select>
+      <select class="dsa-input" data-f="culture" ${dis}>${dsaOpts(DSA_CULTURES.map(s => s.n), c.culture, 'Culture')}</select>
+      <select class="dsa-input" data-f="profession" ${dis}>${dsaOpts(DSA_PROFESSIONS.map(s => s.n), c.profession, 'Profession')}</select>
+    </div>
+    <div class="dsa-attrs">${DSA_ATTR_CODES.map(code => `<div class="dsa-attr"><button class="dsa-attr-lbl" data-roll-attr="${code}" title="Roll ${DSA_ATTR_NAMES[code]} check (1d20 roll-under)">${code}</button><input class="dsa-attr-val" type="number" data-attr="${code}" value="${c.attrs[code] || 0}" ${ro}></div>`).join('')}</div>
+    <div class="dsa-derived">
+      ${dsaPoolHtml('LP', 'lp', c, der.lpMax, edit)}
+      ${dsaPoolHtml('AE', 'ae', c, c.ae.max, edit)}
+      ${dsaPoolHtml('KP', 'kp', c, c.kp.max, edit)}
+      <div class="dsa-stat"><span>SK</span><b>${der.sk}</b></div>
+      <div class="dsa-stat"><span>TK</span><b>${der.tk}</b></div>
+      <div class="dsa-stat"><span>Dodge</span><b>${der.aw}</b></div>
+      <div class="dsa-stat"><span>INI</span><b>${der.ini}</b></div>
+      <div class="dsa-stat"><span>Speed</span><b>${der.gs}</b></div>
+      <div class="dsa-stat"><span>Wound</span><b>${der.wt}</b></div>
+      <div class="dsa-stat"><span>RS</span><input class="dsa-mini" type="number" data-f="rs" value="${c.rs | 0}" ${ro}></div>
+    </div>
+    ${dsaTalentsHtml(c, edit)}
+    ${dsaWeaponsHtml(c, edit)}
+    <div class="dsa-sech">Notes</div><textarea class="dsa-input" data-f="notes" rows="3" ${ro} placeholder="Advantages, disadvantages, special abilities, background...">${escapeHtml(c.notes || '')}</textarea>`;
+    document.getElementById('dsa-body').innerHTML = h;
+  }
+  function dsaRollDmg(expr) { try { return rollDamageDetailed(expr, false); } catch (e) { return { total: 0, detail: '0' }; } }
+  function openDsaSheet(playerId) {
+    dsaLoad(playerId || STATE.userId);
+    const p = document.getElementById('dsa-char-popup'); if (!p) return;
+    dsaRenderSheet();
+    p.classList.add('active');
+  }
+  function closeDsaSheet() { const p = document.getElementById('dsa-char-popup'); if (p) p.classList.remove('active'); }
+  (function setupDsaSheet() {
+    const body = document.getElementById('dsa-body');
+    const close = document.getElementById('dsa-char-close');
+    if (close) close.addEventListener('click', closeDsaSheet);
+    if (!body) return;
+    // input (typing) — text/number fields update data + save, no re-render
+    body.addEventListener('input', (e) => {
+      const c = DSA_SHEET.data; if (!c || !dsaCanEdit()) return;
+      const t = e.target;
+      if (t.dataset.f) { const f = t.dataset.f; c[f] = (f === 'ap' || f === 'rs') ? (parseInt(t.value) || 0) : t.value; scheduleDsaSave(); }
+      else if (t.dataset.attr) { c.attrs[t.dataset.attr] = parseInt(t.value) || 0; scheduleDsaSave(); }
+      else if (t.dataset.pool) { c[t.dataset.pool].cur = parseInt(t.value) || 0; scheduleDsaSave(); }
+      else if (t.dataset.poolmax) { c[t.dataset.poolmax].max = parseInt(t.value) || 0; scheduleDsaSave(); }
+      else if (t.dataset.talent) { c.talents[t.dataset.talent] = parseInt(t.value) || 0; scheduleDsaSave(); }
+      else if (t.dataset.wpnAt != null) { const w = c.weapons[t.dataset.wpnAt]; if (w) { w.at = parseInt(t.value) || 0; scheduleDsaSave(); } }
+      else if (t.dataset.wpnPa != null) { const w = c.weapons[t.dataset.wpnPa]; if (w) { w.pa = parseInt(t.value) || 0; scheduleDsaSave(); } }
+    });
+    // change on species/culture/profession → recompute derived (re-render)
+    body.addEventListener('change', (e) => {
+      const c = DSA_SHEET.data; if (!c || !dsaCanEdit()) return;
+      const t = e.target;
+      if (['species', 'culture', 'profession'].includes(t.dataset.f)) { c[t.dataset.f] = t.value; scheduleDsaSave(); dsaRenderSheet(); }
+      else if (t.dataset.attr) { dsaRenderSheet(); } // refresh derived
+    });
+    body.addEventListener('click', (e) => {
+      const c = DSA_SHEET.data; if (!c) return;
+      const t = e.target;
+      const ra = t.closest('[data-roll-attr]');
+      if (ra) { const code = ra.dataset.rollAttr; const res = dsaComputeAttr(c.attrs[code], 0); dsaPostCheck(`${DSA_ATTR_NAMES[code]} (${code}) check: d20[${res.r}] vs ${res.eff} — ${res.crit ? 'CRITICAL' : res.botch ? 'BOTCH' : (res.ok ? 'success' : 'failure')}`); toast(`${code}: d20 ${res.r} vs ${res.eff} — ${res.ok ? 'success' : 'failure'}`, res.ok ? 'success' : 'error'); return; }
+      const tc = t.closest('[data-talent-check]');
+      if (tc) { const name = tc.dataset.talentCheck; const tal = DSA_TALENTS.find(x => x.n === name); if (!tal) return; const vals = tal.a.map(code => c.attrs[code] || 0); const fw = (c.talents && c.talents[name]) || 0; const r = dsaComputeSkill(vals, fw, 0); dsaPostCheck(`${name} (${tal.a.join('/')}) check: 3d20[${r.dice.join(',')}] FW ${fw} → ${r.crit ? 'CRITICAL' : r.botch ? 'BOTCH' : (r.ok ? 'success QL ' + r.qs : 'failure')}`); toast(`${name}: ${r.ok ? 'success QL ' + r.qs : 'failure'}`, r.ok ? 'success' : 'error'); return; }
+      const wa = t.closest('[data-wpn-atk]');
+      if (wa) { const w = c.weapons[wa.dataset.wpnAtk]; if (!w) return; const res = dsaComputeAttr(w.at, 0); let txt = `attacks with ${w.name}: AT d20[${res.r}] vs ${res.eff} — ${res.crit ? 'CRITICAL HIT' : res.botch ? 'BOTCH' : (res.ok ? 'HIT' : 'miss')}`; if (res.ok) { const dm = dsaRollDmg(w.dmg); txt += `, ${dm.total} TP (${dm.detail})`; } dsaPostCheck(txt); toast(res.ok ? `Hit with ${w.name}` : `${w.name} missed`, res.ok ? 'success' : 'error'); return; }
+      const wp = t.closest('[data-wpn-par]');
+      if (wp) { const w = c.weapons[wp.dataset.wpnPar]; if (!w) return; const res = dsaComputeAttr(w.pa, 0); dsaPostCheck(`parries with ${w.name}: PA d20[${res.r}] vs ${res.eff} — ${res.crit ? 'CRITICAL' : res.botch ? 'BOTCH' : (res.ok ? 'parried' : 'failed')}`); toast(res.ok ? 'Parried' : 'Parry failed', res.ok ? 'success' : 'error'); return; }
+      const wd = t.closest('[data-wpn-del]');
+      if (wd && dsaCanEdit()) { c.weapons.splice(wd.dataset.wpnDel, 1); scheduleDsaSave(); dsaRenderSheet(); return; }
+      if (t.id === 'dsa-wpn-add' && dsaCanEdit()) { const pick = document.getElementById('dsa-wpn-pick'); const w = DSA_WEAPONS.find(x => x.n === (pick && pick.value)); if (w) { c.weapons.push({ name: w.n, tech: w.tech, dmg: w.dmg, at: 10, pa: 8 }); scheduleDsaSave(); dsaRenderSheet(); } return; }
+    });
+    const p = document.getElementById('dsa-char-popup');
+    if (p) p.addEventListener('mousedown', (e) => { if (e.target === p) closeDsaSheet(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const el = document.getElementById('dsa-char-popup'); if (el && el.classList.contains('active')) closeDsaSheet(); } });
+  })();
+
   // ---- DSA (Das Schwarze Auge) roll-under check engine ----
   let DSA_MODE = 'attr';
   function openDsaCheck() {
