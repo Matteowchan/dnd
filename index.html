@@ -673,6 +673,38 @@
   .enc-chip button { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: calc(13px * var(--app-scale, 1)); line-height: 1; padding: 0; }
   .enc-chip button:hover { color: #e07a6a; }
 
+  /* ---- Action Resolver (attack / spell flow) ---- */
+  #action-resolver { position: fixed; inset: 0; z-index: 2000; display: none; align-items: flex-start; justify-content: center; background: rgba(6,7,12,0.6); backdrop-filter: blur(2px); }
+  #action-resolver.active { display: flex; }
+  .ar-box { margin-top: 9vh; width: 460px; max-width: 94vw; background: linear-gradient(180deg, var(--panel-light), var(--panel)); border: 1px solid var(--gold); border-radius: 10px; box-shadow: 0 24px 70px rgba(0,0,0,0.75); overflow: hidden; }
+  #ar-close { padding: 2px 10px; font-size: calc(14px * var(--app-scale, 1)); background: transparent; border: 1px solid var(--border); border-radius: 5px; color: var(--muted); cursor: pointer; }
+  .ar-body-wrap { padding: 14px 16px 16px; }
+  .ar-line { font-family: 'Crimson Pro', serif; font-size: calc(15px * var(--app-scale, 1)); color: var(--cream); margin-bottom: 12px; }
+  .ar-line .ar-attacker { color: var(--gold); font-weight: 600; }
+  .ar-line b { color: var(--gold-soft); }
+  .ar-label { display: block; font-family: 'Cinzel', serif; font-size: calc(10px * var(--app-scale, 1)); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 10px 0 4px; }
+  .ar-input { width: 100%; box-sizing: border-box; background: var(--bg); border: 1px solid var(--border); color: var(--cream); padding: 8px 10px; border-radius: 6px; font-family: 'Crimson Pro', serif; font-size: calc(14px * var(--app-scale, 1)); }
+  .ar-seg { display: flex; gap: 6px; }
+  .ar-seg button { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 6px; padding: 7px 6px; font-family: 'Cinzel', serif; font-size: calc(10.5px * var(--app-scale, 1)); letter-spacing: 0.02em; cursor: pointer; }
+  .ar-seg button:hover { border-color: var(--gold-soft); }
+  .ar-seg button.on { background: var(--gold); border-color: var(--gold); color: #1a1612; }
+  .ar-savenote { font-family: 'Crimson Pro', serif; font-size: calc(13px * var(--app-scale, 1)); color: var(--cream); background: rgba(212,165,116,0.06); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; margin-top: 8px; }
+  .ar-savenote b { color: var(--gold); }
+  .ar-roll-btn { width: 100%; margin-top: 14px; background: var(--gold); border: 1px solid var(--gold); color: #1a1612; border-radius: 7px; padding: 11px; font-family: 'Cinzel', serif; font-size: calc(13px * var(--app-scale, 1)); letter-spacing: 0.04em; cursor: pointer; }
+  .ar-roll-btn:hover { filter: brightness(1.06); }
+  .ar-result { margin-top: 14px; }
+  .ar-result:empty { margin: 0; }
+  .ar-roll-line { font-family: 'Crimson Pro', serif; font-size: calc(15px * var(--app-scale, 1)); color: var(--cream); margin-bottom: 6px; }
+  .ar-verdict.hit { color: #9fe0a0; font-weight: 700; }
+  .ar-verdict.miss { color: #e07a6a; font-weight: 700; }
+  .ar-dmg-line { font-family: 'Crimson Pro', serif; font-size: calc(16px * var(--app-scale, 1)); color: var(--cream); }
+  .ar-dmg-line b { color: var(--gold); font-family: 'Cinzel', serif; }
+  .ar-dmg-detail { color: var(--muted); font-size: calc(12px * var(--app-scale, 1)); }
+  .ar-apply-row { display: flex; gap: 8px; margin-top: 12px; }
+  .ar-apply-row button { flex: 1; background: rgba(160,72,72,0.16); border: 1px solid var(--danger); color: #e6a99f; border-radius: 6px; padding: 9px; font-family: 'Cinzel', serif; font-size: calc(11.5px * var(--app-scale, 1)); cursor: pointer; }
+  .ar-apply-row button:hover { background: rgba(160,72,72,0.3); }
+  .ar-apply-note { margin-top: 10px; font-style: italic; color: var(--muted); font-size: calc(12px * var(--app-scale, 1)); }
+
   /* ---- Quest seal (completed / failed stamp) ---- */
   #quest-seal { position: fixed; inset: 0; z-index: 2060; display: none; align-items: center; justify-content: center; pointer-events: none; }
   #quest-seal.active { display: flex; animation: qseal-fade 3.6s ease forwards; }
@@ -2823,6 +2855,13 @@
     <div class="cmdp-foot">
       <span><b>↑↓</b> navigate</span><span><b>Enter</b> open</span><span><b>Ctrl/Cmd K</b> toggle</span>
     </div>
+  </div>
+</div>
+
+<div id="action-resolver">
+  <div class="ar-box">
+    <div class="char-popup-header"><span class="ttl">Resolve Action</span><button id="ar-close">×</button></div>
+    <div id="ar-body" class="ar-body-wrap"></div>
   </div>
 </div>
 
@@ -7170,11 +7209,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (attList) attList.addEventListener('click', (e) => {
       const atk = e.target.closest('.atk-roll');
       const dmg = e.target.closest('.dmg-roll');
-      if (!atk && !dmg) return;
-      const i = parseInt((atk || dmg).dataset.i);
+      const tgt = e.target.closest('.atk-target');
+      if (!atk && !dmg && !tgt) return;
+      const i = parseInt((atk || dmg || tgt).dataset.i);
       const a = CHAR_POPUP.magic && CHAR_POPUP.magic.attacks && CHAR_POPUP.magic.attacks[i];
       if (!a) return;
-      if (atk) rollDice(20, 1, parseAttackBonus(a.bonus), false, `Attack: ${a.name}`);
+      if (tgt) openActionResolver({ kind: 'attack', name: a.name, bonus: parseAttackBonus(a.bonus), dmg: a.dmg || '' });
+      else if (atk) rollDice(20, 1, parseAttackBonus(a.bonus), false, `Attack: ${a.name}`);
       else rollDamage(a.dmg, `Damage: ${a.name}`);
     });
   }
@@ -8143,6 +8184,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         row.innerHTML = `
           <div class="name">${escapeHtml(a.name)} <span class="meta">${escapeHtml(a.bonus || '')} · ${escapeHtml(a.dmg || '')}</span></div>
           <span class="magic-roll-btns">
+            <button class="atk-target" data-i="${i}" title="Target &amp; resolve: roll to hit, damage, apply">🎯</button>
             <button class="atk-roll" data-i="${i}" title="Attack roll: d20 + bonus">Atk</button>
             <button class="dmg-roll" data-i="${i}" title="Roll damage">Dmg</button>
           </span>
@@ -8163,7 +8205,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         row.innerHTML = `
           <div class="mr-head">
             <div class="name">${escapeHtml(c.name)} <span class="meta">${escapeHtml(c.desc || '')}</span></div>
-            ${c.dmg ? `<span class="spell-dice" title="Damage at your level">${escapeHtml(spellDiceFor(c) || '')}</span><button class="spell-roll" data-kind="cant" data-i="${i}" title="Roll damage">Roll</button>` : ''}
+            ${c.dmg ? `<span class="spell-dice" title="Damage at your level">${escapeHtml(spellDiceFor(c) || '')}</span><button class="spell-target" data-kind="cant" data-i="${i}" title="Target &amp; resolve">🎯</button><button class="spell-roll" data-kind="cant" data-i="${i}" title="Roll damage">Roll</button>` : ''}
             ${canEdit ? `<button class="del" data-i="${i}" data-kind="cant" title="Remove">×</button>` : ''}
           </div>
           ${info ? `<div class="mr-desc" hidden>${escapeHtml(info)}</div>` : ''}
@@ -8188,7 +8230,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
             <input type="checkbox" class="prep-check" data-i="${realIdx}" ${sp.prepared ? 'checked' : ''} ${canEdit ? '' : 'disabled'} title="Prepared">
             <div class="name"><b>L${sp.level}</b>${escapeHtml(sp.name)} <span class="meta">${escapeHtml(sp.desc || '')}</span></div>
             ${canEdit ? `<button class="spell-cast" data-i="${realIdx}" title="Cast: spend a Lv ${sp.level} slot">Cast</button>` : ''}
-            ${sp.dmg ? `<span class="spell-dice" title="Damage at this level">${escapeHtml(spellDiceFor(sp) || '')}</span><button class="spell-roll" data-kind="sp" data-i="${realIdx}" title="Roll damage">Roll</button>` : ''}
+            ${sp.dmg ? `<span class="spell-dice" title="Damage at this level">${escapeHtml(spellDiceFor(sp) || '')}</span><button class="spell-target" data-kind="sp" data-i="${realIdx}" title="Target &amp; resolve">🎯</button><button class="spell-roll" data-kind="sp" data-i="${realIdx}" title="Roll damage">Roll</button>` : ''}
             ${canEdit ? `<button class="del" data-i="${realIdx}" data-kind="sp" title="Remove">×</button>` : ''}
           </div>
           ${info ? `<div class="mr-desc" hidden>${escapeHtml(info)}</div>` : ''}
@@ -10177,6 +10219,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     // Delegated delete and prepared toggle for attacks/cantrips/spells lists
     ['attacks-list', 'cantrips-list', 'spells-list'].forEach(listId => {
       document.getElementById(listId).addEventListener('click', (e) => {
+        const tgtBtn = e.target.closest('button.spell-target');
+        if (tgtBtn) {
+          const i = parseInt(tgtBtn.dataset.i);
+          const arr = tgtBtn.dataset.kind === 'cant' ? CHAR_POPUP.magic.cantrips : CHAR_POPUP.magic.spells;
+          if (arr && arr[i]) openSpellResolver(arr[i]);
+          return;
+        }
         const rollBtn = e.target.closest('button.spell-roll');
         if (rollBtn) {
           const i = parseInt(rollBtn.dataset.i);
@@ -16953,6 +17002,170 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { const p = document.getElementById('toolbox-popup'); if (p && p.classList.contains('active')) closeToolbox(); }
+    });
+  })();
+
+  // ================= ACTION RESOLVER (unified attack / spell flow) =================
+  // Pick a target, roll to hit (advantage-aware) vs the target's AC, roll damage
+  // (crits double the dice), post a result card, and apply the damage to the token
+  // on a confirmation click — reducing clicks and bookkeeping without removing DM
+  // judgment (nobody's HP changes until someone presses Apply).
+  let RESOLVER = null;
+  function getTokenAC(tokenId) {
+    const t = STATE.tokens.get(tokenId);
+    if (!t) return null;
+    try { if (t.monster_data) { const md = JSON.parse(t.monster_data); if (md && md.ac != null) return md.ac; } } catch (e) {}
+    return null;
+  }
+  function onMapTokens() { return Array.from(STATE.tokens.values()).filter(t => t.x != null && t.y != null); }
+  function rollD20Mode(mode) {
+    const r1 = 1 + Math.floor(Math.random() * 20);
+    if (mode === 'adv') { const r2 = 1 + Math.floor(Math.random() * 20); return { rolls: [r1, r2], kept: Math.max(r1, r2) }; }
+    if (mode === 'dis') { const r2 = 1 + Math.floor(Math.random() * 20); return { rolls: [r1, r2], kept: Math.min(r1, r2) }; }
+    return { rolls: [r1], kept: r1 };
+  }
+  function rollDamageDetailed(expr, crit) {
+    const { dice, flat } = parseDamageExpr(expr);
+    const parts = []; let total = 0;
+    dice.forEach(dg => {
+      const count = dg.count * (crit ? 2 : 1);
+      const rs = [];
+      for (let i = 0; i < count; i++) { const v = 1 + Math.floor(Math.random() * dg.sides); rs.push(v); total += v; }
+      parts.push(`${count}d${dg.sides}[${rs.join(',')}]`);
+    });
+    total += flat;
+    if (flat) parts.push((flat >= 0 ? '+' : '') + flat);
+    return { total: Math.max(0, total), detail: parts.join(' ') || '0' };
+  }
+  function openActionResolver(opts) {
+    // opts: { kind:'attack'|'spell', name, bonus (num, attack), dmg (str), atkBonus (num, spell), saveDc, saveAbility, spellMode:'attack'|'save' }
+    RESOLVER = Object.assign({ mode: 'normal', targetId: '', result: null }, opts);
+    const p = document.getElementById('action-resolver');
+    if (!p) return;
+    renderResolver();
+    p.classList.add('active');
+  }
+  function openSpellResolver(sp) {
+    const atkTxt = ((document.getElementById('spell-atk-bonus') || {}).textContent || '');
+    const atkBonus = parseInt(atkTxt.replace(/[^\d-]/g, '')) || 0;
+    const saveDc = parseInt(((document.getElementById('spell-save-dc') || {}).textContent || '').replace(/[^\d]/g, '')) || null;
+    const saveAbility = (document.getElementById('spell-ability') || {}).value || '';
+    const dmg = (typeof spellDiceFor === 'function' && spellDiceFor(sp)) || sp.dmg || '';
+    openActionResolver({ kind: 'spell', name: sp.name, atkBonus, saveDc, saveAbility, dmg, spellMode: sp.atk ? 'attack' : 'save' });
+  }
+  function closeActionResolver() { const p = document.getElementById('action-resolver'); if (p) p.classList.remove('active'); RESOLVER = null; }
+  function renderResolver() {
+    if (!RESOLVER) return;
+    const box = document.getElementById('ar-body');
+    const attacker = (document.getElementById('char-name') && document.getElementById('char-name').value) || STATE.username || 'Someone';
+    const toks = onMapTokens();
+    const targetOpts = ['<option value="">— choose a target —</option>'].concat(toks.map(t => {
+      const ac = getTokenAC(t.id);
+      return `<option value="${t.id}"${RESOLVER.targetId === t.id ? ' selected' : ''}>${escapeHtml(t.name || 'Token')}${ac != null ? ' (AC ' + ac + ')' : ''}</option>`;
+    })).join('');
+    const isSpell = RESOLVER.kind === 'spell';
+    const spellSave = isSpell && RESOLVER.spellMode === 'save';
+    let html = `
+      <div class="ar-line"><span class="ar-attacker">${escapeHtml(attacker)}</span> uses <b>${escapeHtml(RESOLVER.name)}</b></div>
+      <label class="ar-label">Target</label>
+      <select id="ar-target" class="ar-input">${targetOpts}</select>`;
+    if (isSpell) {
+      html += `<div class="ar-seg ar-spellmode">
+        <button data-sm="attack" class="${RESOLVER.spellMode !== 'save' ? 'on' : ''}">Spell attack</button>
+        <button data-sm="save" class="${RESOLVER.spellMode === 'save' ? 'on' : ''}">Saving throw</button>
+      </div>`;
+    }
+    if (!spellSave) {
+      html += `<label class="ar-label">Roll</label><div class="ar-seg ar-mode">
+        <button data-mode="dis" class="${RESOLVER.mode === 'dis' ? 'on' : ''}">Disadvantage</button>
+        <button data-mode="normal" class="${RESOLVER.mode === 'normal' ? 'on' : ''}">Normal</button>
+        <button data-mode="adv" class="${RESOLVER.mode === 'adv' ? 'on' : ''}">Advantage</button>
+      </div>`;
+    } else {
+      html += `<div class="ar-savenote">Target makes a DC <b>${RESOLVER.saveDc || '?'}</b> ${escapeHtml((RESOLVER.saveAbility || '').toUpperCase())} save. Roll damage, then apply full or half.</div>`;
+    }
+    html += `<button id="ar-roll" class="ar-roll-btn">${spellSave ? 'Roll Damage' : (isSpell ? 'Cast — Roll Attack' : 'Attack — Roll to Hit')}</button>`;
+    html += `<div id="ar-result" class="ar-result"></div>`;
+    box.innerHTML = html;
+    const tsel = document.getElementById('ar-target');
+    if (tsel) tsel.addEventListener('change', () => { RESOLVER.targetId = tsel.value; });
+    box.querySelectorAll('.ar-mode button').forEach(b => b.addEventListener('click', () => { RESOLVER.mode = b.dataset.mode; renderResolver(); }));
+    box.querySelectorAll('.ar-spellmode button').forEach(b => b.addEventListener('click', () => { RESOLVER.spellMode = b.dataset.sm; renderResolver(); }));
+    const roll = document.getElementById('ar-roll');
+    if (roll) roll.addEventListener('click', resolverRoll);
+    if (RESOLVER.result) document.getElementById('ar-result').innerHTML = RESOLVER.result;
+  }
+  async function resolverRoll() {
+    if (!RESOLVER) return;
+    const tsel = document.getElementById('ar-target');
+    RESOLVER.targetId = tsel ? tsel.value : '';
+    const target = RESOLVER.targetId ? STATE.tokens.get(RESOLVER.targetId) : null;
+    const targetName = target ? (target.name || 'the target') : 'no target';
+    const isSpell = RESOLVER.kind === 'spell';
+    const spellSave = isSpell && RESOLVER.spellMode === 'save';
+    let cardBits = [], crit = false, hit = true, applyAmt = 0, resultHtml = '';
+    if (!spellSave) {
+      const bonus = isSpell ? (RESOLVER.atkBonus || 0) : (RESOLVER.bonus || 0);
+      const d = rollD20Mode(RESOLVER.mode);
+      crit = d.kept === 20;
+      const isFumble = d.kept === 1;
+      const total = d.kept + bonus;
+      const ac = target ? getTokenAC(RESOLVER.targetId) : null;
+      if (isFumble) hit = false; else if (crit) hit = true; else if (ac != null) hit = total >= ac; else hit = true;
+      const rollTxt = d.rolls.length > 1 ? `d20[${d.rolls.join(',')}]→${d.kept}` : `d20[${d.kept}]`;
+      const vsTxt = ac != null ? ` vs AC ${ac}` : '';
+      const verdict = isFumble ? 'MISS (natural 1)' : crit ? 'CRITICAL HIT' : (ac != null ? (hit ? 'HIT' : 'MISS') : 'to hit');
+      resultHtml += `<div class="ar-roll-line"><b>${rollTxt} ${bonus >= 0 ? '+' : ''}${bonus} = ${total}</b>${vsTxt} — <span class="ar-verdict ${hit ? 'hit' : 'miss'}">${verdict}</span></div>`;
+      cardBits.push(`${rollTxt}${bonus >= 0 ? '+' : ''}${bonus}=${total}${vsTxt} ${verdict}`);
+    }
+    if (spellSave || hit) {
+      const dmgExpr = RESOLVER.dmg || '';
+      if (dmgExpr) {
+        const dmg = rollDamageDetailed(dmgExpr, crit);
+        applyAmt = dmg.total;
+        resultHtml += `<div class="ar-dmg-line">Damage: <b>${dmg.total}</b> <span class="ar-dmg-detail">(${escapeHtml(dmg.detail)}${crit ? ', crit' : ''})</span></div>`;
+        cardBits.push(`${dmg.total} damage${crit ? ' (crit)' : ''}`);
+      }
+    }
+    // Apply controls (only if there is a target and damage, and the roller may edit that token)
+    const canApply = target && applyAmt > 0 && (STATE.isHost || target.owner_id === STATE.userId);
+    if (target && applyAmt > 0) {
+      if (canApply) {
+        resultHtml += `<div class="ar-apply-row"><button id="ar-apply-full">Apply ${applyAmt} to ${escapeHtml(targetName)}</button>${spellSave ? `<button id="ar-apply-half">Apply ${Math.floor(applyAmt / 2)} (saved)</button>` : ''}</div>`;
+      } else {
+        resultHtml += `<div class="ar-apply-note">The DM can apply this to ${escapeHtml(targetName)}.</div>`;
+      }
+    }
+    RESOLVER.result = resultHtml;
+    document.getElementById('ar-result').innerHTML = resultHtml;
+    const full = document.getElementById('ar-apply-full');
+    if (full) full.addEventListener('click', () => resolverApply(applyAmt));
+    const half = document.getElementById('ar-apply-half');
+    if (half) half.addEventListener('click', () => resolverApply(Math.floor(applyAmt / 2)));
+    // Post a chat card for the whole table
+    const attacker = (document.getElementById('char-name') && document.getElementById('char-name').value) || STATE.username || 'Someone';
+    const verb = isSpell ? 'casts' : 'attacks with';
+    const tgtTxt = target ? ` → ${targetName}` : '';
+    const text = `${attacker} ${verb} ${RESOLVER.name}${tgtTxt}: ${cardBits.join(' · ')}`;
+    try { await sb.from('vtt_chat').insert({ id: genId(), session_id: STATE.sessionId, user_id: STATE.userId, user_name: attacker, is_host: STATE.isHost, msg_type: 'system', text, ts: nowTs() }); } catch (e) {}
+    if (crit && typeof triggerNat20 === 'function') { try { triggerNat20(); } catch (e) {} }
+  }
+  async function resolverApply(amount) {
+    if (!RESOLVER || !RESOLVER.targetId || !amount) return;
+    await applyHpChange(RESOLVER.targetId, -Math.abs(amount));
+    renderTokens();
+    renderHpTracker && renderHpTracker();
+    if (STATE.initiative && STATE.initiative.active) renderInitiative();
+    toast(`Applied ${Math.abs(amount)} damage`, 'success');
+    closeActionResolver();
+  }
+  (function setupActionResolver() {
+    const close = document.getElementById('ar-close');
+    if (close) close.addEventListener('click', closeActionResolver);
+    const p = document.getElementById('action-resolver');
+    if (p) p.addEventListener('mousedown', (e) => { if (e.target === p) closeActionResolver(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { const el = document.getElementById('action-resolver'); if (el && el.classList.contains('active')) closeActionResolver(); }
     });
   })();
 
