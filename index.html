@@ -7388,11 +7388,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         <button class="prof-toggle" data-kind="save" data-key="${stat}" title="None → Proficient → Expertise">${state === 'exp' ? '★' : (state === 'prof' ? '✓' : '')}</button>
         <span class="save-stat">${stat.toUpperCase()}</span>
         <span class="row-fill"></span>
-        <input type="text" inputmode="numeric" pattern="[+\-0-9]*" class="bonus-extra" data-kind="save" data-key="${stat}" value="${extra >= 0 ? '+' + extra : extra}" title="Extra bonus (magic items, feats). Final = base ${fmtMod(baseTotal)} + this." ${canEdit ? '' : 'readonly'}>
-        <span class="bonus-total" title="Click the row to roll. Base ${fmtMod(baseTotal)}${extra ? ' + ' + fmtMod(extra) : ''}">${fmtMod(total)}</span>
+        <input type="text" inputmode="numeric" pattern="[+\-0-9]*" class="bonus-extra" data-kind="save" data-key="${stat}" value="${extra >= 0 ? '+' + extra : extra}" title="${t('Extra bonus (magic items, feats). Final = base')} ${fmtMod(baseTotal)} ${t('+ this.')}" ${canEdit ? '' : 'readonly'}>
+        <span class="bonus-total" title="${t('Click the row to roll. Base')} ${fmtMod(baseTotal)}${extra ? ' + ' + fmtMod(extra) : ''}">${fmtMod(total)}</span>
       `;
       grid.appendChild(row);
     });
+    try { if (LANG === 'de') i18nWalk(grid); } catch (e) {}
   }
 
   function renderSkills(skillProfs) {
@@ -7417,11 +7418,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         <span class="skill-name" title="${escapeHtml(SKILL_DESC[s.key] || '')}">${s.name}</span>
         <span class="skill-stat">${s.stat.toUpperCase()}</span>
         <span class="row-fill"></span>
-        <input type="text" inputmode="numeric" pattern="[+\-0-9]*" class="bonus-extra" data-kind="skill" data-key="${s.key}" value="${extra >= 0 ? '+' + extra : extra}" title="Extra bonus (magic items, feats). Final = base ${fmtMod(baseTotal)} + this." ${canEdit ? '' : 'readonly'}>
-        <span class="bonus-total" title="Click the row to roll. Base ${fmtMod(baseTotal)}${extra ? ' + ' + fmtMod(extra) : ''}">${fmtMod(total)}</span>
+        <input type="text" inputmode="numeric" pattern="[+\-0-9]*" class="bonus-extra" data-kind="skill" data-key="${s.key}" value="${extra >= 0 ? '+' + extra : extra}" title="${t('Extra bonus (magic items, feats). Final = base')} ${fmtMod(baseTotal)} ${t('+ this.')}" ${canEdit ? '' : 'readonly'}>
+        <span class="bonus-total" title="${t('Click the row to roll. Base')} ${fmtMod(baseTotal)}${extra ? ' + ' + fmtMod(extra) : ''}">${fmtMod(total)}</span>
       `;
       grid.appendChild(row);
     });
+    try { if (LANG === 'de') i18nWalk(grid); } catch (e) {}
   }
 
   // Common preset buffs - one tap to add. Modeled like Conditions tab.
@@ -8397,13 +8399,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         spList.appendChild(row);
       });
     }
+    try { if (LANG === 'de') { const _cp = document.getElementById('char-popup'); if (_cp) i18nWalk(_cp); } } catch (e) {}
   }
 
   // Re-render all derived sections whenever stats or level change
   function refreshDerivedSections() {
     const pb = getProfBonus();
     document.getElementById('char-prof-bonus').textContent = fmtMod(pb);
-    document.getElementById('char-prof-hint').textContent = `level ${document.getElementById('char-level').value}`;
+    document.getElementById('char-prof-hint').textContent = t('level') + ' ' + document.getElementById('char-level').value;
     renderSaves(CHAR_POPUP.saveProfs);
     renderSkills(CHAR_POPUP.skillProfs);
     renderPassiveSenses();
@@ -8438,7 +8441,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const suggested = suggestedMaxHp();
     if (suggested == null) return;
     maxInp.placeholder = String(suggested);
-    maxInp.title = `Auto: HD + CON mod × level (= ${suggested}). Override by typing.`;
+    maxInp.title = t('Auto: HD + CON mod × level') + ' (= ' + suggested + '). ' + t('Override by typing.');
     // If the user hasn't manually edited max HP yet, write the suggested value
     if (!CHAR_POPUP.hpMaxManual) {
       maxInp.value = suggested;
@@ -8862,7 +8865,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     } else {
       hpCurInp.value = '';
       hpMaxInp.value = '';
-      document.getElementById('char-hp-sub').textContent = 'No token on map';
+      document.getElementById('char-hp-sub').textContent = t('No token on map');
       if (hpBox) { hpBox.classList.remove('low', 'zero'); }
     }
     // Temporary HP display + controls gating
@@ -19800,6 +19803,39 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "SPECTATOR": "ZUSCHAUER",
   "Ruleset (click to switch)": "Regelwerk (zum Wechseln klicken)",
   "Active ruleset": "Aktives Regelwerk",
+  "Roll initiative": "Initiative würfeln",
+  "Drop concentration": "Konzentration abbrechen",
+  "Add Spell": "Zauber hinzufügen",
+  "Spell Slots": "Zauberplätze",
+  "Quick Buffs": "Schnelle Verstärkungen",
+  "Active Buffs": "Aktive Verstärkungen",
+  "Features & Traits": "Merkmale & Eigenschaften",
+  "Keep your balance, tumble, and stay on your feet in tricky situations.": "Halte die Balance, rolle ab und bleib in kniffligen Situationen auf den Beinen.",
+  "Calm, control, or read the intentions of a domesticated or wild animal.": "Beruhige, kontrolliere oder deute die Absichten eines domestizierten oder wilden Tieres.",
+  "Recall lore about spells, magic items, planes, and arcane symbols.": "Erinnere dich an Wissen über Zauber, magische Gegenstände, Ebenen und arkane Symbole.",
+  "Climb, jump, swim, grapple, and other feats of physical exertion.": "Klettern, springen, schwimmen, ringen und andere körperliche Kraftakte.",
+  "Convincingly hide the truth through words or actions.": "Verberge die Wahrheit überzeugend durch Worte oder Taten.",
+  "Recall lore about events, people, nations, and ancient kingdoms.": "Erinnere dich an Wissen über Ereignisse, Personen, Nationen und alte Königreiche.",
+  "Read body language and intentions to detect lies or shifting moods.": "Lies Körpersprache und Absichten, um Lügen oder Stimmungswechsel zu erkennen.",
+  "Influence others through threats, hostility, or force of presence.": "Beeinflusse andere durch Drohungen, Feindseligkeit oder die Kraft deines Auftretens.",
+  "Search for clues and deduce how things work or connect.": "Suche nach Hinweisen und leite ab, wie Dinge funktionieren oder zusammenhängen.",
+  "Stabilize a dying creature and diagnose illness or injury.": "Stabilisiere eine sterbende Kreatur und diagnostiziere Krankheit oder Verletzung.",
+  "Recall lore about terrain, plants, animals, weather, and natural cycles.": "Erinnere dich an Wissen über Gelände, Pflanzen, Tiere, Wetter und natürliche Kreisläufe.",
+  "Notice things using your senses: spot, listen, or otherwise detect.": "Nimm Dinge mit deinen Sinnen wahr: erspähen, lauschen oder anderweitig entdecken.",
+  "Delight an audience with music, dance, acting, or storytelling.": "Begeistere ein Publikum mit Musik, Tanz, Schauspiel oder Erzählkunst.",
+  "Influence others with tact, social grace, or good faith.": "Beeinflusse andere mit Taktgefühl, sozialem Geschick oder gutem Willen.",
+  "Recall lore about deities, rites, holy symbols, and the planes.": "Erinnere dich an Wissen über Gottheiten, Riten, heilige Symbole und die Ebenen.",
+  "Pickpocket, plant an object, or perform manual trickery.": "Stich in Taschen, platziere einen Gegenstand oder vollführe manuelle Tricks.",
+  "Hide, move silently, and avoid being seen or heard.": "Verstecke dich, bewege dich lautlos und vermeide es, gesehen oder gehört zu werden.",
+  "Track, forage, navigate, predict weather, and endure the wilds.": "Spüre nach, sammle Nahrung, navigiere, sage das Wetter voraus und überstehe die Wildnis.",
+  "Extra bonus (magic items, feats). Final = base": "Extra-Bonus (magische Gegenstände, Talente). Endwert = Basis",
+  "+ this.": "+ dies.",
+  "Click the row to roll. Base": "Klicke auf die Zeile zum Würfeln. Basis",
+  "Auto: HD + CON mod × level": "Automatisch: TW + KON-Mod × Stufe",
+  "Override by typing.": "Zum Überschreiben tippen.",
+  "No token on map": "Keine Figur auf der Karte",
+  "Active Conditions": "Aktive Zustände",
+  "level": "Stufe",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
@@ -19825,6 +19861,30 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         if (el.dataset.enTx == null && key && I18N_DE[key]) el.dataset.enTx = cur;
         if (el.dataset.enTx != null) { const orig = el.dataset.enTx; const k = orig.trim(); el.textContent = orig.replace(k, I18N_DE[k] || k); }
       } else if (el.dataset.enTx != null) { el.textContent = el.dataset.enTx; delete el.dataset.enTx; }
+    } else {
+      // Section headings etc.: a bare text node sitting beside child elements.
+      // Translate direct child text nodes that exactly match a dictionary key,
+      // reversibly (originals stored by child index in data-en-txn).
+      if (LANG === 'de') {
+        if (el.dataset.enTxn == null) {
+          const orig = {}; let any = false;
+          for (let i = 0; i < el.childNodes.length; i++) {
+            const n = el.childNodes[i];
+            if (n.nodeType !== 3) continue;
+            const k = (n.nodeValue || '').trim();
+            if (k && I18N_DE[k]) { orig[i] = n.nodeValue; any = true; }
+          }
+          if (any) el.dataset.enTxn = JSON.stringify(orig);
+        }
+        if (el.dataset.enTxn != null) {
+          let orig; try { orig = JSON.parse(el.dataset.enTxn); } catch (e) { orig = null; }
+          if (orig) for (const i in orig) { const cur = orig[i], k = cur.trim(); const n = el.childNodes[i]; if (n && n.nodeType === 3) n.nodeValue = cur.replace(k, I18N_DE[k] || k); }
+        }
+      } else if (el.dataset.enTxn != null) {
+        let orig; try { orig = JSON.parse(el.dataset.enTxn); } catch (e) { orig = null; }
+        if (orig) for (const i in orig) { const n = el.childNodes[i]; if (n && n.nodeType === 3) n.nodeValue = orig[i]; }
+        delete el.dataset.enTxn;
+      }
     }
   }
   function i18nWalk(root) { if (!root || root.nodeType !== 1) return; i18nEl(root); const kids = root.querySelectorAll('*'); for (let i = 0; i < kids.length; i++) i18nEl(kids[i]); }
