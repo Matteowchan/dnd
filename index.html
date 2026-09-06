@@ -10676,27 +10676,45 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       special: 'Special: has its own unique rules.',
     };
     function weaponTip(w) {
-      const parts = [`${w.cat === 'simple' ? 'Simple' : 'Martial'} weapon — ${w.d || 'no damage'}.`];
+      const cat = w.cat === 'simple' ? t('Simple weapon') : t('Martial weapon');
+      const parts = [`${cat} — ${deDmg(w.d) || t('no damage')}.`];
       (w.p || '').split(',').map(s => s.trim()).filter(Boolean).forEach(p => {
-        if (WEAPON_PROP_TIP[p]) parts.push(WEAPON_PROP_TIP[p]);
+        if (WEAPON_PROP_TIP[p]) parts.push(t(WEAPON_PROP_TIP[p]));
       });
       return parts.join('\n');
     }
+    // German tokens for the compact catalog stat lines (damage types, weapon
+    // categories/properties, armor types, rarities). Only used when LANG==='de'.
+    const CAT_TOK_DE = {
+      slashing: 'Hiebschaden', piercing: 'Stichschaden', bludgeoning: 'Wuchtschaden',
+      simple: 'Einfach', martial: 'Kriegswaffe',
+      versatile: 'vielseitig', ammunition: 'Munition', loading: 'Laden', light: 'leicht',
+      heavy: 'schwer', 'two-handed': 'zweihändig', finesse: 'Finesse', thrown: 'Wurf',
+      reach: 'Reichweite', special: 'speziell', monk: 'Mönch',
+      medium: 'mittel', shield: 'Schild',
+      common: 'gewöhnlich', uncommon: 'ungewöhnlich', rare: 'selten', 'very rare': 'sehr selten',
+      legendary: 'legendär', artifact: 'Artefakt'
+    };
+    function deTok(tok) { if (LANG !== 'de') return tok; const k = (tok || '').trim().toLowerCase(); return CAT_TOK_DE[k] || tok; }
+    function deDmg(dmg) { if (LANG !== 'de') return dmg; return (dmg || '').replace(/\b(slashing|piercing|bludgeoning)\b/gi, m => CAT_TOK_DE[m.toLowerCase()] || m); }
+    function deProps(p) { if (LANG !== 'de' || !p) return p; return p.split(',').map(deTok).join(', '); }
     function renderCatalog() {
       const q = (CATALOG.query || '').toLowerCase();
       const list = document.getElementById('catalog-list');
+      const AC = LANG === 'de' ? 'RK' : 'AC';
+      const DEXL = LANG === 'de' ? ' + GES' : ' + Dex';
       let rows = '';
       if (CATALOG.tab === 'weapons') {
         SRD_WEAPONS.filter(w => w.n.toLowerCase().includes(q)).forEach(w => {
           const idx = SRD_WEAPONS.indexOf(w);
-          const sub = `${w.d || '—'} · ${w.cat}${w.p ? ' · ' + w.p : ''}`;
+          const sub = `${deDmg(w.d) || '—'} · ${deTok(w.cat)}${w.p ? ' · ' + deProps(w.p) : ''}`;
           rows += `<div class="cat-row" title="${escapeHtml(weaponTip(w))}"><div class="cat-info"><div class="cat-name">${escapeHtml(w.n)}</div><div class="cat-sub">${escapeHtml(sub)}</div></div><div class="cat-actions"><button class="cat-btn primary" data-act="add-weapon" data-i="${idx}">Add</button></div></div>`;
         });
       } else if (CATALOG.tab === 'armor') {
         SRD_ARMOR.filter(a => a.n.toLowerCase().includes(q)).forEach(a => {
           const idx = SRD_ARMOR.indexOf(a);
-          const acTxt = a.type === 'shield' ? '+2 AC' : `AC ${a.base}${a.type === 'light' ? ' + Dex' : a.type === 'medium' ? ' + Dex (max 2)' : ''}`;
-          const sub = `${a.type} · ${acTxt}${a.stealth ? ' · stealth disadv' : ''}${a.str ? ' · Str ' + a.str : ''}`;
+          const acTxt = a.type === 'shield' ? ('+2 ' + AC) : `${AC} ${a.base}${a.type === 'light' ? DEXL : a.type === 'medium' ? DEXL + ' (max 2)' : ''}`;
+          const sub = `${deTok(a.type)} · ${acTxt}${a.stealth ? ' · ' + (LANG === 'de' ? 'Heimlichkeit Nachteil' : 'stealth disadv') : ''}${a.str ? ' · ' + (LANG === 'de' ? 'STÄ ' : 'Str ') + a.str : ''}`;
           rows += `<div class="cat-row"><div class="cat-info"><div class="cat-name">${escapeHtml(a.n)}</div><div class="cat-sub">${escapeHtml(sub)}</div></div><div class="cat-actions"><button class="cat-btn" data-act="add-armor" data-i="${idx}">Add</button><button class="cat-btn primary" data-act="equip-armor" data-i="${idx}">Equip</button></div></div>`;
         });
       } else if (CATALOG.tab === 'gear') {
@@ -10707,7 +10725,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       } else if (CATALOG.tab === 'magic') {
         MAGIC_ITEMS.filter(m => m.n.toLowerCase().includes(q)).forEach(m => {
           const idx = MAGIC_ITEMS.indexOf(m);
-          const tag = `${m.r}${m.att ? ' · attune' : ''}`;
+          const tag = `${deTok(m.r)}${m.att ? ' · ' + (LANG === 'de' ? 'Einstimmung' : 'attune') : ''}`;
           let actions = `<button class="cat-btn" data-act="add-magic" data-i="${idx}">Add</button>`;
           if (m.bonus) actions += `<button class="cat-btn primary" data-act="apply-magic" data-i="${idx}">Apply +${m.bonus.mod}</button>`;
           else if (m.setAbility) actions += `<button class="cat-btn primary" data-act="apply-magic" data-i="${idx}">Set ${m.setAbility.ability.toUpperCase()} ${m.setAbility.score}</button>`;
@@ -10716,7 +10734,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       } else if (CATALOG.tab === 'custom') {
         const items = STATE.customItems || [];
         if (!items.length) {
-          rows = `<div style="font-size:calc(12px * var(--app-scale, 1));color:var(--muted);padding:10px;">${STATE.isHost ? 'No shared items yet. Add one below to share it with the whole table.' : 'No shared items from the DM yet.'}</div>`;
+          rows = `<div style="font-size:calc(12px * var(--app-scale, 1));color:var(--muted);padding:10px;">${STATE.isHost ? t('No shared items yet. Add one below to share it with the whole table.') : t('No shared items from the DM yet.')}</div>`;
         } else {
           items.forEach((it) => {
             if (q && !(it.name || '').toLowerCase().includes(q)) return;
@@ -10726,7 +10744,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           });
         }
       }
-      list.innerHTML = rows || '<div style="font-size:calc(12px * var(--app-scale, 1));color:var(--muted);padding:10px;">No matches.</div>';
+      list.innerHTML = rows || `<div style="font-size:calc(12px * var(--app-scale, 1));color:var(--muted);padding:10px;">${t('No matches.')}</div>`;
+      try { if (LANG === 'de') i18nWalk(list); } catch (e) {}
     }
     STATE._renderCatalog = renderCatalog;
     async function saveCustomItems() {
@@ -10735,18 +10754,20 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }
     const CAT_TYPE = { weapons: 'weapon', armor: 'armor', gear: 'gear', magic: 'magic', custom: 'misc' };
     const CAT_LABEL = { weapons: 'Weapon', armor: 'Armor', gear: 'Gear', magic: 'Magic Item', custom: 'Custom' };
+    const CAT_LABEL_DE = { weapons: 'Waffe', armor: 'Rüstung', gear: 'Ausrüstung', magic: 'Magischer Gegenstand', custom: 'Eigenes' };
     function updateCatCustomRow() {
       const t = CATALOG.tab;
       const row = document.querySelector('.cat-custom-row');
+      const de = LANG === 'de';
       if (t === 'custom') {
         if (row) row.style.display = STATE.isHost ? '' : 'none';
-        document.getElementById('cat-custom-name').placeholder = 'Shared item name (DM)';
-        document.getElementById('cat-custom-add').textContent = 'Share Item';
+        document.getElementById('cat-custom-name').placeholder = de ? 'Name des geteilten Gegenstands (SL)' : 'Shared item name (DM)';
+        document.getElementById('cat-custom-add').textContent = de ? 'Gegenstand teilen' : 'Share Item';
         return;
       }
       if (row) row.style.display = '';
-      document.getElementById('cat-custom-name').placeholder = `Custom ${(CAT_LABEL[t] || 'item').toLowerCase()} name`;
-      document.getElementById('cat-custom-add').textContent = `Add ${CAT_LABEL[t] || 'Item'}`;
+      document.getElementById('cat-custom-name').placeholder = de ? ('Name (' + (CAT_LABEL_DE[t] || 'Gegenstand') + ')') : `Custom ${(CAT_LABEL[t] || 'item').toLowerCase()} name`;
+      document.getElementById('cat-custom-add').textContent = de ? ((CAT_LABEL_DE[t] || 'Gegenstand') + ' hinzufügen') : `Add ${CAT_LABEL[t] || 'Item'}`;
     }
     function openCatalog() {
       CATALOG.query = '';
@@ -19836,6 +19857,25 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "No token on map": "Keine Figur auf der Karte",
   "Active Conditions": "Aktive Zustände",
   "level": "Stufe",
+  "Equip": "Ausrüsten",
+  "No matches.": "Keine Treffer.",
+  "No shared items yet. Add one below to share it with the whole table.": "Noch keine geteilten Gegenstände. Füge unten einen hinzu, um ihn mit dem ganzen Tisch zu teilen.",
+  "No shared items from the DM yet.": "Noch keine geteilten Gegenstände vom SL.",
+  "Stats (optional)": "Werte (optional)",
+  "Simple weapon": "Einfache Waffe",
+  "Martial weapon": "Kriegswaffe",
+  "no damage": "kein Schaden",
+  "Ammunition: needs arrows/bolts; draw one per attack.": "Munition: benötigt Pfeile/Bolzen; ziehe pro Angriff einen.",
+  "Finesse: use Strength or Dexterity, whichever is higher.": "Finesse: nutze Stärke oder Geschicklichkeit, je nachdem, was höher ist.",
+  "Heavy: Small creatures attack with it at disadvantage.": "Schwer: Kleine Kreaturen greifen damit mit Nachteil an.",
+  "Light: ideal for fighting with two weapons.": "Leicht: ideal für den Kampf mit zwei Waffen.",
+  "Loading: only one shot per action.": "Laden: nur ein Schuss pro Aktion.",
+  "Reach: adds 5 ft to your reach.": "Reichweite: erhöht deine Reichweite um 5 Fuß.",
+  "Thrown: can be thrown for a ranged attack.": "Wurf: kann für einen Fernkampfangriff geworfen werden.",
+  "Two-Handed: requires both hands.": "Zweihändig: erfordert beide Hände.",
+  "Versatile: larger damage die when used two-handed.": "Vielseitig: größerer Schadenswürfel bei zweihändiger Nutzung.",
+  "Monk: counts as a monk weapon (Dex + Martial Arts die).": "Mönch: gilt als Mönchswaffe (GES + Kampfkunst-Würfel).",
+  "Special: has its own unique rules.": "Speziell: hat eigene, besondere Regeln.",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
