@@ -16642,6 +16642,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     campSave();
     closeCampaign();
     toast(`${enc.name}: ${spawned} monster${spawned === 1 ? '' : 's'} on the map, initiative rolled.`, 'success');
+    // A deadly/hard encounter earns a cinematic flourish for the whole table.
+    if (enc.difficulty === 'deadly' || enc.difficulty === 'hard') {
+      showSceneTitle(enc.name, 'The battle begins');
+      try { if (STATE.channel) STATE.channel.send({ type: 'broadcast', event: 'scene-title', payload: { name: enc.name, subtitle: 'The battle begins' } }); } catch (e) {}
+    }
   }
   function playScene(s) {
     showSceneTitle(s.name, s.subtitle);
