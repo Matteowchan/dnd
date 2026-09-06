@@ -667,6 +667,22 @@
   .camp-coin label { display: block; font-family: 'Cinzel', serif; font-size: calc(9px * var(--app-scale, 1)); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
   .camp-coin-inp { width: 100%; text-align: center; font-family: 'Cinzel', serif; color: var(--gold); font-weight: 600; }
   .camp-coin-val { font-family: 'Cinzel', serif; color: var(--gold); font-size: calc(16px * var(--app-scale, 1)); font-weight: 600; }
+  .ho-thumb { max-width: 100%; max-height: 160px; border-radius: 4px; border: 1px solid var(--border); margin: 4px 0 6px; display: block; }
+
+  /* ---- Handout reveal (parchment document modal) ---- */
+  #handout-view { position: fixed; inset: 0; z-index: 2100; display: none; align-items: center; justify-content: center; background: rgba(6,7,12,0.72); backdrop-filter: blur(3px); }
+  #handout-view.active { display: flex; animation: ho-fade 0.3s ease; }
+  @keyframes ho-fade { from { opacity: 0; } to { opacity: 1; } }
+  .handout-parchment { position: relative; width: 560px; max-width: 92vw; max-height: 86vh; overflow-y: auto; padding: 34px 38px; border-radius: 6px; border: 1px solid #b9975b; color: #2b2116;
+    background: radial-gradient(ellipse at top left, #f3e6c8, #e7d4a8 55%, #d8c091 100%);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.8), inset 0 0 60px rgba(120,90,40,0.28); animation: ho-open 0.4s cubic-bezier(0.2,0.7,0.3,1); }
+  @keyframes ho-open { from { transform: scale(0.9) translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .handout-view-close { position: absolute; top: 10px; right: 12px; background: transparent; border: 1px solid #a98b52; color: #6a5433; border-radius: 5px; width: 28px; height: 28px; cursor: pointer; font-size: 16px; line-height: 1; }
+  .handout-view-close:hover { background: rgba(120,90,40,0.12); }
+  .handout-view-kind { font-family: 'Cinzel', serif; font-size: calc(10px * var(--app-scale, 1)); letter-spacing: 0.16em; text-transform: uppercase; color: #8a6d3b; margin-bottom: 4px; }
+  .handout-view-title { font-family: 'Cinzel', serif; font-size: calc(24px * var(--app-scale, 1)); color: #3a2a16; margin: 0 0 14px; border-bottom: 1px solid rgba(120,90,40,0.35); padding-bottom: 10px; }
+  .handout-view-img { max-width: 100%; border-radius: 4px; border: 1px solid #a98b52; margin-bottom: 14px; }
+  .handout-view-text { font-family: 'Crimson Pro', serif; font-size: calc(17px * var(--app-scale, 1)); line-height: 1.7; color: #2b2116; white-space: pre-wrap; }
 
   /* ---- DM Toolbox popup ---- */
   #toolbox-popup { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); width: 560px; max-width: 94vw; height: 70vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 8px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
@@ -2779,6 +2795,16 @@
     <div class="cmdp-foot">
       <span><b>↑↓</b> navigate</span><span><b>Enter</b> open</span><span><b>Ctrl/Cmd K</b> toggle</span>
     </div>
+  </div>
+</div>
+
+<div id="handout-view">
+  <div class="handout-parchment">
+    <button id="handout-view-close" class="handout-view-close">×</button>
+    <div class="handout-view-kind" id="handout-view-kind"></div>
+    <h2 class="handout-view-title" id="handout-view-title"></h2>
+    <img id="handout-view-img" class="handout-view-img" alt="" style="display:none;">
+    <div class="handout-view-text" id="handout-view-text"></div>
   </div>
 </div>
 
@@ -5400,6 +5426,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       .on('broadcast', { event: 'rtc-signal' }, ({ payload }) => handleRtcSignal(payload))
       .on('broadcast', { event: 'rtc-hand' }, ({ payload }) => { if (payload && payload.userId) rtcSetHand(payload.userId, !!payload.raised); })
       .on('broadcast', { event: 'init-roll' }, ({ payload }) => { if (STATE.isHost) hostApplyInitRoll(payload); })
+      .on('broadcast', { event: 'handout-reveal' }, ({ payload }) => handleHandoutReveal(payload))
       .on('presence', { event: 'sync' }, handlePresenceSync)
       .subscribe(async (status) => {
         const ind = document.getElementById('conn-indicator');
@@ -16305,15 +16332,18 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     { key: 'faction', label: 'Factions' },
     { key: 'clue', label: 'Clues & Rumours' },
     { key: 'note', label: 'Notes' },
+    { key: 'handouts', label: 'Handouts' },
     { key: 'party', label: 'Party' },
   ];
+  const HANDOUT_KINDS = ['note', 'letter', 'map fragment', 'portrait', 'document', 'loot list', 'secret', 'evidence', 'prophecy', 'quest update'];
   const QUEST_TYPES = ['main', 'side', 'personal', 'rumour'];
   const QUEST_STATUS = ['active', 'completed', 'failed', 'hidden'];
   let CAMP_TAB = 'quests';
   let CAMP_EDIT = null;
   function campData() {
-    STATE.campaign = STATE.campaign || { quests: [], entries: [], party: { pp: 0, gp: 0, sp: 0, cp: 0, items: [] } };
+    STATE.campaign = STATE.campaign || { quests: [], entries: [], handouts: [], party: { pp: 0, gp: 0, sp: 0, cp: 0, items: [] } };
     if (!STATE.campaign.party) STATE.campaign.party = { pp: 0, gp: 0, sp: 0, cp: 0, items: [] };
+    if (!Array.isArray(STATE.campaign.handouts)) STATE.campaign.handouts = [];
     return STATE.campaign;
   }
   function campLoad() {
@@ -16321,8 +16351,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     try { const raw = STATE.session && STATE.session.campaign_data; d = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) {}
     const party = (d && d.party && typeof d.party === 'object') ? d.party : {};
     STATE.campaign = (d && typeof d === 'object')
-      ? { quests: Array.isArray(d.quests) ? d.quests : [], entries: Array.isArray(d.entries) ? d.entries : [], party: { pp: party.pp || 0, gp: party.gp || 0, sp: party.sp || 0, cp: party.cp || 0, items: Array.isArray(party.items) ? party.items : [] } }
-      : { quests: [], entries: [], party: { pp: 0, gp: 0, sp: 0, cp: 0, items: [] } };
+      ? { quests: Array.isArray(d.quests) ? d.quests : [], entries: Array.isArray(d.entries) ? d.entries : [], handouts: Array.isArray(d.handouts) ? d.handouts : [], party: { pp: party.pp || 0, gp: party.gp || 0, sp: party.sp || 0, cp: party.cp || 0, items: Array.isArray(party.items) ? party.items : [] } }
+      : { quests: [], entries: [], handouts: [], party: { pp: 0, gp: 0, sp: 0, cp: 0, items: [] } };
   }
   async function campSave() {
     if (!STATE.isHost) return;
@@ -16342,11 +16372,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       let count = '';
       if (c.key === 'quests') count = campData().quests.filter(campVisibleToMe).length;
       else if (c.key === 'party') count = campData().party.items.length;
+      else if (c.key === 'handouts') count = campData().handouts.filter(campHandoutVisible).length;
       else count = campData().entries.filter(e => e.category === c.key && campVisibleToMe(e)).length;
       return `<button class="cmp-tab${c.key === CAMP_TAB ? ' active' : ''}" data-key="${c.key}">${c.label}<span class="cmp-tab-count">${count}</span></button>`;
     }).join('');
     tabsEl.querySelectorAll('.cmp-tab').forEach(b => b.addEventListener('click', () => { CAMP_TAB = b.dataset.key; CAMP_EDIT = null; campRender(); }));
     if (CAMP_TAB === 'party') { campRenderParty(body); return; }
+    if (CAMP_TAB === 'handouts') { campRenderHandouts(body); return; }
     let html = '';
     if (campCanEdit()) html += campFormHtml();
     html += (CAMP_TAB === 'quests') ? campQuestsHtml() : campEntriesHtml(CAMP_TAB);
@@ -16429,6 +16461,92 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     body.querySelectorAll('[data-pdel]').forEach(b => b.addEventListener('click', () => { p.items = p.items.filter(x => x.id !== b.dataset.pdel); campSave(); campRender(); }));
     body.querySelectorAll('.party-claim').forEach(inp => inp.addEventListener('change', () => { const it = p.items.find(x => x.id === inp.dataset.id); if (it) { it.claimedBy = inp.value.trim(); campSave(); } }));
   }
+  function campHandoutVisible(h) { return campCanEdit() || (h.revealed && (h.vis || 'all') === 'all'); }
+  function campKindBadge(k) { return `<span class="camp-badge">${escapeHtml(k || 'note')}</span>`; }
+  function campRenderHandouts(body) {
+    const edit = campCanEdit();
+    const list = campData().handouts.filter(campHandoutVisible);
+    let html = '';
+    if (edit) html += `<div class="camp-form">
+      <input id="ho-title" class="camp-input" type="text" placeholder="Handout title (e.g. The Baron's Letter)">
+      <div class="camp-form-row">
+        <select id="ho-kind" class="camp-input">${HANDOUT_KINDS.map(k => `<option value="${k}">${k[0].toUpperCase() + k.slice(1)}</option>`).join('')}</select>
+        <label class="camp-btn" style="text-align:center;cursor:pointer;flex:0 0 auto;">Add image<input id="ho-image" type="file" accept="image/*" style="display:none;"></label>
+      </div>
+      <textarea id="ho-text" class="camp-input" rows="3" placeholder="Text of the handout (letter, note, prophecy, loot list...)"></textarea>
+      <div id="ho-imgname" class="camp-card-reward" style="display:none;"></div>
+      <button id="ho-add" class="camp-btn primary">Save handout to library</button>
+    </div>`;
+    if (!list.length) html += `<div class="camp-empty">${edit ? 'No handouts yet. Create one above, then Reveal it to the party when the moment comes.' : 'No handouts revealed yet.'}</div>`;
+    else html += list.map(h => `<div class="camp-card">
+      <div class="camp-card-head"><span class="camp-card-title">${escapeHtml(h.title || 'Handout')}</span>${campKindBadge(h.kind)}${h.revealed ? '<span class="camp-badge camp-status-active">revealed</span>' : (edit ? '<span class="camp-badge">hidden</span>' : '')}</div>
+      ${h.imageUrl ? `<img src="${escapeHtml(h.imageUrl)}" class="ho-thumb" alt="">` : ''}
+      ${h.text ? `<div class="camp-card-text">${escapeHtml(h.text.slice(0, 160))}${h.text.length > 160 ? '…' : ''}</div>` : ''}
+      <div class="camp-card-actions">
+        <button class="camp-mini" data-hoview="${h.id}">Open</button>
+        ${edit ? `<button class="camp-mini" data-horeveal="${h.id}">${h.revealed ? 'Show again' : 'Reveal to party'}</button>` : ''}
+        ${edit && h.revealed ? `<button class="camp-mini" data-hohide="${h.id}">Hide</button>` : ''}
+        ${edit ? `<button class="camp-mini danger" data-hodel="${h.id}">Delete</button>` : ''}
+      </div>
+    </div>`).join('');
+    body.innerHTML = html;
+    if (edit) {
+      const imgInp = document.getElementById('ho-image');
+      if (imgInp) imgInp.addEventListener('change', () => { const n = document.getElementById('ho-imgname'); if (imgInp.files[0]) { n.style.display = ''; n.textContent = 'Image: ' + imgInp.files[0].name; } });
+      const addBtn = document.getElementById('ho-add');
+      if (addBtn) addBtn.addEventListener('click', campHandoutAdd);
+    }
+    body.querySelectorAll('[data-hoview]').forEach(b => b.addEventListener('click', () => { const h = campData().handouts.find(x => x.id === b.dataset.hoview); if (h) openHandoutView(h); }));
+    body.querySelectorAll('[data-horeveal]').forEach(b => b.addEventListener('click', () => campHandoutReveal(b.dataset.horeveal)));
+    body.querySelectorAll('[data-hohide]').forEach(b => b.addEventListener('click', () => { const h = campData().handouts.find(x => x.id === b.dataset.hohide); if (h) { h.revealed = false; campSave(); campRender(); } }));
+    body.querySelectorAll('[data-hodel]').forEach(b => b.addEventListener('click', () => { campData().handouts = campData().handouts.filter(x => x.id !== b.dataset.hodel); campSave(); campRender(); }));
+  }
+  async function campHandoutAdd() {
+    const title = (document.getElementById('ho-title').value || '').trim();
+    if (!title) { toast('Handout needs a title', 'error'); return; }
+    const kind = document.getElementById('ho-kind').value || 'note';
+    const text = (document.getElementById('ho-text').value || '').trim();
+    const imgInp = document.getElementById('ho-image');
+    let imageUrl = '';
+    if (imgInp && imgInp.files[0]) {
+      try {
+        const { blob } = await fileToResizedBlob(imgInp.files[0], 1200);
+        imageUrl = await uploadImage(blob, `${STATE.sessionId}/handouts/${genId()}.jpg`);
+      } catch (e) {
+        try { imageUrl = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(imgInp.files[0]); }); } catch (e2) {}
+      }
+    }
+    campData().handouts.push({ id: genId(), title, kind, text, imageUrl, vis: 'all', revealed: false, created: Date.now() });
+    campSave();
+    campRender();
+    toast('Handout saved to the library', 'success');
+  }
+  function campHandoutReveal(id) {
+    const h = campData().handouts.find(x => x.id === id);
+    if (!h) return;
+    h.revealed = true; h.vis = 'all';
+    campSave();
+    campRender();
+    openHandoutView(h);
+    try { if (STATE.channel) STATE.channel.send({ type: 'broadcast', event: 'handout-reveal', payload: { handout: { id: h.id, title: h.title, kind: h.kind, text: h.text, imageUrl: h.imageUrl } } }); } catch (e) {}
+    toast('Handout revealed to the party', 'success');
+  }
+  function openHandoutView(h) {
+    const p = document.getElementById('handout-view');
+    if (!p || !h) return;
+    document.getElementById('handout-view-title').textContent = h.title || 'Handout';
+    document.getElementById('handout-view-kind').textContent = h.kind || '';
+    const img = document.getElementById('handout-view-img');
+    if (h.imageUrl) { img.src = h.imageUrl; img.style.display = ''; } else { img.style.display = 'none'; img.removeAttribute('src'); }
+    document.getElementById('handout-view-text').textContent = h.text || '';
+    p.classList.add('active');
+  }
+  function closeHandoutView() { const p = document.getElementById('handout-view'); if (p) p.classList.remove('active'); }
+  function handleHandoutReveal(payload) {
+    if (!payload || !payload.handout) return;
+    if (STATE.isHost) return; // the DM already saw it on reveal
+    openHandoutView(payload.handout);
+  }
   function campWire(body) {
     const saveBtn = document.getElementById('camp-f-save');
     if (saveBtn) saveBtn.addEventListener('click', campFormSubmit);
@@ -16491,8 +16609,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (btn) btn.addEventListener('click', openCampaign);
     const close = document.getElementById('campaign-close');
     if (close) close.addEventListener('click', closeCampaign);
+    const hoClose = document.getElementById('handout-view-close');
+    if (hoClose) hoClose.addEventListener('click', closeHandoutView);
+    const hoView = document.getElementById('handout-view');
+    if (hoView) hoView.addEventListener('mousedown', (e) => { if (e.target === hoView) closeHandoutView(); });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { const p = document.getElementById('campaign-popup'); if (p && p.classList.contains('active')) closeCampaign(); }
+      if (e.key === 'Escape') {
+        const hv = document.getElementById('handout-view'); if (hv && hv.classList.contains('active')) { closeHandoutView(); return; }
+        const p = document.getElementById('campaign-popup'); if (p && p.classList.contains('active')) closeCampaign();
+      }
     });
   })();
 
@@ -16638,6 +16763,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (has('long-rest-btn')) add('Take a Long Rest', () => click('long-rest-btn'));
     if (has('switch-role-btn')) add('Switch Role (DM / Player)', () => click('switch-role-btn'));
     if (STATE.isHost) {
+      add('Reveal a Handout to the party', () => { CAMP_TAB = 'handouts'; openCampaign(); });
       add('Open DM Toolbox (generators)', () => openToolbox());
       if (has('init-roll-all')) add('Roll Initiative for all (start combat)', () => click('init-roll-all'));
       if (has('reveal-map-btn')) add('Reveal Map to Players', () => click('reveal-map-btn'));
