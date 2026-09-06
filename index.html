@@ -11402,7 +11402,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (!el) return;
     if (!SPELL_FX.loaded) { el.innerHTML = '<div class="sp-empty">' + (SPELL_FX.error ? 'Could not load effects.' : 'Loading effects...') + '</div>'; return; }
     if (!SPELL_FX.cats.length) { el.innerHTML = '<div class="sp-empty">No effects found in the bucket.</div>'; return; }
-    el.innerHTML = SPELL_FX.cats.map(c => `<button class="spell-shape${c === SPELL_FX.curCat ? ' active' : ''}" data-cat="${escapeHtml(c)}"><div class="sp-info"><div class="sp-name">${escapeHtml(c)}</div><div class="sp-hint">${SPELL_FX.byCat[c].length} effects</div></div></button>`).join('');
+    el.innerHTML = SPELL_FX.cats.map(c => `<button class="spell-shape${c === SPELL_FX.curCat ? ' active' : ''}" data-cat="${escapeHtml(c)}"><div class="sp-info"><div class="sp-name">${escapeHtml(t(c))}</div><div class="sp-hint">${SPELL_FX.byCat[c].length} ${t('effects')}</div></div></button>`).join('');
     el.querySelectorAll('.spell-shape').forEach(b => b.addEventListener('click', () => { SPELL_FX.curCat = b.dataset.cat; renderSpellShapeList(); renderSpellFxList(); }));
   }
   function renderSpellFxList() {
@@ -19876,6 +19876,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Versatile: larger damage die when used two-handed.": "Vielseitig: größerer Schadenswürfel bei zweihändiger Nutzung.",
   "Monk: counts as a monk weapon (Dex + Martial Arts die).": "Mönch: gilt als Mönchswaffe (GES + Kampfkunst-Würfel).",
   "Special: has its own unique rules.": "Speziell: hat eigene, besondere Regeln.",
+  "Shape": "Form",
+  "Selected:": "Ausgewählt:",
+  "effects": "Effekte",
+  "Cone": "Kegel",
+  "Beam / Ray": "Strahl / Linie",
+  "Circle": "Kreis",
+  "Square / Wall": "Quadrat / Wand",
+  "Projectile": "Projektil",
+  "Other": "Sonstige",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
