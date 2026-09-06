@@ -623,6 +623,46 @@
   .cmdp-statgrid .st b { display: block; font-family: 'Cinzel', serif; color: var(--gold-soft); font-size: calc(10px * var(--app-scale, 1)); }
   .cmdp-statgrid .st span { font-size: calc(13px * var(--app-scale, 1)); color: var(--cream); }
 
+  /* ---- Campaign Journal popup ---- */
+  #campaign-popup { position: fixed; top: 56px; left: 50%; transform: translateX(-50%); width: 760px; max-width: 95vw; height: 82vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 8px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  #campaign-popup.active { display: flex; }
+  #campaign-popup .cmp-body { flex-direction: column; }
+  #camp-body { padding: 12px 16px; }
+  .camp-form { display: flex; flex-direction: column; gap: 7px; padding: 12px; margin-bottom: 14px; background: rgba(212,165,116,0.05); border: 1px solid var(--border); border-radius: 7px; }
+  .camp-form-row { display: flex; gap: 7px; flex-wrap: wrap; }
+  .camp-form-row .camp-input { flex: 1; min-width: 120px; }
+  .camp-input { background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 5px; padding: 7px 9px; font-family: 'Crimson Pro', serif; font-size: calc(13px * var(--app-scale, 1)); outline: none; box-sizing: border-box; }
+  .camp-input:focus { border-color: var(--gold); }
+  textarea.camp-input { resize: vertical; }
+  .camp-btn { background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 5px; padding: 7px 14px; font-family: 'Cinzel', serif; font-size: calc(11px * var(--app-scale, 1)); letter-spacing: 0.03em; cursor: pointer; white-space: nowrap; }
+  .camp-btn:hover { border-color: var(--gold-soft); }
+  .camp-btn.primary { background: var(--gold); border-color: var(--gold); color: #1a1612; }
+  .camp-card { border: 1px solid var(--border); border-left: 3px solid var(--border); border-radius: 6px; padding: 10px 12px; margin-bottom: 10px; background: rgba(0,0,0,0.15); }
+  .camp-card-head { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-bottom: 5px; }
+  .camp-card-title { font-family: 'Cinzel', serif; color: var(--gold-soft); font-size: calc(14px * var(--app-scale, 1)); letter-spacing: 0.02em; }
+  .camp-card-obj { font-family: 'Crimson Pro', serif; font-size: calc(13.5px * var(--app-scale, 1)); color: var(--cream); margin: 3px 0; }
+  .camp-card-obj b, .camp-card-reward b { color: var(--gold); }
+  .camp-card-text { font-family: 'Crimson Pro', serif; font-size: calc(13px * var(--app-scale, 1)); line-height: 1.5; color: var(--cream); opacity: 0.92; margin: 3px 0; white-space: pre-wrap; }
+  .camp-card-reward { font-size: calc(12.5px * var(--app-scale, 1)); color: var(--muted); margin-top: 3px; }
+  .camp-card-actions { display: flex; gap: 6px; margin-top: 8px; }
+  .camp-mini { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 4px; padding: 3px 9px; font-size: calc(10.5px * var(--app-scale, 1)); cursor: pointer; font-family: 'Cinzel', serif; letter-spacing: 0.02em; }
+  .camp-mini:hover { border-color: var(--gold-soft); color: var(--gold); }
+  .camp-mini.danger:hover { border-color: #c0392b; color: #e07a6a; }
+  .camp-badge { font-family: 'Cinzel', serif; font-size: calc(9px * var(--app-scale, 1)); letter-spacing: 0.05em; text-transform: uppercase; padding: 1px 7px; border-radius: 3px; border: 1px solid var(--border); color: var(--muted); }
+  .camp-type-main { color: #f0c674; border-color: #8a6d3b; }
+  .camp-type-personal { color: #b39ddb; border-color: #6a5a8a; }
+  .camp-type-rumour { color: #9fb0c0; border-color: #556; }
+  .camp-status-active { color: #9fe0a0; border-color: #4a7a4a; }
+  .camp-status-completed { color: #d4a574; border-color: #8a6d3b; }
+  .camp-status-failed { color: #e07a6a; border-color: #8a3b3b; }
+  .camp-status-hidden { color: var(--muted); }
+  .camp-vis-dm { color: #e0b0b0; border-color: #7a4a4a; }
+  .camp-status-border-active { border-left-color: #4a7a4a; }
+  .camp-status-border-completed { border-left-color: #8a6d3b; }
+  .camp-status-border-failed { border-left-color: #8a3b3b; }
+  .camp-status-border-hidden { border-left-color: var(--border); }
+  .camp-empty { color: var(--muted); font-style: italic; padding: 24px; text-align: center; }
+
   /* ---- DM Toolbox popup ---- */
   #toolbox-popup { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); width: 560px; max-width: 94vw; height: 70vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 8px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
   #toolbox-popup.active { display: flex; }
@@ -1699,6 +1739,7 @@
         <svg id="theme-icon-light" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" fill="none"/></svg>
       </button>
       <button id="recap-btn" title="Campaign Log / Recap">Recap</button>
+      <button id="campaign-btn" title="Campaign Journal: quests, NPCs, locations, factions, clues and notes">Campaign</button>
       <button id="cmdk-btn" title="Command palette — search rules, spells, items, monsters, and run quick actions (Ctrl/Cmd + K)">Search ⌘K</button>
       <button id="handbook-btn" title="Player's Handbook: full rules — how to play, ability scores, races, classes, backgrounds, equipment, feats, combat, spellcasting, and a rules glossary">Handbook</button>
       <button id="compendium-btn" title="Quick reference: conditions, actions, weapons, armor, and core rules">Compendium</button>
@@ -2733,6 +2774,17 @@
     <div class="cmdp-foot">
       <span><b>↑↓</b> navigate</span><span><b>Enter</b> open</span><span><b>Ctrl/Cmd K</b> toggle</span>
     </div>
+  </div>
+</div>
+
+<div id="campaign-popup">
+  <div class="char-popup-header">
+    <span class="ttl">Campaign Journal</span>
+    <button id="campaign-close">×</button>
+  </div>
+  <div class="char-popup-body cmp-body">
+    <div class="cmp-tabs" id="camp-tabs" style="flex-direction:row; flex-wrap:wrap; width:auto; flex:0 0 auto; border-right:none; border-bottom:1px solid var(--border);"></div>
+    <div class="cmp-content" id="camp-body"></div>
   </div>
 </div>
 
@@ -5408,6 +5460,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   function handleSessionChange(payload) {
     if (payload.eventType !== 'UPDATE' || !payload.new) return;
     STATE.session = payload.new;
+    try { if (typeof campaignOnRemoteUpdate === 'function') campaignOnRemoteUpdate(); } catch (e) {}
     if (Array.isArray(payload.new.custom_items)) {
       STATE.customItems = payload.new.custom_items;
       const cp = document.getElementById('catalog-popup');
@@ -16236,6 +16289,177 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     });
   })();
 
+  // ================= CAMPAIGN MEMORY (quests + journal) =================
+  // Shared, host-authoritative campaign wiki stored in vtt_sessions.campaign_data
+  // (jsonb) and synced to all clients through the existing session UPDATE handler.
+  // Players get a read-only view filtered by each entry's visibility.
+  const CAMP_CATS = [
+    { key: 'quests', label: 'Quests' },
+    { key: 'npc', label: 'NPCs' },
+    { key: 'location', label: 'Locations' },
+    { key: 'faction', label: 'Factions' },
+    { key: 'clue', label: 'Clues & Rumours' },
+    { key: 'note', label: 'Notes' },
+  ];
+  const QUEST_TYPES = ['main', 'side', 'personal', 'rumour'];
+  const QUEST_STATUS = ['active', 'completed', 'failed', 'hidden'];
+  let CAMP_TAB = 'quests';
+  let CAMP_EDIT = null;
+  function campData() { STATE.campaign = STATE.campaign || { quests: [], entries: [] }; return STATE.campaign; }
+  function campLoad() {
+    let d = null;
+    try { const raw = STATE.session && STATE.session.campaign_data; d = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) {}
+    STATE.campaign = (d && typeof d === 'object')
+      ? { quests: Array.isArray(d.quests) ? d.quests : [], entries: Array.isArray(d.entries) ? d.entries : [] }
+      : { quests: [], entries: [] };
+  }
+  async function campSave() {
+    if (!STATE.isHost) return;
+    const json = JSON.stringify(campData());
+    if (STATE.session) STATE.session.campaign_data = json;
+    const { error } = await sb.from('vtt_sessions').update({ campaign_data: json }).eq('id', STATE.sessionId);
+    if (error) { console.warn('campaign save failed', error); toast('Campaign not saved — check your connection.', 'error'); }
+  }
+  function campCanEdit() { return STATE.isHost; }
+  function campVisBadge(vis) { return vis === 'dm' ? '<span class="camp-badge camp-vis-dm">DM only</span>' : ''; }
+  function campVisibleToMe(item) { return campCanEdit() || (item.vis || 'all') === 'all'; }
+  function campRender() {
+    const tabsEl = document.getElementById('camp-tabs');
+    const body = document.getElementById('camp-body');
+    if (!tabsEl || !body) return;
+    tabsEl.innerHTML = CAMP_CATS.map(c => {
+      const count = c.key === 'quests'
+        ? campData().quests.filter(campVisibleToMe).length
+        : campData().entries.filter(e => e.category === c.key && campVisibleToMe(e)).length;
+      return `<button class="cmp-tab${c.key === CAMP_TAB ? ' active' : ''}" data-key="${c.key}">${c.label}<span class="cmp-tab-count">${count}</span></button>`;
+    }).join('');
+    tabsEl.querySelectorAll('.cmp-tab').forEach(b => b.addEventListener('click', () => { CAMP_TAB = b.dataset.key; CAMP_EDIT = null; campRender(); }));
+    let html = '';
+    if (campCanEdit()) html += campFormHtml();
+    html += (CAMP_TAB === 'quests') ? campQuestsHtml() : campEntriesHtml(CAMP_TAB);
+    body.innerHTML = html;
+    campWire(body);
+  }
+  function campFormHtml() {
+    const isQuest = CAMP_TAB === 'quests';
+    const editing = CAMP_EDIT ? (isQuest ? campData().quests.find(q => q.id === CAMP_EDIT) : campData().entries.find(e => e.id === CAMP_EDIT)) : null;
+    const v = editing || {};
+    let fields = `<input id="camp-f-title" class="camp-input" type="text" placeholder="Title" value="${escapeHtml(v.title || '')}">`;
+    if (isQuest) {
+      fields += `<div class="camp-form-row">
+        <select id="camp-f-type" class="camp-input">${QUEST_TYPES.map(t => `<option value="${t}"${v.type === t ? ' selected' : ''}>${t[0].toUpperCase() + t.slice(1)}</option>`).join('')}</select>
+        <select id="camp-f-status" class="camp-input">${QUEST_STATUS.map(s => `<option value="${s}"${v.status === s ? ' selected' : ''}>${s[0].toUpperCase() + s.slice(1)}</option>`).join('')}</select>
+      </div>
+      <input id="camp-f-objective" class="camp-input" type="text" placeholder="Current objective — what to do right now" value="${escapeHtml(v.objective || '')}">
+      <textarea id="camp-f-desc" class="camp-input" rows="2" placeholder="Description / background">${escapeHtml(v.desc || '')}</textarea>
+      <input id="camp-f-reward" class="camp-input" type="text" placeholder="Reward" value="${escapeHtml(v.reward || '')}">`;
+    } else {
+      fields += `<textarea id="camp-f-text" class="camp-input" rows="3" placeholder="Details">${escapeHtml(v.text || '')}</textarea>`;
+    }
+    fields += `<div class="camp-form-row">
+      <select id="camp-f-vis" class="camp-input"><option value="all"${(v.vis || 'all') === 'all' ? ' selected' : ''}>Visible to everyone</option><option value="dm"${v.vis === 'dm' ? ' selected' : ''}>DM only</option></select>
+      <button id="camp-f-save" class="camp-btn primary">${editing ? 'Save changes' : 'Add'}</button>
+      ${editing ? '<button id="camp-f-cancel" class="camp-btn">Cancel</button>' : ''}
+    </div>`;
+    return `<div class="camp-form">${fields}</div>`;
+  }
+  function campTypeBadge(t) { return `<span class="camp-badge camp-type-${t}">${t}</span>`; }
+  function campStatusBadge(s) { return `<span class="camp-badge camp-status-${s}">${s}</span>`; }
+  function campQuestsHtml() {
+    const quests = campData().quests.filter(campVisibleToMe);
+    if (!quests.length) return `<div class="camp-empty">No quests yet.${campCanEdit() ? ' Add one above.' : ''}</div>`;
+    const rank = { active: 0, completed: 1, failed: 2, hidden: 3 };
+    quests.sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9));
+    return quests.map(q => `
+      <div class="camp-card camp-status-border-${q.status}">
+        <div class="camp-card-head">
+          <span class="camp-card-title">${escapeHtml(q.title || 'Untitled')}</span>
+          ${campTypeBadge(q.type || 'side')}${campStatusBadge(q.status || 'active')}${campVisBadge(q.vis)}
+        </div>
+        ${q.objective ? `<div class="camp-card-obj"><b>Now:</b> ${escapeHtml(q.objective)}</div>` : ''}
+        ${q.desc ? `<div class="camp-card-text">${escapeHtml(q.desc)}</div>` : ''}
+        ${q.reward ? `<div class="camp-card-reward"><b>Reward:</b> ${escapeHtml(q.reward)}</div>` : ''}
+        ${campCanEdit() ? `<div class="camp-card-actions"><button class="camp-mini" data-edit="${q.id}">Edit</button><button class="camp-mini" data-cycle="${q.id}">Next status</button><button class="camp-mini danger" data-del="${q.id}">Delete</button></div>` : ''}
+      </div>`).join('');
+  }
+  function campEntriesHtml(cat) {
+    const entries = campData().entries.filter(e => e.category === cat && campVisibleToMe(e));
+    if (!entries.length) return `<div class="camp-empty">Nothing here yet.${campCanEdit() ? ' Add an entry above.' : ''}</div>`;
+    entries.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    return entries.map(e => `
+      <div class="camp-card">
+        <div class="camp-card-head"><span class="camp-card-title">${escapeHtml(e.title || 'Untitled')}</span>${campVisBadge(e.vis)}</div>
+        ${e.text ? `<div class="camp-card-text">${escapeHtml(e.text)}</div>` : ''}
+        ${campCanEdit() ? `<div class="camp-card-actions"><button class="camp-mini" data-edit="${e.id}">Edit</button><button class="camp-mini danger" data-del="${e.id}">Delete</button></div>` : ''}
+      </div>`).join('');
+  }
+  function campWire(body) {
+    const saveBtn = document.getElementById('camp-f-save');
+    if (saveBtn) saveBtn.addEventListener('click', campFormSubmit);
+    const cancel = document.getElementById('camp-f-cancel');
+    if (cancel) cancel.addEventListener('click', () => { CAMP_EDIT = null; campRender(); });
+    body.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => { CAMP_EDIT = b.dataset.edit; campRender(); const f = document.getElementById('camp-f-title'); if (f) f.focus(); }));
+    body.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => campDelete(b.dataset.del)));
+    body.querySelectorAll('[data-cycle]').forEach(b => b.addEventListener('click', () => campCycleStatus(b.dataset.cycle)));
+  }
+  function campFormSubmit() {
+    const g = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    const title = g('camp-f-title');
+    if (!title) { toast('Title required', 'error'); return; }
+    const vis = g('camp-f-vis') || 'all';
+    const d = campData();
+    if (CAMP_TAB === 'quests') {
+      const rec = { id: CAMP_EDIT || genId(), title, type: g('camp-f-type') || 'side', status: g('camp-f-status') || 'active', objective: g('camp-f-objective'), desc: g('camp-f-desc'), reward: g('camp-f-reward'), vis, updated: Date.now() };
+      const i = d.quests.findIndex(q => q.id === CAMP_EDIT);
+      if (i >= 0) d.quests[i] = rec; else d.quests.push(rec);
+    } else {
+      const rec = { id: CAMP_EDIT || genId(), category: CAMP_TAB, title, text: g('camp-f-text'), vis, updated: Date.now() };
+      const i = d.entries.findIndex(e => e.id === CAMP_EDIT);
+      if (i >= 0) d.entries[i] = rec; else d.entries.push(rec);
+    }
+    CAMP_EDIT = null;
+    campSave();
+    campRender();
+    toast('Saved to the campaign', 'success');
+  }
+  function campDelete(id) {
+    const d = campData();
+    d.quests = d.quests.filter(q => q.id !== id);
+    d.entries = d.entries.filter(e => e.id !== id);
+    if (CAMP_EDIT === id) CAMP_EDIT = null;
+    campSave();
+    campRender();
+  }
+  function campCycleStatus(id) {
+    const q = campData().quests.find(x => x.id === id);
+    if (!q) return;
+    q.status = QUEST_STATUS[(QUEST_STATUS.indexOf(q.status) + 1) % QUEST_STATUS.length];
+    q.updated = Date.now();
+    campSave();
+    campRender();
+  }
+  function openCampaign() {
+    const p = document.getElementById('campaign-popup');
+    if (!p) return;
+    campLoad();
+    p.classList.add('active');
+    campRender();
+  }
+  function closeCampaign() { const p = document.getElementById('campaign-popup'); if (p) p.classList.remove('active'); }
+  function campaignOnRemoteUpdate() {
+    const p = document.getElementById('campaign-popup');
+    if (p && p.classList.contains('active')) { campLoad(); campRender(); }
+  }
+  (function setupCampaign() {
+    const btn = document.getElementById('campaign-btn');
+    if (btn) btn.addEventListener('click', openCampaign);
+    const close = document.getElementById('campaign-close');
+    if (close) close.addEventListener('click', closeCampaign);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { const p = document.getElementById('campaign-popup'); if (p && p.classList.contains('active')) closeCampaign(); }
+    });
+  })();
+
   // ================= DM TOOLBOX (instant, offline improv generators) =================
   // Everything a DM usually Googles mid-session: names, NPCs, taverns, shops,
   // rumours, encounters, travel events, weather, loot, wild magic. All local
@@ -16370,6 +16594,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const add = (title, run) => A.push({ group: 'Actions', ic: '»', title, kind: 'action', run });
     add("Open Player's Handbook", () => openHandbook());
     add('Open Compendium', () => openCompendium());
+    add('Open Campaign Journal (quests & lore)', () => openCampaign());
     if (has('recap-btn')) add('Open Campaign Recap', () => click('recap-btn'));
     if (has('char-panel-show')) add('Open your Character sheet', () => click('char-panel-show'));
     if (has('catalog-open-btn')) add('Browse Item & Spell Catalog', () => click('catalog-open-btn'));
