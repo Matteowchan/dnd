@@ -4958,7 +4958,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         await sb.from('vtt_players').update({ dice_set: id || null }).eq('id', STATE.userId).eq('session_id', STATE.sessionId);
       } catch (err) { /* dice_set column might not exist on legacy DBs - ignore */ }
       document.getElementById('dice-set-popup').classList.remove('active');
-      toast(id ? `Dice set: ${getDiceSetById(id).name}` : 'Dice set: Default');
+      toast(t('Dice set:') + ' ' + (id ? getDiceSetById(id).name : t('Default')));
     });
     document.getElementById('dice-set-btn').addEventListener('click', () => {
       document.getElementById('dice-set-popup').classList.add('active');
@@ -4970,9 +4970,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   function updateDiceSetLabel(id) {
     const label = document.getElementById('dice-set-current-label');
     if (!label) return;
-    if (!id) { label.textContent = 'Default'; return; }
+    if (!id) { label.textContent = t('Default'); return; }
     const s = getDiceSetById(id);
-    label.textContent = s ? s.name : 'Default';
+    label.textContent = s ? s.name : t('Default');
   }
 
   // ============ THEME TOGGLE ============
@@ -20203,6 +20203,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Midnight sky scattered with starlight": "Mitternachtshimmel, übersät mit Sternenlicht",
   "Smoldering orange and ash": "Schwelendes Orange und Asche",
   "Ocean swirls of teal and white": "Ozeanwirbel in Türkis und Weiß",
+  "Default": "Standard",
+  "Dice set:": "Würfelset:",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
