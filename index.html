@@ -5786,10 +5786,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const nameEl = document.getElementById('active-map-name');
     if (nameEl) {
       const m = STATE.map;
-      const viewing = (m && m.image_url) ? `Map ${STATE.activeMapSlot}` : 'none';
+      const viewing = (m && m.image_url) ? `${t('Map')} ${STATE.activeMapSlot}` : t('none');
       nameEl.textContent = STATE.isHost
-        ? `You see: ${viewing}  |  Players see: Map ${STATE.publishedSlot || 1}`
-        : (m && m.image_url ? `Map ${STATE.activeMapSlot}` : 'No map active');
+        ? `${t('You see:')} ${viewing}  |  ${t('Players see:')} ${t('Map')} ${STATE.publishedSlot || 1}`
+        : (m && m.image_url ? `${t('Map')} ${STATE.activeMapSlot}` : t('No map active'));
     }
     renderQuickSlots();
     renderMapsLibrary();
@@ -20378,6 +20378,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "You can only erase your own drawings": "Du kannst nur deine eigenen Zeichnungen löschen",
   "You can only erase your own spell effects": "Du kannst nur deine eigenen Zaubereffekte löschen",
   "You cannot remove yourself": "Du kannst dich nicht selbst entfernen",
+  "Map": "Karte",
+  "You see:": "Du siehst:",
+  "Players see:": "Spieler sehen:",
+  "DSA Check": "DSA-Probe",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
