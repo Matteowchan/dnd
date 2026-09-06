@@ -590,6 +590,39 @@
   .hb-chapter-head-search { font-family: 'Cinzel', serif; color: var(--gold); font-size: calc(12px * var(--app-scale, 1)); letter-spacing: 0.08em; text-transform: uppercase; margin: 14px 0 8px; opacity: 0.85; }
   .hb-chapter-head-search:first-child { margin-top: 0; }
 
+  /* ---- Command Palette (Ctrl/Cmd+K): in-app search + quick actions ---- */
+  #cmd-palette { position: fixed; inset: 0; z-index: 2000; display: none; align-items: flex-start; justify-content: center; background: rgba(6,7,12,0.55); backdrop-filter: blur(2px); }
+  #cmd-palette.active { display: flex; }
+  .cmdp-box { margin-top: 9vh; width: 640px; max-width: 94vw; max-height: 78vh; background: linear-gradient(180deg, var(--panel-light), var(--panel)); border: 1px solid var(--gold); border-radius: 10px; box-shadow: 0 24px 70px rgba(0,0,0,0.75); display: flex; flex-direction: column; overflow: hidden; }
+  .cmdp-search-row { display: flex; align-items: center; gap: 9px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+  .cmdp-kbd { font-family: 'Cinzel', serif; font-size: calc(10px * var(--app-scale, 1)); color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
+  #cmdp-input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--cream); padding: 10px 12px; border-radius: 6px; font-family: 'Crimson Pro', serif; font-size: calc(15px * var(--app-scale, 1)); outline: none; }
+  #cmdp-input:focus { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(212,165,116,0.18); }
+  .cmdp-results { overflow-y: auto; padding: 6px; }
+  .cmdp-group { font-family: 'Cinzel', serif; color: var(--gold); font-size: calc(10px * var(--app-scale, 1)); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; margin: 10px 8px 4px; }
+  .cmdp-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
+  .cmdp-item.sel, .cmdp-item:hover { background: rgba(212,165,116,0.12); border-color: var(--gold-soft); }
+  .cmdp-item-ic { flex: 0 0 auto; width: 22px; text-align: center; color: var(--gold-soft); font-size: calc(14px * var(--app-scale, 1)); }
+  .cmdp-item-body { flex: 1; min-width: 0; }
+  .cmdp-item-title { font-family: 'Crimson Pro', serif; font-size: calc(14px * var(--app-scale, 1)); color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cmdp-item-title b { color: var(--gold); font-weight: 600; }
+  .cmdp-item-sub { font-size: calc(11px * var(--app-scale, 1)); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cmdp-item-tag { flex: 0 0 auto; font-family: 'Cinzel', serif; font-size: calc(9px * var(--app-scale, 1)); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--border); border-radius: 3px; padding: 1px 6px; }
+  .cmdp-empty { color: var(--muted); font-style: italic; padding: 22px; text-align: center; }
+  .cmdp-foot { border-top: 1px solid var(--border); padding: 7px 14px; display: flex; gap: 16px; font-size: calc(10px * var(--app-scale, 1)); color: var(--muted); }
+  .cmdp-foot b { color: var(--gold-soft); font-weight: 600; }
+  .cmdp-detail { padding: 14px 18px; overflow-y: auto; }
+  .cmdp-detail-back { background: transparent; border: 1px solid var(--border); color: var(--gold-soft); border-radius: 5px; padding: 4px 10px; cursor: pointer; font-family: 'Cinzel', serif; font-size: calc(11px * var(--app-scale, 1)); margin-bottom: 12px; }
+  .cmdp-detail-back:hover { border-color: var(--gold-soft); background: rgba(212,165,116,0.1); }
+  .cmdp-detail h3 { font-family: 'Cinzel', serif; color: var(--gold); font-size: calc(18px * var(--app-scale, 1)); margin: 0 0 3px; }
+  .cmdp-detail .cmdp-detail-meta { font-size: calc(11.5px * var(--app-scale, 1)); color: var(--muted); font-style: italic; margin-bottom: 10px; }
+  .cmdp-detail .cmdp-detail-text { font-family: 'Crimson Pro', serif; font-size: calc(14.5px * var(--app-scale, 1)); line-height: 1.6; color: var(--cream); }
+  .cmdp-detail .cmdp-detail-text b { color: var(--gold-soft); }
+  .cmdp-statgrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 10px 0; }
+  .cmdp-statgrid .st { text-align: center; border: 1px solid var(--border); border-radius: 5px; padding: 5px 2px; }
+  .cmdp-statgrid .st b { display: block; font-family: 'Cinzel', serif; color: var(--gold-soft); font-size: calc(10px * var(--app-scale, 1)); }
+  .cmdp-statgrid .st span { font-size: calc(13px * var(--app-scale, 1)); color: var(--cream); }
+
   /* Violation warning popup */
   #dm-rules-warning { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 440px; max-width: 92vw; background: linear-gradient(180deg, rgba(60,20,20,0.98), rgba(40,10,10,0.98)); border: 2px solid var(--danger); border-radius: 8px; box-shadow: 0 0 60px rgba(160,72,72,0.5), 0 20px 60px rgba(0,0,0,0.8); z-index: 2000; display: none; flex-direction: column; align-items: center; padding: 24px; text-align: center; gap: 12px; animation: dmw-pulse 1.2s ease-in-out infinite; }
   #dm-rules-warning.active { display: flex; }
@@ -1650,6 +1683,7 @@
         <svg id="theme-icon-light" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" fill="none"/></svg>
       </button>
       <button id="recap-btn" title="Campaign Log / Recap">Recap</button>
+      <button id="cmdk-btn" title="Command palette — search rules, spells, items, monsters, and run quick actions (Ctrl/Cmd + K)">Search ⌘K</button>
       <button id="handbook-btn" title="Player's Handbook: full rules — how to play, ability scores, races, classes, backgrounds, equipment, feats, combat, spellcasting, and a rules glossary">Handbook</button>
       <button id="compendium-btn" title="Quick reference: conditions, actions, weapons, armor, and core rules">Compendium</button>
       <button id="dm-rules-btn" title="Special DM rules - will alert when violated">DM Rules</button>
@@ -2668,6 +2702,19 @@
     <div class="cmp-layout">
       <div class="cmp-tabs" id="hb-tabs"></div>
       <div class="cmp-content" id="hb-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="cmd-palette">
+  <div class="cmdp-box">
+    <div class="cmdp-search-row">
+      <input id="cmdp-input" type="text" placeholder="Search rules, spells, items, monsters — or type a command..." autocomplete="off" spellcheck="false">
+      <span class="cmdp-kbd">Esc</span>
+    </div>
+    <div id="cmdp-results" class="cmdp-results"></div>
+    <div class="cmdp-foot">
+      <span><b>↑↓</b> navigate</span><span><b>Enter</b> open</span><span><b>Ctrl/Cmd K</b> toggle</span>
     </div>
   </div>
 </div>
@@ -16153,6 +16200,149 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         if (p && p.classList.contains('active')) closeHandbook();
       }
     });
+  })();
+
+  // ================= COMMAND PALETTE (Ctrl/Cmd+K) =================
+  // In-app search across rules, spells, items, monsters and conditions, plus
+  // quick session actions — so a player or DM rarely needs to leave the table.
+  let CMDP_INDEX = null, CMDP_FLAT = [], CMDP_SEL = 0;
+  function cmdpBuildIndex() {
+    if (CMDP_INDEX) return CMDP_INDEX;
+    const idx = [];
+    try { HANDBOOK.forEach(ch => (ch.sections || []).forEach(s => idx.push({ group: 'Handbook', ic: '❦', title: s.h, sub: ch.title, kind: 'handbook', text: String(s.body || '').replace(/<[^>]+>/g, ' ') }))); } catch (e) {}
+    try { COMPENDIUM.forEach(c => (c.entries || []).forEach(e => idx.push({ group: 'Reference', ic: '§', title: e.n, sub: c.title, kind: 'compendium', tab: c.key, text: e.t, meta: e.m }))); } catch (e) {}
+    try {
+      const spells = [].concat(typeof SRD_SPELLS !== 'undefined' ? SRD_SPELLS : [], typeof NONSRD_SPELLS !== 'undefined' ? NONSRD_SPELLS : []);
+      spells.forEach(sp => idx.push({ group: 'Spells', ic: '✦', title: sp.n, sub: (sp.l === 0 ? 'Cantrip' : 'Level ' + sp.l) + (sp.e ? ' · ' + sp.e : ''), kind: 'spell', data: sp }));
+    } catch (e) {}
+    try { MAGIC_ITEMS.forEach(m => idx.push({ group: 'Items', ic: '⚔', title: m.n, sub: (m.r || '') + (m.t ? ' · ' + m.t : ''), kind: 'item', data: m })); } catch (e) {}
+    try { MONSTER_PRESETS.forEach(mo => idx.push({ group: 'Monsters', ic: '☠', title: mo.name, sub: 'CR ' + mo.cr + ' · AC ' + mo.ac + ' · ' + mo.hp + ' HP', kind: 'monster', data: mo })); } catch (e) {}
+    try { Object.keys(D5E_CONDITIONS).forEach(k => { const c = D5E_CONDITIONS[k]; idx.push({ group: 'Conditions', ic: '✷', title: c.name, sub: 'Condition', kind: 'condition', text: c.desc }); }); } catch (e) {}
+    CMDP_INDEX = idx;
+    return idx;
+  }
+  function cmdpActions() {
+    const A = [];
+    const has = id => !!document.getElementById(id);
+    const click = id => { const el = document.getElementById(id); if (el) el.click(); };
+    const add = (title, run) => A.push({ group: 'Actions', ic: '»', title, kind: 'action', run });
+    add("Open Player's Handbook", () => openHandbook());
+    add('Open Compendium', () => openCompendium());
+    if (has('recap-btn')) add('Open Campaign Recap', () => click('recap-btn'));
+    if (has('char-panel-show')) add('Open your Character sheet', () => click('char-panel-show'));
+    if (has('catalog-open-btn')) add('Browse Item & Spell Catalog', () => click('catalog-open-btn'));
+    if (has('short-rest-btn')) add('Take a Short Rest', () => click('short-rest-btn'));
+    if (has('long-rest-btn')) add('Take a Long Rest', () => click('long-rest-btn'));
+    if (has('switch-role-btn')) add('Switch Role (DM / Player)', () => click('switch-role-btn'));
+    if (STATE.isHost) {
+      if (has('init-roll-all')) add('Roll Initiative for all (start combat)', () => click('init-roll-all'));
+      if (has('reveal-map-btn')) add('Reveal Map to Players', () => click('reveal-map-btn'));
+      if (has('fog-toggle')) add('Toggle Fog of War', () => click('fog-toggle'));
+      if (has('clear-tokens-btn')) add('Clear the Map', () => click('clear-tokens-btn'));
+      if (has('map-library-btn')) add('Open Map Library', () => click('map-library-btn'));
+      if (has('dm-rules-btn')) add('Open DM Rules', () => click('dm-rules-btn'));
+    }
+    [20, 12, 10, 8, 6, 4, 100].forEach(s => A.push({ group: 'Dice', ic: '⚁', title: 'Roll d' + s, kind: 'action', run: () => { try { rollDice(s, 1, 0); } catch (e) {} } }));
+    return A;
+  }
+  function cmdpOpen() {
+    const p = document.getElementById('cmd-palette');
+    if (!p) return;
+    p.classList.add('active');
+    const inp = document.getElementById('cmdp-input');
+    inp.value = '';
+    cmdpRender('');
+    setTimeout(() => inp.focus(), 30);
+  }
+  function cmdpClose() { const p = document.getElementById('cmd-palette'); if (p) p.classList.remove('active'); }
+  function cmdpRun(item) {
+    if (!item) return;
+    if (item.kind === 'action') { cmdpClose(); try { item.run(); } catch (e) { console.error('command failed', e); } return; }
+    if (item.kind === 'handbook') { cmdpClose(); openHandbook(); const s = document.getElementById('hb-search'); if (s) { s.value = item.title; hbRender(); } return; }
+    if (item.kind === 'compendium') { cmdpClose(); openCompendium(); const s = document.getElementById('cmp-search'); if (s) { s.value = item.title; cmpRender(); } return; }
+    cmdpDetail(item); // spell / item / monster / condition -> inline detail
+  }
+  function cmdpDetail(item) {
+    const box = document.getElementById('cmdp-results');
+    let html = '<button class="cmdp-detail-back">← Back to results</button>';
+    if (item.kind === 'spell') {
+      const s = item.data;
+      const metaBits = [s.l === 0 ? 'Cantrip' : 'Level ' + s.l, s.e, s.c ? 'Classes: ' + s.c : ''].filter(Boolean).join(' · ');
+      const line = [s.ct ? '<b>Casting:</b> ' + s.ct : '', s.r ? '<b>Range:</b> ' + s.r : '', s.dur ? '<b>Duration:</b> ' + s.dur : ''].filter(Boolean).join(' &nbsp;·&nbsp; ');
+      html += '<h3>' + escapeHtml(s.n) + '</h3><div class="cmdp-detail-meta">' + escapeHtml(metaBits) + '</div><div class="cmdp-detail-text">' + (line ? '<p>' + line + '</p>' : '') + '<p>' + escapeHtml(s.d || '') + '</p></div>';
+    } else if (item.kind === 'item') {
+      const m = item.data;
+      html += '<h3>' + escapeHtml(m.n) + '</h3><div class="cmdp-detail-meta">' + escapeHtml((m.r || '') + (m.t ? ' · ' + m.t : '') + (m.att ? ' · requires attunement' : '')) + '</div><div class="cmdp-detail-text"><p>' + escapeHtml(m.d || '') + '</p></div>';
+    } else if (item.kind === 'monster') {
+      const mo = item.data;
+      const st = ['str', 'dex', 'con', 'int', 'wis', 'cha'].map(k => '<div class="st"><b>' + k.toUpperCase() + '</b><span>' + mo[k] + '</span></div>').join('');
+      const atks = (mo.attacks || []).map(a => '<p><b>' + escapeHtml(a.name) + '</b> ' + escapeHtml(a.bonus) + ' to hit, ' + escapeHtml(a.dmg) + '</p>').join('');
+      html += '<h3>' + escapeHtml(mo.name) + '</h3><div class="cmdp-detail-meta">CR ' + escapeHtml(mo.cr) + ' · AC ' + mo.ac + ' · ' + mo.hp + ' HP · Speed ' + mo.speed + ' ft · Init ' + (mo.init >= 0 ? '+' : '') + mo.init + '</div><div class="cmdp-statgrid">' + st + '</div><div class="cmdp-detail-text">' + atks + '</div>';
+    } else if (item.kind === 'condition') {
+      html += '<h3>' + escapeHtml(item.title) + '</h3><div class="cmdp-detail-meta">Condition</div><div class="cmdp-detail-text"><p>' + escapeHtml(item.text || '') + '</p></div>';
+    }
+    box.className = 'cmdp-detail';
+    box.innerHTML = html;
+    box.querySelector('.cmdp-detail-back').addEventListener('click', () => { box.className = 'cmdp-results'; cmdpRender(document.getElementById('cmdp-input').value || ''); });
+  }
+  function cmdpRender(q) {
+    const box = document.getElementById('cmdp-results');
+    if (!box) return;
+    box.className = 'cmdp-results';
+    q = (q || '').trim().toLowerCase();
+    const items = q ? cmdpActions().concat(cmdpBuildIndex()) : cmdpActions();
+    const matched = q ? items.filter(it => (it.title + ' ' + (it.sub || '') + ' ' + (it.text || '')).toLowerCase().includes(q)) : items;
+    const ORDER = ['Actions', 'Dice', 'Handbook', 'Reference', 'Spells', 'Items', 'Monsters', 'Conditions'];
+    const LIMIT = { Handbook: 6, Reference: 6, Spells: 8, Items: 8, Monsters: 6, Conditions: 6 };
+    CMDP_FLAT = []; CMDP_SEL = 0;
+    let html = '';
+    ORDER.forEach(g => {
+      let group = matched.filter(it => it.group === g);
+      if (!group.length) return;
+      if (LIMIT[g]) group = group.slice(0, LIMIT[g]);
+      html += '<div class="cmdp-group">' + g + '</div>';
+      group.forEach(it => {
+        const i = CMDP_FLAT.length; CMDP_FLAT.push(it);
+        html += '<div class="cmdp-item" data-i="' + i + '"><div class="cmdp-item-ic">' + it.ic + '</div><div class="cmdp-item-body"><div class="cmdp-item-title">' + escapeHtml(it.title) + '</div>' + (it.sub ? '<div class="cmdp-item-sub">' + escapeHtml(it.sub) + '</div>' : '') + '</div>' + (it.kind !== 'action' ? '<div class="cmdp-item-tag">' + it.kind + '</div>' : '') + '</div>';
+      });
+    });
+    box.innerHTML = html || '<div class="cmdp-empty">No matches. Try another word.</div>';
+    box.querySelectorAll('.cmdp-item').forEach(el => {
+      el.addEventListener('click', () => cmdpRun(CMDP_FLAT[parseInt(el.dataset.i)]));
+      el.addEventListener('mousemove', () => cmdpSelect(parseInt(el.dataset.i)));
+    });
+    cmdpSelect(0);
+  }
+  function cmdpSelect(i) {
+    if (!CMDP_FLAT.length) return;
+    CMDP_SEL = Math.max(0, Math.min(CMDP_FLAT.length - 1, i));
+    const box = document.getElementById('cmdp-results');
+    box.querySelectorAll('.cmdp-item').forEach(el => el.classList.toggle('sel', parseInt(el.dataset.i) === CMDP_SEL));
+    const sel = box.querySelector('.cmdp-item.sel');
+    if (sel) sel.scrollIntoView({ block: 'nearest' });
+  }
+  (function setupCommandPalette() {
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        const p = document.getElementById('cmd-palette');
+        if (p && p.classList.contains('active')) cmdpClose(); else cmdpOpen();
+      }
+    });
+    const kbtn = document.getElementById('cmdk-btn');
+    if (kbtn) kbtn.addEventListener('click', cmdpOpen);
+    const p = document.getElementById('cmd-palette');
+    const inp = document.getElementById('cmdp-input');
+    if (p) p.addEventListener('mousedown', (e) => { if (e.target === p) cmdpClose(); });
+    if (inp) {
+      inp.addEventListener('input', () => cmdpRender(inp.value));
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { e.preventDefault(); cmdpClose(); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); cmdpSelect(CMDP_SEL + 1); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); cmdpSelect(CMDP_SEL - 1); }
+        else if (e.key === 'Enter') { e.preventDefault(); cmdpRun(CMDP_FLAT[CMDP_SEL]); }
+      });
+    }
   })();
 
   // Flush any debounced character-sheet / profile save so the last edit isn't
