@@ -673,6 +673,20 @@
   .enc-chip button { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: calc(13px * var(--app-scale, 1)); line-height: 1; padding: 0; }
   .enc-chip button:hover { color: #e07a6a; }
 
+  /* ---- Quest seal (completed / failed stamp) ---- */
+  #quest-seal { position: fixed; inset: 0; z-index: 2060; display: none; align-items: center; justify-content: center; pointer-events: none; }
+  #quest-seal.active { display: flex; animation: qseal-fade 3.6s ease forwards; }
+  @keyframes qseal-fade { 0% { opacity: 0; } 8% { opacity: 1; } 84% { opacity: 1; } 100% { opacity: 0; } }
+  .qseal-wrap { text-align: center; }
+  .qseal-stamp { width: calc(120px * var(--app-scale, 1)); height: calc(120px * var(--app-scale, 1)); margin: 0 auto; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 38% 34%, #d9534f, #9b2f2b 62%, #6e1f1c 100%);
+    border: 3px solid rgba(255,225,180,0.55); box-shadow: 0 12px 40px rgba(0,0,0,0.7), inset 0 0 24px rgba(0,0,0,0.45); }
+  .qseal-stamp span { font-size: calc(52px * var(--app-scale, 1)); color: rgba(255,235,205,0.92); text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+  #quest-seal.active .qseal-stamp { animation: qseal-stamp 3.6s cubic-bezier(0.2,0.8,0.25,1) forwards; }
+  @keyframes qseal-stamp { 0% { transform: scale(1.9) rotate(-14deg); opacity: 0; } 12% { transform: scale(1) rotate(-6deg); opacity: 1; } 100% { transform: scale(1) rotate(-6deg); } }
+  .qseal-label { font-family: 'Cinzel', serif; font-size: calc(24px * var(--app-scale, 1)); letter-spacing: 0.08em; color: var(--gold); margin-top: 14px; text-shadow: 0 2px 20px rgba(0,0,0,0.8); }
+  .qseal-title { font-family: 'Crimson Pro', serif; font-style: italic; font-size: calc(17px * var(--app-scale, 1)); color: var(--cream); margin-top: 4px; text-shadow: 0 2px 12px rgba(0,0,0,0.8); }
+
   /* ---- Cinematic scene title ---- */
   #scene-title { position: fixed; inset: 0; z-index: 2050; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at center, rgba(6,7,12,0.42) 0%, rgba(6,7,12,0.82) 100%); }
   #scene-title.active { animation: scene-title-seq 5s ease forwards; }
@@ -2809,6 +2823,14 @@
     <div class="cmdp-foot">
       <span><b>↑↓</b> navigate</span><span><b>Enter</b> open</span><span><b>Ctrl/Cmd K</b> toggle</span>
     </div>
+  </div>
+</div>
+
+<div id="quest-seal">
+  <div class="qseal-wrap">
+    <div class="qseal-stamp"><span>✦</span></div>
+    <div class="qseal-label" id="quest-seal-label">Quest Complete</div>
+    <div class="qseal-title" id="quest-seal-title"></div>
   </div>
 </div>
 
@@ -5449,6 +5471,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       .on('broadcast', { event: 'init-roll' }, ({ payload }) => { if (STATE.isHost) hostApplyInitRoll(payload); })
       .on('broadcast', { event: 'handout-reveal' }, ({ payload }) => handleHandoutReveal(payload))
       .on('broadcast', { event: 'scene-title' }, ({ payload }) => handleSceneTitle(payload))
+      .on('broadcast', { event: 'quest-event' }, ({ payload }) => handleQuestEvent(payload))
       .on('presence', { event: 'sync' }, handlePresenceSync)
       .subscribe(async (status) => {
         const ind = document.getElementById('conn-indicator');
@@ -16610,6 +16633,21 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     try { if (STATE.channel) STATE.channel.send({ type: 'broadcast', event: 'scene-title', payload: { name: s.name, subtitle: s.subtitle } }); } catch (e) {}
     toast('Scene shown to the table', 'success');
   }
+  let QUEST_SEAL_TIMER = null;
+  function showQuestSeal(title, label) {
+    const el = document.getElementById('quest-seal');
+    if (!el) return;
+    document.getElementById('quest-seal-label').textContent = label || 'Quest Complete';
+    document.getElementById('quest-seal-title').textContent = title || '';
+    el.classList.remove('active'); void el.offsetWidth; el.classList.add('active');
+    if (QUEST_SEAL_TIMER) clearTimeout(QUEST_SEAL_TIMER);
+    QUEST_SEAL_TIMER = setTimeout(() => el.classList.remove('active'), 3600);
+  }
+  function questEvent(title, label) {
+    showQuestSeal(title, label);
+    try { if (STATE.channel) STATE.channel.send({ type: 'broadcast', event: 'quest-event', payload: { title, label } }); } catch (e) {}
+  }
+  function handleQuestEvent(payload) { if (payload && payload.title) showQuestSeal(payload.title, payload.label); }
   let SCENE_TITLE_TIMER = null;
   function showSceneTitle(name, subtitle) {
     const el = document.getElementById('scene-title');
@@ -16727,7 +16765,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (CAMP_TAB === 'quests') {
       const rec = { id: CAMP_EDIT || genId(), title, type: g('camp-f-type') || 'side', status: g('camp-f-status') || 'active', objective: g('camp-f-objective'), desc: g('camp-f-desc'), reward: g('camp-f-reward'), vis, updated: Date.now() };
       const i = d.quests.findIndex(q => q.id === CAMP_EDIT);
+      const prevStatus = i >= 0 ? d.quests[i].status : null;
       if (i >= 0) d.quests[i] = rec; else d.quests.push(rec);
+      if (vis === 'all' && rec.status === 'completed' && prevStatus !== 'completed') { setTimeout(() => questEvent(rec.title, 'Quest Complete'), 60); }
     } else {
       const rec = { id: CAMP_EDIT || genId(), category: CAMP_TAB, title, text: g('camp-f-text'), vis, updated: Date.now() };
       const i = d.entries.findIndex(e => e.id === CAMP_EDIT);
@@ -16749,10 +16789,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   function campCycleStatus(id) {
     const q = campData().quests.find(x => x.id === id);
     if (!q) return;
+    const prev = q.status;
     q.status = QUEST_STATUS[(QUEST_STATUS.indexOf(q.status) + 1) % QUEST_STATUS.length];
     q.updated = Date.now();
     campSave();
     campRender();
+    if ((q.vis || 'all') === 'all' && prev !== q.status) {
+      if (q.status === 'completed') questEvent(q.title, 'Quest Complete');
+      else if (q.status === 'failed') questEvent(q.title, 'Quest Failed');
+    }
   }
   function openCampaign() {
     const p = document.getElementById('campaign-popup');
