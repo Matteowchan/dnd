@@ -219,6 +219,10 @@
   /* Handbook is the flagship rules reference — mark it as the primary of the pair. */
   #topbar #handbook-btn { border-color: var(--gold-soft); color: var(--gold); background: rgba(212,165,116,0.08); }
   #topbar #handbook-btn:hover { border-color: var(--gold); background: rgba(212,165,116,0.16); }
+  /* Grouped top-bar actions with subtle dividers for a cleaner hierarchy */
+  .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; justify-content: flex-end; min-width: 0; }
+  .topbar-right .tb-group { display: inline-flex; align-items: center; gap: 6px; }
+  .topbar-right .tb-group + .tb-group { border-left: 1px solid var(--border); padding-left: 10px; }
 
   #main { flex: 1; display: flex; overflow: hidden; transition: padding-right 0.18s ease; }
 
@@ -1808,29 +1812,41 @@
       <span style="font-size: calc(13px * var(--app-scale, 1)); color: var(--muted)">|</span>
       <span style="font-size: calc(13px * var(--app-scale, 1));" id="username-display"></span>
     </div>
-    <div style="display: flex; align-items: center; gap: 12px;">
+    <div class="topbar-right">
       <span id="conn-indicator">Connecting</span>
-      <div class="font-size-group" title="Adjust UI font size">
-        <button class="font-size-btn" data-fs="1">A</button>
-        <button class="font-size-btn" data-fs="1.18">A+</button>
-        <button class="font-size-btn" data-fs="1.38">A++</button>
-      </div>
-      <button id="theme-toggle" class="theme-toggle" title="Toggle light / dark theme">
-        <svg id="theme-icon-dark" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        <svg id="theme-icon-light" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-      </button>
-      <button id="recap-btn" title="Campaign Log / Recap">Recap</button>
-      <button id="campaign-btn" title="Campaign Journal: quests, NPCs, locations, factions, clues and notes">Campaign</button>
-      <button id="cmdk-btn" title="Command palette — search rules, spells, items, monsters, and run quick actions (Ctrl/Cmd + K)">Search ⌘K</button>
-      <button id="handbook-btn" title="Player's Handbook: full rules — how to play, ability scores, races, classes, backgrounds, equipment, feats, combat, spellcasting, and a rules glossary">Handbook</button>
-      <button id="compendium-btn" title="Quick reference: conditions, actions, weapons, armor, and core rules">Compendium</button>
-      <button id="dm-rules-btn" title="Special DM rules - will alert when violated">DM Rules</button>
-      <button id="dm-tools-btn" title="DM Toolbox: instant NPCs, taverns, shops, rumours, encounters, travel, weather, loot, wild magic">DM Tools</button>
-      <button id="short-rest-btn" title="Short Rest (1 hour): spend Hit Dice to heal; some class features recharge. No spell slots restored (except Warlock).">Short Rest</button>
-      <button id="long-rest-btn" title="Long Rest (8 hours): full HP, full spell slots, half Hit Dice restored, exhaustion reduced by 1.">Long Rest</button>
-      <button id="switch-role-btn" style="display:none;" title="Demo mode only">Switch Role</button>
-      <button id="leave-btn" class="danger">Leave</button>
-      <button id="logout-btn" title="Sign out of your account">Sign out</button>
+      <span class="tb-group">
+        <div class="font-size-group" title="Adjust UI font size">
+          <button class="font-size-btn" data-fs="1">A</button>
+          <button class="font-size-btn" data-fs="1.18">A+</button>
+          <button class="font-size-btn" data-fs="1.38">A++</button>
+        </div>
+        <button id="theme-toggle" class="theme-toggle" title="Toggle light / dark theme">
+          <svg id="theme-icon-dark" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg id="theme-icon-light" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+        </button>
+      </span>
+      <span class="tb-group">
+        <button id="cmdk-btn" title="Command palette — search rules, spells, items, monsters, and run quick actions (Ctrl/Cmd + K)">Search ⌘K</button>
+        <button id="handbook-btn" title="Player's Handbook: full rules — how to play, ability scores, races, classes, backgrounds, equipment, feats, combat, spellcasting, and a rules glossary">Handbook</button>
+        <button id="compendium-btn" title="Quick reference: conditions, actions, weapons, armor, and core rules">Compendium</button>
+      </span>
+      <span class="tb-group">
+        <button id="recap-btn" title="Campaign Log / Recap">Recap</button>
+        <button id="campaign-btn" title="Campaign Journal: quests, NPCs, locations, factions, clues and notes">Campaign</button>
+      </span>
+      <span class="tb-group" id="tb-dm-group">
+        <button id="dm-rules-btn" title="Special DM rules - will alert when violated">DM Rules</button>
+        <button id="dm-tools-btn" title="DM Toolbox: instant NPCs, taverns, shops, rumours, encounters, travel, weather, loot, wild magic">DM Tools</button>
+      </span>
+      <span class="tb-group" id="tb-rest-group">
+        <button id="short-rest-btn" title="Short Rest (1 hour): spend Hit Dice to heal; some class features recharge. No spell slots restored (except Warlock).">Short Rest</button>
+        <button id="long-rest-btn" title="Long Rest (8 hours): full HP, full spell slots, half Hit Dice restored, exhaustion reduced by 1.">Long Rest</button>
+      </span>
+      <span class="tb-group">
+        <button id="switch-role-btn" style="display:none;" title="Demo mode only">Switch Role</button>
+        <button id="leave-btn" class="danger">Leave</button>
+        <button id="logout-btn" title="Sign out of your account">Sign out</button>
+      </span>
     </div>
   </div>
 
@@ -4633,6 +4649,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (clearBtn) clearBtn.style.display = 'none';
       if (dmRulesBtn) dmRulesBtn.style.display = 'none';
       if (dmToolsBtn) dmToolsBtn.style.display = 'none';
+      const dmGroup = document.getElementById('tb-dm-group');
+      if (dmGroup) dmGroup.style.display = 'none';
+      const restGroup = document.getElementById('tb-rest-group');
+      if (restGroup) restGroup.style.display = 'none';
       // Rest is DM-controlled: players resolve a rest only when the DM grants one
       const srBtn = document.getElementById('short-rest-btn');
       const lrBtn = document.getElementById('long-rest-btn');
