@@ -17791,6 +17791,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     let h = `<div class="dsa-row">
       <input class="dsa-input" data-f="name" value="${escapeHtml(c.name)}" placeholder="Character name" ${ro}>
       <label class="dsa-ap-l">AP<input class="dsa-mini" type="number" data-f="ap" value="${c.ap | 0}" ${ro}></label>
+      ${edit ? '<button id="dsa-token-btn" class="dsa-btn" title="Create or update your token on the map with your current Life Points">My token</button>' : ''}
     </div>
     <div class="dsa-row">
       <select class="dsa-input" data-f="species" ${dis}>${dsaOpts(DSA_SPECIES.map(s => s.n), c.species, 'Species')}</select>
@@ -17823,6 +17824,28 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     p.classList.add('active');
   }
   function closeDsaSheet() { const p = document.getElementById('dsa-char-popup'); if (p) p.classList.remove('active'); }
+  async function dsaSyncToken() {
+    const c = DSA_SHEET.data; if (!c) return;
+    const pid = DSA_SHEET.playerId;
+    const maxLp = (c.lp && c.lp.max) || dsaDerived(c).lpMax;
+    const curLp = (c.lp && c.lp.cur != null) ? c.lp.cur : maxLp;
+    let tok = Array.from(STATE.tokens.values()).find(t => t.owner_id === pid);
+    if (tok) {
+      tok.name = c.name || tok.name; tok.current_hp = Math.min(curLp, maxLp); tok.max_hp = maxLp;
+      STATE.tokens.set(tok.id, tok);
+      const { error } = await sb.from('vtt_tokens').update({ name: tok.name, current_hp: tok.current_hp, max_hp: tok.max_hp, updated_at: new Date().toISOString() }).eq('id', tok.id);
+      if (error) { toast('Token not synced — check your connection.', 'error'); return; }
+      renderTokens(); renderTokenTray(); renderHpTracker();
+      toast('Token updated with your Life Points', 'success');
+    } else {
+      const id = genId();
+      const nt = { id, session_id: STATE.sessionId, name: c.name || 'Hero', image_url: monsterPlaceholderImg({ id: 'hero' }), x: null, y: null, owner_id: pid, current_hp: Math.min(curLp, maxLp), max_hp: maxLp };
+      STATE.tokens.set(id, nt);
+      if (!(await insertTokenRow(nt))) { STATE.tokens.delete(id); toast('Token could not be created', 'error'); return; }
+      renderTokens(); renderTokenTray(); renderHpTracker();
+      toast('Token added to the tray — drag it onto the map', 'success');
+    }
+  }
   (function setupDsaSheet() {
     const body = document.getElementById('dsa-body');
     const close = document.getElementById('dsa-char-close');
@@ -17861,6 +17884,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const wd = t.closest('[data-wpn-del]');
       if (wd && dsaCanEdit()) { c.weapons.splice(wd.dataset.wpnDel, 1); scheduleDsaSave(); dsaRenderSheet(); return; }
       if (t.id === 'dsa-wpn-add' && dsaCanEdit()) { const pick = document.getElementById('dsa-wpn-pick'); const w = DSA_WEAPONS.find(x => x.n === (pick && pick.value)); if (w) { c.weapons.push({ name: w.n, tech: w.tech, dmg: w.dmg, at: 10, pa: 8 }); scheduleDsaSave(); dsaRenderSheet(); } return; }
+      if (t.id === 'dsa-token-btn' && dsaCanEdit()) { dsaSyncToken(); return; }
     });
     const p = document.getElementById('dsa-char-popup');
     if (p) p.addEventListener('mousedown', (e) => { if (e.target === p) closeDsaSheet(); });
