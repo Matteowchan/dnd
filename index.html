@@ -662,6 +662,11 @@
   .camp-status-border-failed { border-left-color: #8a3b3b; }
   .camp-status-border-hidden { border-left-color: var(--border); }
   .camp-empty { color: var(--muted); font-style: italic; padding: 24px; text-align: center; }
+  .camp-coins { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .camp-coin { flex: 1; min-width: 90px; text-align: center; border: 1px solid var(--border); border-radius: 6px; padding: 8px 6px; background: rgba(212,165,116,0.05); }
+  .camp-coin label { display: block; font-family: 'Cinzel', serif; font-size: calc(9px * var(--app-scale, 1)); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .camp-coin-inp { width: 100%; text-align: center; font-family: 'Cinzel', serif; color: var(--gold); font-weight: 600; }
+  .camp-coin-val { font-family: 'Cinzel', serif; color: var(--gold); font-size: calc(16px * var(--app-scale, 1)); font-weight: 600; }
 
   /* ---- DM Toolbox popup ---- */
   #toolbox-popup { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); width: 560px; max-width: 94vw; height: 70vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 8px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
@@ -16300,18 +16305,24 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     { key: 'faction', label: 'Factions' },
     { key: 'clue', label: 'Clues & Rumours' },
     { key: 'note', label: 'Notes' },
+    { key: 'party', label: 'Party' },
   ];
   const QUEST_TYPES = ['main', 'side', 'personal', 'rumour'];
   const QUEST_STATUS = ['active', 'completed', 'failed', 'hidden'];
   let CAMP_TAB = 'quests';
   let CAMP_EDIT = null;
-  function campData() { STATE.campaign = STATE.campaign || { quests: [], entries: [] }; return STATE.campaign; }
+  function campData() {
+    STATE.campaign = STATE.campaign || { quests: [], entries: [], party: { pp: 0, gp: 0, sp: 0, cp: 0, items: [] } };
+    if (!STATE.campaign.party) STATE.campaign.party = { pp: 0, gp: 0, sp: 0, cp: 0, items: [] };
+    return STATE.campaign;
+  }
   function campLoad() {
     let d = null;
     try { const raw = STATE.session && STATE.session.campaign_data; d = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) {}
+    const party = (d && d.party && typeof d.party === 'object') ? d.party : {};
     STATE.campaign = (d && typeof d === 'object')
-      ? { quests: Array.isArray(d.quests) ? d.quests : [], entries: Array.isArray(d.entries) ? d.entries : [] }
-      : { quests: [], entries: [] };
+      ? { quests: Array.isArray(d.quests) ? d.quests : [], entries: Array.isArray(d.entries) ? d.entries : [], party: { pp: party.pp || 0, gp: party.gp || 0, sp: party.sp || 0, cp: party.cp || 0, items: Array.isArray(party.items) ? party.items : [] } }
+      : { quests: [], entries: [], party: { pp: 0, gp: 0, sp: 0, cp: 0, items: [] } };
   }
   async function campSave() {
     if (!STATE.isHost) return;
@@ -16328,12 +16339,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const body = document.getElementById('camp-body');
     if (!tabsEl || !body) return;
     tabsEl.innerHTML = CAMP_CATS.map(c => {
-      const count = c.key === 'quests'
-        ? campData().quests.filter(campVisibleToMe).length
-        : campData().entries.filter(e => e.category === c.key && campVisibleToMe(e)).length;
+      let count = '';
+      if (c.key === 'quests') count = campData().quests.filter(campVisibleToMe).length;
+      else if (c.key === 'party') count = campData().party.items.length;
+      else count = campData().entries.filter(e => e.category === c.key && campVisibleToMe(e)).length;
       return `<button class="cmp-tab${c.key === CAMP_TAB ? ' active' : ''}" data-key="${c.key}">${c.label}<span class="cmp-tab-count">${count}</span></button>`;
     }).join('');
     tabsEl.querySelectorAll('.cmp-tab').forEach(b => b.addEventListener('click', () => { CAMP_TAB = b.dataset.key; CAMP_EDIT = null; campRender(); }));
+    if (CAMP_TAB === 'party') { campRenderParty(body); return; }
     let html = '';
     if (campCanEdit()) html += campFormHtml();
     html += (CAMP_TAB === 'quests') ? campQuestsHtml() : campEntriesHtml(CAMP_TAB);
@@ -16392,6 +16405,29 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         ${e.text ? `<div class="camp-card-text">${escapeHtml(e.text)}</div>` : ''}
         ${campCanEdit() ? `<div class="camp-card-actions"><button class="camp-mini" data-edit="${e.id}">Edit</button><button class="camp-mini danger" data-del="${e.id}">Delete</button></div>` : ''}
       </div>`).join('');
+  }
+  function campRenderParty(body) {
+    const p = campData().party;
+    const edit = campCanEdit();
+    const coin = (label, key) => edit
+      ? `<div class="camp-coin"><label>${label}</label><input type="number" class="camp-input camp-coin-inp" data-coin="${key}" value="${parseInt(p[key]) || 0}" min="0"></div>`
+      : `<div class="camp-coin"><label>${label}</label><div class="camp-coin-val">${parseInt(p[key]) || 0}</div></div>`;
+    let html = '<div class="camp-coins">' + coin('Platinum', 'pp') + coin('Gold', 'gp') + coin('Silver', 'sp') + coin('Copper', 'cp') + '</div>';
+    if (edit) html += `<div class="camp-form"><input id="party-add-name" class="camp-input" type="text" placeholder="Shared item / loot to add"><div class="camp-form-row"><input id="party-add-qty" class="camp-input" type="number" min="1" value="1" style="max-width:80px"><input id="party-add-note" class="camp-input" type="text" placeholder="Notes (value, who wants it)"><button id="party-add-btn" class="camp-btn primary">Add</button></div></div>`;
+    const items = p.items;
+    if (!items.length) html += `<div class="camp-empty">No shared loot yet.${edit ? ' Add items above as the party finds them.' : ''}</div>`;
+    else html += items.map(it => `<div class="camp-card"><div class="camp-card-head"><span class="camp-card-title">${escapeHtml(it.name || 'Item')}</span><span class="camp-badge">x${parseInt(it.qty) || 1}</span>${it.claimedBy ? `<span class="camp-badge camp-status-completed">${escapeHtml(it.claimedBy)}</span>` : ''}</div>${it.note ? `<div class="camp-card-text">${escapeHtml(it.note)}</div>` : ''}${edit ? `<div class="camp-card-actions"><input class="camp-input party-claim" data-id="${it.id}" type="text" placeholder="Assign to..." value="${escapeHtml(it.claimedBy || '')}" style="max-width:160px;flex:1"><button class="camp-mini danger" data-pdel="${it.id}">Remove</button></div>` : ''}</div>`).join('');
+    body.innerHTML = html;
+    body.querySelectorAll('.camp-coin-inp').forEach(inp => inp.addEventListener('change', () => { p[inp.dataset.coin] = Math.max(0, parseInt(inp.value) || 0); campSave(); }));
+    const addBtn = document.getElementById('party-add-btn');
+    if (addBtn) addBtn.addEventListener('click', () => {
+      const name = (document.getElementById('party-add-name').value || '').trim();
+      if (!name) { toast('Item name required', 'error'); return; }
+      p.items.push({ id: genId(), name, qty: Math.max(1, parseInt(document.getElementById('party-add-qty').value) || 1), note: (document.getElementById('party-add-note').value || '').trim(), claimedBy: '' });
+      campSave(); campRender();
+    });
+    body.querySelectorAll('[data-pdel]').forEach(b => b.addEventListener('click', () => { p.items = p.items.filter(x => x.id !== b.dataset.pdel); campSave(); campRender(); }));
+    body.querySelectorAll('.party-claim').forEach(inp => inp.addEventListener('change', () => { const it = p.items.find(x => x.id === inp.dataset.id); if (it) { it.claimedBy = inp.value.trim(); campSave(); } }));
   }
   function campWire(body) {
     const saveBtn = document.getElementById('camp-f-save');
