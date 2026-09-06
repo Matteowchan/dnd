@@ -3806,7 +3806,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         await sb.from('vtt_sessions').delete().eq('id', sid);
         toast('Campaign deleted.', 'success');
       } catch (e) {
-        toast('Could not delete: ' + (e.message || 'unknown error'), 'error', 4000);
+        toast(t('Could not delete: ') + (e.message || 'unknown error'), 'error', 4000);
       }
     } else {
       const who = it.charName ? ('"' + it.charName + '"') : 'this character';
@@ -3818,7 +3818,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         await sb.from('vtt_players').delete().eq('id', it.rowId).eq('session_id', it.code);
         toast('Character removed.', 'success');
       } catch (e) {
-        toast('Could not remove: ' + (e.message || 'unknown error'), 'error', 4000);
+        toast(t('Could not remove: ') + (e.message || 'unknown error'), 'error', 4000);
       }
     }
     renderMyCampaigns(accountId);
@@ -4153,7 +4153,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       toast('Character restored to your account.', 'success');
       renderMyCampaigns(accountId);
     } catch (e) {
-      toast('Could not restore: ' + (e.message || 'unknown error'), 'error', 4000);
+      toast(t('Could not restore: ') + (e.message || 'unknown error'), 'error', 4000);
     }
   }
   function showAuthUi() {
@@ -4479,7 +4479,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       saveSessionState();
     } catch (e) {
       console.error(e);
-      toast('Failed: ' + (e.message || 'unknown error'), 'error', 4000);
+      toast(t('Failed: ') + (e.message || 'unknown error'), 'error', 4000);
       btn.disabled = false;
       btn.textContent = 'Enter';
     }
@@ -5816,7 +5816,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (!STATE.map || !STATE.map.image_url) { toast('No map to reveal', 'error'); return; }
     STATE.publishedSlot = STATE.activeMapSlot;
     const { error } = await sb.from('vtt_sessions').update({ active_map_slot: STATE.activeMapSlot }).eq('id', STATE.sessionId);
-    if (error) { console.error('publish map failed', error); toast('Reveal failed — ' + (error.message || 'check host permissions'), 'error'); return; }
+    if (error) { console.error('publish map failed', error); toast(t('Reveal failed — ') + (error.message || 'check host permissions'), 'error'); return; }
     toast(`Map ${STATE.activeMapSlot} revealed to players`);
     renderMapSlotButtons();
   }
@@ -8030,7 +8030,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }
     renderMagic(CHAR_POPUP.magic);
     scheduleSavePlayer();
-    toast('Added ' + s.n);
+    toast(t('Added ') + s.n);
   }
 
   function addSpellByName(name) { addSpellObj(getCatalogSpellByName(name)); }
@@ -8049,7 +8049,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }
     renderMagic(CHAR_POPUP.magic);
     scheduleSavePlayer();
-    toast('Added ' + s.n);
+    toast(t('Added ') + s.n);
   }
   function renderWeaponLib() {
     const box = document.getElementById('weapon-lib-results');
@@ -8084,7 +8084,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     CHAR_POPUP.magic.attacks.push({ name: w.n, bonus: (atk >= 0 ? '+' + atk : String(atk)), dmg });
     renderMagic(CHAR_POPUP.magic);
     scheduleSavePlayer();
-    toast('Added ' + w.n);
+    toast(t('Added ') + w.n);
   }
 
   // ===== Spell Catalog (browsable modal) =====
@@ -10750,7 +10750,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     STATE._renderCatalog = renderCatalog;
     async function saveCustomItems() {
       const { error } = await sb.from('vtt_sessions').update({ custom_items: STATE.customItems }).eq('id', STATE.sessionId);
-      if (error) { console.warn('custom items save failed', error); toast('Could not share item — ' + (error.message || 'check host permissions / custom_items column'), 'error'); }
+      if (error) { console.warn('custom items save failed', error); toast(t('Could not share item — ') + (error.message || 'check host permissions / custom_items column'), 'error'); }
     }
     const CAT_TYPE = { weapons: 'weapon', armor: 'armor', gear: 'gear', magic: 'magic', custom: 'misc' };
     const CAT_LABEL = { weapons: 'Weapon', armor: 'Armor', gear: 'Gear', magic: 'Magic Item', custom: 'Custom' };
@@ -10943,7 +10943,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (!STATE.session) STATE.session = { id: STATE.sessionId };
       STATE.session.campaign_log = val;
       const { error } = await sb.from('vtt_sessions').update({ campaign_log: val }).eq('id', STATE.sessionId);
-      if (error) { console.error('Recap save failed', error); toast('Recap save failed — ' + (error.message || 'check host permissions'), 'error'); }
+      if (error) { console.error('Recap save failed', error); toast(t('Recap save failed — ') + (error.message || 'check host permissions'), 'error'); }
     }, 500);
   });
   document.getElementById('recap-new-entry').addEventListener('click', () => {
@@ -10973,12 +10973,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         sb.from('vtt_sessions').update({ campaign_log: '', active_map_slot: 1, initiative: '{}' }).eq('id', sid),
       ]);
       const failed = results.find(r => r && r.error);
-      if (failed) { console.error('wipe failed', failed.error); toast('Wipe failed: ' + (failed.error.message || 'check host permissions'), 'error'); return; }
+      if (failed) { console.error('wipe failed', failed.error); toast(t('Wipe failed: ') + (failed.error.message || 'check host permissions'), 'error'); return; }
       toast('Campaign wiped. Reloading...', 'success', 2000);
       setTimeout(() => location.reload(), 1500);
     } catch (e) {
       console.error(e);
-      toast('Wipe failed: ' + (e.message || 'error'), 'error');
+      toast(t('Wipe failed: ') + (e.message || 'error'), 'error');
     }
   });
 
@@ -11242,7 +11242,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       toast(`${CURRENT_REST.title.split(' (')[0]} complete`, 'success');
     } catch (e) {
       console.error(e);
-      toast('Rest failed: ' + (e.message || 'error'), 'error');
+      toast(t('Rest failed: ') + (e.message || 'error'), 'error');
     }
     btn.disabled = false;
     btn.textContent = 'Confirm';
@@ -11344,7 +11344,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const rules = document.getElementById('dm-rules-textarea').value;
     const enabled = document.getElementById('dm-rules-enabled').checked;
     const { error } = await sb.from('vtt_sessions').update({ dm_rules: rules, dm_rules_enabled: enabled }).eq('id', STATE.sessionId);
-    if (error) { console.error('dm rules save failed', error); toast('Save failed: ' + (error.message || 'check host permissions'), 'error'); return; }
+    if (error) { console.error('dm rules save failed', error); toast(t('Save failed: ') + (error.message || 'check host permissions'), 'error'); return; }
     if (!STATE.session) STATE.session = { id: STATE.sessionId };
     STATE.session.dm_rules = rules;
     STATE.session.dm_rules_enabled = enabled;
@@ -11517,11 +11517,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       STATE.maps.set(slot, row);
       switchToMapSlot(slot, false);
       textEl.textContent = 'Upload map (image, gif, mp4)';
-      toast('Map ' + slot + ' added to library');
+      toast(t('Map ') + slot + ' added to library');
     } catch (err) {
       console.error(err);
       textEl.textContent = 'Upload map (image, gif, mp4)';
-      toast('Map upload failed: ' + (err.message || ''), 'error');
+      toast(t('Map upload failed: ') + (err.message || ''), 'error');
     }
     e.target.value = '';
   });
@@ -15750,7 +15750,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       updateRtcButtons();
     } catch (e) {
       console.error('LiveKit join failed', e);
-      toast('Video failed: ' + (e.message || 'error'), 'error');
+      toast(t('Video failed: ') + (e.message || 'error'), 'error');
       livekitLeaveCall();
     }
   }
@@ -20236,6 +20236,148 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "The DM can apply this to": "Der SL kann dies anwenden auf",
   "casts": "wirkt",
   "Applied": "Angewendet",
+  "A generation is already running, please wait": "Es läuft bereits eine Generierung, bitte warte",
+  "Added ": "Hinzugefügt: ",
+  "Already applied": "Bereits angewendet",
+  "Attack name required": "Angriffsname erforderlich",
+  "Audio state not synced": "Audio-Status nicht synchronisiert",
+  "Background effect failed": "Hintergrundeffekt fehlgeschlagen",
+  "Background effects unavailable": "Hintergrundeffekte nicht verfügbar",
+  "Buff name required": "Name der Verstärkung erforderlich",
+  "Buff not saved": "Verstärkung nicht gespeichert",
+  "Building PDF...": "PDF wird erstellt...",
+  "Campaign created. Invite link copied to clipboard.": "Kampagne erstellt. Einladungslink in die Zwischenablage kopiert.",
+  "Campaign deleted.": "Kampagne gelöscht.",
+  "Campaign not saved — check your connection.": "Kampagne nicht gespeichert — prüfe deine Verbindung.",
+  "Campaign wiped. Reloading...": "Kampagne gelöscht. Neu laden...",
+  "Cantrip name required": "Name des Zaubertricks erforderlich",
+  "Character exported": "Charakter exportiert",
+  "Character exported as PDF": "Charakter als PDF exportiert",
+  "Character imported": "Charakter importiert",
+  "Character not found": "Charakter nicht gefunden",
+  "Character removed.": "Charakter entfernt.",
+  "Character restored to your account.": "Charakter in deinem Konto wiederhergestellt.",
+  "Click the map to place this token": "Klicke auf die Karte, um diese Figur zu platzieren",
+  "Code copied": "Code kopiert",
+  "Combat ended": "Kampf beendet",
+  "Concentration dropped.": "Konzentration abgebrochen.",
+  "Could not access camera or microphone": "Kein Zugriff auf Kamera oder Mikrofon",
+  "Could not delete token — restored. Check your connection.": "Figur konnte nicht gelöscht werden — wiederhergestellt. Prüfe deine Verbindung.",
+  "Could not delete: ": "Löschen fehlgeschlagen: ",
+  "Could not grant rest": "Rast konnte nicht gewährt werden",
+  "Could not load image": "Bild konnte nicht geladen werden",
+  "Could not load the PDF library. Check your connection.": "PDF-Bibliothek konnte nicht geladen werden. Prüfe deine Verbindung.",
+  "Could not place token": "Figur konnte nicht platziert werden",
+  "Could not read this PDF": "Dieses PDF konnte nicht gelesen werden",
+  "Could not read this sheet. Is it a D&D Beyond PDF export?": "Dieser Bogen konnte nicht gelesen werden. Ist es ein D&D-Beyond-PDF-Export?",
+  "Could not remove: ": "Entfernen fehlgeschlagen: ",
+  "Could not restore: ": "Wiederherstellen fehlgeschlagen: ",
+  "Could not share image": "Bild konnte nicht geteilt werden",
+  "Could not share item — ": "Objekt konnte nicht geteilt werden — ",
+  "Could not start video": "Video konnte nicht gestartet werden",
+  "DSA sheet not saved — check your connection.": "DSA-Bogen nicht gespeichert — prüfe deine Verbindung.",
+  "Disposition not saved": "Gesinnung nicht gespeichert",
+  "Drawing could not be saved": "Zeichnung konnte nicht gespeichert werden",
+  "Effect not saved": "Effekt nicht gespeichert",
+  "Enter a prompt first": "Gib zuerst eine Bildbeschreibung ein",
+  "Enter a valid session code": "Gib einen gültigen Sitzungscode ein",
+  "Eraser off": "Radierer aus",
+  "Failed to clear effects": "Effekte konnten nicht gelöscht werden",
+  "Failed to delete effect": "Effekt konnte nicht gelöscht werden",
+  "Failed to publish map": "Karte konnte nicht veröffentlicht werden",
+  "Failed to publish token": "Figur konnte nicht veröffentlicht werden",
+  "Failed to remove player. Check permissions.": "Spieler konnte nicht entfernt werden. Prüfe die Berechtigungen.",
+  "Failed to update grid": "Raster konnte nicht aktualisiert werden",
+  "Failed: ": "Fehlgeschlagen: ",
+  "Feature needs a name": "Merkmal braucht einen Namen",
+  "Fog not saved": "Nebel nicht gespeichert",
+  "HP not saved": "TP nicht gespeichert",
+  "HP not synced": "TP nicht synchronisiert",
+  "HP not synced to the map": "TP nicht mit der Karte synchronisiert",
+  "Handout needs a title": "Handout braucht einen Titel",
+  "Handout revealed to the party": "Handout der Gruppe gezeigt",
+  "Handout saved to the library": "Handout in der Bibliothek gespeichert",
+  "Import failed": "Import fehlgeschlagen",
+  "Imported from D&D Beyond": "Von D&D Beyond importiert",
+  "Initiative sync failed": "Initiative-Synchronisierung fehlgeschlagen",
+  "Invalid JSON file": "Ungültige JSON-Datei",
+  "Invite link copied": "Einladungslink kopiert",
+  "Join a session first": "Tritt zuerst einer Sitzung bei",
+  "Join the call first": "Tritt zuerst dem Anruf bei",
+  "Large calls may strain bandwidth": "Große Anrufe können die Bandbreite belasten",
+  "Lock toggle failed": "Sperre umschalten fehlgeschlagen",
+  "Map ": "Karte ",
+  "Map not saved": "Karte nicht gespeichert",
+  "Map slot sync failed": "Kartenslot-Synchronisierung fehlgeschlagen",
+  "Map upload failed: ": "Karten-Upload fehlgeschlagen: ",
+  "Message failed": "Nachricht fehlgeschlagen",
+  "Move not saved": "Bewegung nicht gespeichert",
+  "NPC name required": "NSC-Name erforderlich",
+  "No Hit Dice remaining": "Keine Trefferwürfel mehr übrig",
+  "No camera on this call": "Keine Kamera in diesem Anruf",
+  "No damage dice for this spell": "Keine Schadenswürfel für diesen Zauber",
+  "No damage dice to roll": "Keine Schadenswürfel zum Würfeln",
+  "No earlier characters found to recover here.": "Keine früheren Charaktere zum Wiederherstellen gefunden.",
+  "No game found with that code": "Kein Spiel mit diesem Code gefunden",
+  "No map to reveal": "Keine Karte zum Aufdecken",
+  "No token on the map yet": "Noch keine Figur auf der Karte",
+  "No tokens in the spell area to buff": "Keine Figuren im Zauberbereich zum Verstärken",
+  "No tokens on the map": "Keine Figuren auf der Karte",
+  "Only the DM can add shared items": "Nur der SL kann geteilte Objekte hinzufügen",
+  "Only the DM can change the ruleset": "Nur der SL kann das Regelwerk ändern",
+  "Only the DM can clear all effects. Use the eraser for your own.": "Nur der SL kann alle Effekte löschen. Nutze den Radierer für deine eigenen.",
+  "Open a character first": "Öffne zuerst einen Charakter",
+  "Pick a class first": "Wähle zuerst eine Klasse",
+  "Please choose a class": "Bitte wähle eine Klasse",
+  "Please enter a name": "Bitte gib einen Namen ein",
+  "Please sign in first": "Bitte melde dich zuerst an",
+  "Portrait and token updated": "Porträt und Figur aktualisiert",
+  "Portrait set. Drag the token onto the map.": "Porträt gesetzt. Zieh die Figur auf die Karte.",
+  "Portrait shown but not saved — check your connection.": "Porträt angezeigt, aber nicht gespeichert — prüfe deine Verbindung.",
+  "Portrait upload failed": "Porträt-Upload fehlgeschlagen",
+  "Racial ASI removed": "Volks-ASI entfernt",
+  "Read-only sheet": "Schreibgeschützter Bogen",
+  "Reading PDF...": "PDF wird gelesen...",
+  "Recap save failed — ": "Speichern der Zusammenfassung fehlgeschlagen — ",
+  "Rest changes not saved": "Rast-Änderungen nicht gespeichert",
+  "Rest failed: ": "Rast fehlgeschlagen: ",
+  "Resume failed": "Fortsetzen fehlgeschlagen",
+  "Reveal failed — ": "Aufdecken fehlgeschlagen — ",
+  "Revive did not sync — token still at 0 HP. Try again.": "Wiederbelebung nicht synchronisiert — Figur weiterhin bei 0 TP. Versuch es erneut.",
+  "Roll failed to sync": "Wurf konnte nicht synchronisiert werden",
+  "Save failed: ": "Speichern fehlgeschlagen: ",
+  "Saved session no longer exists": "Gespeicherte Sitzung existiert nicht mehr",
+  "Screen share not supported in this browser": "Bildschirmfreigabe wird in diesem Browser nicht unterstützt",
+  "Session not found. Check the code.": "Sitzung nicht gefunden. Prüfe den Code.",
+  "Set a spellcasting ability first": "Lege zuerst ein Zauberattribut fest",
+  "Some changes could not be saved": "Einige Änderungen konnten nicht gespeichert werden",
+  "Spell name required": "Zaubername erforderlich",
+  "That slot is taken — unequip it first.": "Dieser Platz ist belegt — lege ihn zuerst ab.",
+  "This game is hosted by a different account": "Dieses Spiel wird von einem anderen Konto gehostet",
+  "This item has no equip slot — keep it in the bag.": "Dieses Objekt hat keinen Ausrüstungsplatz — behalte es im Beutel.",
+  "This token has no character": "Diese Figur hat keinen Charakter",
+  "Title required": "Titel erforderlich",
+  "Token added to the tray — drag it onto the map": "Figur zur Ablage hinzugefügt — zieh sie auf die Karte",
+  "Token could not be created": "Figur konnte nicht erstellt werden",
+  "Token could not be saved": "Figur konnte nicht gespeichert werden",
+  "Token image not synced to others — check your connection.": "Figurenbild nicht mit anderen synchronisiert — prüfe deine Verbindung.",
+  "Token not saved": "Figur nicht gespeichert",
+  "Token not synced — check your connection.": "Figur nicht synchronisiert — prüfe deine Verbindung.",
+  "Token updated with your Life Points": "Figur mit deinen Lebenspunkten aktualisiert",
+  "Track uploaded - playing for everyone": "Titel hochgeladen - wird für alle abgespielt",
+  "Unrecognized character file": "Unbekannte Charakterdatei",
+  "Upload a map first": "Lade zuerst eine Karte hoch",
+  "Upload failed": "Upload fehlgeschlagen",
+  "Upload saved to storage but did not sync to the table.": "Upload im Speicher gesichert, aber nicht mit dem Tisch synchronisiert.",
+  "Video failed to load": "Video konnte nicht geladen werden",
+  "Video failed: ": "Video fehlgeschlagen: ",
+  "Video needs a live session": "Video braucht eine aktive Sitzung",
+  "Voice / video needs a live session": "Sprache / Video braucht eine aktive Sitzung",
+  "Whisper sent as public (schema not migrated)": "Flüstern öffentlich gesendet (Schema nicht migriert)",
+  "Wipe failed: ": "Löschen fehlgeschlagen: ",
+  "You can only erase your own drawings": "Du kannst nur deine eigenen Zeichnungen löschen",
+  "You can only erase your own spell effects": "Du kannst nur deine eigenen Zaubereffekte löschen",
+  "You cannot remove yourself": "Du kannst dich nicht selbst entfernen",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
