@@ -718,6 +718,8 @@
   .dsa-empty { color: var(--muted); font-style: italic; font-size: calc(12px * var(--app-scale, 1)); padding: 4px 0; }
 
   /* ---- Ruleset chip (D&D / DSA switch) ---- */
+  .lang-toggle-btn { font-family: 'Cinzel', serif; font-size: calc(10px * var(--app-scale, 1)); letter-spacing: 0.06em; color: var(--cream); background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 5px 9px; cursor: pointer; transition: border-color 0.15s; }
+  .lang-toggle-btn:hover { border-color: var(--gold-soft); color: var(--gold); }
   .ruleset-chip { font-family: 'Cinzel', serif; font-size: calc(10px * var(--app-scale, 1)); letter-spacing: 0.05em; color: var(--gold); background: rgba(212,165,116,0.1); border: 1px solid var(--gold-soft); border-radius: 4px; padding: 2px 8px; cursor: pointer; margin-left: 4px; }
   .ruleset-chip:hover { background: rgba(212,165,116,0.2); }
   :root[data-ruleset="dsa"] .ruleset-chip { color: #d7a0ff; border-color: rgba(178,38,255,0.5); background: rgba(178,38,255,0.12); }
@@ -1880,6 +1882,7 @@
           <svg id="theme-icon-dark" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           <svg id="theme-icon-light" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" fill="none"/></svg>
         </button>
+        <button id="lang-toggle" class="lang-toggle-btn" title="Language">EN</button>
       </span>
       <span class="tb-group">
         <button id="cmdk-btn" title="Command palette — search rules, spells, items, monsters, and run quick actions (Ctrl/Cmd + K)">Search ⌘K</button>
@@ -3366,6 +3369,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   function isValidSessionCode(c) { return /^[A-Z0-9]{4,12}$/.test(c || ''); }
   function toast(msg, type = 'info', duration = 2500) {
     const t = document.getElementById('toast');
+    try { if (typeof LANG !== 'undefined' && LANG === 'de' && typeof I18N_DE !== 'undefined' && I18N_DE[msg]) msg = I18N_DE[msg]; } catch (e) {}
     t.textContent = msg;
     t.className = 'show' + (type === 'error' ? ' error' : '');
     setTimeout(() => t.classList.remove('show'), duration);
@@ -4747,6 +4751,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
     await loadInitialState();
     setupRealtime();
+    try { applyLang(); } catch (e) {}
     setTimeout(() => { try { ensureDice3D(); } catch (e) {} }, 2500); // preload 3D dice engine
 
     // Open the docked character panel automatically for players. For hosts,
@@ -16641,6 +16646,255 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     toast(rs === 'dsa' ? 'Ruleset: Das Schwarze Auge (DSA) — roll-under system' : 'Ruleset: D&D 5e', 'success');
   }
   function toggleRuleset() { setRuleset(STATE.ruleset === 'dsa' ? 'dnd' : 'dsa'); }
+
+  // ---- UI language (English default / Deutsch), per-user preference ----
+  const I18N_DE = {
+"Recap": "Rückblick",
+"Campaign": "Kampagne",
+"Handbook": "Handbuch",
+"Compendium": "Kompendium",
+"DM Rules": "SL-Regeln",
+"DM Tools": "SL-Werkzeuge",
+"Short Rest": "Kurze Rast",
+"Long Rest": "Lange Rast",
+"Switch Role": "Rolle wechseln",
+"Leave": "Verlassen",
+"Sign out": "Abmelden",
+"Host (DM)": "Host (SL)",
+"Player": "Spieler",
+"Enter": "Beitreten",
+"Continue last session": "Letzte Sitzung fortsetzen",
+"Your Name": "Dein Name",
+"Campaign Name (new game)": "Kampagnenname (neues Spiel)",
+"Resume code (optional)": "Fortsetzungscode (optional)",
+"Choose your role to begin": "Wähle deine Rolle zum Start",
+"Search": "Suchen",
+"Map": "Karte",
+"Library": "Bibliothek",
+"Reveal Map to Players": "Karte für Spieler aufdecken",
+"Upload Map (image, gif, mp4)": "Karte hochladen (Bild, GIF, MP4)",
+"Ft per square": "Fuß pro Feld",
+"Apply": "Anwenden",
+"Move Map: Off": "Karte bewegen: Aus",
+"Move Map: On": "Karte bewegen: An",
+"Lock Tokens: Off": "Figuren sperren: Aus",
+"Lock Tokens: On": "Figuren sperren: An",
+"Clear Map": "Karte leeren",
+"Fog of War: Off": "Nebel des Krieges: Aus",
+"Fog of War: On": "Nebel des Krieges: An",
+"Reveal Brush: Off": "Aufdeck-Pinsel: Aus",
+"Reveal Brush: On": "Aufdeck-Pinsel: An",
+"Re-cover All": "Alles neu verdecken",
+"Tokens on Map": "Figuren auf der Karte",
+"Upload a portrait from the character sheet to add your token. Drag onto the map.": "Lade ein Porträt aus dem Charakterbogen hoch, um deine Figur hinzuzufügen. Ziehe sie auf die Karte.",
+"Upload Tokens (DM)": "Figuren hochladen (SL)",
+"Generate NPC (AI)": "NSC erzeugen (KI)",
+"Select": "Auswählen",
+"Measure": "Messen",
+"Spells": "Zauber",
+"Generate": "Erzeugen",
+"Eraser": "Radierer",
+"Draw": "Zeichnen",
+"Remove Spell FX": "Zaubereffekte entfernen",
+"HP Tracker": "TP-Übersicht",
+"Initiative": "Initiative",
+"Roll Init": "Ini würfeln",
+"+ NPC": "+ NSC",
+"Next": "Weiter",
+"End": "Beenden",
+"Character": "Charakter",
+"No combat in progress.": "Kein Kampf im Gange.",
+"Click Roll All to start.": "Klicke „Alle würfeln“ zum Start.",
+"No tokens yet": "Noch keine Figuren",
+"Short Rest (1 hour)": "Kurze Rast (1 Stunde)",
+"Long Rest (8 hours)": "Lange Rast (8 Stunden)",
+"Damage": "Schaden",
+"Heal": "Heilen",
+"Temp HP": "Temp. TP",
+"Spend HD": "TW einsetzen",
+"Roll All": "Alle würfeln",
+"Add Selected to Combat": "Auswahl zum Kampf hinzufügen",
+"Level": "Stufe",
+"Class": "Klasse",
+"Race": "Volk",
+"Subclass — pick or type": "Unterklasse — wählen oder eingeben",
+"Proficiency Bonus": "Übungsbonus",
+"(auto from level)": "(automatisch nach Stufe)",
+"Passive Senses": "Passive Sinne",
+"Ability Scores": "Attributswerte",
+"Saving Throws": "Rettungswürfe",
+"Skills": "Fertigkeiten",
+"Equipped": "Ausgerüstet",
+"Inventory": "Inventar",
+"Browse Catalog": "Katalog durchsuchen",
+"Currency": "Währung",
+"Attacks": "Angriffe",
+"Cantrips": "Zaubertricks",
+"Spellcasting": "Zauberwirken",
+"Ability": "Attribut",
+"Save DC": "Rettungs-SG",
+"Spell Atk": "Zauberangriff",
+"Notes": "Notizen",
+"Features": "Merkmale",
+"Buffs": "Verstärkungen",
+"Conditions": "Zustände",
+"Hit Dice": "Trefferwürfel",
+"Death Saves": "Rettungswürfe gegen Tod",
+"Import PDF": "PDF importieren",
+"Export": "Exportieren",
+"Import": "Importieren",
+"Add": "Hinzufügen",
+"Remove": "Entfernen",
+"Equip": "Ausrüsten",
+"Use": "Benutzen",
+"Concentrating": "Konzentration",
+"CON save": "KO-Rettungswurf",
+"Drop": "Ablegen",
+"Apply Class Kit": "Klassenausrüstung anwenden",
+"My token": "Meine Figur",
+"Character name": "Charaktername",
+"Item name": "Gegenstandsname",
+"Notes (value, who wants it)": "Notizen (Wert, wer es will)",
+"Quests": "Aufträge",
+"NPCs": "NSCs",
+"Locations": "Orte",
+"Factions": "Fraktionen",
+"Clues & Rumours": "Hinweise & Gerüchte",
+"Scenes": "Szenen",
+"Encounters": "Begegnungen",
+"Handouts": "Handzettel",
+"Party": "Gruppe",
+"Edit": "Bearbeiten",
+"Delete": "Löschen",
+"Next status": "Nächster Status",
+"Save changes": "Änderungen speichern",
+"Cancel": "Abbrechen",
+"Title": "Titel",
+"Reward": "Belohnung",
+"Visible to everyone": "Für alle sichtbar",
+"DM only": "Nur SL",
+"Generate again": "Erneut erzeugen",
+"Send to chat": "In den Chat senden",
+"Play scene": "Szene abspielen",
+"Launch": "Starten",
+"Mark done": "Als erledigt markieren",
+"Reveal to party": "Der Gruppe zeigen",
+"Hide": "Verbergen",
+"Open": "Öffnen",
+"Platinum": "Platin",
+"Gold": "Gold",
+"Silver": "Silber",
+"Copper": "Kupfer",
+"Quest Complete": "Auftrag abgeschlossen",
+"Quest Failed": "Auftrag gescheitert",
+"Resolve Action": "Aktion auflösen",
+"Target": "Ziel",
+"Roll": "Würfeln",
+"Normal": "Normal",
+"Advantage": "Vorteil",
+"Disadvantage": "Nachteil",
+"Attack — Roll to Hit": "Angriff — Trefferwurf",
+"Cast — Roll Attack": "Wirken — Angriffswurf",
+"Roll Damage": "Schaden würfeln",
+"HIT": "TREFFER",
+"MISS": "DANEBEN",
+"CRITICAL HIT": "KRITISCHER TREFFER",
+"BOTCH": "PATZER",
+"DSA Check — roll under": "DSA-Probe — unterwürfeln",
+"Attribute / Combat": "Eigenschaft / Kampf",
+"Skill (3d20)": "Talent (3W20)",
+"Character — DSA": "Charakter — DSA",
+"Species": "Spezies",
+"Culture": "Kultur",
+"Profession": "Profession",
+"Talents": "Talente",
+"Weapons": "Waffen",
+"Spells & Liturgies": "Zauber & Liturgien",
+"Add a weapon…": "Waffe hinzufügen …",
+"Attack": "Angriff",
+"Parry": "Parade",
+"Check": "Probe",
+"Courage": "Mut",
+"Sagacity": "Klugheit",
+"Intuition": "Intuition",
+"Charisma": "Charisma",
+"Dexterity": "Fingerfertigkeit",
+"Agility": "Gewandtheit",
+"Constitution": "Konstitution",
+"Strength": "Körperkraft",
+"Speed": "Geschwindigkeit",
+"Dodge": "Ausweichen",
+"Wound": "Wunde",
+"success": "Erfolg",
+"failure": "Fehlschlag",
+"Player's Handbook": "Spielerhandbuch",
+"DM Toolbox": "SL-Werkzeugkasten",
+"Campaign Journal": "Kampagnentagebuch",
+"Saved to the campaign": "In der Kampagne gespeichert",
+"Token added to the tray": "Figur zum Ablagefach hinzugefügt",
+"Map cleared": "Karte geleert",
+"Ruleset: D&D 5e": "Regelwerk: D&D 5e",
+"Cannot edit this character": "Dieser Charakter kann nicht bearbeitet werden",
+"Item name required": "Gegenstandsname erforderlich",
+"Name": "Name",
+"NPC": "NSC",
+"Tavern": "Taverne",
+"Shop": "Laden",
+"Rumour": "Gerücht",
+"Encounter": "Begegnung",
+"Travel": "Reise",
+"Weather": "Wetter",
+"Loot": "Beute",
+"Wild Magic": "Wilde Magie",
+"Faction": "Fraktion"
+}; // en -> de
+  let LANG = 'en';
+  try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
+  function t(s) { return (LANG === 'de' && I18N_DE[s]) ? I18N_DE[s] : s; } // for JS-built strings / toasts
+  function i18nEl(el) {
+    if (!el || el.nodeType !== 1) return;
+    // placeholder / title: translate only known dictionary values, reversibly
+    ['placeholder', 'title'].forEach(attr => {
+      if (!el.hasAttribute(attr)) return;
+      const dkey = attr === 'placeholder' ? 'enPh' : 'enTi';
+      const cur = el.getAttribute(attr);
+      if (LANG === 'de') {
+        if (el.dataset[dkey] == null && I18N_DE[cur]) el.dataset[dkey] = cur;
+        if (el.dataset[dkey] != null) el.setAttribute(attr, I18N_DE[el.dataset[dkey]] || el.dataset[dkey]);
+      } else if (el.dataset[dkey] != null) { el.setAttribute(attr, el.dataset[dkey]); delete el.dataset[dkey]; }
+    });
+    // leaf text nodes only (never touch elements with child elements = dynamic HTML)
+    if (el.childElementCount === 0) {
+      const cur = el.textContent;
+      const key = (cur || '').trim();
+      if (LANG === 'de') {
+        if (el.dataset.enTx == null && key && I18N_DE[key]) el.dataset.enTx = cur;
+        if (el.dataset.enTx != null) { const k = el.dataset.enTx.trim(); el.textContent = cur.replace(k, I18N_DE[k] || k); }
+      } else if (el.dataset.enTx != null) { el.textContent = el.dataset.enTx; delete el.dataset.enTx; }
+    }
+  }
+  function i18nWalk(root) { if (!root || root.nodeType !== 1) return; i18nEl(root); const kids = root.querySelectorAll('*'); for (let i = 0; i < kids.length; i++) i18nEl(kids[i]); }
+  function applyLang() {
+    try { document.documentElement.setAttribute('data-lang', LANG); } catch (e) {}
+    const btn = document.getElementById('lang-toggle'); if (btn) { btn.textContent = LANG === 'de' ? 'DE' : 'EN'; btn.title = LANG === 'de' ? 'Sprache (Deutsch) — Klicken für Englisch' : 'Language (English) — click for Deutsch'; }
+    i18nWalk(document.body);
+  }
+  function setLang(l) { LANG = (l === 'de') ? 'de' : 'en'; try { localStorage.setItem('vtt_lang', LANG); } catch (e) {} applyLang(); }
+  function toggleLang() { setLang(LANG === 'de' ? 'en' : 'de'); }
+  (function setupI18n() {
+    // Translate dynamically-rendered nodes while in German.
+    try {
+      const obs = new MutationObserver((muts) => {
+        if (LANG !== 'de') return;
+        muts.forEach(m => m.addedNodes && m.addedNodes.forEach(n => { if (n.nodeType === 1) i18nWalk(n); }));
+      });
+      obs.observe(document.body, { childList: true, subtree: true });
+    } catch (e) {}
+    const btn = document.getElementById('lang-toggle');
+    if (btn) btn.addEventListener('click', toggleLang);
+    if (LANG === 'de') setTimeout(applyLang, 0);
+  })();
+
   function campCanEdit() { return STATE.isHost; }
   function campVisBadge(vis) { return vis === 'dm' ? '<span class="camp-badge camp-vis-dm">DM only</span>' : ''; }
   function campVisibleToMe(item) { return campCanEdit() || (item.vis || 'all') === 'all'; }
