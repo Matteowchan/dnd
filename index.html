@@ -677,9 +677,16 @@
   .enc-chip button { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: calc(13px * var(--app-scale, 1)); line-height: 1; padding: 0; }
   .enc-chip button:hover { color: #e07a6a; }
 
-  /* ---- Action Resolver (attack / spell flow) ---- */
-  #action-resolver { position: fixed; inset: 0; z-index: 2000; display: none; align-items: flex-start; justify-content: center; background: rgba(6,7,12,0.6); backdrop-filter: blur(2px); }
-  #action-resolver.active { display: flex; }
+  /* ---- Ruleset chip (D&D / DSA switch) ---- */
+  .ruleset-chip { font-family: 'Cinzel', serif; font-size: calc(10px * var(--app-scale, 1)); letter-spacing: 0.05em; color: var(--gold); background: rgba(212,165,116,0.1); border: 1px solid var(--gold-soft); border-radius: 4px; padding: 2px 8px; cursor: pointer; margin-left: 4px; }
+  .ruleset-chip:hover { background: rgba(212,165,116,0.2); }
+  :root[data-ruleset="dsa"] .ruleset-chip { color: #d7a0ff; border-color: rgba(178,38,255,0.5); background: rgba(178,38,255,0.12); }
+
+  /* ---- Action Resolver + DSA Check (shared modal styling) ---- */
+  #action-resolver, #dsa-check-popup { position: fixed; inset: 0; z-index: 2000; display: none; align-items: flex-start; justify-content: center; background: rgba(6,7,12,0.6); backdrop-filter: blur(2px); }
+  #action-resolver.active, #dsa-check-popup.active { display: flex; }
+  #dsa-check-popup .ar-box { margin-top: 9vh; }
+  #dsa-close { padding: 2px 10px; font-size: calc(14px * var(--app-scale, 1)); background: transparent; border: 1px solid var(--border); border-radius: 5px; color: var(--muted); cursor: pointer; }
   .ar-box { margin-top: 9vh; width: 460px; max-width: 94vw; background: linear-gradient(180deg, var(--panel-light), var(--panel)); border: 1px solid var(--gold); border-radius: 10px; box-shadow: 0 24px 70px rgba(0,0,0,0.75); overflow: hidden; }
   #ar-close { padding: 2px 10px; font-size: calc(14px * var(--app-scale, 1)); background: transparent; border: 1px solid var(--border); border-radius: 5px; color: var(--muted); cursor: pointer; }
   .ar-body-wrap { padding: 14px 16px 16px; }
@@ -1819,6 +1826,7 @@
       <span class="role-badge" id="role-badge"></span>
       <span style="font-size: calc(13px * var(--app-scale, 1)); color: var(--muted)">|</span>
       <span style="font-size: calc(13px * var(--app-scale, 1));" id="username-display"></span>
+      <button id="ruleset-indicator" class="ruleset-chip" title="Active ruleset">D&D 5e</button>
     </div>
     <div class="topbar-right">
       <span id="conn-indicator">Connecting</span>
@@ -1837,6 +1845,7 @@
         <button id="cmdk-btn" title="Command palette — search rules, spells, items, monsters, and run quick actions (Ctrl/Cmd + K)">Search ⌘K</button>
         <button id="handbook-btn" title="Player's Handbook: full rules — how to play, ability scores, races, classes, backgrounds, equipment, feats, combat, spellcasting, and a rules glossary">Handbook</button>
         <button id="compendium-btn" title="Quick reference: conditions, actions, weapons, armor, and core rules">Compendium</button>
+        <button id="dsa-check-btn" style="display:none;" title="DSA checks: attribute (1d20 roll-under) and skill (3d20) tests">DSA Check</button>
       </span>
       <span class="tb-group">
         <button id="recap-btn" title="Campaign Log / Recap">Recap</button>
@@ -2884,6 +2893,21 @@
     <div id="cmdp-results" class="cmdp-results"></div>
     <div class="cmdp-foot">
       <span><b>↑↓</b> navigate</span><span><b>Enter</b> open</span><span><b>Ctrl/Cmd K</b> toggle</span>
+    </div>
+  </div>
+</div>
+
+<div id="dsa-check-popup">
+  <div class="ar-box">
+    <div class="char-popup-header"><span class="ttl">DSA Check — roll under</span><button id="dsa-close">×</button></div>
+    <div class="ar-body-wrap">
+      <div class="ar-seg" id="dsa-mode">
+        <button data-m="attr" class="on">Attribute / Combat</button>
+        <button data-m="skill">Skill (3d20)</button>
+      </div>
+      <div id="dsa-fields"></div>
+      <button id="dsa-roll" class="ar-roll-btn">Roll</button>
+      <div id="dsa-result" class="ar-result"></div>
     </div>
   </div>
 </div>
@@ -5397,6 +5421,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           };
         }
       } catch (e) { STATE.initiative = { active: false, round: 0, turn: 0, entries: [] }; }
+      applyRuleset();
     }
 
     // Load all map slots (up to 3)
@@ -5617,6 +5642,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (payload.eventType !== 'UPDATE' || !payload.new) return;
     STATE.session = payload.new;
     try { if (typeof campaignOnRemoteUpdate === 'function') campaignOnRemoteUpdate(); } catch (e) {}
+    try { if (typeof applyRuleset === 'function') applyRuleset(); } catch (e) {}
     if (Array.isArray(payload.new.custom_items)) {
       STATE.customItems = payload.new.custom_items;
       const cp = document.getElementById('catalog-popup');
@@ -16492,7 +16518,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   let CAMP_TAB = 'quests';
   let CAMP_EDIT = null;
   function campData() {
-    STATE.campaign = STATE.campaign || { quests: [], entries: [], handouts: [], party: { pp: 0, gp: 0, sp: 0, cp: 0, items: [] } };
+    STATE.campaign = STATE.campaign || { ruleset: 'dnd', quests: [], entries: [], handouts: [], party: { pp: 0, gp: 0, sp: 0, cp: 0, items: [] } };
+    if (!STATE.campaign.ruleset) STATE.campaign.ruleset = 'dnd';
     if (!STATE.campaign.party) STATE.campaign.party = { pp: 0, gp: 0, sp: 0, cp: 0, items: [] };
     if (!Array.isArray(STATE.campaign.handouts)) STATE.campaign.handouts = [];
     if (!Array.isArray(STATE.campaign.scenes)) STATE.campaign.scenes = [];
@@ -16504,8 +16531,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     try { const raw = STATE.session && STATE.session.campaign_data; d = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) {}
     const party = (d && d.party && typeof d.party === 'object') ? d.party : {};
     STATE.campaign = (d && typeof d === 'object')
-      ? { quests: Array.isArray(d.quests) ? d.quests : [], entries: Array.isArray(d.entries) ? d.entries : [], handouts: Array.isArray(d.handouts) ? d.handouts : [], scenes: Array.isArray(d.scenes) ? d.scenes : [], encounters: Array.isArray(d.encounters) ? d.encounters : [], party: { pp: party.pp || 0, gp: party.gp || 0, sp: party.sp || 0, cp: party.cp || 0, items: Array.isArray(party.items) ? party.items : [] } }
-      : { quests: [], entries: [], handouts: [], scenes: [], encounters: [], party: { pp: 0, gp: 0, sp: 0, cp: 0, items: [] } };
+      ? { ruleset: d.ruleset === 'dsa' ? 'dsa' : 'dnd', quests: Array.isArray(d.quests) ? d.quests : [], entries: Array.isArray(d.entries) ? d.entries : [], handouts: Array.isArray(d.handouts) ? d.handouts : [], scenes: Array.isArray(d.scenes) ? d.scenes : [], encounters: Array.isArray(d.encounters) ? d.encounters : [], party: { pp: party.pp || 0, gp: party.gp || 0, sp: party.sp || 0, cp: party.cp || 0, items: Array.isArray(party.items) ? party.items : [] } }
+      : { ruleset: 'dnd', quests: [], entries: [], handouts: [], scenes: [], encounters: [], party: { pp: 0, gp: 0, sp: 0, cp: 0, items: [] } };
   }
   async function campSave() {
     if (!STATE.isHost) return;
@@ -16514,6 +16541,29 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const { error } = await sb.from('vtt_sessions').update({ campaign_data: json }).eq('id', STATE.sessionId);
     if (error) { console.warn('campaign save failed', error); toast('Campaign not saved — check your connection.', 'error'); }
   }
+  // ---- Ruleset switch (D&D 5e <-> Das Schwarze Auge / DSA), session-wide ----
+  function currentRuleset() {
+    try { const raw = STATE.session && STATE.session.campaign_data; const d = typeof raw === 'string' ? JSON.parse(raw) : raw; if (d && d.ruleset === 'dsa') return 'dsa'; } catch (e) {}
+    return 'dnd';
+  }
+  function rulesetLabel(rs) { return rs === 'dsa' ? 'DSA' : 'D&D 5e'; }
+  function applyRuleset() {
+    STATE.ruleset = currentRuleset();
+    try { document.documentElement.setAttribute('data-ruleset', STATE.ruleset); } catch (e) {}
+    const ind = document.getElementById('ruleset-indicator');
+    if (ind) { ind.textContent = rulesetLabel(STATE.ruleset); ind.title = STATE.isHost ? 'Ruleset (click to switch)' : 'Active ruleset'; }
+    const dsaBtn = document.getElementById('dsa-check-btn');
+    if (dsaBtn) dsaBtn.style.display = STATE.ruleset === 'dsa' ? '' : 'none';
+  }
+  async function setRuleset(rs) {
+    if (!STATE.isHost) { toast('Only the DM can change the ruleset', 'error'); return; }
+    campLoad();
+    campData().ruleset = rs;
+    await campSave();
+    applyRuleset();
+    toast(rs === 'dsa' ? 'Ruleset: Das Schwarze Auge (DSA) — roll-under system' : 'Ruleset: D&D 5e', 'success');
+  }
+  function toggleRuleset() { setRuleset(STATE.ruleset === 'dsa' ? 'dnd' : 'dsa'); }
   function campCanEdit() { return STATE.isHost; }
   function campVisBadge(vis) { return vis === 'dm' ? '<span class="camp-badge camp-vis-dm">DM only</span>' : ''; }
   function campVisibleToMe(item) { return campCanEdit() || (item.vis || 'all') === 'all'; }
@@ -17234,6 +17284,77 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     toast(`Applied ${Math.abs(amount)} damage`, 'success');
     closeActionResolver();
   }
+  // ---- DSA (Das Schwarze Auge) roll-under check engine ----
+  let DSA_MODE = 'attr';
+  function openDsaCheck() {
+    const p = document.getElementById('dsa-check-popup');
+    if (!p) return;
+    dsaRenderFields();
+    document.getElementById('dsa-result').innerHTML = '';
+    document.getElementById('dsa-mode').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === DSA_MODE));
+    p.classList.add('active');
+  }
+  function closeDsaCheck() { const p = document.getElementById('dsa-check-popup'); if (p) p.classList.remove('active'); }
+  function dsaRenderFields() {
+    const box = document.getElementById('dsa-fields');
+    if (DSA_MODE === 'skill') {
+      box.innerHTML = `
+        <label class="ar-label">The three attributes tested</label>
+        <div class="ar-seg"><input id="dsa-a1" class="ar-input" type="number" value="12" title="Attribute 1"><input id="dsa-a2" class="ar-input" type="number" value="12" title="Attribute 2"><input id="dsa-a3" class="ar-input" type="number" value="12" title="Attribute 3"></div>
+        <label class="ar-label">Skill value (FW)</label><input id="dsa-fw" class="ar-input" type="number" value="6">
+        <label class="ar-label">Modifier (+ easier, − harder)</label><input id="dsa-mod" class="ar-input" type="number" value="0">`;
+    } else {
+      box.innerHTML = `
+        <label class="ar-label">Attribute / combat value (e.g. Courage, AT, PA)</label><input id="dsa-val" class="ar-input" type="number" value="12">
+        <label class="ar-label">Modifier (+ easier, − harder)</label><input id="dsa-mod" class="ar-input" type="number" value="0">`;
+    }
+  }
+  async function dsaRoll() {
+    const gi = id => { const el = document.getElementById(id); return el ? (parseInt(el.value) || 0) : 0; };
+    const mod = gi('dsa-mod');
+    let resultHtml = '', card = '';
+    if (DSA_MODE === 'attr') {
+      const val = gi('dsa-val') + mod;
+      const r = 1 + Math.floor(Math.random() * 20);
+      const crit = r === 1, botch = r === 20;
+      const ok = crit || (!botch && r <= val);
+      const verdict = crit ? 'CRITICAL SUCCESS' : botch ? 'BOTCH' : (ok ? 'SUCCESS' : 'FAILURE');
+      resultHtml = `<div class="ar-roll-line">d20 = <b>${r}</b> vs ${val} — <span class="ar-verdict ${ok ? 'hit' : 'miss'}">${verdict}</span></div>`;
+      card = `DSA check: d20[${r}] vs ${val} — ${verdict}`;
+    } else {
+      const attrs = [gi('dsa-a1'), gi('dsa-a2'), gi('dsa-a3')];
+      const fw = gi('dsa-fw');
+      const dice = [0, 0, 0].map(() => 1 + Math.floor(Math.random() * 20));
+      let over = 0;
+      const perDie = dice.map((die, i) => { const need = Math.max(0, die - (attrs[i] + mod)); over += need; return `${die}${need > 0 ? '(-' + need + ')' : '✓'}`; });
+      const ones = dice.filter(d => d === 1).length, twenties = dice.filter(d => d === 20).length;
+      const crit = ones >= 2, botch = twenties >= 2;
+      const remaining = fw - over;
+      let ok = remaining >= 0; if (crit) ok = true; if (botch) ok = false;
+      const qs = ok ? Math.max(1, Math.min(6, Math.ceil(Math.max(0, remaining) / 3))) : 0;
+      const verdict = crit ? 'CRITICAL SUCCESS' : botch ? 'BOTCH' : (ok ? `SUCCESS (QL ${qs})` : 'FAILURE');
+      resultHtml = `<div class="ar-roll-line">3d20 [${perDie.join(', ')}] · FW ${fw}${mod ? (mod > 0 ? ' +' + mod : ' ' + mod) : ''} → left ${remaining} — <span class="ar-verdict ${ok ? 'hit' : 'miss'}">${verdict}</span></div>`;
+      card = `DSA skill: 3d20[${dice.join(',')}] vs ${attrs.join('/')}, FW ${fw} — ${verdict}`;
+    }
+    document.getElementById('dsa-result').innerHTML = resultHtml;
+    const who = (document.getElementById('char-name') && document.getElementById('char-name').value) || STATE.username || 'Someone';
+    try { await sb.from('vtt_chat').insert({ id: genId(), session_id: STATE.sessionId, user_id: STATE.userId, user_name: who, is_host: STATE.isHost, msg_type: 'system', text: `${who} — ${card}`, ts: nowTs() }); } catch (e) {}
+  }
+  (function setupDsaCheck() {
+    const btn = document.getElementById('dsa-check-btn');
+    if (btn) btn.addEventListener('click', openDsaCheck);
+    const close = document.getElementById('dsa-close');
+    if (close) close.addEventListener('click', closeDsaCheck);
+    const modeBox = document.getElementById('dsa-mode');
+    if (modeBox) modeBox.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { DSA_MODE = b.dataset.m; modeBox.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); dsaRenderFields(); }));
+    const roll = document.getElementById('dsa-roll');
+    if (roll) roll.addEventListener('click', dsaRoll);
+    const p = document.getElementById('dsa-check-popup');
+    if (p) p.addEventListener('mousedown', (e) => { if (e.target === p) closeDsaCheck(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const el = document.getElementById('dsa-check-popup'); if (el && el.classList.contains('active')) closeDsaCheck(); } });
+    const ind = document.getElementById('ruleset-indicator');
+    if (ind) ind.addEventListener('click', () => { if (STATE.isHost) toggleRuleset(); });
+  })();
   (function setupActionResolver() {
     const close = document.getElementById('ar-close');
     if (close) close.addEventListener('click', closeActionResolver);
@@ -17277,6 +17398,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (has('short-rest-btn')) add('Take a Short Rest', () => click('short-rest-btn'));
     if (has('long-rest-btn')) add('Take a Long Rest', () => click('long-rest-btn'));
     if (has('switch-role-btn')) add('Switch Role (DM / Player)', () => click('switch-role-btn'));
+    if (STATE.ruleset === 'dsa') add('DSA Check (roll-under)', () => openDsaCheck());
+    if (STATE.isHost) add('Switch ruleset: D&D 5e / DSA', () => toggleRuleset());
     if (STATE.isHost) {
       add('Build or Launch an Encounter', () => { CAMP_TAB = 'encounters'; openCampaign(); });
       add('Set the Scene (cinematic title)', () => { CAMP_TAB = 'scenes'; openCampaign(); });
