@@ -5428,6 +5428,32 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   };
 
   // Inline SVG art for monster tokens, themed by type and shaped by archetype.
+  async function spawnDsaCreature(cr, placeAsToken) {
+    if (!STATE.isHost || !cr) return;
+    if (!STATE.initiative.active) STATE.initiative = { active: true, round: 1, turn: 0, entries: [] };
+    const existing = STATE.initiative.entries.filter(e => e.name && e.name.startsWith(cr.n)).length;
+    const label = existing > 0 ? `${cr.n} ${existing + 1}` : cr.n;
+    const img = monsterPlaceholderImg({ id: (cr.n || '').toLowerCase() });
+    let tokenId = null;
+    if (placeAsToken) {
+      tokenId = genId();
+      const tok = {
+        id: tokenId, session_id: STATE.sessionId, name: label, image_url: img,
+        x: 400 + existing * 60, y: 300, owner_id: null,
+        current_hp: cr.lp, max_hp: cr.lp, is_npc: true,
+        monster_data: JSON.stringify({ system: 'dsa', at: cr.at, pa: cr.pa, rs: cr.rs, ini: cr.ini, dmg: cr.dmg, attrs: cr.attrs }),
+      };
+      STATE.tokens.set(tokenId, tok);
+      if (!(await insertTokenRow(tok))) { STATE.tokens.delete(tokenId); toast('Token could not be saved', 'error'); }
+      renderTokens();
+      renderTokenTray();
+    }
+    const init = (cr.ini || 0) + 1 + Math.floor(Math.random() * 6); // DSA: INI + 1d6
+    STATE.initiative.entries.push({ tokenId, name: label, init, dex: cr.ini || 0, hp: cr.lp, maxHp: cr.lp, ac: cr.rs, portrait: img, isNpc: true, downed: false });
+    STATE.initiative.entries = sortInitiativeEntries(STATE.initiative.entries);
+    renderInitiative();
+    await saveInitiative();
+  }
   function monsterPlaceholderImg(preset) {
     const colors = {
       goblin: '#5b8a3a', orc: '#7d4a25', kobold: '#a85020', wolf: '#665a4a',
@@ -16755,7 +16781,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     body.querySelectorAll('[data-scdel]').forEach(b => b.addEventListener('click', () => { campData().scenes = scenes.filter(s => s.id !== b.dataset.scdel); if (CAMP_EDIT === b.dataset.scdel) CAMP_EDIT = null; campSave(); campRender(); }));
     body.querySelectorAll('[data-scplay]').forEach(b => b.addEventListener('click', () => { const s = scenes.find(x => x.id === b.dataset.scplay); if (s) playScene(s); }));
   }
-  function encPresetName(id) { const p = MONSTER_PRESETS.find(x => x.id === id); return p ? p.name : id; }
+  function encPresetName(id) { if (STATE.ruleset === 'dsa') { const c = DSA_BESTIARY.find(x => x.n === id); return c ? c.n : id; } const p = MONSTER_PRESETS.find(x => x.id === id); return p ? p.name : id; }
   function encGroupsSummary(groups) { return (groups || []).map(g => `${g.count}× ${encPresetName(g.presetId)}`).join(', ') || 'no monsters yet'; }
   function encDraftReadFields() {
     const g = id => { const el = document.getElementById(id); return el ? el.value : ''; };
@@ -16769,7 +16795,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     let html = `<div class="camp-form">
       <input id="enc-name" class="camp-input" type="text" placeholder="Encounter name (e.g. Ambush at the Bridge)" value="${escapeHtml(ENC_DRAFT.name || '')}">
       <div class="camp-form-row">
-        <select id="enc-preset" class="camp-input">${MONSTER_PRESETS.map(p => `<option value="${p.id}">${escapeHtml(p.name)} (CR ${p.cr})</option>`).join('')}</select>
+        <select id="enc-preset" class="camp-input">${STATE.ruleset === 'dsa' ? DSA_BESTIARY.map(c => `<option value="${escapeHtml(c.n)}">${escapeHtml(c.n)} (LP ${c.lp})</option>`).join('') : MONSTER_PRESETS.map(p => `<option value="${p.id}">${escapeHtml(p.name)} (CR ${p.cr})</option>`).join('')}</select>
         <input id="enc-count" class="camp-input" type="number" min="1" value="1" style="max-width:70px">
         <button id="enc-addmon" class="camp-btn">Add monster</button>
       </div>
@@ -16822,9 +16848,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (!(enc.groups || []).length) { toast('This encounter has no monsters', 'error'); return; }
     let spawned = 0;
     for (const g of enc.groups) {
-      const preset = MONSTER_PRESETS.find(p => p.id === g.presetId);
-      if (!preset) continue;
-      for (let i = 0; i < (g.count || 1); i++) { await spawnMonster(preset, true); spawned++; }
+      if (STATE.ruleset === 'dsa') {
+        const cr = DSA_BESTIARY.find(c => c.n === g.presetId);
+        if (!cr) continue;
+        for (let i = 0; i < (g.count || 1); i++) { await spawnDsaCreature(cr, true); spawned++; }
+      } else {
+        const preset = MONSTER_PRESETS.find(p => p.id === g.presetId);
+        if (!preset) continue;
+        for (let i = 0; i < (g.count || 1); i++) { await spawnMonster(preset, true); spawned++; }
+      }
     }
     enc.status = 'active';
     campSave();
