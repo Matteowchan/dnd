@@ -5903,7 +5903,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   function updateLockTokensButtonLabel() {
     const btn = document.getElementById('lock-tokens-toggle');
-    if (btn) btn.innerHTML = 'Lock Tokens: <b>' + (STATE.tokensLocked ? 'On' : 'Off') + '</b>';
+    if (btn) btn.innerHTML = toggleLabel('Lock Tokens: ' + (STATE.tokensLocked ? 'On' : 'Off'));
   }
 
   function handleTokenChange(payload) {
@@ -11643,8 +11643,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   }
   function updateFogButtons() {
     const fc = document.getElementById('fog-controls'); if (fc) fc.style.display = STATE.isHost ? '' : 'none';
-    const t = document.getElementById('fog-toggle'); if (t) t.innerHTML = 'Fog of War: <b>' + ((STATE.fog && STATE.fog.on) ? 'On' : 'Off') + '</b>';
-    const b = document.getElementById('fog-brush-toggle'); if (b) { b.innerHTML = 'Reveal Brush: <b>' + (STATE.fogPaint ? 'On' : 'Off') + '</b>'; b.classList.toggle('primary', !!STATE.fogPaint); }
+    const t = document.getElementById('fog-toggle'); if (t) t.innerHTML = toggleLabel('Fog of War: ' + ((STATE.fog && STATE.fog.on) ? 'On' : 'Off'));
+    const b = document.getElementById('fog-brush-toggle'); if (b) { b.innerHTML = toggleLabel('Reveal Brush: ' + (STATE.fogPaint ? 'On' : 'Off')); b.classList.toggle('primary', !!STATE.fogPaint); }
     const mc = document.getElementById('mapcontainer'); if (mc) mc.classList.toggle('fog-painting', !!STATE.fogPaint);
   }
   function fogPaintAt(clientX, clientY, erase) {
@@ -11723,7 +11723,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   document.getElementById('move-map-toggle').addEventListener('click', () => {
     STATE.mapMoveMode = !STATE.mapMoveMode;
     const btn = document.getElementById('move-map-toggle');
-    btn.innerHTML = 'Move Map: <b>' + (STATE.mapMoveMode ? 'On' : 'Off') + '</b>';
+    btn.innerHTML = toggleLabel('Move Map: ' + (STATE.mapMoveMode ? 'On' : 'Off'));
     btn.classList.toggle('primary', STATE.mapMoveMode);
     document.getElementById('mapcontainer').style.cursor = STATE.mapMoveMode ? 'move' : '';
   });
@@ -16851,6 +16851,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
   function t(s) { return (LANG === 'de' && I18N_DE[s]) ? I18N_DE[s] : s; } // for JS-built strings / toasts
+  function toggleLabel(enFull) { return t(enFull).replace(/(\S+)\s*$/, '<b>$1</b>'); } // "Fog of War: On" -> localized with last word bold
   function i18nEl(el) {
     if (!el || el.nodeType !== 1) return;
     // placeholder / title: translate only known dictionary values, reversibly
@@ -16878,6 +16879,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     try { document.documentElement.setAttribute('data-lang', LANG); } catch (e) {}
     const btn = document.getElementById('lang-toggle'); if (btn) { btn.textContent = LANG === 'de' ? 'DE' : 'EN'; btn.title = LANG === 'de' ? 'Sprache (Deutsch) — Klicken für Englisch' : 'Language (English) — click for Deutsch'; }
     i18nWalk(document.body);
+    // Compound toggle buttons carry <b> so they are rebuilt (localized) rather than walked.
+    try { if (typeof updateFogButtons === 'function') updateFogButtons(); } catch (e) {}
+    try { if (typeof updateLockTokensButtonLabel === 'function') updateLockTokensButtonLabel(); } catch (e) {}
+    try { const mb = document.getElementById('move-map-toggle'); if (mb) mb.innerHTML = toggleLabel('Move Map: ' + (STATE.mapMoveMode ? 'On' : 'Off')); } catch (e) {}
   }
   function setLang(l) { LANG = (l === 'de') ? 'de' : 'en'; try { localStorage.setItem('vtt_lang', LANG); } catch (e) {} applyLang(); }
   function toggleLang() { setLang(LANG === 'de' ? 'en' : 'de'); }
