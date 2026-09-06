@@ -1865,11 +1865,11 @@
 </div>
 
 <div id="app">
-  <div id="demo-banner" style="display:none"><b>DEMO MODE</b> &nbsp;·&nbsp; Single user, no multiplayer sync. Configure Supabase to enable real-time.</div>
+  <div id="demo-banner" style="display:none"><b>DEMO MODE</b> &nbsp;·&nbsp; <span>Single user, no multiplayer sync. Configure Supabase to enable real-time.</span></div>
   <div id="topbar">
     <div class="topbar-left">
       <div class="brand">Rollenspieler</div>
-      <div class="session-info">Session: <b id="session-code-display" title="Click to copy"></b></div>
+      <div class="session-info"><span>Session:</span> <b id="session-code-display" title="Click to copy"></b></div>
       <span class="role-badge" id="role-badge"></span>
       <span style="font-size: calc(13px * var(--app-scale, 1)); color: var(--muted)">|</span>
       <span style="font-size: calc(13px * var(--app-scale, 1));" id="username-display"></span>
@@ -4629,7 +4629,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const hpSec = document.createElement('div');
       hpSec.className = 'rb-section rb-hpwrap';
       hpSec.innerHTML = `
-        <div class="rb-section-head">HP Tracker <span class="hint">(click a row to view character)</span></div>
+        <div class="rb-section-head"><span>HP Tracker</span> <span class="hint">(click a row to view character)</span></div>
         <div id="hp-tracker-list-right"></div>
       `;
       rb.appendChild(hpSec);
@@ -4652,7 +4652,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           <button id="init-clear" class="init-mini-btn danger" title="End combat / clear initiative">End</button>
         </div>
         <div id="init-list" class="init-list">
-          <div class="init-empty">No combat in progress. <span class="init-empty-hint">DM: click Roll All to start.</span></div>
+          <div class="init-empty"><span>No combat in progress.</span> <span class="init-empty-hint">DM: click Roll All to start.</span></div>
         </div>
       </div>
     `;
@@ -4726,7 +4726,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     // Toolbar is visible to everyone so players can cast spells too.
     document.getElementById('dm-toolbar').style.display = 'flex';
     if (STATE.isHost) {
-      badge.textContent = 'HOST';
+      badge.textContent = 'HOST'; i18nEl(badge);
       badge.className = 'role-badge role-host';
       document.getElementById('host-section').style.display = 'block';
       document.getElementById('gm-roll-toggle').style.display = 'flex';
@@ -4734,8 +4734,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const dmTokenUpload = document.getElementById('dm-token-upload-wrap');
       if (dmTokenUpload) dmTokenUpload.style.display = 'block';
     } else {
-      const cls = STATE.playerClass ? ' · ' + STATE.playerClass.toUpperCase() : '';
-      badge.textContent = 'PLAYER' + cls;
+      const cls = STATE.playerClass ? ' · ' + t(STATE.playerClass).toUpperCase() : '';
+      badge.textContent = t('PLAYER') + cls;
       badge.className = 'role-badge role-player';
       // Players don't get image generation, clear-effects, or DM Rules editor (DM-only powers)
       const imggenBtn = document.getElementById('imggen-btn');
@@ -4800,7 +4800,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.body.classList.add('spectator');
     await enterApp();
     const badge = document.getElementById('role-badge');
-    if (badge) { badge.textContent = 'SPECTATOR'; badge.className = 'role-badge role-spectator'; }
+    if (badge) { badge.textContent = 'SPECTATOR'; i18nEl(badge); badge.className = 'role-badge role-spectator'; }
     const banner = document.getElementById('spectator-banner');
     if (banner) banner.style.display = 'flex';
   }
@@ -5192,7 +5192,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     list.innerHTML = '';
     if (!STATE.initiative.active || STATE.initiative.entries.length === 0) {
       list.innerHTML = STATE.isHost
-        ? `<div class="init-empty">No combat in progress.<span class="init-empty-hint">Click Roll All to start.</span></div>`
+        ? `<div class="init-empty"><span>No combat in progress.</span><span class="init-empty-hint">Click Roll All to start.</span></div>`
         : `<div class="init-empty">No active combat.</div>`;
       return;
     }
@@ -17391,7 +17391,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     STATE.ruleset = currentRuleset();
     try { document.documentElement.setAttribute('data-ruleset', STATE.ruleset); } catch (e) {}
     const ind = document.getElementById('ruleset-indicator');
-    if (ind) { ind.textContent = rulesetLabel(STATE.ruleset); ind.title = STATE.isHost ? 'Ruleset (click to switch)' : 'Active ruleset'; }
+    if (ind) { ind.textContent = rulesetLabel(STATE.ruleset); ind.title = STATE.isHost ? t('Ruleset (click to switch)') : t('Active ruleset'); }
     const dsaBtn = document.getElementById('dsa-check-btn');
     if (dsaBtn) dsaBtn.style.display = STATE.ruleset === 'dsa' ? '' : 'none';
   }
@@ -19790,6 +19790,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Leave blank for DEMO": "Für DEMO leer lassen",
   "Signed in as ": "Angemeldet als ",
   "your account": "dein Konto",
+  "DEMO MODE": "DEMO-MODUS",
+  "Single user, no multiplayer sync. Configure Supabase to enable real-time.": "Einzelnutzer, keine Mehrspieler-Synchronisierung. Konfiguriere Supabase, um Echtzeit zu aktivieren.",
+  "Session:": "Sitzung:",
+  "HP Tracker": "TP-Anzeige",
+  "Click Roll All to start.": "„Alle würfeln“ klicken zum Start.",
+  "HOST": "SPIELLEITER",
+  "PLAYER": "SPIELER",
+  "SPECTATOR": "ZUSCHAUER",
+  "Ruleset (click to switch)": "Regelwerk (zum Wechseln klicken)",
+  "Active ruleset": "Aktives Regelwerk",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
