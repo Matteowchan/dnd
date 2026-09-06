@@ -11023,15 +11023,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const slotsRestored = magic && magic.slots ? Object.entries(magic.slots).filter(([lv, v]) => v && v.max > 0).map(([lv, v]) => `Lv ${lv}: ${v.max}`).join(', ') : '';
       return {
         kind: 'long',
-        title: 'Long Rest (8 hours)',
-        intro: 'A full night of rest. Restores all hit points, all spell slots, half of your hit dice, reduces exhaustion by 1, and resets death saves.',
+        title: t('Long Rest (8 hours)'),
+        intro: t('A full night of rest. Restores all hit points, all spell slots, half of your hit dice, reduces exhaustion by 1, and resets death saves.'),
         changes: [
-          { key: 'Hit Points', val: maxHp != null ? `${curHp ?? '?'} → ${maxHp} (full)` : 'No token on map', cls: 'gain' },
-          { key: 'Hit Dice', val: `${remHd} → ${newRem} / ${totalHd} (+${Math.min(halfHd, usedHd)})`, cls: 'gain' },
-          { key: 'Spell slots', val: slotsRestored || 'none configured', cls: 'gain' },
-          { key: 'Exhaustion', val: conds.exhaustionLevel > 0 ? `${conds.exhaustionLevel} → ${conds.exhaustionLevel - 1}` : '0 (none)', cls: conds.exhaustionLevel > 0 ? 'gain' : '' },
-          { key: 'Death saves', val: 'reset', cls: 'gain' },
-          { key: 'Heroic Inspiration', val: parseInt(player.inspiration) ? 'kept (5.5e: rest preserves)' : 'none', cls: '' },
+          { key: t('Hit Points'), val: maxHp != null ? `${curHp ?? '?'} → ${maxHp} (${t('full')})` : t('No token on map'), cls: 'gain' },
+          { key: t('Hit Dice'), val: `${remHd} → ${newRem} / ${totalHd} (+${Math.min(halfHd, usedHd)})`, cls: 'gain' },
+          { key: t('Spell slots'), val: slotsRestored || t('none configured'), cls: 'gain' },
+          { key: t('Exhaustion'), val: conds.exhaustionLevel > 0 ? `${conds.exhaustionLevel} → ${conds.exhaustionLevel - 1}` : ('0 (' + t('none') + ')'), cls: conds.exhaustionLevel > 0 ? 'gain' : '' },
+          { key: t('Death saves'), val: t('reset'), cls: 'gain' },
+          { key: t('Heroic Inspiration'), val: parseInt(player.inspiration) ? t('kept (5.5e: rest preserves)') : t('none'), cls: '' },
         ],
         // Closure that performs the DB writes
         apply: async () => {
@@ -11083,7 +11083,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
             user_name: player.name || STATE.username,
             is_host: STATE.isHost,
             msg_type: 'system',
-            text: `${player.name || STATE.username} took a Long Rest. Fully healed and refreshed.`,
+            text: `${player.name || STATE.username} ${t('took a Long Rest. Fully healed and refreshed.')}`,
             ts: nowTs(),
           });
         },
@@ -11093,8 +11093,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const hasToken = !!(myToken && curHp != null && maxHp != null);
       return {
         kind: 'short',
-        title: 'Short Rest (1 hour)',
-        intro: `A brief respite. Spend Hit Dice (each d${hd} ${conMod >= 0 ? '+' : ''}${conMod}) to heal. Spell slots do NOT restore, Warlock excepted.`,
+        title: t('Short Rest (1 hour)'),
+        intro: `${t('A brief respite. Spend Hit Dice')} (${t('each')} W${hd} ${conMod >= 0 ? '+' : ''}${conMod}) ${t('to heal. Spell slots do NOT restore, Warlock excepted.')}`,
         interactive: true,
         hd, conMod, maxSpend: remHd, totalHd, usedHd, hasToken, curHp, maxHp,
         warlock: isClass(player.class, 'Warlock'),
@@ -11125,9 +11125,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           const who = player.name || STATE.username;
           let text;
           if (count > 0) {
-            text = `${who} took a Short Rest: spent ${count} Hit Di${count > 1 ? 'ce' : 'e'} (d${hd}) [${rolls.join(', ')}] ${conMod >= 0 ? '+' : ''}${conMod} each = ${sum} HP${isClass(player.class, 'Warlock') ? ', Pact slots restored' : ''}.`;
+            text = `${who} ${t('took a Short Rest: spent')} ${count} ${t('Hit Dice')} (W${hd}) [${rolls.join(', ')}] ${conMod >= 0 ? '+' : ''}${conMod} ${t('each')} = ${sum} ${t('HP')}${isClass(player.class, 'Warlock') ? (', ' + t('Pact slots restored')) : ''}.`;
           } else {
-            text = `${who} took a Short Rest${isClass(player.class, 'Warlock') ? ', Pact slots restored' : ' (no Hit Dice spent)'}.`;
+            text = `${who} ${t('took a Short Rest')}${isClass(player.class, 'Warlock') ? (', ' + t('Pact slots restored')) : (' (' + t('no Hit Dice spent') + ')')}.`;
           }
           await sb.from('vtt_chat').insert({
             id: genId(), session_id: STATE.sessionId, user_id: STATE.userId,
@@ -11150,12 +11150,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       CURRENT_REST.spendCount = Math.min(1, data.maxSpend);
       resultsEl.innerHTML = `
         <div class="rest-hd-spend">
-          <div class="rest-hd-label">Spend Hit Dice (each d${data.hd} ${data.conMod >= 0 ? '+' : ''}${data.conMod})</div>
+          <div class="rest-hd-label">${t('Spend Hit Dice')} (${t('each')} W${data.hd} ${data.conMod >= 0 ? '+' : ''}${data.conMod})</div>
           <div class="rest-hd-stepper">
             <button id="rest-hd-minus" class="init-mini-btn">−</button>
             <span id="rest-hd-count">${CURRENT_REST.spendCount}</span>
             <button id="rest-hd-plus" class="init-mini-btn">+</button>
-            <span class="rest-hd-rem">of ${data.maxSpend} remaining</span>
+            <span class="rest-hd-rem">${t('of')} ${data.maxSpend} ${t('remaining')}</span>
           </div>
           <div id="rest-hd-estimate" class="rest-hd-estimate"></div>
         </div>`;
@@ -11173,11 +11173,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const el = document.getElementById('rest-hd-estimate');
     if (!el || !CURRENT_REST) return;
     const d = CURRENT_REST, n = d.spendCount;
-    if (!d.hasToken) { el.innerHTML = 'No token on the map, so HP cannot be tracked. Place your token to heal.'; return; }
-    if (n <= 0) { el.innerHTML = 'No Hit Dice spent. You still take the hour of rest.'; return; }
+    if (!d.hasToken) { el.innerHTML = t('No token on the map, so HP cannot be tracked. Place your token to heal.'); return; }
+    if (n <= 0) { el.innerHTML = t('No Hit Dice spent. You still take the hour of rest.'); return; }
     const lo = Math.max(0, n * (1 + d.conMod));
     const hi = Math.max(0, n * (d.hd + d.conMod));
-    el.innerHTML = `Heals about <b>${lo}–${hi}</b> HP, rolled on confirm. Current HP ${d.curHp} / ${d.maxHp}.`;
+    el.innerHTML = `${t('Heals about')} <b>${lo}–${hi}</b> ${t('HP, rolled on confirm. Current HP')} ${d.curHp} / ${d.maxHp}.`;
   }
   document.getElementById('short-rest-btn').addEventListener('click', () => openGrantRest('short'));
   document.getElementById('long-rest-btn').addEventListener('click', () => openGrantRest('long'));
@@ -11187,14 +11187,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   function openGrantRest(kind) {
     if (!STATE.isHost) { openRestPopup(kind); return; }
     GRANT_REST_KIND = kind;
-    document.getElementById('grant-rest-title').textContent = (kind === 'long' ? 'Long' : 'Short') + ' Rest';
+    document.getElementById('grant-rest-title').textContent = (kind === 'long' ? t('Long Rest') : t('Short Rest'));
     document.getElementById('grant-rest-intro').innerHTML = kind === 'long'
-      ? 'Grant a Long Rest. Selected members are prompted to confirm a full rest (full HP, spell slots, half Hit Dice, exhaustion reduced by 1).'
-      : 'Grant a Short Rest. Selected members are prompted to roll Hit Dice to heal.';
+      ? t('Grant a Long Rest. Selected members are prompted to confirm a full rest (full HP, spell slots, half Hit Dice, exhaustion reduced by 1).')
+      : t('Grant a Short Rest. Selected members are prompted to roll Hit Dice to heal.');
     const members = (STATE.persistedPlayers || []).filter(p => p && p.id);
     const wrap = document.getElementById('grant-rest-members');
     if (!members.length) {
-      wrap.innerHTML = '<div class="rest-intro">No party members found.</div>';
+      wrap.innerHTML = `<div class="rest-intro">${t('No party members found.')}</div>`;
     } else {
       wrap.innerHTML = members.map(p => `
         <label class="grant-member">
@@ -11220,7 +11220,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       await sb.from('vtt_chat').insert({
         id: genId(), session_id: STATE.sessionId, user_id: STATE.userId,
         user_name: STATE.username, is_host: true, msg_type: 'system',
-        text: `The DM called a ${kind === 'long' ? 'Long' : 'Short'} Rest for: ${names.join(', ')}.`, ts: nowTs(),
+        text: `${t('The DM called a')} ${kind === 'long' ? t('Long Rest') : t('Short Rest')} ${t('for:')} ${names.join(', ')}.`, ts: nowTs(),
       });
       toast('Rest granted', 'success');
     } catch (e) {
@@ -20151,6 +20151,58 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Goal": "Ziel",
   "Method": "Methode",
   "Type": "Art",
+  "A full night of rest. Restores all hit points, all spell slots, half of your hit dice, reduces exhaustion by 1, and resets death saves.": "Eine ganze Nacht Ruhe. Stellt alle Trefferpunkte, alle Zauberplätze und die Hälfte deiner Trefferwürfel wieder her, verringert die Erschöpfung um 1 und setzt die Rettungswürfe gegen den Tod zurück.",
+  "Hit Points": "Trefferpunkte",
+  "full": "voll",
+  "Spell slots": "Zauberplätze",
+  "none configured": "keine konfiguriert",
+  "none": "keine",
+  "Death saves": "Rettungswürfe gegen den Tod",
+  "reset": "zurückgesetzt",
+  "Heroic Inspiration": "Heroische Inspiration",
+  "kept (5.5e: rest preserves)": "behalten (5.5e: Rast bewahrt sie)",
+  "took a Long Rest. Fully healed and refreshed.": "legte eine Lange Rast ein. Vollständig geheilt und erholt.",
+  "A brief respite. Spend Hit Dice": "Eine kurze Verschnaufpause. Setze Trefferwürfel ein",
+  "each": "je",
+  "to heal. Spell slots do NOT restore, Warlock excepted.": "um zu heilen. Zauberplätze werden NICHT wiederhergestellt, außer beim Hexenmeister.",
+  "Spend Hit Dice": "Trefferwürfel einsetzen",
+  "of": "von",
+  "remaining": "übrig",
+  "No token on the map, so HP cannot be tracked. Place your token to heal.": "Keine Figur auf der Karte, daher können TP nicht verfolgt werden. Platziere deine Figur, um zu heilen.",
+  "No Hit Dice spent. You still take the hour of rest.": "Keine Trefferwürfel eingesetzt. Du machst trotzdem die Stunde Rast.",
+  "Heals about": "Heilt etwa",
+  "HP, rolled on confirm. Current HP": "TP, beim Bestätigen gewürfelt. Aktuelle TP",
+  "Grant a Long Rest. Selected members are prompted to confirm a full rest (full HP, spell slots, half Hit Dice, exhaustion reduced by 1).": "Gewähre eine Lange Rast. Ausgewählte Mitglieder werden aufgefordert, eine volle Rast zu bestätigen (volle TP, Zauberplätze, halbe Trefferwürfel, Erschöpfung um 1 verringert).",
+  "Grant a Short Rest. Selected members are prompted to roll Hit Dice to heal.": "Gewähre eine Kurze Rast. Ausgewählte Mitglieder werden aufgefordert, Trefferwürfel zum Heilen zu würfeln.",
+  "No party members found.": "Keine Gruppenmitglieder gefunden.",
+  "The DM called a": "Der SL rief eine",
+  "for:": "für:",
+  "took a Short Rest: spent": "legte eine Kurze Rast ein: setzte",
+  "HP": "TP",
+  "Pact slots restored": "Paktplätze wiederhergestellt",
+  "took a Short Rest": "legte eine Kurze Rast ein",
+  "no Hit Dice spent": "keine Trefferwürfel eingesetzt",
+  "Grant Rest": "Rast gewähren",
+  "Rest": "Rast",
+  "No character data found": "Keine Charakterdaten gefunden",
+  "Rest granted": "Rast gewährt",
+  "Select at least one member": "Wähle mindestens ein Mitglied",
+  "Healed on your sheet, but HP did not sync to the map.": "Auf deinem Bogen geheilt, aber die TP wurden nicht mit der Karte synchronisiert.",
+  "Pact slots restored on your sheet, but did not save.": "Paktplätze auf deinem Bogen wiederhergestellt, aber nicht gespeichert.",
+  "Prompt": "Bildbeschreibung",
+  "No saved images yet. Generated images appear here.": "Noch keine gespeicherten Bilder. Erzeugte Bilder erscheinen hier.",
+  "Warm cream resin, traditional D&D feel": "Warmes cremefarbenes Harz, traditionelles D&D-Gefühl",
+  "Jet black with luminous gold numerals": "Pechschwarz mit leuchtenden goldenen Ziffern",
+  "Translucent blue, glints of magic": "Durchscheinendes Blau, magisches Glitzern",
+  "Deep crimson veined with dark iron": "Tiefes Purpurrot, durchzogen von dunklem Eisen",
+  "Mossy greens, dappled woodland": "Moosiges Grün, geflecktes Waldland",
+  "Mystic purple with crystalline shimmer": "Mystisches Violett mit kristallinem Schimmer",
+  "Aged ivory with bone-pale highlights": "Gealtertes Elfenbein mit knochenblassen Glanzlichtern",
+  "Polished metal, weighty and regal": "Poliertes Metall, schwer und königlich",
+  "Cool metallic, dwarven craftsmanship": "Kühl metallisch, zwergische Handwerkskunst",
+  "Midnight sky scattered with starlight": "Mitternachtshimmel, übersät mit Sternenlicht",
+  "Smoldering orange and ash": "Schwelendes Orange und Asche",
+  "Ocean swirls of teal and white": "Ozeanwirbel in Türkis und Weiß",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
