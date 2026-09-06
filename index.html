@@ -17188,6 +17188,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     try { if (t.monster_data) { const md = JSON.parse(t.monster_data); if (md && md.ac != null) return md.ac; } } catch (e) {}
     return null;
   }
+  function getTokenRS(tokenId) {
+    const t = STATE.tokens.get(tokenId);
+    if (!t) return null;
+    try { if (t.monster_data) { const md = JSON.parse(t.monster_data); if (md && md.rs != null) return md.rs; } } catch (e) {}
+    return null;
+  }
   function onMapTokens() { return Array.from(STATE.tokens.values()).filter(t => t.x != null && t.y != null); }
   function rollD20Mode(mode) {
     const r1 = 1 + Math.floor(Math.random() * 20);
@@ -17265,34 +17271,41 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   function renderResolver() {
     if (!RESOLVER) return;
     const box = document.getElementById('ar-body');
-    const attacker = (document.getElementById('char-name') && document.getElementById('char-name').value) || STATE.username || 'Someone';
+    const isDsa = RESOLVER.kind === 'dsa-attack';
+    const attacker = isDsa
+      ? ((DSA_SHEET.data && DSA_SHEET.data.name) || STATE.username || 'Someone')
+      : ((document.getElementById('char-name') && document.getElementById('char-name').value) || STATE.username || 'Someone');
     const toks = onMapTokens();
     const targetOpts = ['<option value="">— choose a target —</option>'].concat(toks.map(t => {
-      const ac = getTokenAC(t.id);
-      return `<option value="${t.id}"${RESOLVER.targetId === t.id ? ' selected' : ''}>${escapeHtml(t.name || 'Token')}${ac != null ? ' (AC ' + ac + ')' : ''}</option>`;
+      const tag = isDsa ? getTokenRS(t.id) : getTokenAC(t.id);
+      const lbl = isDsa ? (tag != null ? ' (RS ' + tag + ')' : '') : (tag != null ? ' (AC ' + tag + ')' : '');
+      return `<option value="${t.id}"${RESOLVER.targetId === t.id ? ' selected' : ''}>${escapeHtml(t.name || 'Token')}${lbl}</option>`;
     })).join('');
     const isSpell = RESOLVER.kind === 'spell';
     const spellSave = isSpell && RESOLVER.spellMode === 'save';
     let html = `
-      <div class="ar-line"><span class="ar-attacker">${escapeHtml(attacker)}</span> uses <b>${escapeHtml(RESOLVER.name)}</b></div>
+      <div class="ar-line"><span class="ar-attacker">${escapeHtml(attacker)}</span> ${isDsa ? 'attacks with' : 'uses'} <b>${escapeHtml(RESOLVER.name)}</b>${isDsa ? ' <span class="ar-dmg-detail">(AT ' + (RESOLVER.at || 0) + ', roll under)</span>' : ''}</div>
       <label class="ar-label">Target</label>
       <select id="ar-target" class="ar-input">${targetOpts}</select>`;
+    if (isDsa) {
+      html += `<div class="ar-savenote">Attack succeeds on a 1d20 <b>at or under ${RESOLVER.at || 0}</b> (1 = critical, 20 = botch). Damage is reduced by the target\\'s Protection (RS).</div>`;
+    }
     if (isSpell) {
       html += `<div class="ar-seg ar-spellmode">
         <button data-sm="attack" class="${RESOLVER.spellMode !== 'save' ? 'on' : ''}">Spell attack</button>
         <button data-sm="save" class="${RESOLVER.spellMode === 'save' ? 'on' : ''}">Saving throw</button>
       </div>`;
     }
-    if (!spellSave) {
+    if (!spellSave && !isDsa) {
       html += `<label class="ar-label">Roll</label><div class="ar-seg ar-mode">
         <button data-mode="dis" class="${RESOLVER.mode === 'dis' ? 'on' : ''}">Disadvantage</button>
         <button data-mode="normal" class="${RESOLVER.mode === 'normal' ? 'on' : ''}">Normal</button>
         <button data-mode="adv" class="${RESOLVER.mode === 'adv' ? 'on' : ''}">Advantage</button>
       </div>`;
-    } else {
+    } else if (spellSave) {
       html += `<div class="ar-savenote">Target makes a DC <b>${RESOLVER.saveDc || '?'}</b> ${escapeHtml((RESOLVER.saveAbility || '').toUpperCase())} save. Roll damage, then apply full or half.</div>`;
     }
-    html += `<button id="ar-roll" class="ar-roll-btn">${spellSave ? 'Roll Damage' : (isSpell ? 'Cast — Roll Attack' : 'Attack — Roll to Hit')}</button>`;
+    html += `<button id="ar-roll" class="ar-roll-btn">${isDsa ? 'Attack — Roll AT' : (spellSave ? 'Roll Damage' : (isSpell ? 'Cast — Roll Attack' : 'Attack — Roll to Hit'))}</button>`;
     html += `<div id="ar-result" class="ar-result"></div>`;
     box.innerHTML = html;
     const tsel = document.getElementById('ar-target');
@@ -17310,29 +17323,47 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const target = RESOLVER.targetId ? STATE.tokens.get(RESOLVER.targetId) : null;
     const targetName = target ? (target.name || 'the target') : 'no target';
     const isSpell = RESOLVER.kind === 'spell';
+    const isDsa = RESOLVER.kind === 'dsa-attack';
     const spellSave = isSpell && RESOLVER.spellMode === 'save';
     let cardBits = [], crit = false, hit = true, applyAmt = 0, resultHtml = '';
-    if (!spellSave) {
-      const bonus = isSpell ? (RESOLVER.atkBonus || 0) : (RESOLVER.bonus || 0);
-      const d = rollD20Mode(RESOLVER.mode);
-      crit = d.kept === 20;
-      const isFumble = d.kept === 1;
-      const total = d.kept + bonus;
-      const ac = target ? getTokenAC(RESOLVER.targetId) : null;
-      if (isFumble) hit = false; else if (crit) hit = true; else if (ac != null) hit = total >= ac; else hit = true;
-      const rollTxt = d.rolls.length > 1 ? `d20[${d.rolls.join(',')}]→${d.kept}` : `d20[${d.kept}]`;
-      const vsTxt = ac != null ? ` vs AC ${ac}` : '';
-      const verdict = isFumble ? 'MISS (natural 1)' : crit ? 'CRITICAL HIT' : (ac != null ? (hit ? 'HIT' : 'MISS') : 'to hit');
-      resultHtml += `<div class="ar-roll-line"><b>${rollTxt} ${bonus >= 0 ? '+' : ''}${bonus} = ${total}</b>${vsTxt} — <span class="ar-verdict ${hit ? 'hit' : 'miss'}">${verdict}</span></div>`;
-      cardBits.push(`${rollTxt}${bonus >= 0 ? '+' : ''}${bonus}=${total}${vsTxt} ${verdict}`);
-    }
-    if (spellSave || hit) {
-      const dmgExpr = RESOLVER.dmg || '';
-      if (dmgExpr) {
-        const dmg = rollDamageDetailed(dmgExpr, crit);
-        applyAmt = dmg.total;
-        resultHtml += `<div class="ar-dmg-line">Damage: <b>${dmg.total}</b> <span class="ar-dmg-detail">(${escapeHtml(dmg.detail)}${crit ? ', crit' : ''})</span></div>`;
-        cardBits.push(`${dmg.total} damage${crit ? ' (crit)' : ''}`);
+    if (isDsa) {
+      const at = RESOLVER.at || 0;
+      const r = 1 + Math.floor(Math.random() * 20);
+      crit = r === 1; const botch = r === 20;
+      hit = crit || (!botch && r <= at);
+      const verdict = crit ? 'CRITICAL HIT' : botch ? 'BOTCH' : (hit ? 'HIT' : 'MISS');
+      resultHtml += `<div class="ar-roll-line"><b>AT d20[${r}]</b> vs ${at} — <span class="ar-verdict ${hit ? 'hit' : 'miss'}">${verdict}</span></div>`;
+      cardBits.push(`AT d20[${r}]/${at} ${verdict}`);
+      if (hit) {
+        const dmg = rollDamageDetailed(RESOLVER.dmg || '', false);
+        const rs = target ? (getTokenRS(RESOLVER.targetId) || 0) : 0;
+        applyAmt = Math.max(0, dmg.total - rs);
+        resultHtml += `<div class="ar-dmg-line">Damage: <b>${applyAmt}</b> <span class="ar-dmg-detail">(${escapeHtml(dmg.detail)}${rs ? ' − RS ' + rs : ''})</span></div>`;
+        cardBits.push(`${applyAmt} TP${rs ? ' (−RS ' + rs + ')' : ''}`);
+      }
+    } else {
+      if (!spellSave) {
+        const bonus = isSpell ? (RESOLVER.atkBonus || 0) : (RESOLVER.bonus || 0);
+        const d = rollD20Mode(RESOLVER.mode);
+        crit = d.kept === 20;
+        const isFumble = d.kept === 1;
+        const total = d.kept + bonus;
+        const ac = target ? getTokenAC(RESOLVER.targetId) : null;
+        if (isFumble) hit = false; else if (crit) hit = true; else if (ac != null) hit = total >= ac; else hit = true;
+        const rollTxt = d.rolls.length > 1 ? `d20[${d.rolls.join(',')}]→${d.kept}` : `d20[${d.kept}]`;
+        const vsTxt = ac != null ? ` vs AC ${ac}` : '';
+        const verdict = isFumble ? 'MISS (natural 1)' : crit ? 'CRITICAL HIT' : (ac != null ? (hit ? 'HIT' : 'MISS') : 'to hit');
+        resultHtml += `<div class="ar-roll-line"><b>${rollTxt} ${bonus >= 0 ? '+' : ''}${bonus} = ${total}</b>${vsTxt} — <span class="ar-verdict ${hit ? 'hit' : 'miss'}">${verdict}</span></div>`;
+        cardBits.push(`${rollTxt}${bonus >= 0 ? '+' : ''}${bonus}=${total}${vsTxt} ${verdict}`);
+      }
+      if (spellSave || hit) {
+        const dmgExpr = RESOLVER.dmg || '';
+        if (dmgExpr) {
+          const dmg = rollDamageDetailed(dmgExpr, crit);
+          applyAmt = dmg.total;
+          resultHtml += `<div class="ar-dmg-line">Damage: <b>${dmg.total}</b> <span class="ar-dmg-detail">(${escapeHtml(dmg.detail)}${crit ? ', crit' : ''})</span></div>`;
+          cardBits.push(`${dmg.total} damage${crit ? ' (crit)' : ''}`);
+        }
       }
     }
     // Apply controls (only if there is a target and damage, and the roller may edit that token)
@@ -17682,6 +17713,57 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 <p>At a high level, traditions serve two purposes. They give each magical or blessed character a coherent identity and style, and they act as gatekeepers, so that certain powers, techniques, and special abilities are available only to those trained within the right tradition. The specific named traditions belong to a given setting; mechanically, what matters is that your tradition defines your toolkit and your limits.</p>` }
 ] }
 ];
+  let DSA_SPELLS_ARC = [
+{ n: "Fire Bolt", check: ["KL","FF","KO"], cost: "4 AsP", dmg: "2d6", d: "A lance of flame leaps from the caster's hand to sear a single foe." },
+{ n: "Frost Ray", check: ["KL","FF","KO"], cost: "4 AsP", dmg: "2d6", d: "A ray of biting cold freezes the target where it stands." },
+{ n: "Lightning Bolt", check: ["MU","FF","KO"], cost: "6 AsP", dmg: "2d6+2", d: "A crackling arc of lightning arcs toward the target." },
+{ n: "Force Missile", check: ["KL","FF","KK"], cost: "5 AsP", dmg: "2d6", d: "A dart of pure arcane force punches through the air unerringly." },
+{ n: "Acid Splash", check: ["KL","IN","KO"], cost: "4 AsP", dmg: "1d6+2", d: "A hissing gout of corrosive fluid eats at flesh and armor alike." },
+{ n: "Flame Burst", check: ["KL","FF","KO"], cost: "8 AsP", dmg: "3d6", d: "A blossom of fire erupts outward, scorching everything nearby." },
+{ n: "Frost Nova", check: ["KL","IN","KO"], cost: "8 AsP", dmg: "2d6+2", d: "A wave of freezing air explodes from the caster in every direction." },
+{ n: "Thunderclap", check: ["MU","IN","KO"], cost: "7 AsP", dmg: "2d6", d: "A deafening concussion of sound staggers all who stand close." },
+{ n: "Searing Beam", check: ["KL","FF","KK"], cost: "10 AsP", dmg: "3d6+2", d: "A sustained beam of white-hot energy carves through a line of enemies." },
+{ n: "Sleep", check: ["KL","IN","CH"], cost: "6 AsP", d: "A soothing weave of magic drags the target into helpless slumber." },
+{ n: "Wave of Fear", check: ["MU","IN","CH"], cost: "5 AsP", d: "Raw dread washes over those before the caster, breaking their nerve." },
+{ n: "Paralyze", check: ["KL","IN","KO"], cost: "8 AsP", d: "Invisible bonds seize the target's limbs and lock them rigid." },
+{ n: "Hold Person", check: ["KL","CH","KO"], cost: "7 AsP", d: "The target is rooted in place, unable to move from the spot." },
+{ n: "Confusion", check: ["KL","IN","CH"], cost: "6 AsP", d: "The victim's thoughts scatter, leaving them dazed and directionless." },
+{ n: "Light", check: ["KL","IN","FF"], cost: "2 AsP", d: "A steady globe of pale light springs into being and follows the caster." },
+{ n: "Invisibility", check: ["KL","IN","CH"], cost: "10 AsP", d: "Light bends around the subject until they vanish from sight." },
+{ n: "Telekinesis", check: ["KL","IN","FF"], cost: "5 AsP", d: "The caster lifts and moves an object at a distance by will alone." },
+{ n: "Unlock", check: ["KL","IN","FF"], cost: "4 AsP", d: "Tumblers turn and bolts slide free at the caster's silent command." },
+{ n: "Mend", check: ["KL","FF","KO"], cost: "3 AsP", d: "Cracks close and torn edges knit as a broken object is made whole." },
+{ n: "Levitation", check: ["MU","KL","KO"], cost: "6 AsP", d: "The subject rises gently into the air and drifts on unseen currents." },
+{ n: "Read Thoughts", check: ["KL","IN","CH"], cost: "6 AsP", d: "The surface musings of another mind become plain to the caster." },
+{ n: "Detect Magic", check: ["KL","IN","CH"], cost: "3 AsP", d: "Lingering enchantments glow faintly to the caster's attuned senses." },
+{ n: "Clairvoyance", check: ["KL","IN","CH"], cost: "8 AsP", d: "The caster's sight reaches into a distant or hidden place." },
+{ n: "Enlarge", check: ["KL","FF","KO"], cost: "7 AsP", d: "The subject swells to a towering size, gaining reach and might." },
+{ n: "Shapechange", check: ["KL","IN","KO"], cost: "12 AsP", d: "The caster's form flows and reknits into that of a chosen beast." },
+{ n: "Force Shield", check: ["MU","KL","KO"], cost: "5 AsP", d: "A shimmering barrier of hardened air turns aside incoming blows." },
+{ n: "Resist Elements", check: ["KL","KO","KK"], cost: "6 AsP", d: "The subject's skin hardens against fire, frost, and lightning." },
+{ n: "Phantom Image", check: ["KL","IN","CH"], cost: "5 AsP", d: "A convincing illusion takes shape wherever the caster wills it." },
+{ n: "Disguise", check: ["KL","IN","CH"], cost: "6 AsP", d: "The caster's features shift to wear another's face and figure." },
+{ n: "Conjure Servant", check: ["MU","KL","CH"], cost: "10 AsP", d: "A minor spirit is bound into service to obey the caster's tasks." }
+];
+  let DSA_LITURGIES = [
+{ n: "Healing Touch", check: ["KL","IN","CH"], cost: "4 KaP", d: "A warm current of divine grace closes wounds and restores vigor." },
+{ n: "Greater Healing", check: ["KL","IN","CH"], cost: "10 KaP", d: "Grievous injuries mend swiftly under a flood of blessed power." },
+{ n: "Cure Disease", check: ["KL","KO","CH"], cost: "8 KaP", d: "Sickness is driven from the body and health returns to the ailing." },
+{ n: "Cure Poison", check: ["KL","KO","CH"], cost: "6 KaP", d: "Venom is neutralized within the veins of the afflicted." },
+{ n: "Blessing", check: ["MU","IN","CH"], cost: "4 KaP", d: "Favor settles upon an ally, steadying hand and heart in their trials." },
+{ n: "Bane", check: ["MU","IN","CH"], cost: "5 KaP", d: "A curse of ill fortune clings to a foe, fouling their every effort." },
+{ n: "Protective Ward", check: ["KL","IN","KO"], cost: "6 KaP", d: "A sacred aura wraps the faithful, deflecting harm meant for them." },
+{ n: "Turn Undead", check: ["MU","IN","CH"], cost: "8 KaP", d: "Holy power repels the walking dead, sending them recoiling in dread." },
+{ n: "Consecrate", check: ["KL","IN","CH"], cost: "10 KaP", d: "A patch of ground is sanctified, hostile to the unclean and profane." },
+{ n: "Divine Smite", check: ["MU","IN","KK"], cost: "6 KaP", dmg: "2d6+2", d: "Righteous fire descends to strike down the wicked in a single blow." },
+{ n: "Light of Faith", check: ["KL","IN","CH"], cost: "3 KaP", d: "A pure radiance shines forth to banish shadow and lift the spirit." },
+{ n: "Calm", check: ["KL","IN","CH"], cost: "4 KaP", d: "Turmoil eases and tempers cool at the touch of serene grace." },
+{ n: "Courage Aura", check: ["MU","IN","CH"], cost: "5 KaP", d: "An emboldening presence steels nearby allies against fear." },
+{ n: "Speak with Spirits", check: ["KL","IN","CH"], cost: "7 KaP", d: "The caster opens a channel to converse with departed souls." },
+{ n: "Banish", check: ["MU","KL","CH"], cost: "10 KaP", d: "A summoned or unnatural being is cast back whence it came." },
+{ n: "Sanctuary", check: ["KL","IN","CH"], cost: "8 KaP", d: "A hallowed refuge forms, shielding those within from aggression." },
+{ n: "Restore", check: ["KL","KO","CH"], cost: "12 KaP", d: "Drained strength and lost vitality flow back into the weary." }
+];
   const DSA_ATTR_CODES = ['MU', 'KL', 'IN', 'CH', 'FF', 'GE', 'KO', 'KK'];
   const DSA_ATTR_NAMES = { MU: 'Courage', KL: 'Sagacity', IN: 'Intuition', CH: 'Charisma', FF: 'Dexterity', GE: 'Agility', KO: 'Constitution', KK: 'Strength' };
 
@@ -17710,7 +17792,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   // ===== DSA character sheet =====
   let DSA_SHEET = { playerId: null, data: null, profile: null };
   let _dsaSaveTimer = null;
-  function dsaDefaultChar() { const attrs = {}; DSA_ATTR_CODES.forEach(c => attrs[c] = 10); return { name: '', species: 'Human', culture: '', profession: '', ap: 1100, attrs, lp: { cur: 30, max: 30 }, ae: { cur: 0, max: 0 }, kp: { cur: 0, max: 0 }, rs: 0, talents: {}, weapons: [], notes: '' }; }
+  function dsaDefaultChar() { const attrs = {}; DSA_ATTR_CODES.forEach(c => attrs[c] = 10); return { name: '', species: 'Human', culture: '', profession: '', ap: 1100, attrs, lp: { cur: 30, max: 30 }, ae: { cur: 0, max: 0 }, kp: { cur: 0, max: 0 }, rs: 0, talents: {}, weapons: [], spells: [], notes: '' }; }
   function dsaSpeciesData(name) { return DSA_SPECIES.find(s => s.n === name) || { lp: 5, sk: -5, tk: -5, gs: 8 }; }
   function dsaDerived(c) {
     const a = c.attrs, sp = dsaSpeciesData(c.species);
@@ -17736,6 +17818,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (!data.kp) data.kp = { cur: 0, max: 0 };
     if (!data.talents) data.talents = {};
     if (!Array.isArray(data.weapons)) data.weapons = [];
+    if (!Array.isArray(data.spells)) data.spells = [];
     DSA_SHEET = { playerId, profile: prof, data };
   }
   function scheduleDsaSave() { if (_dsaSaveTimer) clearTimeout(_dsaSaveTimer); _dsaSaveTimer = setTimeout(dsaSave, 500); }
@@ -17784,6 +17867,17 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       <button class="dsa-t-check" data-wpn-atk="${i}">Attack</button><button class="dsa-t-check" data-wpn-par="${i}">Parry</button>${edit ? `<button class="dsa-w-del" data-wpn-del="${i}">×</button>` : ''}</div>`).join('');
     return h;
   }
+  function dsaSpellsHtml(c, edit) {
+    let h = '<div class="dsa-sech">Spells &amp; Liturgies <span class="dsa-hint">(cast = 3d20 check, deducts AE/KP)</span></div>';
+    if (edit && (DSA_SPELLS_ARC.length || DSA_LITURGIES.length)) {
+      const arc = DSA_SPELLS_ARC.map(s => `<option value="arc::${escapeHtml(s.n)}">${escapeHtml(s.n)} (${escapeHtml(s.cost || '')})</option>`).join('');
+      const lit = DSA_LITURGIES.map(s => `<option value="lit::${escapeHtml(s.n)}">${escapeHtml(s.n)} (${escapeHtml(s.cost || '')})</option>`).join('');
+      h += `<div class="dsa-row"><select id="dsa-spell-pick" class="dsa-input"><option value="">Add a spell / liturgy…</option><optgroup label="Arcane spells">${arc}</optgroup><optgroup label="Liturgies">${lit}</optgroup></select><button id="dsa-spell-add" class="dsa-btn">Add</button></div>`;
+    }
+    if (!c.spells.length) { h += '<div class="dsa-empty">None known yet.</div>'; return h; }
+    h += c.spells.map((sp, i) => `<div class="dsa-weapon"><span class="dsa-w-name">${escapeHtml(sp.name)}</span><span class="dsa-w-meta">${escapeHtml((sp.check || []).join('/'))} · ${escapeHtml(sp.cost || '')}${sp.dmg ? ' · ' + escapeHtml(sp.dmg) : ''}</span><label class="dsa-w-l">SF<input class="dsa-mini" type="number" data-spellfw="${i}" value="${sp.fw || 0}" ${edit ? '' : 'readonly'}></label><button class="dsa-t-check" data-spell-cast="${i}">Cast</button>${edit ? `<button class="dsa-w-del" data-spell-del="${i}">×</button>` : ''}</div>`).join('');
+    return h;
+  }
   function dsaRenderSheet() {
     const c = DSA_SHEET.data; if (!c) return;
     const der = dsaDerived(c); const edit = dsaCanEdit(); const ro = edit ? '' : 'readonly'; const dis = edit ? '' : 'disabled';
@@ -17813,6 +17907,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     </div>
     ${dsaTalentsHtml(c, edit)}
     ${dsaWeaponsHtml(c, edit)}
+    ${dsaSpellsHtml(c, edit)}
     <div class="dsa-sech">Notes</div><textarea class="dsa-input" data-f="notes" rows="3" ${ro} placeholder="Advantages, disadvantages, special abilities, background...">${escapeHtml(c.notes || '')}</textarea>`;
     document.getElementById('dsa-body').innerHTML = h;
   }
@@ -17862,6 +17957,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       else if (t.dataset.talent) { c.talents[t.dataset.talent] = parseInt(t.value) || 0; scheduleDsaSave(); }
       else if (t.dataset.wpnAt != null) { const w = c.weapons[t.dataset.wpnAt]; if (w) { w.at = parseInt(t.value) || 0; scheduleDsaSave(); } }
       else if (t.dataset.wpnPa != null) { const w = c.weapons[t.dataset.wpnPa]; if (w) { w.pa = parseInt(t.value) || 0; scheduleDsaSave(); } }
+      else if (t.dataset.spellfw != null) { const sp = c.spells[t.dataset.spellfw]; if (sp) { sp.fw = parseInt(t.value) || 0; scheduleDsaSave(); } }
     });
     // change on species/culture/profession → recompute derived (re-render)
     body.addEventListener('change', (e) => {
@@ -17878,13 +17974,37 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const tc = t.closest('[data-talent-check]');
       if (tc) { const name = tc.dataset.talentCheck; const tal = DSA_TALENTS.find(x => x.n === name); if (!tal) return; const vals = tal.a.map(code => c.attrs[code] || 0); const fw = (c.talents && c.talents[name]) || 0; const r = dsaComputeSkill(vals, fw, 0); dsaPostCheck(`${name} (${tal.a.join('/')}) check: 3d20[${r.dice.join(',')}] FW ${fw} → ${r.crit ? 'CRITICAL' : r.botch ? 'BOTCH' : (r.ok ? 'success QL ' + r.qs : 'failure')}`); toast(`${name}: ${r.ok ? 'success QL ' + r.qs : 'failure'}`, r.ok ? 'success' : 'error'); return; }
       const wa = t.closest('[data-wpn-atk]');
-      if (wa) { const w = c.weapons[wa.dataset.wpnAtk]; if (!w) return; const res = dsaComputeAttr(w.at, 0); let txt = `attacks with ${w.name}: AT d20[${res.r}] vs ${res.eff} — ${res.crit ? 'CRITICAL HIT' : res.botch ? 'BOTCH' : (res.ok ? 'HIT' : 'miss')}`; if (res.ok) { const dm = dsaRollDmg(w.dmg); txt += `, ${dm.total} TP (${dm.detail})`; } dsaPostCheck(txt); toast(res.ok ? `Hit with ${w.name}` : `${w.name} missed`, res.ok ? 'success' : 'error'); return; }
+      if (wa) { const w = c.weapons[wa.dataset.wpnAtk]; if (!w) return; openActionResolver({ kind: 'dsa-attack', name: w.name, at: w.at || 0, dmg: w.dmg || '' }); return; }
       const wp = t.closest('[data-wpn-par]');
       if (wp) { const w = c.weapons[wp.dataset.wpnPar]; if (!w) return; const res = dsaComputeAttr(w.pa, 0); dsaPostCheck(`parries with ${w.name}: PA d20[${res.r}] vs ${res.eff} — ${res.crit ? 'CRITICAL' : res.botch ? 'BOTCH' : (res.ok ? 'parried' : 'failed')}`); toast(res.ok ? 'Parried' : 'Parry failed', res.ok ? 'success' : 'error'); return; }
       const wd = t.closest('[data-wpn-del]');
       if (wd && dsaCanEdit()) { c.weapons.splice(wd.dataset.wpnDel, 1); scheduleDsaSave(); dsaRenderSheet(); return; }
       if (t.id === 'dsa-wpn-add' && dsaCanEdit()) { const pick = document.getElementById('dsa-wpn-pick'); const w = DSA_WEAPONS.find(x => x.n === (pick && pick.value)); if (w) { c.weapons.push({ name: w.n, tech: w.tech, dmg: w.dmg, at: 10, pa: 8 }); scheduleDsaSave(); dsaRenderSheet(); } return; }
       if (t.id === 'dsa-token-btn' && dsaCanEdit()) { dsaSyncToken(); return; }
+      const scc = t.closest('[data-spell-cast]');
+      if (scc) {
+        const sp = c.spells[scc.dataset.spellCast]; if (!sp) return;
+        const vals = (sp.check || []).map(code => c.attrs[code] || 0);
+        const r = dsaComputeSkill(vals, sp.fw || 0, 0);
+        const costNum = parseInt(String(sp.cost || '').replace(/[^\d]/g, '')) || 0;
+        const pool = sp.type === 'divine' ? c.kp : c.ae;
+        let note = '';
+        if (r.ok && sp.dmg) { const dm = dsaRollDmg(sp.dmg); note += `, ${dm.total} dmg (${dm.detail})`; }
+        if (r.ok && costNum > 0) { pool.cur = Math.max(0, (pool.cur || 0) - costNum); note += `, −${costNum} ${sp.type === 'divine' ? 'KP' : 'AE'}`; }
+        dsaPostCheck(`casts ${sp.name}: 3d20[${r.dice.join(',')}] → ${r.crit ? 'CRITICAL' : r.botch ? 'BOTCH' : (r.ok ? 'success QL ' + r.qs : 'failure')}${r.ok ? note : ''}`);
+        toast(r.ok ? `${sp.name} cast (QL ${r.qs})` : `${sp.name} failed`, r.ok ? 'success' : 'error');
+        if (r.ok && costNum > 0) { scheduleDsaSave(); dsaRenderSheet(); }
+        return;
+      }
+      const sdl = t.closest('[data-spell-del]');
+      if (sdl && dsaCanEdit()) { c.spells.splice(sdl.dataset.spellDel, 1); scheduleDsaSave(); dsaRenderSheet(); return; }
+      if (t.id === 'dsa-spell-add' && dsaCanEdit()) {
+        const pick = document.getElementById('dsa-spell-pick'); const v = pick && pick.value; if (!v) return;
+        const sep = v.indexOf('::'); const kind = v.slice(0, sep), name = v.slice(sep + 2);
+        const src = kind === 'arc' ? DSA_SPELLS_ARC.find(s => s.n === name) : DSA_LITURGIES.find(s => s.n === name);
+        if (src) { c.spells.push({ name: src.n, type: kind === 'arc' ? 'arcane' : 'divine', check: src.check, cost: src.cost, dmg: src.dmg || '', fw: 0 }); scheduleDsaSave(); dsaRenderSheet(); }
+        return;
+      }
     });
     const p = document.getElementById('dsa-char-popup');
     if (p) p.addEventListener('mousedown', (e) => { if (e.target === p) closeDsaSheet(); });
