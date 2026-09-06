@@ -19885,6 +19885,58 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Square / Wall": "Quadrat / Wand",
   "Projectile": "Projektil",
   "Other": "Sonstige",
+  "Main": "Haupt",
+  "Side": "Neben",
+  "Personal": "Persönlich",
+  "Active": "Aktiv",
+  "Completed": "Abgeschlossen",
+  "Failed": "Fehlgeschlagen",
+  "Hidden": "Verborgen",
+  "Trivial": "Trivial",
+  "Easy": "Leicht",
+  "Hard": "Schwer",
+  "Deadly": "Tödlich",
+  "Note": "Notiz",
+  "Letter": "Brief",
+  "Map fragment": "Kartenfragment",
+  "Portrait": "Porträt",
+  "Document": "Dokument",
+  "Loot list": "Beuteliste",
+  "Secret": "Geheimnis",
+  "Evidence": "Beweis",
+  "Prophecy": "Prophezeiung",
+  "Quest update": "Auftragsaktualisierung",
+  "Description / background": "Beschreibung / Hintergrund",
+  "Details": "Details",
+  "Reward:": "Belohnung:",
+  "Loot:": "Beute:",
+  "Loot & rewards": "Beute & Belohnungen",
+  "No quests yet.": "Noch keine Aufträge.",
+  "No quests yet. Add one above.": "Noch keine Aufträge. Füge oben einen hinzu.",
+  "Add one above.": "Füge oben einen hinzu.",
+  "Add an entry above.": "Füge oben einen Eintrag hinzu.",
+  "Add items above as the party finds them.": "Füge oben Gegenstände hinzu, sobald die Gruppe sie findet.",
+  "No scenes yet.": "Noch keine Szenen.",
+  "No scenes yet. Build a scene, then Play it to show the table a cinematic title.": "Noch keine Szenen. Erstelle eine Szene und spiele sie dann ab, um dem Tisch einen filmischen Titel zu zeigen.",
+  "Add at least one monster": "Füge mindestens ein Monster hinzu",
+  "Add encounter": "Begegnung hinzufügen",
+  "Save encounter": "Begegnung speichern",
+  "Encounter needs a name": "Die Begegnung braucht einen Namen",
+  "Encounter saved": "Begegnung gespeichert",
+  "This encounter has no monsters": "Diese Begegnung hat keine Monster",
+  "no monsters yet": "noch keine Monster",
+  "Add scene": "Szene hinzufügen",
+  "Save scene": "Szene speichern",
+  "Add image": "Bild hinzufügen",
+  "Scene needs a name": "Die Szene braucht einen Namen",
+  "Scene saved": "Szene gespeichert",
+  "Scene shown to the table": "Szene dem Tisch gezeigt",
+  "Scene": "Szene",
+  "Item": "Gegenstand",
+  "Sent to chat": "An den Chat gesendet",
+  "Could not send to chat": "Konnte nicht an den Chat gesendet werden",
+  "The battle begins": "Der Kampf beginnt",
+  "Description": "Beschreibung",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
@@ -19984,15 +20036,18 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       return `<button class="cmp-tab${c.key === CAMP_TAB ? ' active' : ''}" data-key="${c.key}">${c.label}<span class="cmp-tab-count">${count}</span></button>`;
     }).join('');
     tabsEl.querySelectorAll('.cmp-tab').forEach(b => b.addEventListener('click', () => { CAMP_TAB = b.dataset.key; CAMP_EDIT = null; campRender(); }));
-    if (CAMP_TAB === 'party') { campRenderParty(body); return; }
-    if (CAMP_TAB === 'handouts') { campRenderHandouts(body); return; }
-    if (CAMP_TAB === 'scenes') { campRenderScenes(body); return; }
-    if (CAMP_TAB === 'encounters') { campRenderEncounters(body); return; }
-    let html = '';
-    if (campCanEdit()) html += campFormHtml();
-    html += (CAMP_TAB === 'quests') ? campQuestsHtml() : campEntriesHtml(CAMP_TAB);
-    body.innerHTML = html;
-    campWire(body);
+    if (CAMP_TAB === 'party') { campRenderParty(body); }
+    else if (CAMP_TAB === 'handouts') { campRenderHandouts(body); }
+    else if (CAMP_TAB === 'scenes') { campRenderScenes(body); }
+    else if (CAMP_TAB === 'encounters') { campRenderEncounters(body); }
+    else {
+      let html = '';
+      if (campCanEdit()) html += campFormHtml();
+      html += (CAMP_TAB === 'quests') ? campQuestsHtml() : campEntriesHtml(CAMP_TAB);
+      body.innerHTML = html;
+      campWire(body);
+    }
+    try { if (LANG === 'de') { i18nWalk(tabsEl); i18nWalk(body); } } catch (e) {}
   }
   function campFormHtml() {
     const isQuest = CAMP_TAB === 'quests';
