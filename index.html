@@ -20382,6 +20382,17 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "You see:": "Du siehst:",
   "Players see:": "Spieler sehen:",
   "DSA Check": "DSA-Probe",
+  "(set skill value, then Check = 3d20)": "(Talentwert festlegen, dann Probe = 3W20)",
+  "Add a weapon…": "Waffe hinzufügen…",
+  "Advantages, disadvantages, special abilities, background...": "Vorteile, Nachteile, Sonderfertigkeiten, Hintergrund…",
+  "Arcane spells": "Arkane Zauber",
+  "Craft": "Handwerk",
+  "Knowledge": "Wissen",
+  "Liturgies": "Liturgien",
+  "Physical": "Körper",
+  "Social": "Gesellschaft",
+  "Talent list loading…": "Talentliste wird geladen…",
+  "Skill value (FW)": "Fertigkeitswert (FW)",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
@@ -21732,8 +21743,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     ${dsaTalentsHtml(c, edit)}
     ${dsaWeaponsHtml(c, edit)}
     ${dsaSpellsHtml(c, edit)}
-    <div class="dsa-sech">Notes</div><textarea class="dsa-input" data-f="notes" rows="3" ${ro} placeholder="Advantages, disadvantages, special abilities, background...">${escapeHtml(c.notes || '')}</textarea>`;
+    <div class="dsa-sech">${t('Notes')}</div><textarea class="dsa-input" data-f="notes" rows="3" ${ro} placeholder="${t('Advantages, disadvantages, special abilities, background...')}">${escapeHtml(c.notes || '')}</textarea>`;
     document.getElementById('dsa-body').innerHTML = h;
+    try { if (LANG === 'de') i18nWalk(document.getElementById('dsa-body')); } catch (e) {}
   }
   function dsaRollDmg(expr) { try { return rollDamageDetailed(expr, false); } catch (e) { return { total: 0, detail: '0' }; } }
   function openDsaSheet(playerId) {
@@ -21859,6 +21871,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         <label class="ar-label">Attribute / combat value (e.g. Courage, AT, PA)</label><input id="dsa-val" class="ar-input" type="number" value="12">
         <label class="ar-label">Modifier (+ easier, − harder)</label><input id="dsa-mod" class="ar-input" type="number" value="0">`;
     }
+    try { if (LANG === 'de') i18nWalk(box); } catch (e) {}
   }
   async function dsaRoll() {
     const gi = id => { const el = document.getElementById(id); return el ? (parseInt(el.value) || 0) : 0; };
