@@ -669,6 +669,16 @@
   .camp-coin-val { font-family: 'Cinzel', serif; color: var(--gold); font-size: calc(16px * var(--app-scale, 1)); font-weight: 600; }
   .ho-thumb { max-width: 100%; max-height: 160px; border-radius: 4px; border: 1px solid var(--border); margin: 4px 0 6px; display: block; }
 
+  /* ---- Cinematic scene title ---- */
+  #scene-title { position: fixed; inset: 0; z-index: 2050; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at center, rgba(6,7,12,0.42) 0%, rgba(6,7,12,0.82) 100%); }
+  #scene-title.active { animation: scene-title-seq 5s ease forwards; }
+  @keyframes scene-title-seq { 0% { opacity: 0; } 12% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
+  .scene-title-inner { text-align: center; padding: 0 6vw; }
+  #scene-title.active .scene-title-name { animation: scene-title-rise 5s cubic-bezier(0.2,0.7,0.3,1) forwards; }
+  .scene-title-name { font-family: 'Cinzel', serif; font-size: calc(46px * var(--app-scale, 1)); letter-spacing: 0.06em; color: var(--gold); text-shadow: 0 2px 30px rgba(0,0,0,0.9), 0 0 40px rgba(212,165,116,0.35); }
+  .scene-title-sub { font-family: 'Crimson Pro', serif; font-style: italic; font-size: calc(19px * var(--app-scale, 1)); color: var(--cream); margin-top: 12px; text-shadow: 0 2px 14px rgba(0,0,0,0.9); opacity: 0.92; }
+  @keyframes scene-title-rise { 0% { transform: translateY(16px); letter-spacing: 0.02em; } 30% { transform: none; letter-spacing: 0.06em; } 100% { transform: none; } }
+
   /* ---- Handout reveal (parchment document modal) ---- */
   #handout-view { position: fixed; inset: 0; z-index: 2100; display: none; align-items: center; justify-content: center; background: rgba(6,7,12,0.72); backdrop-filter: blur(3px); }
   #handout-view.active { display: flex; animation: ho-fade 0.3s ease; }
@@ -2795,6 +2805,13 @@
     <div class="cmdp-foot">
       <span><b>↑↓</b> navigate</span><span><b>Enter</b> open</span><span><b>Ctrl/Cmd K</b> toggle</span>
     </div>
+  </div>
+</div>
+
+<div id="scene-title">
+  <div class="scene-title-inner">
+    <div class="scene-title-name" id="scene-title-name"></div>
+    <div class="scene-title-sub" id="scene-title-sub"></div>
   </div>
 </div>
 
@@ -5427,6 +5444,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       .on('broadcast', { event: 'rtc-hand' }, ({ payload }) => { if (payload && payload.userId) rtcSetHand(payload.userId, !!payload.raised); })
       .on('broadcast', { event: 'init-roll' }, ({ payload }) => { if (STATE.isHost) hostApplyInitRoll(payload); })
       .on('broadcast', { event: 'handout-reveal' }, ({ payload }) => handleHandoutReveal(payload))
+      .on('broadcast', { event: 'scene-title' }, ({ payload }) => handleSceneTitle(payload))
       .on('presence', { event: 'sync' }, handlePresenceSync)
       .subscribe(async (status) => {
         const ind = document.getElementById('conn-indicator');
@@ -16332,6 +16350,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     { key: 'faction', label: 'Factions' },
     { key: 'clue', label: 'Clues & Rumours' },
     { key: 'note', label: 'Notes' },
+    { key: 'scenes', label: 'Scenes' },
     { key: 'handouts', label: 'Handouts' },
     { key: 'party', label: 'Party' },
   ];
@@ -16344,6 +16363,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     STATE.campaign = STATE.campaign || { quests: [], entries: [], handouts: [], party: { pp: 0, gp: 0, sp: 0, cp: 0, items: [] } };
     if (!STATE.campaign.party) STATE.campaign.party = { pp: 0, gp: 0, sp: 0, cp: 0, items: [] };
     if (!Array.isArray(STATE.campaign.handouts)) STATE.campaign.handouts = [];
+    if (!Array.isArray(STATE.campaign.scenes)) STATE.campaign.scenes = [];
     return STATE.campaign;
   }
   function campLoad() {
@@ -16351,8 +16371,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     try { const raw = STATE.session && STATE.session.campaign_data; d = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) {}
     const party = (d && d.party && typeof d.party === 'object') ? d.party : {};
     STATE.campaign = (d && typeof d === 'object')
-      ? { quests: Array.isArray(d.quests) ? d.quests : [], entries: Array.isArray(d.entries) ? d.entries : [], handouts: Array.isArray(d.handouts) ? d.handouts : [], party: { pp: party.pp || 0, gp: party.gp || 0, sp: party.sp || 0, cp: party.cp || 0, items: Array.isArray(party.items) ? party.items : [] } }
-      : { quests: [], entries: [], handouts: [], party: { pp: 0, gp: 0, sp: 0, cp: 0, items: [] } };
+      ? { quests: Array.isArray(d.quests) ? d.quests : [], entries: Array.isArray(d.entries) ? d.entries : [], handouts: Array.isArray(d.handouts) ? d.handouts : [], scenes: Array.isArray(d.scenes) ? d.scenes : [], party: { pp: party.pp || 0, gp: party.gp || 0, sp: party.sp || 0, cp: party.cp || 0, items: Array.isArray(party.items) ? party.items : [] } }
+      : { quests: [], entries: [], handouts: [], scenes: [], party: { pp: 0, gp: 0, sp: 0, cp: 0, items: [] } };
   }
   async function campSave() {
     if (!STATE.isHost) return;
@@ -16373,12 +16393,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (c.key === 'quests') count = campData().quests.filter(campVisibleToMe).length;
       else if (c.key === 'party') count = campData().party.items.length;
       else if (c.key === 'handouts') count = campData().handouts.filter(campHandoutVisible).length;
+      else if (c.key === 'scenes') count = campData().scenes.length;
       else count = campData().entries.filter(e => e.category === c.key && campVisibleToMe(e)).length;
       return `<button class="cmp-tab${c.key === CAMP_TAB ? ' active' : ''}" data-key="${c.key}">${c.label}<span class="cmp-tab-count">${count}</span></button>`;
     }).join('');
     tabsEl.querySelectorAll('.cmp-tab').forEach(b => b.addEventListener('click', () => { CAMP_TAB = b.dataset.key; CAMP_EDIT = null; campRender(); }));
     if (CAMP_TAB === 'party') { campRenderParty(body); return; }
     if (CAMP_TAB === 'handouts') { campRenderHandouts(body); return; }
+    if (CAMP_TAB === 'scenes') { campRenderScenes(body); return; }
     let html = '';
     if (campCanEdit()) html += campFormHtml();
     html += (CAMP_TAB === 'quests') ? campQuestsHtml() : campEntriesHtml(CAMP_TAB);
@@ -16461,6 +16483,59 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     body.querySelectorAll('[data-pdel]').forEach(b => b.addEventListener('click', () => { p.items = p.items.filter(x => x.id !== b.dataset.pdel); campSave(); campRender(); }));
     body.querySelectorAll('.party-claim').forEach(inp => inp.addEventListener('change', () => { const it = p.items.find(x => x.id === inp.dataset.id); if (it) { it.claimedBy = inp.value.trim(); campSave(); } }));
   }
+  function campRenderScenes(body) {
+    const edit = campCanEdit();
+    const scenes = campData().scenes;
+    const editing = CAMP_EDIT ? scenes.find(s => s.id === CAMP_EDIT) : null;
+    const v = editing || {};
+    let html = '';
+    if (edit) html += `<div class="camp-form">
+      <input id="sc-name" class="camp-input" type="text" placeholder="Scene name (e.g. Blackwood Tavern)" value="${escapeHtml(v.name || '')}">
+      <input id="sc-subtitle" class="camp-input" type="text" placeholder="Subtitle (e.g. Nightfall, and the fire burns low)" value="${escapeHtml(v.subtitle || '')}">
+      <textarea id="sc-desc" class="camp-input" rows="3" placeholder="Read-aloud / DM notes for this scene">${escapeHtml(v.desc || '')}</textarea>
+      <div class="camp-form-row"><button id="sc-save" class="camp-btn primary">${editing ? 'Save changes' : 'Add scene'}</button>${editing ? '<button id="sc-cancel" class="camp-btn">Cancel</button>' : ''}</div>
+    </div>`;
+    if (!scenes.length) html += `<div class="camp-empty">${edit ? 'No scenes yet. Build a scene, then Play it to show the table a cinematic title.' : 'No scenes yet.'}</div>`;
+    else html += scenes.map(s => `<div class="camp-card">
+      <div class="camp-card-head"><span class="camp-card-title">${escapeHtml(s.name || 'Scene')}</span></div>
+      ${s.subtitle ? `<div class="camp-card-obj">${escapeHtml(s.subtitle)}</div>` : ''}
+      ${s.desc ? `<div class="camp-card-text">${escapeHtml(s.desc)}</div>` : ''}
+      ${edit ? `<div class="camp-card-actions"><button class="camp-mini" data-scplay="${s.id}">▶ Play scene</button><button class="camp-mini" data-scedit="${s.id}">Edit</button><button class="camp-mini danger" data-scdel="${s.id}">Delete</button></div>` : ''}
+    </div>`).join('');
+    body.innerHTML = html;
+    const save = document.getElementById('sc-save');
+    if (save) save.addEventListener('click', () => {
+      const name = (document.getElementById('sc-name').value || '').trim();
+      if (!name) { toast('Scene needs a name', 'error'); return; }
+      const rec = { id: CAMP_EDIT || genId(), name, subtitle: (document.getElementById('sc-subtitle').value || '').trim(), desc: (document.getElementById('sc-desc').value || '').trim() };
+      const i = scenes.findIndex(s => s.id === CAMP_EDIT);
+      if (i >= 0) scenes[i] = rec; else scenes.push(rec);
+      CAMP_EDIT = null; campSave(); campRender(); toast('Scene saved', 'success');
+    });
+    const cancel = document.getElementById('sc-cancel');
+    if (cancel) cancel.addEventListener('click', () => { CAMP_EDIT = null; campRender(); });
+    body.querySelectorAll('[data-scedit]').forEach(b => b.addEventListener('click', () => { CAMP_EDIT = b.dataset.scedit; campRender(); }));
+    body.querySelectorAll('[data-scdel]').forEach(b => b.addEventListener('click', () => { campData().scenes = scenes.filter(s => s.id !== b.dataset.scdel); if (CAMP_EDIT === b.dataset.scdel) CAMP_EDIT = null; campSave(); campRender(); }));
+    body.querySelectorAll('[data-scplay]').forEach(b => b.addEventListener('click', () => { const s = scenes.find(x => x.id === b.dataset.scplay); if (s) playScene(s); }));
+  }
+  function playScene(s) {
+    showSceneTitle(s.name, s.subtitle);
+    try { if (STATE.channel) STATE.channel.send({ type: 'broadcast', event: 'scene-title', payload: { name: s.name, subtitle: s.subtitle } }); } catch (e) {}
+    toast('Scene shown to the table', 'success');
+  }
+  let SCENE_TITLE_TIMER = null;
+  function showSceneTitle(name, subtitle) {
+    const el = document.getElementById('scene-title');
+    if (!el || !name) return;
+    document.getElementById('scene-title-name').textContent = name;
+    const sub = document.getElementById('scene-title-sub');
+    sub.textContent = subtitle || '';
+    sub.style.display = subtitle ? '' : 'none';
+    el.classList.remove('active'); void el.offsetWidth; el.classList.add('active');
+    if (SCENE_TITLE_TIMER) clearTimeout(SCENE_TITLE_TIMER);
+    SCENE_TITLE_TIMER = setTimeout(() => el.classList.remove('active'), 5000);
+  }
+  function handleSceneTitle(payload) { if (payload && payload.name) showSceneTitle(payload.name, payload.subtitle); }
   function campHandoutVisible(h) { return campCanEdit() || (h.revealed && (h.vis || 'all') === 'all'); }
   function campKindBadge(k) { return `<span class="camp-badge">${escapeHtml(k || 'note')}</span>`; }
   function campRenderHandouts(body) {
@@ -16763,6 +16838,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (has('long-rest-btn')) add('Take a Long Rest', () => click('long-rest-btn'));
     if (has('switch-role-btn')) add('Switch Role (DM / Player)', () => click('switch-role-btn'));
     if (STATE.isHost) {
+      add('Set the Scene (cinematic title)', () => { CAMP_TAB = 'scenes'; openCampaign(); });
       add('Reveal a Handout to the party', () => { CAMP_TAB = 'handouts'; openCampaign(); });
       add('Open DM Toolbox (generators)', () => openToolbox());
       if (has('init-roll-all')) add('Roll Initiative for all (start combat)', () => click('init-roll-all'));
