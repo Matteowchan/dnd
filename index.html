@@ -623,6 +623,22 @@
   .cmdp-statgrid .st b { display: block; font-family: 'Cinzel', serif; color: var(--gold-soft); font-size: calc(10px * var(--app-scale, 1)); }
   .cmdp-statgrid .st span { font-size: calc(13px * var(--app-scale, 1)); color: var(--cream); }
 
+  /* ---- DM Toolbox popup ---- */
+  #toolbox-popup { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); width: 560px; max-width: 94vw; height: 70vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 8px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  #toolbox-popup.active { display: flex; }
+  .dmtb-tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .dmtb-tab { background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 5px; padding: 5px 10px; font-family: 'Cinzel', serif; font-size: calc(11px * var(--app-scale, 1)); letter-spacing: 0.02em; cursor: pointer; }
+  .dmtb-tab:hover { border-color: var(--gold-soft); }
+  .dmtb-tab.active { background: var(--gold); border-color: var(--gold); color: #1a1612; }
+  .dmtb-out { flex: 1; overflow-y: auto; padding: 16px 20px; font-family: 'Crimson Pro', serif; font-size: calc(15px * var(--app-scale, 1)); line-height: 1.6; color: var(--cream); }
+  .dmtb-out .dmtb-h { font-family: 'Cinzel', serif; color: var(--gold); font-size: calc(18px * var(--app-scale, 1)); margin: 0 0 8px; }
+  .dmtb-out p { margin: 0 0 8px; }
+  .dmtb-out b { color: var(--gold-soft); font-weight: 600; }
+  .dmtb-foot { border-top: 1px solid var(--border); padding: 10px 14px; display: flex; gap: 10px; }
+  .dmtb-foot button { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 6px; padding: 8px 12px; font-family: 'Cinzel', serif; font-size: calc(12px * var(--app-scale, 1)); letter-spacing: 0.03em; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+  .dmtb-foot button:hover { border-color: var(--gold-soft); }
+  .dmtb-foot button.primary { background: var(--gold); border-color: var(--gold); color: #1a1612; }
+
   /* Violation warning popup */
   #dm-rules-warning { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 440px; max-width: 92vw; background: linear-gradient(180deg, rgba(60,20,20,0.98), rgba(40,10,10,0.98)); border: 2px solid var(--danger); border-radius: 8px; box-shadow: 0 0 60px rgba(160,72,72,0.5), 0 20px 60px rgba(0,0,0,0.8); z-index: 2000; display: none; flex-direction: column; align-items: center; padding: 24px; text-align: center; gap: 12px; animation: dmw-pulse 1.2s ease-in-out infinite; }
   #dm-rules-warning.active { display: flex; }
@@ -1687,6 +1703,7 @@
       <button id="handbook-btn" title="Player's Handbook: full rules — how to play, ability scores, races, classes, backgrounds, equipment, feats, combat, spellcasting, and a rules glossary">Handbook</button>
       <button id="compendium-btn" title="Quick reference: conditions, actions, weapons, armor, and core rules">Compendium</button>
       <button id="dm-rules-btn" title="Special DM rules - will alert when violated">DM Rules</button>
+      <button id="dm-tools-btn" title="DM Toolbox: instant NPCs, taverns, shops, rumours, encounters, travel, weather, loot, wild magic">DM Tools</button>
       <button id="short-rest-btn" title="Short Rest (1 hour): spend Hit Dice to heal; some class features recharge. No spell slots restored (except Warlock).">Short Rest</button>
       <button id="long-rest-btn" title="Long Rest (8 hours): full HP, full spell slots, half Hit Dice restored, exhaustion reduced by 1.">Long Rest</button>
       <button id="switch-role-btn" style="display:none;" title="Demo mode only">Switch Role</button>
@@ -2715,6 +2732,21 @@
     <div id="cmdp-results" class="cmdp-results"></div>
     <div class="cmdp-foot">
       <span><b>↑↓</b> navigate</span><span><b>Enter</b> open</span><span><b>Ctrl/Cmd K</b> toggle</span>
+    </div>
+  </div>
+</div>
+
+<div id="toolbox-popup">
+  <div class="char-popup-header">
+    <span class="ttl">DM Toolbox</span>
+    <button id="toolbox-close">×</button>
+  </div>
+  <div class="char-popup-body" style="padding:0; display:flex; flex-direction:column; min-height:0; flex:1;">
+    <div id="toolbox-tabs" class="dmtb-tabs"></div>
+    <div id="toolbox-out" class="dmtb-out"></div>
+    <div class="dmtb-foot">
+      <button id="toolbox-reroll" class="primary">Generate again</button>
+      <button id="toolbox-send">Send to chat</button>
     </div>
   </div>
 </div>
@@ -4431,9 +4463,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const imggenBtn = document.getElementById('imggen-btn');
       const clearBtn = document.getElementById('clear-effects-btn');
       const dmRulesBtn = document.getElementById('dm-rules-btn');
+      const dmToolsBtn = document.getElementById('dm-tools-btn');
       if (imggenBtn) imggenBtn.style.display = 'none';
       if (clearBtn) clearBtn.style.display = 'none';
       if (dmRulesBtn) dmRulesBtn.style.display = 'none';
+      if (dmToolsBtn) dmToolsBtn.style.display = 'none';
       // Rest is DM-controlled: players resolve a rest only when the DM grants one
       const srBtn = document.getElementById('short-rest-btn');
       const lrBtn = document.getElementById('long-rest-btn');
@@ -16202,6 +16236,114 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     });
   })();
 
+  // ================= DM TOOLBOX (instant, offline improv generators) =================
+  // Everything a DM usually Googles mid-session: names, NPCs, taverns, shops,
+  // rumours, encounters, travel events, weather, loot, wild magic. All local
+  // tables — instant, no AI wait. Results can be sent to chat by the DM.
+  const DMTB = {
+    firstNames: ['Aldric', 'Bryn', 'Cassia', 'Doran', 'Elara', 'Fendrel', 'Gwen', 'Harlan', 'Isolde', 'Joren', 'Kessa', 'Lorne', 'Mira', 'Nolan', 'Orla', 'Perrin', 'Quilla', 'Rowan', 'Sable', 'Tam', 'Ulric', 'Vesna', 'Wystan', 'Yara', 'Zephus', 'Bram', 'Dara', 'Fael', 'Odette', 'Sil'],
+    surnames: ['Ashdown', 'Blackbriar', 'Crowfoot', 'Duskwalker', 'Emberly', 'Fernwhistle', 'Grimwald', 'Hollowmoor', 'Ironwood', 'Larkspur', 'Mossgrove', 'Nightingale', 'Oakenshield', 'Pemberton', 'Ravenscar', 'Stormcrow', 'Thornbury', 'Underhill', 'Vayne', 'Whitlock'],
+    npcTrait: ['speaks in a slow, deliberate drawl', 'never quite makes eye contact', 'laughs at their own jokes', 'is fiercely loyal once trust is earned', 'counts coins compulsively', 'quotes proverbs constantly', 'is terrified of open water', 'collects small trinkets', 'always seems to be chewing something', 'has a nervous, darting glance', 'is unfailingly polite, even when threatening', 'hums an old war tune under their breath', 'distrusts anyone in a hood', 'is quick to anger, quicker to forgive', 'believes they are destined for greatness'],
+    npcAppearance: ['a jagged scar across one cheek', 'mismatched eyes, one grey one green', 'a heavy limp and an oak cane', 'immaculate clothes gone slightly threadbare', 'ink-stained fingers', 'a shaved head and braided beard', 'a bird perched on one shoulder', 'burn marks up one forearm', 'a gold tooth that catches the light', 'unusually tall and stooped', 'a soft face at odds with hard eyes', 'a tattoo of a coiled serpent'],
+    npcOccupation: ['tavern keeper', 'caravan guard', 'apothecary', 'dockhand', 'minor noble', 'street urchin turned informant', 'retired soldier', 'travelling scholar', 'blacksmith', 'fortune teller', 'tax collector', 'temple acolyte', 'smuggler', 'stable master', 'gravedigger', 'court musician'],
+    npcSecret: ['owes a dangerous debt to a crime lord', 'is secretly nobility in hiding', 'is a spy for a rival faction', 'killed someone years ago and covered it up', 'is dying and hiding it', 'worships a forbidden god', 'is not who they claim to be at all', 'knows the location of a lost heirloom', 'is being blackmailed', 'has a twin no one knows about'],
+    tavernAdj: ['Rusty', 'Gilded', 'Weary', 'Laughing', 'Drowned', 'Silver', 'Crooked', 'Salty', 'Hollow', 'Roaring', 'Sleeping', 'Broken', 'Prancing', 'Wandering', 'Grinning'],
+    tavernNoun: ['Tankard', 'Griffon', 'Anchor', 'Lantern', 'Stag', 'Boar', 'Mermaid', 'Crown', 'Kettle', 'Hound', 'Barrel', 'Dragon', 'Rose', 'Compass', 'Fiddle'],
+    tavernFeature: ['a fire that never seems to go out', 'a one-eyed cat that rules the hearth', 'walls covered in traveller graffiti', 'a bard who only knows sad songs', 'surprisingly excellent stew', 'a back room where deals are struck', 'a barkeep who remembers every face', 'a trophy from a monster hunt over the bar', 'watered-down ale and honest prices', 'a resident drunk who knows every rumour'],
+    shopType: ['general goods', 'apothecary', 'blacksmith', 'curiosities & oddities', 'fine tailoring', 'bookseller', 'jeweller', 'herbalist', 'fletcher & bowyer', 'exotic imports'],
+    shopQuirk: ['the owner haggles as sport and enjoys losing occasionally', 'prices are fixed and non-negotiable', 'everything is slightly overpriced but genuine', 'there is one item far too valuable for this shop', 'the shopkeeper only sells to people they like', 'stock is disorganised but hides real treasures', 'a stern parrot announces every customer', 'the back shelf holds items of dubious legality'],
+    rumour: ['a caravan vanished on the old north road, no bodies found', 'the miller has been paying his debts in old, strange coins', 'lights were seen moving in the abandoned watchtower', 'the baron has not been seen in public for a month', 'a child in the village speaks in a voice not their own', 'fish have gone belly-up in the river for three days running', 'a stranger has been asking after adventurers by name', 'the graveyard sexton refuses to work after dark now', 'someone is buying up every silver weapon in town', 'wolves have grown bold, and far too clever'],
+    encounter: {
+      Forest: ['a pack of wolves stalking the party', 'a hunter caught in their own snare, begging for help', 'a fey circle of mushrooms humming faintly', 'bandits demanding a toll to pass', 'a wounded owlbear cub and its furious mother nearby', 'an ancient standing stone carved with warnings'],
+      Dungeon: ['a rusted portcullis and a lever just out of reach', 'skeletal remains clutching a still-glowing gem', 'a pressure plate barely hidden by dust', 'the echo of chanting from somewhere deeper', 'a swarm of rats fleeing something behind them', 'a locked door with claw marks on the inside'],
+      Road: ['an overturned merchant cart, goods scattered', 'a lone figure walking the wrong way at dusk', 'a toll bridge guarded by a smug goblin', 'a funeral procession that will not meet your eyes', 'fresh tracks leaving the road into the brush', 'a milestone defaced with a crude warning'],
+      Urban: ['a pickpocket who chose the wrong mark', 'a crier announcing a reward for a fugitive', 'two guilds nearly coming to blows in the square', 'a beggar who knows far too much', 'a rigged game of chance drawing a crowd', 'a fire starting in the tannery district'],
+      Wilderness: ['a sudden storm forcing shelter in a cave', 'a river swollen too high to ford safely', 'a hermit who trades cryptic advice for food', 'territorial giant eagles circling overhead', 'the remains of a much older, failed expedition', 'a herd of beasts fleeing some unseen predator'],
+    },
+    travelEvent: ['a broken axle costs the party half a day', 'a friendly peddler shares news and cheap wares', 'strange weather turns the sky an unsettling colour', 'the party finds a shrine offering a minor blessing', 'a scout reports figures shadowing the group', 'a shortcut beckons — but looks too convenient', 'wild game is plentiful; provisions are easy tonight', 'an old battlefield, bones still half-buried'],
+    weather: ['clear skies and a bracing wind', 'low grey cloud and a persistent drizzle', 'thick fog that muffles sound and sight', 'bright and unseasonably hot', 'a hard frost overnight, everything glittering', 'rolling thunderheads on the horizon', 'a fine, cold rain that seeps into everything', 'still, heavy air before a coming storm'],
+    lootMinor: ['a pouch of 2d6 gold and a foreign coin', 'a finely made dagger with a family crest', 'a vial of perfume worth more than it looks', 'a sealed letter, its contents intriguing', 'a small jade carving of a fox', 'three doses of antitoxin', 'a map fragment showing an unmarked location', 'a set of loaded dice', 'a healer\'s kit, nearly full', 'a signet ring of a minor house'],
+    lootMajor: ['a potion of greater healing and a rolled-up scroll', 'a weapon that hums faintly when danger is near', 'a locked strongbox holding 3d6 x 10 gold', 'a gem worth 500 gold to the right buyer', 'a cloak that never seems to gather dust or rain', 'an ornate key with no obvious lock', 'a spellbook missing its final pages', 'a suit of masterwork armour, sized for someone smaller'],
+    wildMagic: ['for the next minute, you cast a random cantrip at the start of each turn', 'a burst of harmless colour erupts from you', 'you regain your lowest-level expended spell slot', 'roll a d10 for your height change in inches, up or down', 'you turn a nearby small object invisible for a minute', 'flowers bloom from every surface within 10 feet', 'you are surrounded by faint, eerie music for a minute', 'your skin turns a vivid blue until your next rest', 'a spectral eye appears above you, watching your foes', 'you can only speak in rhyme for the next minute'],
+    factionGoal: ['seize control of the local trade routes', 'recover a relic they believe is rightfully theirs', 'undermine a rival they see as illegitimate', 'awaken something better left sleeping', 'restore a fallen house to its former glory', 'purge the region of a perceived corruption', 'broker a fragile peace on their own terms', 'amass wealth to buy influence quietly'],
+    factionMethod: ['bribery and patient infiltration', 'open force and intimidation', 'blackmail and carefully kept secrets', 'faith, zeal, and true believers', 'coin, contracts, and leverage', 'assassination of key obstacles', 'propaganda and winning hearts', 'ancient pacts and forbidden magic'],
+  };
+  function dmtbPick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function dmtbLine(label, val) { return '<p><b>' + label + ':</b> ' + escapeHtml(val) + '</p>'; }
+  const DMTB_GENERATORS = [
+    { key: 'name', label: 'Name', gen: () => dmtbLine('Name', dmtbPick(DMTB.firstNames) + ' ' + dmtbPick(DMTB.surnames)) },
+    { key: 'npc', label: 'NPC', gen: () => {
+      return '<h4 class="dmtb-h">' + escapeHtml(dmtbPick(DMTB.firstNames) + ' ' + dmtbPick(DMTB.surnames)) + '</h4>' +
+        dmtbLine('Occupation', dmtbPick(DMTB.npcOccupation)) +
+        dmtbLine('Appearance', dmtbPick(DMTB.npcAppearance)) +
+        dmtbLine('Trait', dmtbPick(DMTB.npcTrait)) +
+        dmtbLine('Secret', dmtbPick(DMTB.npcSecret));
+    }},
+    { key: 'tavern', label: 'Tavern', gen: () => {
+      return '<h4 class="dmtb-h">The ' + escapeHtml(dmtbPick(DMTB.tavernAdj) + ' ' + dmtbPick(DMTB.tavernNoun)) + '</h4>' +
+        dmtbLine('Notable for', dmtbPick(DMTB.tavernFeature)) +
+        dmtbLine('A patron', dmtbPick(DMTB.firstNames) + ' ' + dmtbPick(DMTB.surnames) + ', who ' + dmtbPick(DMTB.npcTrait));
+    }},
+    { key: 'shop', label: 'Shop', gen: () => {
+      return '<h4 class="dmtb-h">' + escapeHtml('A ' + dmtbPick(DMTB.shopType) + ' shop') + '</h4>' +
+        dmtbLine('Keeper', dmtbPick(DMTB.firstNames) + ' ' + dmtbPick(DMTB.surnames)) +
+        dmtbLine('Quirk', dmtbPick(DMTB.shopQuirk));
+    }},
+    { key: 'rumour', label: 'Rumour', gen: () => dmtbLine('Word is', dmtbPick(DMTB.rumour)) },
+    { key: 'encounter', label: 'Encounter', gen: () => {
+      const envs = Object.keys(DMTB.encounter); const env = dmtbPick(envs);
+      return '<h4 class="dmtb-h">' + env + ' Encounter</h4>' + dmtbLine('The party finds', dmtbPick(DMTB.encounter[env]));
+    }},
+    { key: 'travel', label: 'Travel', gen: () => dmtbLine('On the road', dmtbPick(DMTB.travelEvent)) },
+    { key: 'weather', label: 'Weather', gen: () => dmtbLine('Today', dmtbPick(DMTB.weather)) },
+    { key: 'loot', label: 'Loot', gen: () => dmtbLine('Minor find', dmtbPick(DMTB.lootMinor)) + dmtbLine('Major find', dmtbPick(DMTB.lootMajor)) },
+    { key: 'wild', label: 'Wild Magic', gen: () => dmtbLine('Surge', dmtbPick(DMTB.wildMagic)) },
+    { key: 'faction', label: 'Faction', gen: () => dmtbLine('They seek to', dmtbPick(DMTB.factionGoal)) + dmtbLine('By means of', dmtbPick(DMTB.factionMethod)) },
+  ];
+  let DMTB_LAST = { key: 'npc', html: '' };
+  function dmtbRender(key) {
+    const g = DMTB_GENERATORS.find(x => x.key === key) || DMTB_GENERATORS[0];
+    DMTB_LAST = { key: g.key, html: g.gen() };
+    const out = document.getElementById('toolbox-out');
+    if (out) out.innerHTML = DMTB_LAST.html;
+    const tabs = document.getElementById('toolbox-tabs');
+    if (tabs) tabs.querySelectorAll('.dmtb-tab').forEach(b => b.classList.toggle('active', b.dataset.key === g.key));
+  }
+  function openToolbox() {
+    const p = document.getElementById('toolbox-popup');
+    if (!p) return;
+    p.classList.add('active');
+    if (!document.getElementById('toolbox-tabs').children.length) {
+      const tabs = document.getElementById('toolbox-tabs');
+      tabs.innerHTML = DMTB_GENERATORS.map(g => `<button class="dmtb-tab" data-key="${g.key}">${g.label}</button>`).join('');
+      tabs.querySelectorAll('.dmtb-tab').forEach(b => b.addEventListener('click', () => dmtbRender(b.dataset.key)));
+    }
+    dmtbRender(DMTB_LAST.key);
+  }
+  function closeToolbox() { const p = document.getElementById('toolbox-popup'); if (p) p.classList.remove('active'); }
+  (function setupToolbox() {
+    const btn = document.getElementById('dm-tools-btn');
+    if (btn) btn.addEventListener('click', openToolbox);
+    const close = document.getElementById('toolbox-close');
+    if (close) close.addEventListener('click', closeToolbox);
+    const reroll = document.getElementById('toolbox-reroll');
+    if (reroll) reroll.addEventListener('click', () => dmtbRender(DMTB_LAST.key));
+    const send = document.getElementById('toolbox-send');
+    if (send) send.addEventListener('click', async () => {
+      if (!STATE.isHost) { toast('DM only', 'error'); return; }
+      const text = (document.getElementById('toolbox-out').textContent || '').trim();
+      if (!text) return;
+      try {
+        const { error } = await sb.from('vtt_chat').insert({ id: genId(), session_id: STATE.sessionId, user_id: STATE.userId, user_name: STATE.username || 'DM', is_host: true, msg_type: 'system', text: '[DM Toolbox] ' + text, ts: nowTs() });
+        if (error) { toast('Could not send to chat', 'error'); return; }
+        toast('Sent to chat', 'success');
+      } catch (e) { toast('Could not send to chat', 'error'); }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { const p = document.getElementById('toolbox-popup'); if (p && p.classList.contains('active')) closeToolbox(); }
+    });
+  })();
+
   // ================= COMMAND PALETTE (Ctrl/Cmd+K) =================
   // In-app search across rules, spells, items, monsters and conditions, plus
   // quick session actions — so a player or DM rarely needs to leave the table.
@@ -16235,6 +16377,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (has('long-rest-btn')) add('Take a Long Rest', () => click('long-rest-btn'));
     if (has('switch-role-btn')) add('Switch Role (DM / Player)', () => click('switch-role-btn'));
     if (STATE.isHost) {
+      add('Open DM Toolbox (generators)', () => openToolbox());
       if (has('init-roll-all')) add('Roll Initiative for all (start combat)', () => click('init-roll-all'));
       if (has('reveal-map-btn')) add('Reveal Map to Players', () => click('reveal-map-btn'));
       if (has('fog-toggle')) add('Toggle Fog of War', () => click('fog-toggle'));
