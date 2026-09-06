@@ -6147,21 +6147,30 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       div.innerHTML = `<span style="color:var(--muted); font-style:italic">${escapeHtml(msg.text)}</span> <span class="ts">${escapeHtml(msg.ts || '')}</span>`;
     } else if (msg.msg_type === 'roll') {
       const userCls = msg.is_host ? 'user host' : 'user';
+      const nameStyle = chatNameStyle(msg);
       const privTag = (msg.is_private && !isWhisper) ? '<span class="priv-tag">[GM]</span> ' : '';
       const rolls = (msg.rolls || []).map(r => `<span class="roll-result">${escapeHtml(String(r))}</span>`).join('');
       const mod = Number(msg.modifier) || 0;
       const modText = mod !== 0 ? ` ${mod > 0 ? '+' : ''}${mod}` : '';
       const buffLine = msg.text ? `<div class="roll-buffs">${escapeHtml(msg.text)}</div>` : '';
-      div.innerHTML = `${whisperBadge}${privTag}<span class="${userCls}">${escapeHtml(msg.user_name)}</span> rolled <b>${Number(msg.dice_count) || 0}d${Number(msg.sides) || 0}${modText}</b> ${rolls} = <span class="roll-total">${Number(msg.total) || 0}</span> <span class="ts">${escapeHtml(msg.ts || '')}</span>${buffLine}`;
+      div.innerHTML = `${whisperBadge}${privTag}<span class="${userCls}"${nameStyle}>${escapeHtml(msg.user_name)}</span> rolled <b>${Number(msg.dice_count) || 0}d${Number(msg.sides) || 0}${modText}</b> ${rolls} = <span class="roll-total">${Number(msg.total) || 0}</span> <span class="ts">${escapeHtml(msg.ts || '')}</span>${buffLine}`;
     } else {
       const userCls = msg.is_host ? 'user host' : 'user';
-      div.innerHTML = `${whisperBadge}<span class="${userCls}">${escapeHtml(msg.user_name)}:</span> ${escapeHtml(msg.text)} <span class="ts">${escapeHtml(msg.ts || '')}</span>`;
+      const nameStyle = chatNameStyle(msg);
+      div.innerHTML = `${whisperBadge}<span class="${userCls}"${nameStyle}>${escapeHtml(msg.user_name)}:</span> ${escapeHtml(msg.text)} <span class="ts">${escapeHtml(msg.ts || '')}</span>`;
     }
     log.appendChild(div);
     log.scrollTop = log.scrollHeight;
     updateChatEmpty();
   }
 
+  // Class-identity accent for a chat author's name. Players get their class colour;
+  // the DM keeps the neutral/authoritative ember styling (no inline override).
+  function chatNameStyle(msg) {
+    if (msg.is_host || !msg.user_id) return '';
+    const c = getPlayerClassColor(msg.user_id);
+    return c ? ` style="color:${c}"` : '';
+  }
   // Whisper visibility rule: visible to sender, recipient, and the DM.
   function canSeePrivateMsg(msg) {
     if (!msg.is_private) return true;
