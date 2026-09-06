@@ -5045,6 +5045,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (idx === STATE.initiative.turn) row.classList.add('active');
       if (e.isNpc) row.classList.add('npc');
       if (e.downed) row.classList.add('downed');
+      // Class-identity accent: tint a player character's row edge by their class
+      // colour (the active row keeps its gold edge; NPCs keep the red danger edge).
+      if (!e.isNpc && idx !== STATE.initiative.turn && e.tokenId) {
+        const _tk = STATE.tokens.get(e.tokenId);
+        if (_tk && _tk.owner_id) { const _c = getPlayerClassColor(_tk.owner_id); if (_c) row.style.borderLeftColor = _c; }
+      }
       // Sync HP from current token state if we have one (HP can change between turns)
       let hp = e.hp, maxHp = e.maxHp;
       if (e.tokenId) {
