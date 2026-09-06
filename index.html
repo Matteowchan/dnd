@@ -16989,6 +16989,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       add('Set the Scene (cinematic title)', () => { CAMP_TAB = 'scenes'; openCampaign(); });
       add('Reveal a Handout to the party', () => { CAMP_TAB = 'handouts'; openCampaign(); });
       add('Open DM Toolbox (generators)', () => openToolbox());
+      try { (typeof DMTB_GENERATORS !== 'undefined' ? DMTB_GENERATORS : []).forEach(g => A.push({ group: 'Generate', ic: '✦', title: 'Generate: ' + g.label, kind: 'action', run: () => { openToolbox(); dmtbRender(g.key); } })); } catch (e) {}
       if (has('init-roll-all')) add('Roll Initiative for all (start combat)', () => click('init-roll-all'));
       if (has('reveal-map-btn')) add('Reveal Map to Players', () => click('reveal-map-btn'));
       if (has('fog-toggle')) add('Toggle Fog of War', () => click('fog-toggle'));
@@ -17046,7 +17047,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     q = (q || '').trim().toLowerCase();
     const items = q ? cmdpActions().concat(cmdpBuildIndex()) : cmdpActions();
     const matched = q ? items.filter(it => (it.title + ' ' + (it.sub || '') + ' ' + (it.text || '')).toLowerCase().includes(q)) : items;
-    const ORDER = ['Actions', 'Dice', 'Handbook', 'Reference', 'Spells', 'Items', 'Monsters', 'Conditions'];
+    const ORDER = ['Actions', 'Generate', 'Dice', 'Handbook', 'Reference', 'Spells', 'Items', 'Monsters', 'Conditions'];
     const LIMIT = { Handbook: 6, Reference: 6, Spells: 8, Items: 8, Monsters: 6, Conditions: 6 };
     CMDP_FLAT = []; CMDP_SEL = 0;
     let html = '';
