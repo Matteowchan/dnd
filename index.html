@@ -8149,26 +8149,29 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.querySelectorAll('.sc-viewtab').forEach(b => b.classList.toggle('on', b.dataset.view === 'spells'));
     buildScChips();
     renderSpellCatalog();
-    document.getElementById('spell-catalog').classList.add('active');
+    const scPop = document.getElementById('spell-catalog');
+    scPop.classList.add('active');
+    try { if (LANG === 'de') i18nWalk(scPop); } catch (e) {}
   }
 
   function buildScChips() {
     const cc = document.getElementById('sc-class-chips');
     const list = SC.view === 'subs' ? SC_ALL_CLASSES : SC_CLASSES;
     cc.innerHTML = list.map(c =>
-      `<button class="sc-chip${SC.cls === c ? ' on' : ''}" data-cls="${c}">${c === 'all' ? 'All classes' : c[0].toUpperCase() + c.slice(1)}</button>`
+      `<button class="sc-chip${SC.cls === c ? ' on' : ''}" data-cls="${c}">${c === 'all' ? t('All classes') : escapeHtml(t(c[0].toUpperCase() + c.slice(1)))}</button>`
     ).join('');
     const sc = document.getElementById('sc-sub-chips');
     if (SC.view === 'subs') { sc.innerHTML = ''; sc.style.display = 'none'; return; }
     const subs = SC_SUBMAP[SC.cls] || [];
     if (subs.length) {
-      sc.innerHTML = `<button class="sc-chip${SC.sub === '' ? ' on' : ''}" data-sub="">All ${SC.cls[0].toUpperCase() + SC.cls.slice(1)}</button>` +
-        subs.map(s => `<button class="sc-chip${SC.sub === s ? ' on' : ''}" data-sub="${s}">${SC_SUBLABEL[s] || s}</button>`).join('');
+      sc.innerHTML = `<button class="sc-chip${SC.sub === '' ? ' on' : ''}" data-sub="">${t('All')} ${escapeHtml(t(SC.cls[0].toUpperCase() + SC.cls.slice(1)))}</button>` +
+        subs.map(s => `<button class="sc-chip${SC.sub === s ? ' on' : ''}" data-sub="${s}">${escapeHtml(t(SC_SUBLABEL[s] || s))}</button>`).join('');
       sc.style.display = 'flex';
     } else {
       sc.innerHTML = '';
       sc.style.display = 'none';
     }
+    try { if (LANG === 'de') { i18nWalk(cc); i18nWalk(sc); } } catch (e) {}
   }
 
   function renderSpellCatalog() {
@@ -8180,7 +8183,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (SC.q && !s.n.toLowerCase().includes(SC.q)) return false;
       return true;
     });
-    if (!res.length) { body.innerHTML = '<div class="lib-empty" style="padding:18px 4px;">No spells match.</div>'; return; }
+    if (!res.length) { body.innerHTML = `<div class="lib-empty" style="padding:18px 4px;">${t('No spells match.')}</div>`; return; }
     const added = new Set();
     if (CHAR_POPUP.magic) {
       (CHAR_POPUP.magic.cantrips || []).forEach(c => added.add((c.name || '').toLowerCase()));
@@ -8190,20 +8193,21 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     res.forEach(s => { (byLvl[s.l] = byLvl[s.l] || []).push(s); });
     let html = '';
     Object.keys(byLvl).map(Number).sort((a, b) => a - b).forEach(lv => {
-      html += `<div class="sc-lvl-head">${lv === 0 ? 'Cantrips' : 'Level ' + lv}</div>`;
+      html += `<div class="sc-lvl-head">${lv === 0 ? t('Cantrips') : t('Level') + ' ' + lv}</div>`;
       byLvl[lv].forEach(s => {
         const i = SRD_SPELLS.indexOf(s);
         const isAdded = added.has(s.n.toLowerCase());
         html += `<div class="sc-row" data-i="${i}">
           <div style="flex:1; min-width:0;">
             <div class="sc-name" data-i="${i}">${escapeHtml(s.n)}</div>
-            <div class="sc-meta">${escapeHtml(s.e)}${s.r ? ' · ' + escapeHtml(s.r) : ''}${s.ct ? ' · ' + escapeHtml(s.ct) : ''}</div>
+            <div class="sc-meta">${escapeHtml(t(s.e))}${s.r ? ' · ' + escapeHtml(t(s.r)) : ''}${s.ct ? ' · ' + escapeHtml(t(s.ct)) : ''}</div>
           </div>
-          <button class="sc-add${isAdded ? ' added' : ''}" data-i="${i}">${isAdded ? 'Added' : 'Add'}</button>
+          <button class="sc-add${isAdded ? ' added' : ''}" data-i="${i}">${isAdded ? t('Added') : t('Add')}</button>
         </div>`;
       });
     });
     body.innerHTML = html;
+    try { if (LANG === 'de') i18nWalk(body); } catch (e) {}
   }
 
   function srdSpellByName(name) {
@@ -8229,7 +8233,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       });
       if (!list.length) return;
       any = true;
-      if (classes.length > 1) html += `<div class="sc-cls-head">${cls[0].toUpperCase() + cls.slice(1)}</div>`;
+      if (classes.length > 1) html += `<div class="sc-cls-head">${escapeHtml(t(cls[0].toUpperCase() + cls.slice(1)))}</div>`;
       list.forEach(sub => {
         const dom = CLERIC_DOMAIN_SPELLS[sub.n];
         const granted = dom ? dom.map(getCatalogSpellByName).filter(Boolean) : [];
@@ -8243,22 +8247,23 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           ${sub.f ? `<div class="sub-flavor">${escapeHtml(sub.f)}</div>` : ''}
           ${hasDom ? `<div class="sub-domspells" hidden>
             ${about ? `<div class="sds-about">${escapeHtml(about)}</div>` : ''}
-            ${granted.length ? `<div class="sds-title">Domain spells</div>${granted.map(s => {
+            ${granted.length ? `<div class="sds-title">${t('Domain spells')}</div>${granted.map(s => {
               const isAdded = added.has(s.n.toLowerCase());
               return `<div class="sc-row">
                 <div style="flex:1; min-width:0;">
-                  <div class="sc-name" data-name="${escapeHtml(s.n)}">${escapeHtml(s.n)}${s.stub ? ' <span class="stub-badge">stub</span>' : ''}</div>
-                  <div class="sc-meta">${s.l === 0 ? 'Cantrip' : 'Lv ' + s.l} · ${escapeHtml(s.e)}</div>
+                  <div class="sc-name" data-name="${escapeHtml(s.n)}">${escapeHtml(s.n)}${s.stub ? ' <span class="stub-badge">' + t('stub') + '</span>' : ''}</div>
+                  <div class="sc-meta">${s.l === 0 ? t('Cantrip') : t('Lv') + ' ' + s.l} · ${escapeHtml(t(s.e))}</div>
                 </div>
-                <button class="sc-add${isAdded ? ' added' : ''}" data-name="${escapeHtml(s.n)}">${isAdded ? 'Added' : 'Add'}</button>
+                <button class="sc-add${isAdded ? ' added' : ''}" data-name="${escapeHtml(s.n)}">${isAdded ? t('Added') : t('Add')}</button>
               </div>`;
             }).join('')}` : ''}
           </div>` : ''}
         </div>`;
       });
     });
-    if (!any) { body.innerHTML = '<div class="lib-empty" style="padding:18px 4px;">No subclasses match.</div>'; return; }
+    if (!any) { body.innerHTML = `<div class="lib-empty" style="padding:18px 4px;">${t('No subclasses match.')}</div>`; return; }
     body.innerHTML = html;
+    try { if (LANG === 'de') i18nWalk(body); } catch (e) {}
   }
 
   function spellDiceFor(sp) {
@@ -20410,6 +20415,20 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Talent list loading…": "Talentliste wird geladen…",
   "Skill value (FW)": "Fertigkeitswert (FW)",
   "Host (SL)": "Spielleiter (SL)",
+  "No spells match.": "Keine passenden Zauber.",
+  "No subclasses match.": "Keine passenden Unterklassen.",
+  "Cantrip": "Zaubertrick",
+  "Lv": "Stufe",
+  "All classes": "Alle Klassen",
+  "All": "Alle",
+  "Domain spells": "Domänenzauber",
+  "stub": "Platzhalter",
+  "Subclasses": "Unterklassen",
+  "Added": "Hinzugefügt",
+  "Land Circle": "Zirkel des Landes",
+  "Lore College": "Kolleg des Wissens",
+  "Devotion Oath": "Eid der Hingabe",
+  "Fiend Patron": "Unhold-Patron",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
