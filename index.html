@@ -274,8 +274,8 @@
   #mapcontainer.placing-token { cursor: copy; }
   #mapcontainer.fog-painting { cursor: crosshair; }
   #mapcontainer.placing-token #grid { outline: 2px dashed rgba(212,165,116,0.4); outline-offset: -2px; }
-  .token-thumb .del-btn { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: var(--danger); color: white; border: 1px solid #1a1612; padding: 0; font-size: calc(13px * var(--app-scale, 1)); line-height: 1; cursor: pointer; opacity: 0.7; transition: opacity 0.15s, transform 0.15s; z-index: 2; }
-  .token-thumb:hover .del-btn { opacity: 1; transform: scale(1.1); }
+  .token-thumb .del-btn { position: absolute; top: -3px; right: -3px; width: 20px; height: 20px; border-radius: 50%; background: var(--danger); color: white; border: 2px solid #1a1612; padding: 0; font-size: calc(13px * var(--app-scale, 1)); line-height: 1; cursor: pointer; opacity: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.6); transition: opacity 0.15s, transform 0.15s; z-index: 3; }
+  .token-thumb:hover .del-btn { transform: scale(1.15); }
 
   .upload-box { border: 1px dashed var(--border); border-radius: 4px; padding: 14px; text-align: center; cursor: pointer; transition: all 0.15s; font-size: calc(13px * var(--app-scale, 1)); color: var(--muted); display: block; }
   .upload-box:hover { border-color: var(--gold); color: var(--gold); }
