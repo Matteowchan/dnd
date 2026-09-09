@@ -8241,7 +8241,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         const hasDom = granted.length > 0 || !!about;
         html += `<div class="sub-row${hasDom ? ' has-dom' : ''}" data-dom="${escapeHtml(sub.n)}">
           <div class="sub-head">
-            <span class="sub-name">${escapeHtml(sub.n)}${hasDom ? ' ▸' : ''}</span>
+            <span class="sub-name">${escapeHtml(t(sub.n))}${hasDom ? ' ▸' : ''}</span>
             ${sub.s ? `<span class="sub-src">${escapeHtml(sub.s)}</span>` : ''}
           </div>
           ${sub.f ? `<div class="sub-flavor">${escapeHtml(sub.f)}</div>` : ''}
