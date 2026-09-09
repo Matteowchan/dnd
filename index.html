@@ -15776,7 +15776,32 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }
   }
   async function livekitToggleMic() { if (!LK.room) return; LK.micOn = !LK.micOn; try { await LK.room.localParticipant.setMicrophoneEnabled(LK.micOn); } catch (e) {} updateRtcButtons(); }
-  async function livekitToggleCam() { if (!LK.room) return; LK.camOn = !LK.camOn; try { await LK.room.localParticipant.setCameraEnabled(LK.camOn); } catch (e) {} updateRtcButtons(); }
+  // Show/hide the local self-tile video (LiveKit does not detach the local
+  // preview when the camera is disabled, so a frozen frame would linger).
+  function lkSetLocalVideo(on) {
+    try {
+      const lp = LK.room && LK.room.localParticipant; if (!lp) return;
+      const tile = LK.tiles.get(lp.sid || lp.identity); if (!tile) return;
+      const vid = tile.querySelector('video'); if (vid) vid.style.display = on ? 'block' : 'none';
+      const nov = tile.querySelector('.rtc-novid'); if (nov) nov.style.display = on ? 'none' : 'flex';
+    } catch (e) {}
+  }
+  async function livekitToggleCam() {
+    if (!LK.room) return;
+    LK.camOn = !LK.camOn;
+    try {
+      if (LK._bgTrack) {
+        // A background effect is active: the published video is the processed
+        // canvas track, not the raw camera, so setCameraEnabled can't stop it.
+        // Mute/unmute the processed track instead so the feed actually turns off.
+        if (LK.camOn) await LK._bgTrack.unmute(); else await LK._bgTrack.mute();
+      } else {
+        await LK.room.localParticipant.setCameraEnabled(LK.camOn);
+      }
+    } catch (e) { console.warn('cam toggle failed', e); }
+    lkSetLocalVideo(LK.camOn);
+    updateRtcButtons();
+  }
   function livekitLeaveCall() {
     try { livekitStopBg(); } catch (e) {}
     if (LK.room) { try { LK.room.disconnect(); } catch (e) {} LK.room = null; }
