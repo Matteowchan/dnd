@@ -5654,6 +5654,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vtt_audio', filter }, handleAudioChange)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vtt_sessions', filter: `id=eq.${STATE.sessionId}` }, handleSessionChange)
       .on('broadcast', { event: 'drag' }, ({ payload }) => handleRemoteDrag(payload))
+      .on('broadcast', { event: 'token-delete' }, ({ payload }) => handleRemoteTokenDelete(payload))
       .on('broadcast', { event: 'effect-clear' }, ({ payload }) => handleRemoteEffectClear(payload))
       .on('broadcast', { event: 'show-image' }, ({ payload }) => showSharedImagePopup(payload))
       .on('broadcast', { event: 'rtc-signal' }, ({ payload }) => handleRtcSignal(payload))
@@ -5914,6 +5915,17 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (btn) btn.innerHTML = toggleLabel('Lock Tokens: ' + (STATE.tokensLocked ? 'On' : 'Off'));
   }
 
+  // Broadcast a token deletion to every client. Postgres realtime DELETE events
+  // are unreliable (replica identity / RLS can suppress them), so the host also
+  // broadcasts an explicit delete and players remove the token locally. (audit: token delete sync)
+  function broadcastTokenDelete(id) {
+    try { if (STATE.channel && id) STATE.channel.send({ type: 'broadcast', event: 'token-delete', payload: { id } }); } catch (e) {}
+  }
+  function handleRemoteTokenDelete(payload) {
+    if (!payload || !payload.id) return;
+    if (!STATE.tokens.has(payload.id)) return; // already gone
+    handleTokenChange({ eventType: 'DELETE', old: { id: payload.id } });
+  }
   function handleTokenChange(payload) {
     if (payload.eventType === 'DELETE') {
       STATE.tokens.delete(payload.old.id);
@@ -6199,6 +6211,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
             if (backup) STATE.tokens.set(tok.id, backup);
             renderTokens(); renderTokenTray(); renderHpTracker();
             toast('Could not delete token — restored. Check your connection.', 'error');
+          } else {
+            broadcastTokenDelete(tok.id);
           }
         });
         el.appendChild(del);
@@ -6284,6 +6298,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
             if (backup) STATE.tokens.set(tok.id, backup);
             renderTokens(); renderTokenTray(); renderHpTracker();
             toast('Could not delete token — restored. Check your connection.', 'error');
+          } else {
+            broadcastTokenDelete(tok.id);
           }
         });
         thumb.appendChild(del);
