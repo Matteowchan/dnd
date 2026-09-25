@@ -11834,10 +11834,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   });
 
   document.getElementById('clear-tokens-btn').addEventListener('click', async () => {
-    if (!(await confirmModal('Clear the map? Tokens return to the tray, all effects are removed.', { title: 'Clear map', danger: true, okText: 'Clear map' }))) return;
     // Update locally first so the screen reacts immediately
-    const tokensOnMap = Array.from(STATE.tokens.values()).filter(t => t.x != null);
-    tokensOnMap.forEach(t => { t.x = null; t.y = null; });
+    const tokensOnMap = Array.from(STATE.tokens.values()).filter(tk => tk.x != null);
+    const fxCount = STATE.effects.size;
+    if (tokensOnMap.length === 0 && fxCount === 0) { toast('Nothing on the map to clear'); return; }
+    const summary = tokensOnMap.length + ' × ' + t('Token') + ', ' + fxCount + ' × ' + t('Effect');
+    if (!(await confirmModal(t('Clear the map?') + ' ' + t('Tokens return to the tray, all effects are removed.') + ' — ' + summary, { title: t('Clear map'), danger: true, okText: t('Clear map') }))) return;
+    tokensOnMap.forEach(tk => { tk.x = null; tk.y = null; });
     STATE.effects.clear();
     renderTokens();
     renderTokenTray();
@@ -20500,6 +20503,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "BG: Custom image…": "Hintergrund: Eigenes Bild…",
   "Loading background…": "Hintergrund wird geladen…",
   "Could not load background": "Hintergrund konnte nicht geladen werden",
+  "Generate": "Generieren",
+  "Clear map": "Karte leeren",
+  "Clear the map?": "Karte leeren?",
+  "Tokens return to the tray, all effects are removed.": "Figuren kehren in die Ablage zurück, alle Effekte werden entfernt.",
+  "Nothing on the map to clear": "Nichts auf der Karte zum Leeren",
+  "Monster Manager": "Monster-Verwaltung",
+  "Campaign Log": "Kampagnenprotokoll",
+  "Delete entire campaign (wipe everything)": "Gesamte Kampagne löschen (alles auslöschen)",
+  "Example:\nNo metagaming - players cannot use OOC knowledge in character.\nNo Critical Role memes during serious scenes.\nSpell descriptions must be roleplayed before damage is rolled.\nPlayers cannot attack other players' characters without consent.\nNo phones at the table during combat.": "Beispiel:\nKein Metagaming – Spieler dürfen kein OOC-Wissen im Charakter nutzen.\nKeine Critical-Role-Memes in ernsten Szenen.\nZauberbeschreibungen müssen vor dem Schadenswurf ausgespielt werden.\nSpieler dürfen die Charaktere anderer Spieler nicht ohne Zustimmung angreifen.\nKeine Handys am Tisch während des Kampfes.",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
