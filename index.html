@@ -2624,7 +2624,13 @@
       <select id="rtc-bg-mode" title="Background effect">
         <option value="none">BG: None</option>
         <option value="blur">BG: Blur</option>
-        <option value="image">BG: Image</option>
+        <option value="stock:tavern">BG: Tavern</option>
+        <option value="stock:forest">BG: Forest</option>
+        <option value="stock:library">BG: Library</option>
+        <option value="stock:mountains">BG: Mountains</option>
+        <option value="stock:mist">BG: Misty Woods</option>
+        <option value="stock:dark">BG: Dark Cavern</option>
+        <option value="image">BG: Custom image…</option>
       </select>
       <input type="file" id="rtc-bg-image" accept="image/*" style="display:none">
       <button id="rtc-share" title="Share your screen with the table" style="display:none;">Share Screen</button>
@@ -15793,13 +15799,19 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (!LK.room) return;
     LK.camOn = !LK.camOn;
     try {
-      if (LK._bgTrack) {
-        // A background effect is active: the published video is the processed
-        // canvas track, not the raw camera, so setCameraEnabled can't stop it.
-        // Mute/unmute the processed track instead so the feed actually turns off.
-        if (LK.camOn) await LK._bgTrack.unmute(); else await LK._bgTrack.mute();
+      if (!LK.camOn) {
+        // Turning OFF: fully stop the camera. With a background effect the
+        // published video is a processed canvas track fed by a raw camera that
+        // keeps running, so we must tear that down too or the camera light stays
+        // on and the feed keeps streaming. (fix: "turned it off but it stayed on")
+        if (LK._bgTrack) { try { await LK.room.localParticipant.unpublishTrack(LK._bgTrack, true); } catch (e) {} LK._bgTrack = null; }
+        try { livekitStopBg(); } catch (e) {}
+        await LK.room.localParticipant.setCameraEnabled(false);
       } else {
-        await LK.room.localParticipant.setCameraEnabled(LK.camOn);
+        // Turning ON: restore the background effect if one is selected, else a
+        // plain camera.
+        if (RTC_BG.mode && RTC_BG.mode !== 'none') { await livekitApplyBg(RTC_BG.mode); }
+        else { await LK.room.localParticipant.setCameraEnabled(true); }
       }
     } catch (e) { console.warn('cam toggle failed', e); }
     lkSetLocalVideo(LK.camOn);
@@ -15815,6 +15827,26 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   function livekitStopBg() {
     try { rtcStopProcessing(); } catch (e) {}
     if (LK._rawCam) { try { LK._rawCam.getTracks().forEach(t => t.stop()); } catch (e) {} LK._rawCam = null; }
+  }
+  // Curated virtual-background stock photos (Unsplash, CORS-enabled so they can be
+  // drawn on the processing canvas without tainting captureStream).
+  const STOCK_BGS = {
+    tavern:    'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=1280&q=70',
+    forest:    'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1280&q=70',
+    library:   'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1280&q=70',
+    mountains: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1280&q=70',
+    mist:      'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1280&q=70',
+    dark:      'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?w=1280&q=70',
+  };
+  function loadStockBg(key) {
+    const url = STOCK_BGS[key];
+    if (!url) return;
+    toast('Loading background…');
+    const img = new Image();
+    img.crossOrigin = 'anonymous'; // keep the canvas untainted so captureStream works
+    img.onload = () => { RTC_BG.image = img; livekitApplyBg('image'); };
+    img.onerror = () => { toast('Could not load background', 'error'); const s = document.getElementById('rtc-bg-mode'); if (s) s.value = RTC_BG.mode || 'none'; };
+    img.src = url;
   }
   // Background blur / image for LiveKit: reuse the app's MediaPipe pipeline
   // (rtcStartProcessing) on a raw camera stream, then publish the processed canvas
@@ -15879,6 +15911,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
     document.getElementById('rtc-bg-mode').addEventListener('change', (e) => {
       const v = e.target.value;
+      if (v.indexOf('stock:') === 0) { loadStockBg(v.slice(6)); return; }
       if (v === 'image' && !RTC_BG.image) { document.getElementById('rtc-bg-image').click(); return; }
       livekitApplyBg(v);
     });
@@ -20457,6 +20490,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Lore College": "Kolleg des Wissens",
   "Devotion Oath": "Eid der Hingabe",
   "Fiend Patron": "Unhold-Patron",
+  "BG: Blur": "Hintergrund: Unschärfe",
+  "BG: Tavern": "Hintergrund: Taverne",
+  "BG: Forest": "Hintergrund: Wald",
+  "BG: Library": "Hintergrund: Bibliothek",
+  "BG: Mountains": "Hintergrund: Berge",
+  "BG: Misty Woods": "Hintergrund: Nebelwald",
+  "BG: Dark Cavern": "Hintergrund: Dunkle Höhle",
+  "BG: Custom image…": "Hintergrund: Eigenes Bild…",
+  "Loading background…": "Hintergrund wird geladen…",
+  "Could not load background": "Hintergrund konnte nicht geladen werden",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
