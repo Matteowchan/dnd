@@ -5645,8 +5645,35 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   }
 
   // ============ REAL-TIME SUBSCRIPTION ============
+  // Realtime channels drop on network blips, tab sleep, or mobile backgrounding,
+  // and Supabase's own retry is not always reliable — when that happens players
+  // silently stop receiving the DM's token moves/updates. Actively rebuild the
+  // channel with backoff, and also retry when the network or tab comes back.
+  let _rtReconnectTimer = null;
+  let _rtReconnectDelay = 2000;
+  let _rtListenersBound = false;
+  function scheduleRealtimeReconnect() {
+    if (DEMO_MODE || !STATE.sessionId) return;
+    if (_rtReconnectTimer) return; // one attempt in flight
+    _rtReconnectTimer = setTimeout(() => {
+      _rtReconnectTimer = null;
+      if (!STATE.sessionId) return;
+      try { if (STATE.channel) sb.removeChannel(STATE.channel); } catch (e) {}
+      STATE.channel = null;
+      _rtReconnectDelay = Math.min(Math.round(_rtReconnectDelay * 1.6), 15000);
+      setupRealtime(); // recreate + resubscribe; SUBSCRIBED handler resyncs the board
+    }, _rtReconnectDelay);
+  }
+  function bindRealtimeRecoveryListeners() {
+    if (_rtListenersBound) return;
+    _rtListenersBound = true;
+    const kick = () => { if (STATE.sessionId && STATE._rtDisconnected) { _rtReconnectDelay = 2000; scheduleRealtimeReconnect(); } };
+    try { window.addEventListener('online', kick); } catch (e) {}
+    try { document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); }); } catch (e) {}
+  }
   function setupRealtime() {
     const filter = `session_id=eq.${STATE.sessionId}`;
+    bindRealtimeRecoveryListeners();
 
     STATE.channel = sb.channel(`vtt:${STATE.sessionId}`, {
       config: { presence: { key: STATE.userId } }
@@ -5675,8 +5702,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       .subscribe(async (status) => {
         const ind = document.getElementById('conn-indicator');
         if (status === 'SUBSCRIBED') {
+          // Healthy again: clear any pending reconnect and reset the backoff.
+          _rtReconnectDelay = 2000;
+          if (_rtReconnectTimer) { clearTimeout(_rtReconnectTimer); _rtReconnectTimer = null; }
           if (!DEMO_MODE) {
-            ind.textContent = 'Live';
+            ind.textContent = t('Live');
             ind.className = 'connected';
           }
           if (!STATE.spectator) {
@@ -5696,9 +5726,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           STATE._rtDisconnected = true;
           if (!DEMO_MODE) {
-            ind.textContent = 'Disconnected';
+            ind.textContent = t('Reconnecting…');
             ind.className = 'disconnected';
           }
+          scheduleRealtimeReconnect();
         }
       });
   }
@@ -20513,6 +20544,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Clear the map?": "Karte leeren?",
   "Tokens return to the tray, all effects are removed.": "Figuren kehren in die Ablage zurück, alle Effekte werden entfernt.",
   "Nothing on the map to clear": "Nichts auf der Karte zum Leeren",
+  "Reconnecting…": "Neu verbinden…",
   "Monster Manager": "Monster-Verwaltung",
   "Campaign Log": "Kampagnenprotokoll",
   "Delete entire campaign (wipe everything)": "Gesamte Kampagne löschen (alles auslöschen)",
