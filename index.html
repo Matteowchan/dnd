@@ -12423,7 +12423,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const url = FX_BUCKET_BASE + encodeURIComponent(file);
       const vid = '<video src="' + url + '" autoplay loop muted playsinline style="width:100%;height:100%;object-fit:contain;display:block;mix-blend-mode:screen;"></video>';
       const idAttr = 'data-fx-id="' + (fx.id || '') + '" data-fx-user="' + (fx.user_id || '') + '"';
-      const aim = ['breath', 'beam', 'arrow', 'rocket', 'sword'].indexOf(fx.type) >= 0;
+      // Directional (aimed) rendering only when the caster actually dragged to aim.
+      // On a plain click (no meaningful drag) the effect is centered on the click
+      // point instead of extending off to one side. (fix: effect appeared offset)
+      const aim = ['breath', 'beam', 'arrow', 'rocket', 'sword'].indexOf(fx.type) >= 0 && dist >= 24;
       if (aim) {
         const len = Math.max(140, dist);
         const h = len * 0.6;
