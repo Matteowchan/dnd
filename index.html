@@ -2060,6 +2060,10 @@
           <button class="dice-btn" data-sides="20">d20</button>
           <button class="dice-btn" data-sides="100">d100</button>
         </div>
+        <div class="dice-row" style="margin-top:10px;">
+          <input type="text" id="dice-formula" placeholder="e.g. 1d20+2d6+3" autocomplete="off" spellcheck="false" style="width:auto;flex:1;">
+          <button id="dice-formula-btn" class="dice-btn" style="flex:0 0 auto;padding:9px 14px;" title="Roll a mixed formula, e.g. an attack plus Sneak Attack or a smite">Roll</button>
+        </div>
       </div>
 
       <div class="panel-section">
@@ -6639,6 +6643,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
     if (msg.msg_type === 'system') {
       div.innerHTML = `<span style="color:var(--muted); font-style:italic">${escapeHtml(msg.text)}</span> <span class="ts">${escapeHtml(msg.ts || '')}</span>`;
+    } else if (msg.msg_type === 'roll' && msg.formula) {
+      // Freeform mixed-dice formula roll (e.g. 1d20+2d6+3). The per-die breakdown
+      // lives in msg.text; the formula and total are shown prominently.
+      const userCls = msg.is_host ? 'user host' : 'user';
+      const nameStyle = chatNameStyle(msg);
+      const privTag = (msg.is_private && !isWhisper) ? '<span class="priv-tag">[GM]</span> ' : '';
+      const buffLine = msg.text ? `<div class="roll-buffs">${escapeHtml(msg.text)}</div>` : '';
+      div.innerHTML = `${whisperBadge}${privTag}<span class="${userCls}"${nameStyle}>${escapeHtml(msg.user_name)}</span> ${t('rolled')} <b>${escapeHtml(msg.formula)}</b> = <span class="roll-total">${Number(msg.total) || 0}</span> <span class="ts">${escapeHtml(msg.ts || '')}</span>${buffLine}`;
     } else if (msg.msg_type === 'roll') {
       const userCls = msg.is_host ? 'user host' : 'user';
       const nameStyle = chatNameStyle(msg);
@@ -14605,6 +14617,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     });
   });
 
+  // Freeform mixed-dice formula roller (e.g. an attack + Sneak Attack + smite)
+  {
+    const fBtn = document.getElementById('dice-formula-btn');
+    const fInp = document.getElementById('dice-formula');
+    if (fBtn) fBtn.addEventListener('click', rollFormula);
+    if (fInp) fInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); rollFormula(); } });
+  }
+
   // Adv/Dis pill buttons - applies to d20 only, single die
   document.querySelectorAll('.adv-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -14736,6 +14756,72 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const { error } = await sb.from('vtt_chat').insert(msg);
     if (error) { console.error(error); toast('Roll failed to sync', 'error'); }
     return { total, rolls, picked, sides, count: useAdv ? 2 : count, mod: mod + buffMod };
+  }
+
+  // Parse a freeform dice expression like "1d20+2d6+3" or "d8-1" into signed
+  // terms. Returns null on anything malformed so the caller can warn.
+  function parseDiceFormula(str) {
+    if (!str) return null;
+    const s = String(str).replace(/\s+/g, '').toLowerCase();
+    if (!/^[-+]?(\d*d\d+|\d+)([-+](\d*d\d+|\d+))*$/.test(s)) return null;
+    const terms = s.match(/[+-]?[^+-]+/g) || [];
+    const out = [];
+    for (let raw of terms) {
+      let sign = 1;
+      if (raw[0] === '+') raw = raw.slice(1);
+      else if (raw[0] === '-') { sign = -1; raw = raw.slice(1); }
+      if (raw.indexOf('d') !== -1) {
+        const parts = raw.split('d');
+        let n = parts[0] === '' ? 1 : parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        if (!m || m < 2) return null;
+        if (!n || n < 1) n = 1;
+        if (n > 100 || m > 1000) return null; // sanity caps
+        out.push({ type: 'die', sign, n, m });
+      } else {
+        const v = parseInt(raw, 10);
+        if (isNaN(v)) return null;
+        out.push({ type: 'flat', sign, v });
+      }
+    }
+    return out.length ? out : null;
+  }
+
+  async function rollFormula() {
+    const inp = document.getElementById('dice-formula');
+    if (!inp) return;
+    const raw = inp.value.trim();
+    const parsed = parseDiceFormula(raw);
+    if (!parsed) { toast(t('Enter a dice formula like 1d20+2d6+3'), 'error'); return; }
+    const gm = STATE.isHost && document.getElementById('gm-roll-check').checked;
+    let total = 0, formula = '', breakdown = '';
+    parsed.forEach((p, i) => {
+      const op = i === 0 ? (p.sign < 0 ? '-' : '') : (p.sign < 0 ? ' - ' : ' + ');
+      const opTight = i === 0 ? (p.sign < 0 ? '-' : '') : (p.sign < 0 ? '-' : '+');
+      if (p.type === 'die') {
+        const rolls = [];
+        for (let k = 0; k < p.n; k++) rolls.push(Math.floor(Math.random() * p.m) + 1);
+        const sub = rolls.reduce((a, b) => a + b, 0);
+        total += p.sign * sub;
+        formula += opTight + p.n + 'd' + p.m;
+        breakdown += op + p.n + 'd' + p.m + '[' + rolls.join(',') + ']';
+      } else {
+        total += p.sign * p.v;
+        formula += opTight + p.v;
+        breakdown += op + p.v;
+      }
+    });
+    const id = genId();
+    STATE.myMsgIds.add(id);
+    const msg = {
+      id, session_id: STATE.sessionId, msg_type: 'roll',
+      user_id: STATE.userId, user_name: STATE.username, is_host: STATE.isHost,
+      formula, total, text: breakdown, is_private: !!gm, ts: nowTs(),
+    };
+    renderChatMessage(msg);
+    const { error } = await sb.from('vtt_chat').insert(msg);
+    if (error) { console.error(error); toast('Roll failed to sync', 'error'); }
+    inp.value = '';
   }
 
   // Track all active dice animation timers so we can cancel previous ones
@@ -21065,6 +21151,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "In area: ": "Im Bereich: ",
   "Area placed — no tokens caught": "Bereich platziert – keine Figuren erfasst",
   "Tip: Alt+click the map to ping a spot for everyone": "Tipp: Alt+Klick auf die Karte markiert eine Stelle für alle",
+  "e.g. 1d20+2d6+3": "z. B. 1d20+2d6+3",
+  "Enter a dice formula like 1d20+2d6+3": "Gib eine Würfelformel ein, z. B. 1d20+2d6+3",
+  "Roll a mixed formula, e.g. an attack plus Sneak Attack or a smite": "Gemischte Formel würfeln, z. B. Angriff plus Hinterhältiger Angriff oder Zerschmettern",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
