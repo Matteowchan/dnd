@@ -443,6 +443,10 @@
   .init-row .init-hp { font-size: calc(11px * var(--app-scale, 1)); color: var(--muted); font-family: 'Cinzel', serif; min-width: 50px; text-align: right; }
   .init-row .init-row-del { background: transparent; border: none; color: var(--muted); font-size: calc(14px * var(--app-scale, 1)); padding: 0 4px; cursor: pointer; line-height: 1; }
   .init-row .init-row-del:hover { color: var(--danger); }
+  .init-row .init-move-wrap { display: flex; flex-direction: column; line-height: 0; }
+  .init-row .init-move { background: transparent; border: none; color: var(--muted); font-size: calc(8px * var(--app-scale, 1)); padding: 0 2px; cursor: pointer; line-height: 1.05; }
+  .init-row .init-move:hover:not(:disabled) { color: var(--gold); }
+  .init-row .init-move:disabled { opacity: 0.25; cursor: default; }
   /* On-map highlight for the active token in combat */
   .map-token.init-active { box-shadow: 0 0 0 3px var(--gold), 0 0 18px 6px rgba(255,216,122,0.6); animation: init-active-pulse 1.6s ease-in-out infinite; }
   @keyframes init-active-pulse {
@@ -1051,6 +1055,8 @@
   .buff-preset-chip.on { background: rgba(212,165,116,0.15); color: var(--gold); border-color: var(--gold); }
   .buff-preset-chip .bp-name { font-weight: 600; }
   .buff-preset-chip .bp-mod { font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold); }
+  .br-dur { color: var(--gold-soft); font-size: calc(10px * var(--app-scale, 1)); margin-left: 8px; font-style: italic; }
+  .buff-tile-dur { font-size: calc(10px * var(--app-scale, 1)); color: var(--gold-soft); margin-top: 2px; opacity: 0.9; }
   .buff-ref-toggle { margin-top: 8px; font-size: calc(11px * var(--app-scale, 1)); padding: 4px 11px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 5px; cursor: pointer; }
   .buff-ref-toggle:hover { color: var(--cream); border-color: var(--gold-soft); }
   .buff-ref-toggle.on { color: var(--gold); border-color: var(--gold-soft); background: rgba(212,165,116,0.12); }
@@ -2500,6 +2506,7 @@
         <div class="char-section-head">Add Custom Buff</div>
         <div class="buff-add-row">
           <input type="text" id="buff-add-name" placeholder="Buff name (e.g. Bardic Inspiration)" maxlength="30">
+          <input type="text" id="buff-add-dur" placeholder="Duration (e.g. 1 min)" maxlength="24" style="width:120px;">
           <input type="number" id="buff-add-mod" placeholder="+2" style="width:64px;">
           <button id="buff-add-btn" class="primary">Add</button>
         </div>
@@ -5177,6 +5184,23 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     await saveInitiative();
   }
 
+  // DM sets the combat order by hand (BG3-style: who acts first, who next). Moving
+  // an entry keeps the currently-active combatant highlighted by tracking identity,
+  // not index, and syncs the new order to every player.
+  async function moveInitiativeEntry(idx, dir) {
+    if (!STATE.isHost || !STATE.initiative.active) return;
+    const es = STATE.initiative.entries;
+    const j = idx + dir;
+    if (idx < 0 || idx >= es.length || j < 0 || j >= es.length) return;
+    const activeEntry = es[STATE.initiative.turn];
+    const tmp = es[idx]; es[idx] = es[j]; es[j] = tmp;
+    const ti = es.indexOf(activeEntry);
+    if (ti >= 0) STATE.initiative.turn = ti;
+    renderInitiative();
+    renderTokens();
+    await saveInitiative();
+  }
+
   async function toggleDowned(idx) {
     if (!STATE.isHost) return;
     const e = STATE.initiative.entries[idx];
@@ -5232,6 +5256,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         <span class="init-value">${e.init}</span>
         <span class="init-name">${escapeHtml(e.name)}</span>
         ${showHp && hpText ? `<span class="init-hp">${hpText}</span>` : ''}
+        ${STATE.isHost ? `<span class="init-move-wrap"><button class="init-move" data-idx="${idx}" data-dir="-1" title="Move up in the order"${idx === 0 ? ' disabled' : ''}>▲</button><button class="init-move" data-idx="${idx}" data-dir="1" title="Move down in the order"${idx === STATE.initiative.entries.length - 1 ? ' disabled' : ''}>▼</button></span>` : ''}
         ${STATE.isHost ? `<button class="init-row-del" data-idx="${idx}" title="Remove from order">×</button>` : ''}
       `;
       // DM: clicking row makes that combatant active. Double-click on a token
@@ -5260,6 +5285,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           removeInitiativeEntry(idx);
         });
       }
+      row.querySelectorAll('.init-move').forEach(btn => {
+        btn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          moveInitiativeEntry(parseInt(btn.dataset.idx), parseInt(btn.dataset.dir));
+        });
+      });
       list.appendChild(row);
     });
   }
@@ -7486,20 +7517,20 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   // Common preset buffs - one tap to add. Modeled like Conditions tab.
   const BUFF_PRESETS = [
-    { name: 'Bless',                mod: 2, desc: 'Add 1d4 to each attack roll and saving throw for up to 1 min (avg +2). Concentration.' },
-    { name: 'Bardic Inspiration',   mod: 4, desc: 'Spend the die to add it to one attack, check, or save (d6 to d12 by bard level).' },
-    { name: 'Guidance',             mod: 2, desc: 'Add 1d4 to one ability check (avg +2). Concentration.' },
-    { name: 'Heroism',              mod: 0, desc: 'Immune to frightened; gain temp HP equal to caster mod at the start of each turn. Concentration.' },
-    { name: 'Rage',                 mod: 2, desc: 'Bonus damage on Strength melee hits; resistance to bludgeon, pierce, slash; advantage on STR checks and saves.' },
-    { name: 'Aid',                  mod: 0, desc: 'Max HP and current HP +5 for 8 hours (more at higher slots).' },
-    { name: 'Shield of Faith',      mod: 0, desc: '+2 AC to one creature for up to 10 min. Concentration.' },
-    { name: 'Haste',                mod: 0, desc: 'Speed doubled, +2 AC, advantage on DEX saves, one extra limited action; lethargy for a turn when it ends. Concentration.' },
-    { name: 'Faerie Fire',          mod: 0, desc: 'Outlined targets cannot benefit from invisibility; attacks against them have advantage. Concentration.' },
-    { name: 'Divine Favor',         mod: 0, desc: 'Your weapon hits deal +1d4 radiant damage. Concentration.' },
-    { name: 'Hex',                  mod: 0, desc: 'Deal +1d6 necrotic on hits to the hexed target; it has disadvantage on one chosen ability. Concentration.' },
-    { name: 'Hunter\'s Mark',       mod: 0, desc: 'Deal +1d6 damage to the marked target; advantage on checks to track it. Concentration.' },
-    { name: 'Inspire',              mod: 1, desc: 'Generic morale boost. A flat reminder buff.' },
-    { name: 'Custom +1',            mod: 1, desc: 'Flat +1 marker for an unlisted effect.' },
+    { name: 'Bless',                mod: 2, dur: 'Conc., up to 1 min',       desc: 'Add 1d4 to each attack roll and saving throw for up to 1 min (avg +2). Concentration.' },
+    { name: 'Bardic Inspiration',   mod: 4, dur: '10 min or until used',     desc: 'Spend the die to add it to one attack, check, or save (d6 to d12 by bard level).' },
+    { name: 'Guidance',             mod: 2, dur: 'Conc., up to 1 min',       desc: 'Add 1d4 to one ability check (avg +2). Concentration.' },
+    { name: 'Heroism',              mod: 0, dur: 'Conc., up to 1 min',       desc: 'Immune to frightened; gain temp HP equal to caster mod at the start of each turn. Concentration.' },
+    { name: 'Rage',                 mod: 2, dur: '1 min',                    desc: 'Bonus damage on Strength melee hits; resistance to bludgeon, pierce, slash; advantage on STR checks and saves.' },
+    { name: 'Aid',                  mod: 0, dur: '8 hours',                  desc: 'Max HP and current HP +5 for 8 hours (more at higher slots).' },
+    { name: 'Shield of Faith',      mod: 0, dur: 'Conc., up to 10 min',      desc: '+2 AC to one creature for up to 10 min. Concentration.' },
+    { name: 'Haste',                mod: 0, dur: 'Conc., up to 1 min',       desc: 'Speed doubled, +2 AC, advantage on DEX saves, one extra limited action; lethargy for a turn when it ends. Concentration.' },
+    { name: 'Faerie Fire',          mod: 0, dur: 'Conc., up to 1 min',       desc: 'Outlined targets cannot benefit from invisibility; attacks against them have advantage. Concentration.' },
+    { name: 'Divine Favor',         mod: 0, dur: 'Conc., up to 1 min',       desc: 'Your weapon hits deal +1d4 radiant damage. Concentration.' },
+    { name: 'Hex',                  mod: 0, dur: 'Conc., up to 1 hour',      desc: 'Deal +1d6 necrotic on hits to the hexed target; it has disadvantage on one chosen ability. Concentration.' },
+    { name: 'Hunter\'s Mark',       mod: 0, dur: 'Conc., up to 1 hour',      desc: 'Deal +1d6 damage to the marked target; advantage on checks to track it. Concentration.' },
+    { name: 'Inspire',              mod: 1, dur: '',                         desc: 'Generic morale boost. A flat reminder buff.' },
+    { name: 'Custom +1',            mod: 1, dur: '',                         desc: 'Flat +1 marker for an unlisted effect.' },
   ];
 
   function renderBuffs(buffs) {
@@ -7511,9 +7542,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         const isActive = buffs.find(b => b.name === p.name && b.active !== false);
         const chip = document.createElement('button');
         chip.className = 'buff-preset-chip' + (isActive ? ' on' : '');
-        chip.title = p.desc + (p.mod ? ` (default ${p.mod >= 0 ? '+' : ''}${p.mod})` : '');
+        chip.title = p.desc + (p.dur ? '\n' + t('Duration') + ': ' + t(p.dur) : '') + (p.mod ? ` (default ${p.mod >= 0 ? '+' : ''}${p.mod})` : '');
         chip.dataset.name = p.name;
         chip.dataset.mod = p.mod;
+        chip.dataset.dur = p.dur || '';
         chip.innerHTML = `<span class="bp-name">${escapeHtml(p.name)}</span>${p.mod ? `<span class="bp-mod">${p.mod >= 0 ? '+' : ''}${p.mod}</span>` : ''}`;
         presets.appendChild(chip);
       });
@@ -7523,7 +7555,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const ref = document.getElementById('buff-ref');
     if (ref) {
       ref.innerHTML = BUFF_PRESETS.map(p =>
-        `<div class="br-row"><span class="br-name">${escapeHtml(p.name)}</span>${p.mod ? `<span class="br-mod">${p.mod >= 0 ? '+' : ''}${p.mod}</span>` : ''}<br>${escapeHtml(p.desc)}</div>`
+        `<div class="br-row"><span class="br-name">${escapeHtml(p.name)}</span>${p.mod ? `<span class="br-mod">${p.mod >= 0 ? '+' : ''}${p.mod}</span>` : ''}${p.dur ? `<span class="br-dur">⏱ ${escapeHtml(t(p.dur))}</span>` : ''}<br>${escapeHtml(p.desc)}</div>`
       ).join('');
     }
 
@@ -7549,6 +7581,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           <span class="buff-tile-mod">${b.mod >= 0 ? '+' : ''}${b.mod}</span>
           <button class="buff-tile-del" title="Remove">×</button>
         </div>
+        ${b.dur ? `<div class="buff-tile-dur">⏱ ${escapeHtml(t(b.dur))}</div>` : ''}
       `;
       tile.addEventListener('click', (e) => {
         if (e.target.closest('.buff-tile-del')) return;
@@ -8242,7 +8275,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         html += `<div class="sc-row" data-i="${i}">
           <div style="flex:1; min-width:0;">
             <div class="sc-name" data-i="${i}">${escapeHtml(s.n)}</div>
-            <div class="sc-meta">${escapeHtml(t(s.e))}${s.r ? ' · ' + escapeHtml(t(s.r)) : ''}${s.ct ? ' · ' + escapeHtml(t(s.ct)) : ''}</div>
+            <div class="sc-meta">${escapeHtml(t(s.e))}${s.r ? ' · ' + escapeHtml(t(s.r)) : ''}${s.ct ? ' · ' + escapeHtml(t(s.ct)) : ''}${s.dur ? ' · ' + escapeHtml(t(s.dur)) : ''}</div>
           </div>
           <button class="sc-add${isAdded ? ' added' : ''}" data-i="${i}">${isAdded ? t('Added') : t('Add')}</button>
         </div>`;
@@ -8333,9 +8366,22 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   // so spells added without info (PDF import, manual add, legacy saves) still show.
   function spellInfoFor(sp) {
     if (!sp) return '';
-    if (sp.info) return sp.info;
     const cat = getCatalogSpellByName(sp.name);
-    return (cat && cat.d) || '';
+    const src = cat || sp;
+    // Translate the description ourselves: prepending the stat header means the
+    // combined string is no longer an exact dictionary key, so the DOM walker can't
+    // localize it anymore. t() on a stored English description returns the German
+    // one; on a custom info string (not a key) it returns it unchanged.
+    const body = t(sp.info || (cat && cat.d) || '');
+    // Lead with the stat block — casting time, range and especially duration —
+    // so players see how long a spell lasts without opening the compendium.
+    const head = [];
+    if (src.ct) head.push(t('Casting') + ': ' + t(src.ct));
+    if (src.r) head.push(t('Range') + ': ' + t(src.r));
+    if (src.dur) head.push(t('Duration') + ': ' + t(src.dur));
+    const headStr = head.join('  ·  ');
+    if (headStr && body) return headStr + '\n\n' + body;
+    return headStr || body;
   }
 
   function renderMagic(magic) {
@@ -10604,9 +10650,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.getElementById('buff-add-btn').addEventListener('click', () => {
       const name = document.getElementById('buff-add-name').value.trim();
       const mod = parseInt(document.getElementById('buff-add-mod').value) || 0;
+      const dur = document.getElementById('buff-add-dur').value.trim();
       if (!name) { toast('Buff name required', 'error'); return; }
-      CHAR_POPUP.buffs.push({ name, mod, active: true });
+      CHAR_POPUP.buffs.push({ name, mod, dur, active: true });
       document.getElementById('buff-add-name').value = '';
+      document.getElementById('buff-add-dur').value = '';
       document.getElementById('buff-add-mod').value = '';
       renderBuffs(CHAR_POPUP.buffs);
       scheduleSavePlayer();
@@ -10622,12 +10670,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         if (!canEdit) return;
         const name = chip.dataset.name;
         const mod = parseInt(chip.dataset.mod) || 0;
+        const dur = chip.dataset.dur || '';
         const existing = CHAR_POPUP.buffs.findIndex(b => b.name === name);
         if (existing >= 0) {
           // Already there - remove it (toggle behavior)
           CHAR_POPUP.buffs.splice(existing, 1);
         } else {
-          CHAR_POPUP.buffs.push({ name, mod, active: true });
+          CHAR_POPUP.buffs.push({ name, mod, dur, active: true });
         }
         renderBuffs(CHAR_POPUP.buffs);
         renderTokens();
@@ -20545,6 +20594,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Tokens return to the tray, all effects are removed.": "Figuren kehren in die Ablage zurück, alle Effekte werden entfernt.",
   "Nothing on the map to clear": "Nichts auf der Karte zum Leeren",
   "Reconnecting…": "Neu verbinden…",
+  "Conc., up to 1 min": "Konz., bis zu 1 Min",
+  "Conc., up to 10 min": "Konz., bis zu 10 Min",
+  "Conc., up to 1 hour": "Konz., bis zu 1 Stunde",
+  "10 min or until used": "10 Min oder bis genutzt",
+  "1 min": "1 Min",
+  "8 hours": "8 Stunden",
+  "Duration (e.g. 1 min)": "Dauer (z. B. 1 Min)",
   "Monster Manager": "Monster-Verwaltung",
   "Campaign Log": "Kampagnenprotokoll",
   "Delete entire campaign (wipe everything)": "Gesamte Kampagne löschen (alles auslöschen)",
