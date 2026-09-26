@@ -2619,6 +2619,12 @@
       <button class="draw-tool" data-kind="ellipse" title="Circle / ellipse">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="9" ry="7"/></svg>
       </button>
+      <button class="draw-tool" data-kind="burst" title="Burst / radius (area of effect). Drag from the centre outward.">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8" stroke-dasharray="3 2"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>
+      </button>
+      <button class="draw-tool" data-kind="cone" title="Cone (area of effect). Drag from the caster toward the target.">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 19 L12 5 L19 19 Z" stroke-dasharray="3 2"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/></svg>
+      </button>
     </div>
     <div class="draw-row">
       <button class="draw-swatch" data-color="#e23b3b" style="background:#e23b3b" title="Red"></button>
@@ -12350,12 +12356,60 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       return `M ${(cx - rx).toFixed(1)} ${cy.toFixed(1)} A ${rx.toFixed(1)} ${ry.toFixed(1)} 0 1 0 ${(cx + rx).toFixed(1)} ${cy.toFixed(1)} ` +
              `A ${rx.toFixed(1)} ${ry.toFixed(1)} 0 1 0 ${(cx - rx).toFixed(1)} ${cy.toFixed(1)} Z`;
     }
+    // AoE burst: circle centred on the first point, radius = distance to the second.
+    if (kind === 'burst') {
+      const R = Math.hypot(bx - ax, by - ay);
+      if (R < 0.5) return '';
+      return `M ${(ax - R).toFixed(1)} ${ay.toFixed(1)} A ${R.toFixed(1)} ${R.toFixed(1)} 0 1 0 ${(ax + R).toFixed(1)} ${ay.toFixed(1)} ` +
+             `A ${R.toFixed(1)} ${R.toFixed(1)} 0 1 0 ${(ax - R).toFixed(1)} ${ay.toFixed(1)} Z`;
+    }
+    // AoE cone (5e): apex at the first point, axis length L toward the second point,
+    // width at the far end equal to L (half-angle ≈ 26.57°).
+    if (kind === 'cone') {
+      const dx = bx - ax, dy = by - ay;
+      const L = Math.hypot(dx, dy);
+      if (L < 0.5) return '';
+      const ux = dx / L, uy = dy / L;      // axis unit vector
+      const pxu = -uy, pyu = ux;           // perpendicular unit vector
+      const ex = ax + ux * L, ey = ay + uy * L;         // centre of far end
+      const p1x = ex + pxu * (L / 2), p1y = ey + pyu * (L / 2);
+      const p2x = ex - pxu * (L / 2), p2y = ey - pyu * (L / 2);
+      return `M ${ax.toFixed(1)} ${ay.toFixed(1)} L ${p1x.toFixed(1)} ${p1y.toFixed(1)} L ${p2x.toFixed(1)} ${p2y.toFixed(1)} Z`;
+    }
     return '';
+  }
+
+  // Feet size of an AoE stroke (radius for burst, axis length for cone),
+  // snapped to the grid so the readout is a clean multiple of the cell size.
+  function aoeFt(pts) {
+    if (!pts || pts.length < 2) return 0;
+    const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+    const gs = STATE.gridSize || 50, gft = STATE.gridFt || 5;
+    return Math.round(dist / gs) * gft;
+  }
+
+  function aoeToSVG(d, ox, oy) {
+    const pts = Array.isArray(d.points) ? d.points : [];
+    if (pts.length < 2) return '';
+    const dd = geomD(d.kind, pts, ox, oy, d.width);
+    if (!dd) return '';
+    const color = escapeHtml(String(d.color || '#e23b3b'));
+    const w = Number(d.width) || 4;
+    const id = escapeHtml(String(d.id));
+    const ft = aoeFt(pts);
+    const a = pts[0], b = pts[1];
+    let lx, ly;
+    if (d.kind === 'burst') { lx = a.x + ox; ly = a.y + oy + 6; }
+    else { lx = (a.x + b.x) / 2 + ox; ly = (a.y + b.y) / 2 + oy; }
+    const path = `<path d="${dd}" data-id="${id}" style="fill:${color};fill-opacity:0.20;stroke:${color};stroke-width:${w}px;stroke-opacity:0.9;stroke-dasharray:8 5;"></path>`;
+    const label = `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" data-id="${id}" style="fill:${color};font-weight:700;font-size:22px;paint-order:stroke;stroke:#000;stroke-width:4px;stroke-opacity:0.55;pointer-events:none;">${ft} ft</text>`;
+    return path + label;
   }
 
   function strokeToSVG(d, ox, oy) {
     const pts = Array.isArray(d.points) ? d.points : [];
     if (!pts.length) return '';
+    if (d.kind === 'burst' || d.kind === 'cone') return aoeToSVG(d, ox, oy);
     const dd = geomD(d.kind || 'free', pts, ox, oy, d.width);
     if (!dd) return '';
     const color = escapeHtml(String(d.color || '#e23b3b'));
@@ -12463,10 +12517,50 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const last = pts[pts.length - 1];
       if (last && Math.abs(last.x - mc.x) < 1.5 && Math.abs(last.y - mc.y) < 1.5) return;
       pts.push({ x: mc.x, y: mc.y });
+    } else if (s.kind === 'burst' || s.kind === 'cone') {
+      // AoE: snap the radius/length to whole grid cells so templates line up.
+      const a = s.points[0];
+      const ddx = mc.x - a.x, ddy = mc.y - a.y;
+      const dist = Math.hypot(ddx, ddy);
+      const gs = STATE.gridSize || 50;
+      if (dist >= 1) {
+        const snapped = Math.max(gs, Math.round(dist / gs) * gs);
+        const sc = snapped / dist;
+        s.points[1] = { x: a.x + ddx * sc, y: a.y + ddy * sc };
+      } else {
+        s.points[1] = { x: a.x + gs, y: a.y };
+      }
     } else {
       s.points[1] = { x: mc.x, y: mc.y }; // shapes are defined by start + current
     }
     s.el.setAttribute('d', geomD(s.kind, s.points, ox, oy, s.width));
+    if (s.kind === 'burst' || s.kind === 'cone') {
+      s.el.style.fill = s.color;
+      s.el.style.fillOpacity = '0.20';
+      s.el.style.strokeDasharray = '8 5';
+      updateAoeLiveLabel(s, ox, oy);
+    }
+  }
+
+  // Live "N ft" readout that follows an AoE template while it is being drawn.
+  function updateAoeLiveLabel(s, ox, oy) {
+    const layer = document.getElementById('drawlayer');
+    if (!layer) return;
+    let lbl = layer.querySelector('#draw-live-label');
+    if (!lbl) {
+      lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      lbl.id = 'draw-live-label';
+      lbl.setAttribute('text-anchor', 'middle');
+      layer.appendChild(lbl);
+    }
+    const a = s.points[0], b = s.points[1];
+    let lx, ly;
+    if (s.kind === 'burst') { lx = a.x + ox; ly = a.y + oy + 6; }
+    else { lx = (a.x + b.x) / 2 + ox; ly = (a.y + b.y) / 2 + oy; }
+    lbl.setAttribute('x', lx.toFixed(1));
+    lbl.setAttribute('y', ly.toFixed(1));
+    lbl.setAttribute('style', `fill:${s.color};font-weight:700;font-size:22px;paint-order:stroke;stroke:#000;stroke-width:4px;stroke-opacity:0.55;pointer-events:none;`);
+    lbl.textContent = aoeFt(s.points) + ' ft';
   }
 
   function onDrawPointerUp() {
@@ -12474,6 +12568,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const stroke = STATE.drawStroke;
     STATE.drawStroke = null;
     if (stroke.el && stroke.el.parentNode) stroke.el.parentNode.removeChild(stroke.el);
+    const liveLbl = document.getElementById('draw-live-label');
+    if (liveLbl && liveLbl.parentNode) liveLbl.parentNode.removeChild(liveLbl);
     if (stroke.kind === 'free') {
       if (stroke.points.length < 2) return; // a tap, not a stroke
     } else {
@@ -12482,6 +12578,46 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (Math.abs(a.x - b.x) < 3 && Math.abs(a.y - b.y) < 3) return; // too small to keep
     }
     saveStroke(stroke);
+    if (stroke.kind === 'burst' || stroke.kind === 'cone') reportAoeHits(stroke);
+  }
+
+  // Which tokens' centres fall inside a placed AoE template. Coordinates are all
+  // in offset-less map space (same space getMapCoords and token x/y use).
+  function aoeHitTokens(stroke) {
+    const pts = stroke.points || [];
+    if (pts.length < 2) return [];
+    const a = pts[0], b = pts[1];
+    const MARGIN = 22; // half a token, so a figure on the edge still counts
+    const hits = [];
+    if (stroke.kind === 'burst') {
+      const R = Math.hypot(b.x - a.x, b.y - a.y);
+      STATE.tokens.forEach(tok => {
+        if (tok.x == null || tok.y == null) return; // tray tokens
+        if (Math.hypot(tok.x - a.x, tok.y - a.y) <= R + MARGIN) hits.push(tok);
+      });
+    } else { // cone
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const L = Math.hypot(dx, dy);
+      if (L < 1) return [];
+      const ux = dx / L, uy = dy / L;
+      STATE.tokens.forEach(tok => {
+        if (tok.x == null || tok.y == null) return;
+        const vx = tok.x - a.x, vy = tok.y - a.y;
+        const t = vx * ux + vy * uy;                 // distance along the axis
+        if (t < -MARGIN || t > L + MARGIN) return;
+        const perp = Math.abs(vx * (-uy) + vy * ux); // distance from the axis
+        if (perp <= Math.max(0, t) / 2 + MARGIN) hits.push(tok);
+      });
+    }
+    return hits;
+  }
+
+  function reportAoeHits(stroke) {
+    try {
+      const names = aoeHitTokens(stroke).map(tk => tk.name).filter(Boolean);
+      if (names.length) toast(t('In area: ') + names.join(', ') + ' (' + names.length + ')');
+      else toast(t('Area placed — no tokens caught'));
+    } catch (e) {}
   }
 
   async function saveStroke(stroke) {
@@ -20857,6 +20993,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Campaign Log": "Kampagnenprotokoll",
   "Delete entire campaign (wipe everything)": "Gesamte Kampagne löschen (alles auslöschen)",
   "Example:\nNo metagaming - players cannot use OOC knowledge in character.\nNo Critical Role memes during serious scenes.\nSpell descriptions must be roleplayed before damage is rolled.\nPlayers cannot attack other players' characters without consent.\nNo phones at the table during combat.": "Beispiel:\nKein Metagaming – Spieler dürfen kein OOC-Wissen im Charakter nutzen.\nKeine Critical-Role-Memes in ernsten Szenen.\nZauberbeschreibungen müssen vor dem Schadenswurf ausgespielt werden.\nSpieler dürfen die Charaktere anderer Spieler nicht ohne Zustimmung angreifen.\nKeine Handys am Tisch während des Kampfes.",
+  "Burst / radius (area of effect). Drag from the centre outward.": "Explosion / Radius (Wirkungsbereich). Von der Mitte nach außen ziehen.",
+  "Cone (area of effect). Drag from the caster toward the target.": "Kegel (Wirkungsbereich). Vom Zaubernden zum Ziel ziehen.",
+  "In area: ": "Im Bereich: ",
+  "Area placed — no tokens caught": "Bereich platziert – keine Figuren erfasst",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
