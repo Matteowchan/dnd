@@ -345,6 +345,9 @@
   .map-token:hover .token-disp-btn { opacity: 1; }
   .map-token:hover .token-x-btn { opacity: 0.95; }
   .map-token .token-x-btn:hover { opacity: 1; transform: scale(1.18); }
+  .map-token .token-note-btn { position: absolute; bottom: -7px; right: -7px; width: 18px; height: 18px; border-radius: 50%; background: rgba(20,16,12,0.85); border: 1.5px solid #1a1612; padding: 0; font-size: calc(9px * var(--app-scale, 1)); line-height: 1; cursor: pointer; opacity: 0; transition: opacity 0.12s; z-index: 3; box-shadow: 0 1px 4px rgba(0,0,0,0.6); }
+  .map-token:hover .token-note-btn { opacity: 0.95; }
+  .map-token .token-note-btn.has-note { opacity: 0.95; border-color: var(--gold); box-shadow: 0 0 7px rgba(212,165,116,0.75); }
   .map-token.smooth-move { transition: left 0.25s ease, top 0.25s ease; }
   .map-token.dragging { cursor: grabbing; z-index: 100; transform: scale(1.1); transition: none; }
   @keyframes token-pop { 0% { transform: scale(0.3); opacity: 0.2; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
@@ -1918,6 +1921,7 @@
           <svg id="theme-icon-light" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" fill="none"/></svg>
         </button>
         <button id="lang-toggle" class="lang-toggle-btn" title="Language">EN</button>
+        <button id="sound-toggle" class="lang-toggle-btn" title="Toggle sound cues">🔊</button>
       </span>
       <span class="tb-group">
         <button id="cmdk-btn" title="Command palette — search rules, spells, items, monsters, and run quick actions (Ctrl/Cmd + K)">Search ⌘K</button>
@@ -4063,6 +4067,36 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       function cleanup() { document.removeEventListener('keydown', onKey); if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
     });
   }
+  // Free-text modal (multi-line). Resolves with the trimmed string (may be '')
+  // or null if cancelled.
+  function askText(message, opts) {
+    opts = opts || {};
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.className = 'recovery-overlay';
+      const card = document.createElement('div');
+      card.className = 'recovery-card';
+      if (opts.title) { const h = document.createElement('h3'); h.textContent = opts.title; card.appendChild(h); }
+      const sub = document.createElement('div'); sub.className = 'recovery-sub'; sub.textContent = message; card.appendChild(sub);
+      const input = document.createElement('textarea');
+      input.className = 'recovery-input'; input.rows = 4; input.style.resize = 'vertical';
+      if (opts.placeholder) input.placeholder = opts.placeholder;
+      if (opts.value) input.value = opts.value;
+      card.appendChild(input);
+      const actions = document.createElement('div'); actions.className = 'recovery-actions';
+      const cancel = document.createElement('button'); cancel.className = 'recovery-btn'; cancel.textContent = opts.cancelText || 'Cancel';
+      cancel.addEventListener('click', () => { cleanup(); resolve(null); });
+      actions.appendChild(cancel);
+      const ok = document.createElement('button'); ok.className = 'recovery-btn primary'; ok.textContent = opts.okText || 'Save';
+      ok.addEventListener('click', submit); actions.appendChild(ok);
+      card.appendChild(actions); overlay.appendChild(card);
+      overlay.addEventListener('click', e => { if (e.target === overlay) { cleanup(); resolve(null); } });
+      document.addEventListener('keydown', onKey); document.body.appendChild(overlay); input.focus();
+      function submit() { const v = input.value.trim(); cleanup(); resolve(v); }
+      function onKey(e) { if (e.key === 'Escape') { cleanup(); resolve(null); } }
+      function cleanup() { document.removeEventListener('keydown', onKey); if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
+    });
+  }
   // Promise modal that lists recoverable characters. Resolves with
   // { action: 'restore', row } | { action: 'fresh' } | { action: 'cancel' }.
   function showRecoveryModal(orphans, opts) {
@@ -5390,7 +5424,43 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     b.classList.add('show');
     clearTimeout(showTurnBanner._t);
     showTurnBanner._t = setTimeout(() => b.classList.remove('show'), 3200);
+    playCue('turn');
   }
+  // Short synthesized audio cues (no asset files). Muteable; off state persisted.
+  let _audioCtx = null;
+  function soundOn() { try { return localStorage.getItem('vtt_sound') !== 'off'; } catch (e) { return true; } }
+  function playCue(type) {
+    if (!soundOn()) return;
+    try {
+      _audioCtx = _audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = _audioCtx;
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      const notes = type === 'nat20' ? [523.25, 659.25, 783.99, 1046.5]
+                  : type === 'turn' ? [659.25, 987.77]
+                  : [440];
+      notes.forEach((freq, i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'triangle'; o.frequency.value = freq;
+        const t0 = now + i * 0.09;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.linearRampToValueAtTime(0.16, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0008, t0 + 0.3);
+        o.connect(g); g.connect(ctx.destination); o.start(t0); o.stop(t0 + 0.32);
+      });
+    } catch (e) {}
+  }
+  (function setupSoundToggle() {
+    const btn = document.getElementById('sound-toggle');
+    if (!btn) return;
+    const sync = () => { btn.textContent = soundOn() ? '🔊' : '🔇'; };
+    sync();
+    btn.addEventListener('click', () => {
+      try { localStorage.setItem('vtt_sound', soundOn() ? 'off' : 'on'); } catch (e) {}
+      sync();
+      if (soundOn()) playCue('turn'); // preview when enabling
+    });
+  })();
 
   // Add the "init-active" class to the on-map token whose turn it is
   function highlightActiveInitToken() {
@@ -6413,6 +6483,26 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
             if (error) { console.warn('disposition save failed', error); toast('Disposition not saved', 'error'); } }
         });
         el.appendChild(disp);
+      }
+
+      // DM-only private note on any token (visible only to the host).
+      if (STATE.isHost) {
+        const note = document.createElement('button');
+        note.className = 'token-note-btn' + (tok.dm_note ? ' has-note' : '');
+        note.textContent = '📝';
+        note.title = tok.dm_note ? (t('DM note') + ': ' + tok.dm_note) : t('Add a private DM note');
+        note.addEventListener('mousedown', e => e.stopPropagation());
+        note.addEventListener('touchstart', e => e.stopPropagation(), { passive: false });
+        note.addEventListener('click', async (ev) => {
+          ev.stopPropagation(); ev.preventDefault();
+          const v = await askText(t('Only you (the DM) can see this.'), { title: t('DM note'), value: tok.dm_note || '', okText: t('Save'), cancelText: t('Cancel') });
+          if (v === null) return;
+          tok.dm_note = v;
+          renderTokens();
+          const { error } = await sb.from('vtt_tokens').update({ dm_note: v || null }).eq('id', tok.id);
+          if (error) { console.warn('dm_note save failed', error); toast('Note not saved', 'error'); }
+        });
+        el.appendChild(note);
       }
       el.addEventListener('mousedown', (e) => { if (e.button === 0) startTokenDrag(e, tok); });
       el.addEventListener('touchstart', (e) => startTokenDrag(e, tok), { passive: false });
@@ -14846,6 +14936,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   }
 
   function triggerNat20() {
+    try { playCue('nat20'); } catch (e) {}
     const glow = document.getElementById('nat20-glow');
     const fx = document.getElementById('nat20-fx');
     glow.classList.remove('active');
@@ -20743,6 +20834,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Action": "Aktion",
   "Bonus action": "Bonusaktion",
   "Reaction": "Reaktion",
+  "Toggle sound cues": "Tonhinweise umschalten",
+  "DM note": "SL-Notiz",
+  "Add a private DM note": "Private SL-Notiz hinzufügen",
+  "Only you (the DM) can see this.": "Nur du (der SL) kannst dies sehen.",
+  "Note not saved": "Notiz nicht gespeichert",
   "joined combat": "dem Kampf beigetreten",
   "Add Selected to Combat": "Ausgewählte zum Kampf hinzufügen",
   "DM Guide": "SL-Leitfaden",
