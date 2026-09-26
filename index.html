@@ -5138,6 +5138,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     STATE.initiative.round = round;
     renderInitiative();
     renderTokens();
+    // Refresh timed buffs/conditions on the open sheet so their round counters
+    // tick down (and expire) as the fight advances.
+    try { if (CHAR_POPUP && Array.isArray(CHAR_POPUP.buffs)) renderBuffs(CHAR_POPUP.buffs); } catch (e) {}
+    try { renderConditionsStrip(); } catch (e) {}
     await saveInitiative();
   }
 
@@ -5226,7 +5230,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (controls) controls.style.display = STATE.isHost ? 'flex' : 'none';
     // Round counter
     if (roundLbl) {
-      roundLbl.textContent = STATE.initiative.active ? `Round ${STATE.initiative.round}` : '';
+      roundLbl.textContent = STATE.initiative.active ? `${t('Round')} ${STATE.initiative.round}` : '';
     }
     list.innerHTML = '';
     if (!STATE.initiative.active || STATE.initiative.entries.length === 0) {
@@ -6056,6 +6060,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const prev = STATE.tokens.get(tok.id);
     const existed = STATE.tokens.has(tok.id);
     STATE.tokens.set(tok.id, tok);
+    // My own token just lost HP (e.g. the DM applied damage) and I'm concentrating:
+    // remind me to make the Constitution save. (concentration automation)
+    if (prev && tok.owner_id === STATE.userId && STATE.myConcentration
+        && typeof tok.current_hp === 'number' && typeof prev.current_hp === 'number'
+        && tok.current_hp < prev.current_hp) {
+      const dc = Math.max(10, Math.floor((prev.current_hp - tok.current_hp) / 2));
+      try { toast(t('Concentration check') + ' — ' + t('DC') + ' ' + dc + ' (' + STATE.myConcentration + ')', 'error', 5000); } catch (e) {}
+    }
 
     // Did anything visual (not just position/hp) change? If so, a full re-render is
     // required so image, name colour, disposition and conditions propagate to all
@@ -6712,6 +6724,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (newTemp !== temp) patch.temp_hp = newTemp;
     await setTokenHp(tokenId, patch);
     refreshCharPopupHp();
+    // Concentration: taking damage forces a CON save (DC 10 or half the damage).
+    if (delta < 0 && tok.owner_id === STATE.userId && STATE.myConcentration) {
+      const dc = Math.max(10, Math.floor((-delta) / 2));
+      toast(t('Concentration check') + ' — ' + t('DC') + ' ' + dc + ' (' + STATE.myConcentration + ')', 'error', 5000);
+    }
+    // A combatant dropping to 0 HP is auto-marked down in the initiative order.
+    if (newHp === 0 && cur > 0) maybeDownCombatant(tokenId, tok.name);
     // Optional: log to chat for visibility
     if (delta !== 0) {
       const action = delta < 0 ? 'took' : 'healed';
@@ -6725,6 +6744,18 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         ts: nowTs(),
       });
     }
+  }
+
+  // Host-authoritative: a token at 0 HP is flagged "down" in the initiative order
+  // (struck through in the tracker) and announced, so nobody forgets a fallen combatant.
+  function maybeDownCombatant(tokenId, name) {
+    if (!STATE.isHost || !STATE.initiative.active) return;
+    const idx = STATE.initiative.entries.findIndex(en => en.tokenId === tokenId);
+    if (idx < 0 || STATE.initiative.entries[idx].downed) return;
+    STATE.initiative.entries[idx].downed = true;
+    renderInitiative();
+    saveInitiative();
+    toast((name || t('A combatant')) + ' — ' + t('down at 0 HP'), 'error', 4000);
   }
 
   // ============ CHARACTER INFO POPUP ============
@@ -7553,23 +7584,31 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   // Common preset buffs - one tap to add. Modeled like Conditions tab.
   const BUFF_PRESETS = [
-    { name: 'Bless',                mod: 2, dur: 'Conc., up to 1 min',       desc: 'Add 1d4 to each attack roll and saving throw for up to 1 min (avg +2). Concentration.' },
-    { name: 'Bardic Inspiration',   mod: 4, dur: '10 min or until used',     desc: 'Spend the die to add it to one attack, check, or save (d6 to d12 by bard level).' },
-    { name: 'Guidance',             mod: 2, dur: 'Conc., up to 1 min',       desc: 'Add 1d4 to one ability check (avg +2). Concentration.' },
-    { name: 'Heroism',              mod: 0, dur: 'Conc., up to 1 min',       desc: 'Immune to frightened; gain temp HP equal to caster mod at the start of each turn. Concentration.' },
-    { name: 'Rage',                 mod: 2, dur: '1 min',                    desc: 'Bonus damage on Strength melee hits; resistance to bludgeon, pierce, slash; advantage on STR checks and saves.' },
-    { name: 'Aid',                  mod: 0, dur: '8 hours',                  desc: 'Max HP and current HP +5 for 8 hours (more at higher slots).' },
-    { name: 'Shield of Faith',      mod: 0, dur: 'Conc., up to 10 min',      desc: '+2 AC to one creature for up to 10 min. Concentration.' },
-    { name: 'Haste',                mod: 0, dur: 'Conc., up to 1 min',       desc: 'Speed doubled, +2 AC, advantage on DEX saves, one extra limited action; lethargy for a turn when it ends. Concentration.' },
-    { name: 'Faerie Fire',          mod: 0, dur: 'Conc., up to 1 min',       desc: 'Outlined targets cannot benefit from invisibility; attacks against them have advantage. Concentration.' },
-    { name: 'Divine Favor',         mod: 0, dur: 'Conc., up to 1 min',       desc: 'Your weapon hits deal +1d4 radiant damage. Concentration.' },
-    { name: 'Hex',                  mod: 0, dur: 'Conc., up to 1 hour',      desc: 'Deal +1d6 necrotic on hits to the hexed target; it has disadvantage on one chosen ability. Concentration.' },
-    { name: 'Hunter\'s Mark',       mod: 0, dur: 'Conc., up to 1 hour',      desc: 'Deal +1d6 damage to the marked target; advantage on checks to track it. Concentration.' },
-    { name: 'Inspire',              mod: 1, dur: '',                         desc: 'Generic morale boost. A flat reminder buff.' },
-    { name: 'Custom +1',            mod: 1, dur: '',                         desc: 'Flat +1 marker for an unlisted effect.' },
+    { name: 'Bless',                mod: 2, dur: 'Conc., up to 1 min', rounds: 10,  desc: 'Add 1d4 to each attack roll and saving throw for up to 1 min (avg +2). Concentration.' },
+    { name: 'Bardic Inspiration',   mod: 4, dur: '10 min or until used',          desc: 'Spend the die to add it to one attack, check, or save (d6 to d12 by bard level).' },
+    { name: 'Guidance',             mod: 2, dur: 'Conc., up to 1 min', rounds: 10,  desc: 'Add 1d4 to one ability check (avg +2). Concentration.' },
+    { name: 'Heroism',              mod: 0, dur: 'Conc., up to 1 min', rounds: 10,  desc: 'Immune to frightened; gain temp HP equal to caster mod at the start of each turn. Concentration.' },
+    { name: 'Rage',                 mod: 2, dur: '1 min', rounds: 10,             desc: 'Bonus damage on Strength melee hits; resistance to bludgeon, pierce, slash; advantage on STR checks and saves.' },
+    { name: 'Aid',                  mod: 0, dur: '8 hours',                      desc: 'Max HP and current HP +5 for 8 hours (more at higher slots).' },
+    { name: 'Shield of Faith',      mod: 0, dur: 'Conc., up to 10 min', rounds: 100, desc: '+2 AC to one creature for up to 10 min. Concentration.' },
+    { name: 'Haste',                mod: 0, dur: 'Conc., up to 1 min', rounds: 10,  desc: 'Speed doubled, +2 AC, advantage on DEX saves, one extra limited action; lethargy for a turn when it ends. Concentration.' },
+    { name: 'Faerie Fire',          mod: 0, dur: 'Conc., up to 1 min', rounds: 10,  desc: 'Outlined targets cannot benefit from invisibility; attacks against them have advantage. Concentration.' },
+    { name: 'Divine Favor',         mod: 0, dur: 'Conc., up to 1 min', rounds: 10,  desc: 'Your weapon hits deal +1d4 radiant damage. Concentration.' },
+    { name: 'Hex',                  mod: 0, dur: 'Conc., up to 1 hour',           desc: 'Deal +1d6 necrotic on hits to the hexed target; it has disadvantage on one chosen ability. Concentration.' },
+    { name: 'Hunter\'s Mark',       mod: 0, dur: 'Conc., up to 1 hour',           desc: 'Deal +1d6 damage to the marked target; advantage on checks to track it. Concentration.' },
+    { name: 'Inspire',              mod: 1, dur: '',                             desc: 'Generic morale boost. A flat reminder buff.' },
+    { name: 'Custom +1',            mod: 1, dur: '',                             desc: 'Flat +1 marker for an unlisted effect.' },
   ];
 
   function renderBuffs(buffs) {
+    // Auto-expire round-based buffs whose combat round has passed (same model as
+    // conditions), so timed buffs tick down and clear themselves during a fight.
+    const curRound = (STATE.initiative && STATE.initiative.active) ? STATE.initiative.round : null;
+    if (curRound != null && Array.isArray(buffs)) {
+      const before = buffs.length;
+      for (let i = buffs.length - 1; i >= 0; i--) { if (buffs[i].until_round != null && buffs[i].until_round < curRound) buffs.splice(i, 1); }
+      if (buffs.length !== before) { scheduleSavePlayer(); renderTokens(); }
+    }
     // -- Presets bar: quick-add chips at the top of the Buffs tab --
     const presets = document.getElementById('buff-presets');
     if (presets) {
@@ -7582,6 +7621,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         chip.dataset.name = p.name;
         chip.dataset.mod = p.mod;
         chip.dataset.dur = p.dur || '';
+        chip.dataset.rounds = p.rounds || '';
         chip.innerHTML = `<span class="bp-name">${escapeHtml(p.name)}</span>${p.mod ? `<span class="bp-mod">${p.mod >= 0 ? '+' : ''}${p.mod}</span>` : ''}`;
         presets.appendChild(chip);
       });
@@ -7617,7 +7657,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           <span class="buff-tile-mod">${b.mod >= 0 ? '+' : ''}${b.mod}</span>
           <button class="buff-tile-del" title="Remove">×</button>
         </div>
-        ${b.dur ? `<div class="buff-tile-dur">⏱ ${escapeHtml(t(b.dur))}</div>` : ''}
+        ${(function(){ const rl = (b.until_round != null && curRound != null) ? (b.until_round - curRound + 1) : null; const dt = b.dur ? t(b.dur) : ''; const line = (dt || rl != null) ? (dt + (rl != null ? (dt ? ' · ' : '') + rl + 'r' : '')) : ''; return line ? `<div class="buff-tile-dur">⏱ ${escapeHtml(line)}</div>` : ''; })()}
       `;
       tile.addEventListener('click', (e) => {
         if (e.target.closest('.buff-tile-del')) return;
@@ -10707,12 +10747,17 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         const name = chip.dataset.name;
         const mod = parseInt(chip.dataset.mod) || 0;
         const dur = chip.dataset.dur || '';
+        const rounds = parseInt(chip.dataset.rounds) || 0;
         const existing = CHAR_POPUP.buffs.findIndex(b => b.name === name);
         if (existing >= 0) {
           // Already there - remove it (toggle behavior)
           CHAR_POPUP.buffs.splice(existing, 1);
         } else {
-          CHAR_POPUP.buffs.push({ name, mod, dur, active: true });
+          const buff = { name, mod, dur, active: true };
+          // If added during combat, give round-based buffs an expiry so they tick
+          // down and auto-clear like conditions.
+          if (rounds && STATE.initiative && STATE.initiative.active) buff.until_round = STATE.initiative.round + rounds;
+          CHAR_POPUP.buffs.push(buff);
         }
         renderBuffs(CHAR_POPUP.buffs);
         renderTokens();
@@ -20631,6 +20676,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Nothing on the map to clear": "Nichts auf der Karte zum Leeren",
   "Reconnecting…": "Neu verbinden…",
   "Your turn!": "Du bist am Zug!",
+  "Concentration check": "Konzentrationsprobe",
+  "DC": "SG",
+  "A combatant": "Ein Kämpfer",
+  "down at 0 HP": "bei 0 TP kampfunfähig",
+  "Round": "Runde",
   "Conc., up to 1 min": "Konz., bis zu 1 Min",
   "Conc., up to 10 min": "Konz., bis zu 10 Min",
   "Conc., up to 1 hour": "Konz., bis zu 1 Stunde",
@@ -21326,6 +21376,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (!CHAR_POPUP.profile) CHAR_POPUP.profile = {};
     const prev = CHAR_POPUP.profile.concentration;
     CHAR_POPUP.profile.concentration = { name };
+    // Mirror the local player's own concentration so damage reminders work even
+    // when the character sheet isn't the currently-open popup.
+    if (CHAR_POPUP.targetPlayerId === STATE.userId) STATE.myConcentration = name;
     renderConcentration();
     scheduleSaveProfile();
     if (prev && prev.name && prev.name !== name) toast(`Concentration moved to ${name} — ${prev.name} dropped.`);
@@ -21333,6 +21386,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   }
   function dropConcentration() {
     if (CHAR_POPUP.profile) CHAR_POPUP.profile.concentration = null;
+    if (CHAR_POPUP.targetPlayerId === STATE.userId) STATE.myConcentration = null;
     renderConcentration();
     scheduleSaveProfile();
     toast('Concentration dropped.');
