@@ -599,6 +599,10 @@
   #dm-guide-popup { position: fixed; top: 52px; left: 50%; transform: translateX(-50%); width: 920px; max-width: 96vw; height: 86vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 8px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
   #dm-guide-popup.active { display: flex; }
   #dm-guide-popup .cmp-tabs { width: 220px; flex: 0 0 220px; }
+  /* Gentle entrance for the big reference popups (preserves the -50% centering) */
+  @keyframes popupInX { from { opacity: 0; transform: translateX(-50%) translateY(-8px) scale(0.99); } to { opacity: 1; transform: translateX(-50%); } }
+  #compendium-popup.active, #handbook-popup.active, #dm-guide-popup.active { animation: popupInX 0.22s cubic-bezier(0.22, 1, 0.36, 1); }
+  @media (prefers-reduced-motion: reduce) { #compendium-popup.active, #handbook-popup.active, #dm-guide-popup.active { animation: none; } }
   .dmg-search-row { display: flex; gap: 8px; align-items: center; }
   #dmg-search { flex: 1; box-sizing: border-box; background: var(--bg); border: 1px solid var(--border); color: var(--cream); padding: 9px 12px; border-radius: 5px; font-family: 'Crimson Pro', serif; font-size: calc(14px * var(--app-scale, 1)); outline: none; }
   #dmg-search:focus { border-color: var(--gold-soft); }
