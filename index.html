@@ -2739,6 +2739,7 @@
           <input type="checkbox" id="monster-as-token" checked>
           <span>Add to map as a token (uncheck for initiative-only entry)</span>
         </label>
+        <label class="monster-qty-row">Count <input type="number" id="monster-qty" value="1" min="1" max="20" style="width:56px;"></label>
         <button id="monster-spawn-btn" class="init-mini-btn primary" disabled>Add Selected to Combat</button>
       </div>
     </div>
@@ -5437,11 +5438,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       spawnBtn.addEventListener('click', async () => {
         if (!selectedMonster) return;
         const placeAsToken = document.getElementById('monster-as-token').checked;
-        await spawnMonster(selectedMonster, placeAsToken);
-        // Pick a unique suffix so multiple goblins are distinguishable
-        const count = STATE.initiative.entries.filter(e => e.name && e.name.startsWith(selectedMonster.name)).length;
+        const qty = Math.max(1, Math.min(20, parseInt(document.getElementById('monster-qty').value) || 1));
+        // Bulk spawn: each copy gets a numbered label + offset position automatically.
+        for (let k = 0; k < qty; k++) await spawnMonster(selectedMonster, placeAsToken);
         closeNpc();
-        toast(`${selectedMonster.name}${count > 0 ? ' ' + (count + 1) : ''} joined combat`);
+        toast(qty > 1
+          ? `${qty} × ${selectedMonster.name} ${t('joined combat')}`
+          : `${selectedMonster.name} ${t('joined combat')}`);
       });
     }
   }
@@ -20681,6 +20684,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "A combatant": "Ein Kämpfer",
   "down at 0 HP": "bei 0 TP kampfunfähig",
   "Round": "Runde",
+  "joined combat": "dem Kampf beigetreten",
+  "Add Selected to Combat": "Ausgewählte zum Kampf hinzufügen",
   "Conc., up to 1 min": "Konz., bis zu 1 Min",
   "Conc., up to 10 min": "Konz., bis zu 10 Min",
   "Conc., up to 1 hour": "Konz., bis zu 1 Stunde",
