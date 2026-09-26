@@ -1213,6 +1213,10 @@
   .lib-empty { color: var(--muted); font-size: calc(11px * var(--app-scale, 1)); font-style: italic; padding: 6px 8px; }
   .slot-cell { background: var(--panel-light); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; position: relative; }
   .slot-cell .slot-label { font-family: 'Cinzel', serif; font-size: calc(10px * var(--app-scale, 1)); color: var(--gold); letter-spacing: 0.08em; }
+  .slot-cell .slot-pips { display: flex; flex-wrap: wrap; gap: 4px; margin: 5px 0 3px; }
+  .slot-cell .slot-pip { width: 15px; height: 15px; border-radius: 50%; border: 1px solid var(--gold-soft); background: rgba(0,0,0,0.35); cursor: pointer; transition: background 0.12s, transform 0.08s, box-shadow 0.12s; }
+  .slot-cell .slot-pip.on { background: radial-gradient(circle at 35% 30%, #f0c68a, var(--gold) 70%); box-shadow: 0 0 7px rgba(212,165,116,0.6); }
+  .slot-cell .slot-pip:hover { transform: scale(1.18); border-color: var(--gold); }
   .slot-cell .slot-inputs { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
   .slot-cell input { width: 36px; text-align: center; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 3px; padding: 3px 4px; font-size: calc(12px * var(--app-scale, 1)); }
   .slot-cell .sep { color: var(--muted); }
@@ -1365,10 +1369,12 @@
   .stat-box label { display: block; font-size: calc(10px * var(--app-scale, 1)); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
   .stat-box input { width: 100%; background: transparent; border: none; color: var(--cream); font-family: 'Cinzel', serif; font-size: calc(16px * var(--app-scale, 1)); font-weight: 600; text-align: center; padding: 2px 0; }
   .stat-box input:focus { background: var(--bg); }
-  .stat-box .mod { font-size: calc(11px * var(--app-scale, 1)); color: var(--gold); margin-top: 2px; }
+  .stat-box .mod { display: inline-block; font-size: calc(11px * var(--app-scale, 1)); color: var(--gold); margin-top: 3px; padding: 1px 9px; border: 1px solid var(--gold-soft); border-radius: 10px; background: rgba(212,165,116,0.08); transition: background 0.15s, color 0.15s, box-shadow 0.15s; }
   /* Auto-roll affordances (item 1) */
   .stat-box { cursor: pointer; }
-  .stat-box:hover { border-color: var(--gold-soft); }
+  .stat-box:hover { border-color: var(--gold); background: linear-gradient(180deg, rgba(212,165,116,0.15), rgba(0,0,0,0.30)); }
+  .stat-box:hover .mod { background: var(--gold-soft); color: #1a1208; box-shadow: 0 2px 8px rgba(212,165,116,0.28); }
+  .stat-box:active .mod { transform: translateY(1px); }
   .stat-box input { cursor: text; }
   .skill-row, .save-row { cursor: pointer; }
   .skill-row:hover, .save-row:hover { background: rgba(212,165,116,0.08); }
@@ -8676,13 +8682,18 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         const s = m.slots[lv] || { cur: 0, max: 0 };
         const cell = document.createElement('div');
         cell.className = 'slot-cell';
+        const maxN = Math.max(0, Math.min(20, parseInt(s.max) || 0));
+        const curN = Math.max(0, Math.min(maxN, parseInt(s.cur) || 0));
+        let pips = '';
+        for (let i = 0; i < maxN; i++) pips += `<span class="slot-pip ${i < curN ? 'on' : ''}" data-lv="${lv}" data-i="${i}"></span>`;
         cell.innerHTML = `
           ${canEdit ? `<button class="slot-del" data-lv="${lv}" title="Remove this slot level">×</button>` : ''}
           <div class="slot-label">Lv ${lv}</div>
+          ${maxN ? `<div class="slot-pips" title="${t('Click a pip to spend or restore a slot')}">${pips}</div>` : ''}
           <div class="slot-inputs">
-            <input type="number" class="slot-cur" data-lv="${lv}" min="0" max="99" value="${s.cur}" ${canEdit ? '' : 'readonly'}>
+            <input type="number" class="slot-cur" data-lv="${lv}" min="0" max="99" value="${s.cur}" ${canEdit ? '' : 'readonly'} title="${t('Available slots')}">
             <span class="sep">/</span>
-            <input type="number" class="slot-max" data-lv="${lv}" min="0" max="99" value="${s.max}" ${canEdit ? '' : 'readonly'}>
+            <input type="number" class="slot-max" data-lv="${lv}" min="0" max="99" value="${s.max}" ${canEdit ? '' : 'readonly'} title="${t('Total slots')}">
           </div>
         `;
         slotsGrid.appendChild(cell);
@@ -9267,10 +9278,21 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     renderDeathSaves();
   }
 
+  const STAT_INFO = {
+    str: 'Strength — melee attacks & damage, Athletics, carrying, breaking, grappling.',
+    dex: 'Dexterity — AC, initiative, finesse & ranged attacks, Acrobatics, Stealth, Sleight of Hand.',
+    con: 'Constitution — hit points, concentration saves, holding your breath, stamina.',
+    int: 'Intelligence — Arcana, History, Investigation, Nature, Religion; wizard spellcasting.',
+    wis: 'Wisdom — Perception, Insight, Medicine, Survival, Animal Handling; cleric/druid casting.',
+    cha: 'Charisma — Persuasion, Deception, Intimidation, Performance; bard/sorcerer/warlock casting.',
+  };
   function updateStatMods() {
     ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(s => {
       const score = parseInt(document.getElementById(`char-${s}`).value) || 10;
-      document.getElementById(`mod-${s}`).textContent = fmtMod(statMod(score));
+      const mod = statMod(score);
+      document.getElementById(`mod-${s}`).textContent = fmtMod(mod);
+      const box = document.getElementById(`char-${s}`).closest('.stat-box');
+      if (box) box.title = `${t(STAT_INFO[s] || '')}\n${t('Click to roll a d20 check')} (${fmtMod(mod)}).`;
     });
     const dexMod = statMod(parseInt(document.getElementById('char-dex').value) || 10);
     document.getElementById('char-init').textContent = fmtMod(dexMod);
@@ -10539,6 +10561,23 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       if (!CHAR_POPUP.magic.slots[lv]) CHAR_POPUP.magic.slots[lv] = { cur: 0, max: 0 };
       if (t.classList.contains('slot-cur')) CHAR_POPUP.magic.slots[lv].cur = v;
       else CHAR_POPUP.magic.slots[lv].max = v;
+      scheduleSavePlayer();
+    });
+    // Click a pip to spend (fill → empty) or restore (empty → fill) a slot.
+    // Clicking a filled pip sets available down to before it; clicking an empty
+    // pip restores up to and including it — the intuitive "set the level" gesture.
+    document.getElementById('spell-slots-grid').addEventListener('click', (e) => {
+      const pip = e.target.closest('.slot-pip');
+      if (!pip) return;
+      const canEdit = (CHAR_POPUP.targetPlayerId === STATE.userId) || STATE.isHost;
+      if (!canEdit) return;
+      const lv = parseInt(pip.dataset.lv);
+      const i = parseInt(pip.dataset.i);
+      if (!CHAR_POPUP.magic) CHAR_POPUP.magic = emptyMagicData();
+      const slot = CHAR_POPUP.magic.slots[lv]; if (!slot) return;
+      const cur = Math.max(0, Math.min(parseInt(slot.max) || 0, parseInt(slot.cur) || 0));
+      slot.cur = (i < cur) ? i : i + 1; // spend down to i, or restore up to i
+      renderMagic(CHAR_POPUP.magic);
       scheduleSavePlayer();
     });
     // Remove a slot level (×): zero it out and mark inactive so the cell vanishes
@@ -21162,6 +21201,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "e.g. 1d20+2d6+3": "z. B. 1d20+2d6+3",
   "Enter a dice formula like 1d20+2d6+3": "Gib eine Würfelformel ein, z. B. 1d20+2d6+3",
   "Roll a mixed formula, e.g. an attack plus Sneak Attack or a smite": "Gemischte Formel würfeln, z. B. Angriff plus Hinterhältiger Angriff oder Zerschmettern",
+  "Click to roll a d20 check": "Zum Würfeln einer W20-Probe klicken",
+  "Click a pip to spend or restore a slot": "Auf einen Punkt klicken, um einen Slot zu verbrauchen oder zurückzugeben",
+  "Available slots": "Verfügbare Slots",
+  "Total slots": "Slots gesamt",
+  "Strength — melee attacks & damage, Athletics, carrying, breaking, grappling.": "Stärke — Nahkampfangriffe & Schaden, Athletik, Tragen, Zerbrechen, Greifen.",
+  "Dexterity — AC, initiative, finesse & ranged attacks, Acrobatics, Stealth, Sleight of Hand.": "Geschicklichkeit — RK, Initiative, Finesse- & Fernkampfangriffe, Akrobatik, Heimlichkeit, Fingerfertigkeit.",
+  "Constitution — hit points, concentration saves, holding your breath, stamina.": "Konstitution — Trefferpunkte, Konzentrationswürfe, Luft anhalten, Ausdauer.",
+  "Intelligence — Arcana, History, Investigation, Nature, Religion; wizard spellcasting.": "Intelligenz — Arkane Kunde, Geschichte, Nachforschung, Naturkunde, Religion; Zauberei des Magiers.",
+  "Wisdom — Perception, Insight, Medicine, Survival, Animal Handling; cleric/druid casting.": "Weisheit — Wahrnehmung, Einsicht, Medizin, Überleben, Umgang mit Tieren; Zauberei von Kleriker/Druide.",
+  "Charisma — Persuasion, Deception, Intimidation, Performance; bard/sorcerer/warlock casting.": "Charisma — Überzeugen, Täuschung, Einschüchtern, Auftreten; Zauberei von Barde/Hexenmeister/Zauberer.",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
