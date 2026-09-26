@@ -574,7 +574,19 @@
   #handbook-popup { position: fixed; top: 52px; left: 50%; transform: translateX(-50%); width: 920px; max-width: 96vw; height: 86vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 8px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
   #handbook-popup.active { display: flex; }
   #handbook-popup .cmp-tabs { width: 210px; flex: 0 0 210px; }
-  #hb-search { width: 100%; box-sizing: border-box; background: var(--bg); border: 1px solid var(--border); color: var(--cream); padding: 9px 12px; border-radius: 5px; font-family: 'Crimson Pro', serif; font-size: calc(14px * var(--app-scale, 1)); outline: none; }
+  #dm-guide-popup { position: fixed; top: 52px; left: 50%; transform: translateX(-50%); width: 920px; max-width: 96vw; height: 86vh; background: var(--panel); border: 1px solid var(--gold); border-radius: 8px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
+  #dm-guide-popup.active { display: flex; }
+  #dm-guide-popup .cmp-tabs { width: 220px; flex: 0 0 220px; }
+  .dmg-search-row { display: flex; gap: 8px; align-items: center; }
+  #dmg-search { flex: 1; box-sizing: border-box; background: var(--bg); border: 1px solid var(--border); color: var(--cream); padding: 9px 12px; border-radius: 5px; font-family: 'Crimson Pro', serif; font-size: calc(14px * var(--app-scale, 1)); outline: none; }
+  #dmg-search:focus { border-color: var(--gold-soft); }
+  #dmg-search-btn { flex: 0 0 auto; padding: 9px 18px; background: var(--gold-soft); border: 1px solid var(--gold); color: var(--bg); border-radius: 5px; cursor: pointer; font-family: 'Cinzel', serif; font-size: calc(12px * var(--app-scale, 1)); letter-spacing: 0.04em; }
+  #dmg-search-btn:hover { background: var(--gold); }
+  .dmg-cat-head { color: var(--gold-soft); font-family: 'Cinzel', serif; font-size: calc(12px * var(--app-scale, 1)); text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  .dmg-sec { margin-bottom: 16px; }
+  .dmg-sec h4 { color: var(--gold); font-family: 'Cinzel', serif; font-size: calc(15px * var(--app-scale, 1)); margin: 0 0 5px; }
+  .dmg-sec p { margin: 0 0 6px; line-height: 1.55; color: var(--cream); font-size: calc(13.5px * var(--app-scale, 1)); }
+  .dmg-empty { color: var(--muted); padding: 14px 4px; font-style: italic; }
   #hb-search:focus { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(212,165,116,0.18); }
   #hb-content { flex: 1; overflow-y: auto; padding: 16px 24px; }
   .hb-chapter-title { font-family: 'Cinzel', serif; color: var(--gold); font-size: calc(20px * var(--app-scale, 1)); letter-spacing: 0.04em; margin: 0 0 4px; }
@@ -1914,6 +1926,7 @@
         <button id="campaign-btn" title="Campaign Journal: quests, NPCs, locations, factions, clues and notes">Campaign</button>
       </span>
       <span class="tb-group" id="tb-dm-group">
+        <button id="dm-guide-btn" title="DM Guide: how to run the game and use this table — combat, spells, tokens, tools, pacing and rulings">DM Guide</button>
         <button id="dm-rules-btn" title="Special DM rules - will alert when violated">DM Rules</button>
         <button id="dm-tools-btn" title="DM Toolbox: instant NPCs, taverns, shops, rumours, encounters, travel, weather, loot, wild magic">DM Tools</button>
       </span>
@@ -2953,6 +2966,23 @@
     <div class="cmp-layout">
       <div class="cmp-tabs" id="hb-tabs"></div>
       <div class="cmp-content" id="hb-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="dm-guide-popup">
+  <div class="char-popup-header">
+    <span class="ttl">DM Guide</span>
+    <button id="dm-guide-close">×</button>
+  </div>
+  <div class="char-popup-body cmp-body">
+    <div class="cmp-search-row dmg-search-row">
+      <input id="dmg-search" type="text" placeholder="Search the DM guide — combat, spells, tokens, tools, pacing…" autocomplete="off" spellcheck="false">
+      <button id="dmg-search-btn" title="Search the guide">Search</button>
+    </div>
+    <div class="cmp-layout">
+      <div class="cmp-tabs" id="dmg-tabs"></div>
+      <div class="cmp-content" id="dmg-content"></div>
     </div>
   </div>
 </div>
@@ -20686,6 +20716,11 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Round": "Runde",
   "joined combat": "dem Kampf beigetreten",
   "Add Selected to Combat": "Ausgewählte zum Kampf hinzufügen",
+  "DM Guide": "SL-Leitfaden",
+  "Search": "Suchen",
+  "Search the guide": "Den Leitfaden durchsuchen",
+  "Search the DM guide — combat, spells, tokens, tools, pacing…": "Den SL-Leitfaden durchsuchen — Kampf, Zauber, Figuren, Werkzeuge, Tempo…",
+  "DM Guide: how to run the game and use this table — combat, spells, tokens, tools, pacing and rulings": "SL-Leitfaden: wie man das Spiel leitet und diesen Tisch nutzt — Kampf, Zauber, Figuren, Werkzeuge, Tempo und Entscheidungen",
   "Conc., up to 1 min": "Konz., bis zu 1 Min",
   "Conc., up to 10 min": "Konz., bis zu 10 Min",
   "Conc., up to 1 hour": "Konz., bis zu 1 Stunde",
@@ -21313,6 +21348,149 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { const p = document.getElementById('toolbox-popup'); if (p && p.classList.contains('active')) closeToolbox(); }
     });
+  })();
+
+  // ================= DM GUIDE (how to run the game on this table) =================
+  const DM_GUIDE = [
+    { label: 'Getting Started', items: [
+      { t: 'Create a table', b: 'As host, name your campaign and press Enter. Share the session code or the invite link from the top bar; players choose "Player" and type the same code to join.' },
+      { t: 'Host and players', b: 'The host (SL) sees every tool and controls maps, fog, initiative and NPCs. Players see the shared board and their own character sheet.' },
+      { t: 'Save and resume', b: 'Nothing is auto-deleted. Return with the same code (or "Resume last session") and the board, log and characters are all still there.' },
+    ]},
+    { label: 'Maps & Scenes', items: [
+      { t: 'Upload a map', b: 'Load an image, GIF or MP4 as a battle map from the left panel. Set feet-per-square and press Apply so the grid matches the art.' },
+      { t: 'Reveal to players', b: 'Players see nothing until you press "Reveal map to players". Prep the next area hidden, then reveal it the moment they arrive.' },
+      { t: 'Fog of war', b: 'Turn on Fog, enable the brush and drag to uncover explored ground; Shift-drag hides it again. Perfect for dungeon crawls and ambushes.' },
+    ]},
+    { label: 'Tokens', items: [
+      { t: 'Add tokens', b: 'Upload a portrait from a character sheet, or use "+ Upload tokens (DM)" for monsters and props, then drag them from the tray onto the map.' },
+      { t: 'Move, lock, delete', b: 'Drag tokens to move them. "Lock tokens" stops accidental nudges. The × on a token or tray thumb deletes it for everyone.' },
+      { t: 'HP, conditions, disposition', b: 'Adjust HP from the sheet or HP tracker, mark conditions on the sheet, and use the F/E button to flag an NPC friendly (blue) or enemy (red).' },
+    ]},
+    { label: 'Combat', items: [
+      { t: 'Start and build the order', b: 'Add foes from the Monster Manager (use Count for a pack), or Roll All to roll initiative for every token on the map. The tracker lists the order.' },
+      { t: 'Arrange turns (BG3-style)', b: 'Hand-order the fight with the ▲/▼ arrows on each combatant, and click a row to jump the active turn straight to it.' },
+      { t: 'Advance and rounds', b: 'Press Next to pass the turn; the round counter climbs when the order loops. The active player gets a "Your turn!" banner and their token glows.' },
+      { t: 'Downed and death saves', b: 'A token dropped to 0 HP is auto-marked down. On a player sheet the death-save panel appears — roll on their turn (3 successes stabilize, 3 failures mean death).' },
+    ]},
+    { label: 'Attacks, Spells & Saves', items: [
+      { t: 'The action resolver', b: 'The 🎯 button on a sheet picks a target, rolls to hit against its AC (advantage-aware), rolls damage, and applies it on confirm — no manual math.' },
+      { t: 'Saving-throw spells', b: 'Switch the resolver to "Saving throw", set the DC, roll damage, then apply full or half. Your save DC (8 + proficiency + casting mod) is on the sheet.' },
+      { t: 'Read the durations', b: 'Every spell shows Casting time, Range and Duration. Watch Concentration spells: a caster can sustain only one at a time.' },
+    ]},
+    { label: 'Concentration & Conditions', items: [
+      { t: 'Concentration', b: 'Casting a new concentration spell drops the previous one automatically. When a concentrating character takes damage, a reminder shows the CON save DC (10 or half the damage).' },
+      { t: 'Conditions', b: 'Set conditions on the sheet; right-click one to give it a duration in rounds. It counts down and clears itself as the fight moves on.' },
+      { t: 'Buffs', b: 'Quick-add common buffs (Bless, Rage, Haste and more). Timed buffs added in combat count down in rounds and expire on their own.' },
+    ]},
+    { label: 'DM Toolbox', items: [
+      { t: 'Instant content', b: 'When players wander off-script, generate NPCs, taverns, shops, rumours, encounters, travel events, weather, loot and wild-magic surges in one click.' },
+      { t: 'Share to the table', b: 'Push any generated result straight to the chat so the whole table sees it.' },
+    ]},
+    { label: 'Campaign Journal', items: [
+      { t: 'Track the story', b: 'Keep quests, NPCs, locations, factions, clues and notes in one place. Mark each entry DM-only or visible to everyone.' },
+      { t: 'Handouts and scenes', b: 'Reveal handouts (letters, maps, art) to the party, and Play a scene to show a cinematic title card at a dramatic beat.' },
+      { t: 'Encounters', b: 'Prebuild an encounter, then Launch it to drop the monsters on the map and roll initiative all at once.' },
+    ]},
+    { label: 'Running the Game', items: [
+      { t: 'Rulings over rules', b: 'When a rule is unclear, make a quick fair ruling and keep moving; jot it down and look it up later. Momentum beats perfect accuracy.' },
+      { t: 'Advantage and DCs', b: 'Reward clever play with advantage. Set a DC by feel — about 10 easy, 15 medium, 20 hard — and only call for a roll when failure is interesting.' },
+      { t: 'Pacing and the pillars', b: 'Balance the three pillars: combat, exploration and social. Cut scenes that drag and jump to "and then…" when nothing is at stake.' },
+      { t: 'Secret rolls', b: 'Use GM Roll (private) for perception, insight or ambush checks the players are not meant to see.' },
+    ]},
+    { label: 'Voice & Video', items: [
+      { t: 'Join the call', b: 'Start your camera and mic to play face-to-face at the table; players join the same call automatically.' },
+      { t: 'Backgrounds and sharing', b: 'Blur your background or pick a stock scene (tavern, forest, dungeon and more), and share your screen for maps, art or music.' },
+    ]},
+  ];
+  const DM_GUIDE_DE = [
+    { label: 'Erste Schritte', items: [
+      { t: 'Einen Tisch erstellen', b: 'Benenne als Spielleiter deine Kampagne und drücke Beitreten. Teile den Sitzungscode oder den Einladungslink aus der oberen Leiste; Spieler wählen „Spieler" und geben denselben Code ein.' },
+      { t: 'Spielleiter und Spieler', b: 'Der Spielleiter (SL) sieht alle Werkzeuge und steuert Karten, Nebel, Initiative und NSC. Spieler sehen das gemeinsame Spielfeld und ihren eigenen Charakterbogen.' },
+      { t: 'Speichern und fortsetzen', b: 'Nichts wird automatisch gelöscht. Komm mit demselben Code zurück (oder „Letzte Sitzung fortsetzen") und Spielfeld, Protokoll und Charaktere sind noch da.' },
+    ]},
+    { label: 'Karten & Szenen', items: [
+      { t: 'Karte hochladen', b: 'Lade ein Bild, GIF oder MP4 als Kampfkarte aus der linken Leiste. Stelle Fuß pro Feld ein und drücke Anwenden, damit das Raster zur Karte passt.' },
+      { t: 'Für Spieler aufdecken', b: 'Spieler sehen nichts, bis du „Karte für Spieler aufdecken" drückst. Bereite den nächsten Bereich verdeckt vor und decke ihn auf, sobald sie ankommen.' },
+      { t: 'Nebel des Krieges', b: 'Schalte den Nebel ein, aktiviere den Pinsel und ziehe, um erkundeten Boden aufzudecken; Umschalt+Ziehen verdeckt ihn wieder. Ideal für Verliese und Hinterhalte.' },
+    ]},
+    { label: 'Figuren', items: [
+      { t: 'Figuren hinzufügen', b: 'Lade ein Porträt aus einem Charakterbogen hoch oder nutze „+ Figuren hochladen (SL)" für Monster und Requisiten, und ziehe sie aus der Ablage auf die Karte.' },
+      { t: 'Bewegen, sperren, löschen', b: 'Ziehe Figuren zum Bewegen. „Figuren sperren" verhindert versehentliches Verschieben. Das × an einer Figur oder Ablage-Miniatur löscht sie für alle.' },
+      { t: 'TP, Zustände, Gesinnung', b: 'Passe TP über den Bogen oder die TP-Anzeige an, markiere Zustände auf dem Bogen und stelle mit der F/E-Taste einen NSC freundlich (blau) oder feindlich (rot).' },
+    ]},
+    { label: 'Kampf', items: [
+      { t: 'Starten und Reihenfolge aufbauen', b: 'Füge Gegner aus der Monster-Verwaltung hinzu (nutze Anzahl für eine Gruppe) oder „Alle würfeln", um für jede Figur Initiative zu würfeln. Die Leiste zeigt die Reihenfolge.' },
+      { t: 'Reihenfolge ordnen (BG3-Stil)', b: 'Ordne den Kampf mit den ▲/▼-Pfeilen an jedem Kämpfer von Hand und klicke eine Zeile, um den aktiven Zug direkt dorthin zu springen.' },
+      { t: 'Weiter und Runden', b: 'Drücke Weiter, um den Zug zu übergeben; der Rundenzähler steigt, wenn die Reihenfolge umläuft. Der aktive Spieler bekommt ein „Du bist am Zug!"-Banner und seine Figur leuchtet.' },
+      { t: 'Kampfunfähig und Rettungswürfe', b: 'Eine Figur bei 0 TP wird automatisch als kampfunfähig markiert. Auf dem Spielerbogen erscheinen die Rettungswürfe gegen den Tod — an ihrem Zug würfeln (3 Erfolge stabilisieren, 3 Fehlschläge bedeuten den Tod).' },
+    ]},
+    { label: 'Angriffe, Zauber & Würfe', items: [
+      { t: 'Der Aktions-Auflöser', b: 'Die 🎯-Taste auf einem Bogen wählt ein Ziel, würfelt gegen dessen RK (mit Vorteil/Nachteil), würfelt Schaden und wendet ihn beim Bestätigen an — ohne Rechnerei.' },
+      { t: 'Zauber mit Rettungswurf', b: 'Stelle den Auflöser auf „Rettungswurf", lege den SG fest, würfle Schaden und wende dann vollen oder halben an. Dein Zauber-SG (8 + Übung + Zaubermod) steht auf dem Bogen.' },
+      { t: 'Wirkungsdauer lesen', b: 'Jeder Zauber zeigt Zauberzeit, Reichweite und Wirkungsdauer. Achte auf Konzentrationszauber: ein Zaubernder kann nur einen zugleich aufrechterhalten.' },
+    ]},
+    { label: 'Konzentration & Zustände', items: [
+      { t: 'Konzentration', b: 'Das Wirken eines neuen Konzentrationszaubers beendet den vorherigen automatisch. Erleidet ein konzentrierender Charakter Schaden, zeigt eine Erinnerung den SG des KON-Rettungswurfs (10 oder die Hälfte des Schadens).' },
+      { t: 'Zustände', b: 'Setze Zustände auf dem Bogen; per Rechtsklick gibst du einem eine Dauer in Runden. Er zählt herunter und verschwindet von selbst, während der Kampf weitergeht.' },
+      { t: 'Verstärkungen', b: 'Füge gängige Verstärkungen schnell hinzu (Segnen, Raserei, Eile und mehr). Im Kampf hinzugefügte, zeitlich begrenzte Verstärkungen zählen in Runden herunter und laufen von selbst ab.' },
+    ]},
+    { label: 'SL-Werkzeuge', items: [
+      { t: 'Sofort-Inhalte', b: 'Wenn Spieler vom Skript abweichen, erzeuge NSC, Tavernen, Läden, Gerüchte, Begegnungen, Reiseereignisse, Wetter, Beute und Wilde-Magie-Schübe mit einem Klick.' },
+      { t: 'An den Tisch teilen', b: 'Schicke jedes erzeugte Ergebnis direkt in den Chat, damit der ganze Tisch es sieht.' },
+    ]},
+    { label: 'Kampagnentagebuch', items: [
+      { t: 'Die Geschichte verfolgen', b: 'Halte Aufträge, NSC, Orte, Fraktionen, Hinweise und Notizen an einem Ort fest. Markiere jeden Eintrag als nur-SL oder für alle sichtbar.' },
+      { t: 'Handzettel und Szenen', b: 'Decke Handzettel (Briefe, Karten, Bilder) für die Gruppe auf und spiele eine Szene ab, um an einem dramatischen Moment eine filmische Titelkarte zu zeigen.' },
+      { t: 'Begegnungen', b: 'Baue eine Begegnung vor und starte sie dann, um die Monster auf einmal auf der Karte abzusetzen und Initiative zu würfeln.' },
+    ]},
+    { label: 'Das Spiel leiten', items: [
+      { t: 'Entscheidungen vor Regeln', b: 'Ist eine Regel unklar, triff eine schnelle, faire Entscheidung und mach weiter; notiere sie und schlage sie später nach. Schwung schlägt perfekte Genauigkeit.' },
+      { t: 'Vorteil und Schwierigkeitsgrade', b: 'Belohne cleveres Spiel mit Vorteil. Lege den SG nach Gefühl fest — etwa 10 leicht, 15 mittel, 20 schwer — und verlange nur einen Wurf, wenn ein Fehlschlag interessant ist.' },
+      { t: 'Tempo und die Säulen', b: 'Halte die drei Säulen im Gleichgewicht: Kampf, Erkundung und soziale Szenen. Kürze zähe Szenen und springe zu „und dann…", wenn nichts auf dem Spiel steht.' },
+      { t: 'Geheime Würfe', b: 'Nutze den SL-Wurf (privat) für Wahrnehmungs-, Einsichts- oder Hinterhaltsproben, die die Spieler nicht sehen sollen.' },
+    ]},
+    { label: 'Sprache & Video', items: [
+      { t: 'Dem Anruf beitreten', b: 'Starte Kamera und Mikrofon, um von Angesicht zu Angesicht am Tisch zu spielen; Spieler treten demselben Anruf automatisch bei.' },
+      { t: 'Hintergründe und Teilen', b: 'Verwische deinen Hintergrund oder wähle eine fertige Szene (Taverne, Wald, Verlies und mehr) und teile deinen Bildschirm für Karten, Bilder oder Musik.' },
+    ]},
+  ];
+  function activeDmGuide() { return (LANG === 'de' && DM_GUIDE_DE.length) ? DM_GUIDE_DE : DM_GUIDE; }
+  let DMG_TAB = 0;
+  function dmgSectionHtml(it) { return `<div class="dmg-sec"><h4>${escapeHtml(it.t)}</h4><p>${escapeHtml(it.b)}</p></div>`; }
+  function dmgRender() {
+    const tabsEl = document.getElementById('dmg-tabs');
+    const content = document.getElementById('dmg-content');
+    if (!tabsEl || !content) return;
+    const guide = activeDmGuide();
+    if (DMG_TAB >= guide.length) DMG_TAB = 0;
+    const q = ((document.getElementById('dmg-search') || {}).value || '').toLowerCase().trim();
+    tabsEl.innerHTML = guide.map((c, i) => `<button class="cmp-tab${(!q && i === DMG_TAB) ? ' active' : ''}" data-i="${i}">${escapeHtml(c.label)}</button>`).join('');
+    if (q) {
+      let html = ''; let any = false;
+      guide.forEach(c => {
+        const hits = c.items.filter(it => (it.t + ' ' + it.b).toLowerCase().includes(q));
+        if (hits.length) { any = true; html += `<div class="dmg-cat-head">${escapeHtml(c.label)}</div>` + hits.map(dmgSectionHtml).join(''); }
+      });
+      content.innerHTML = any ? html : `<div class="dmg-empty">${t('No matches. Try another word.')}</div>`;
+    } else {
+      const cat = guide[DMG_TAB] || guide[0];
+      content.innerHTML = `<div class="dmg-cat-head">${escapeHtml(cat.label)}</div>` + cat.items.map(dmgSectionHtml).join('');
+    }
+    tabsEl.querySelectorAll('.cmp-tab').forEach(b => b.addEventListener('click', () => {
+      DMG_TAB = parseInt(b.dataset.i) || 0;
+      const s = document.getElementById('dmg-search'); if (s) s.value = '';
+      dmgRender();
+    }));
+  }
+  function openDmGuide() { const p = document.getElementById('dm-guide-popup'); if (!p) return; dmgRender(); p.classList.add('active'); }
+  function closeDmGuide() { const p = document.getElementById('dm-guide-popup'); if (p) p.classList.remove('active'); }
+  (function setupDmGuide() {
+    const btn = document.getElementById('dm-guide-btn'); if (btn) btn.addEventListener('click', openDmGuide);
+    const close = document.getElementById('dm-guide-close'); if (close) close.addEventListener('click', closeDmGuide);
+    const s = document.getElementById('dmg-search'); if (s) s.addEventListener('input', dmgRender);
+    const sb = document.getElementById('dmg-search-btn'); if (sb) sb.addEventListener('click', () => { dmgRender(); const s2 = document.getElementById('dmg-search'); if (s2) s2.focus(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const p = document.getElementById('dm-guide-popup'); if (p && p.classList.contains('active')) closeDmGuide(); } });
   })();
 
   // ================= ACTION RESOLVER (unified attack / spell flow) =================
