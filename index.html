@@ -100,8 +100,9 @@
   /* LOGIN */
   #login { position: fixed; inset: 0; background: radial-gradient(ellipse at center, #1a1612 0%, #0d0a08 70%); display: flex; align-items: center; justify-content: center; z-index: 1000; overflow-y: auto; padding: 22px; }
   .login-card { margin: auto; }
-  .login-card { background: linear-gradient(180deg, #1d1710 0%, var(--panel) 58%); border: 1px solid var(--gold-soft); border-radius: 8px; padding: 28px 32px 32px; width: 470px; max-width: 94vw; box-shadow: 0 26px 72px rgba(0,0,0,0.72), inset 0 1px 0 rgba(212,165,116,0.14); }
-  .login-card h1 { font-family: 'Cinzel', serif; font-size: calc(30px * var(--app-scale, 1)); color: var(--gold); text-align: center; letter-spacing: 0.09em; text-transform: uppercase; margin: 0; }
+  .login-card { background: linear-gradient(180deg, #1d1710 0%, var(--panel) 58%); border: 1px solid var(--gold-soft); border-radius: 8px; padding: 28px 32px 32px; width: 470px; max-width: 94vw; box-shadow: 0 26px 72px rgba(0,0,0,0.72), inset 0 1px 0 rgba(212,165,116,0.14); animation: loginCardIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  @keyframes loginCardIn { from { opacity: 0; transform: translateY(16px) scale(0.985); } to { opacity: 1; transform: none; } }
+  .login-card h1 { font-family: 'Cinzel', serif; font-size: calc(30px * var(--app-scale, 1)); color: var(--gold); text-align: center; letter-spacing: 0.09em; text-transform: uppercase; margin: 0; text-shadow: 0 0 22px rgba(212,165,116,0.28); }
   .login-card h1::after { content: ''; display: block; width: 78px; height: 2px; margin: 12px auto 0; background: linear-gradient(90deg, transparent, var(--gold-soft), transparent); }
   .login-hero { margin: 0 0 22px; padding: 7px; background: linear-gradient(150deg, #34281a, #140f09); border: 1px solid var(--gold-soft); border-radius: 5px; box-shadow: 0 12px 30px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(212,165,116,0.3); }
   .login-hero img { display: block; width: 100%; height: auto; border-radius: 3px; border: 1px solid rgba(0,0,0,0.55); }
@@ -178,8 +179,11 @@
   .recovery-input { width: 100%; box-sizing: border-box; margin: 0 0 16px; padding: 9px 11px; background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 5px; color: var(--cream); font-size: calc(14px * var(--app-scale, 1)); }
   .recovery-input:focus { outline: none; border-color: var(--gold-soft); }
   .board-empty { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; pointer-events: none; z-index: 1; }
-  .board-empty .be-inner { text-align: center; background: rgba(20,17,14,0.55); border: 1px solid var(--border); border-radius: 10px; padding: 22px 30px; backdrop-filter: blur(2px); }
-  .board-empty .be-icon { color: var(--gold-soft); opacity: 0.8; margin-bottom: 10px; }
+  .board-empty .be-inner { position: relative; text-align: center; background: rgba(20,17,14,0.55); border: 1px solid var(--border); border-radius: 10px; padding: 26px 38px; backdrop-filter: blur(2px); box-shadow: 0 18px 50px rgba(0,0,0,0.45); }
+  .board-empty .be-inner::before { content: ''; position: absolute; inset: -60px; z-index: -1; background: radial-gradient(ellipse at center, rgba(212,165,116,0.10), transparent 70%); pointer-events: none; }
+  .board-empty .be-icon { color: var(--gold-soft); opacity: 0.85; margin-bottom: 10px; animation: beIconPulse 3.4s ease-in-out infinite; }
+  @keyframes beIconPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 0.98; transform: scale(1.07); } }
+  @media (prefers-reduced-motion: reduce) { .login-card { animation: none; } .board-empty .be-icon { animation: none; } }
   .board-empty .be-title { font-family: 'Cinzel', serif; letter-spacing: 0.06em; font-size: calc(15px * var(--app-scale, 1)); color: var(--gold-soft); margin-bottom: 5px; }
   .board-empty .be-sub { font-family: 'Crimson Pro', serif; font-size: calc(13px * var(--app-scale, 1)); color: var(--muted); }
   .chat-empty { color: var(--muted); font-size: calc(12px * var(--app-scale, 1)); font-style: italic; padding: 14px 10px; text-align: center; }
@@ -192,8 +196,8 @@
 
   /* APP LAYOUT */
   #app { display: none; height: 100vh; flex-direction: column; }
-  #topbar { background: linear-gradient(180deg, #1c1610, var(--panel)); border-bottom: 1px solid var(--gold-soft); box-shadow: 0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(212,165,116,0.08); padding: 10px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-shrink: 0; }
-  .topbar-left { display: flex; align-items: center; gap: 18px; }
+  #topbar { background: linear-gradient(180deg, #1c1610, var(--panel)); border-bottom: 1px solid var(--gold-soft); box-shadow: 0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(212,165,116,0.08); padding: 10px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-shrink: 0; flex-wrap: wrap; row-gap: 8px; }
+  .topbar-left { display: flex; align-items: center; gap: 18px; flex-shrink: 0; }
   .topbar-left .brand { font-family: 'Cinzel', serif; color: var(--gold); font-size: calc(18px * var(--app-scale, 1)); letter-spacing: 0.1em; text-shadow: 0 0 14px rgba(212,165,116,0.35); }
   .topbar-left .session-info { font-size: calc(13px * var(--app-scale, 1)); color: var(--muted); }
   .topbar-left .session-info b { color: var(--cream); font-family: monospace; letter-spacing: 0.1em; cursor: pointer; padding: 2px 6px; border-radius: 3px; transition: background 0.15s; }
@@ -214,15 +218,15 @@
   /* Theme toggle button - sun / moon icon */
   .theme-toggle { width: 30px; height: 30px; padding: 0; background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--cream); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; }
   .theme-toggle:hover { background: var(--panel-light); color: var(--gold); border-color: var(--gold-soft); }
-  #topbar button:not(.theme-toggle):not(.font-size-btn):not(#leave-btn) { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 7px 13px; transition: border-color 0.15s, background 0.15s; }
+  #topbar button:not(.theme-toggle):not(.font-size-btn):not(#leave-btn) { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; transition: border-color 0.15s, background 0.15s; }
   #topbar button:not(.theme-toggle):not(.font-size-btn):not(#leave-btn):hover { border-color: var(--gold-soft); background: var(--panel-light); }
   /* Handbook is the flagship rules reference — mark it as the primary of the pair. */
   #topbar #handbook-btn { border-color: var(--gold-soft); color: var(--gold); background: rgba(212,165,116,0.08); }
   #topbar #handbook-btn:hover { border-color: var(--gold); background: rgba(212,165,116,0.16); }
   /* Grouped top-bar actions with subtle dividers for a cleaner hierarchy */
-  .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; justify-content: flex-end; min-width: 0; }
-  .topbar-right .tb-group { display: inline-flex; align-items: center; gap: 6px; }
-  .topbar-right .tb-group + .tb-group { border-left: 1px solid var(--border); padding-left: 10px; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; row-gap: 8px; justify-content: flex-end; min-width: 0; flex: 1 1 auto; }
+  .topbar-right .tb-group { display: inline-flex; align-items: center; gap: 5px; }
+  .topbar-right .tb-group + .tb-group { border-left: 1px solid var(--border); padding-left: 8px; }
 
   #main { flex: 1; display: flex; overflow: hidden; transition: padding-right 0.18s ease; }
 
