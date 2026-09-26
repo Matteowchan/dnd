@@ -447,6 +447,10 @@
   .init-row .init-move { background: transparent; border: none; color: var(--muted); font-size: calc(8px * var(--app-scale, 1)); padding: 0 2px; cursor: pointer; line-height: 1.05; }
   .init-row .init-move:hover:not(:disabled) { color: var(--gold); }
   .init-row .init-move:disabled { opacity: 0.25; cursor: default; }
+  .init-row .init-econ { display: flex; gap: 2px; }
+  .init-row .econ-dot { width: 17px; height: 16px; border-radius: 3px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); font-size: calc(9px * var(--app-scale, 1)); font-family: 'Cinzel', serif; font-weight: 700; cursor: pointer; padding: 0; line-height: 1; }
+  .init-row .econ-dot:hover { border-color: var(--gold-soft); color: var(--cream); }
+  .init-row .econ-dot.on { background: var(--gold-soft); border-color: var(--gold); color: var(--bg); }
   /* On-map highlight for the active token in combat */
   .map-token.init-active { box-shadow: 0 0 0 3px var(--gold), 0 0 18px 6px rgba(255,216,122,0.6); animation: init-active-pulse 1.6s ease-in-out infinite; }
   @keyframes init-active-pulse {
@@ -5167,6 +5171,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }
     STATE.initiative.turn = turn;
     STATE.initiative.round = round;
+    // The combatant whose turn just began refreshes their action economy.
+    const ae = STATE.initiative.entries[turn]; if (ae) ae.used = {};
     renderInitiative();
     renderTokens();
     // Refresh timed buffs/conditions on the open sheet so their round counters
@@ -5243,6 +5249,19 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     await saveInitiative();
   }
 
+  // Action economy: mark the active combatant's Action / Bonus action / Reaction as
+  // spent this turn. Editable by the DM or the token's owner; refreshes each turn.
+  async function toggleActionEconomy(idx, key) {
+    const e = STATE.initiative.entries[idx];
+    if (!e) return;
+    const tok = e.tokenId ? STATE.tokens.get(e.tokenId) : null;
+    if (!(STATE.isHost || (tok && tok.owner_id === STATE.userId))) return;
+    if (!e.used) e.used = {};
+    e.used[key] = !e.used[key];
+    renderInitiative();
+    await saveInitiative();
+  }
+
   async function toggleDowned(idx) {
     if (!STATE.isHost) return;
     const e = STATE.initiative.entries[idx];
@@ -5298,6 +5317,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         <span class="init-value">${e.init}</span>
         <span class="init-name">${escapeHtml(e.name)}</span>
         ${showHp && hpText ? `<span class="init-hp">${hpText}</span>` : ''}
+        ${(idx === STATE.initiative.turn && (STATE.isHost || ownsThis)) ? `<span class="init-econ"><button class="econ-dot${(e.used && e.used.a) ? ' on' : ''}" data-econ="a" data-idx="${idx}" title="${t('Action')}">A</button><button class="econ-dot${(e.used && e.used.b) ? ' on' : ''}" data-econ="b" data-idx="${idx}" title="${t('Bonus action')}">B</button><button class="econ-dot${(e.used && e.used.r) ? ' on' : ''}" data-econ="r" data-idx="${idx}" title="${t('Reaction')}">R</button></span>` : ''}
         ${STATE.isHost ? `<span class="init-move-wrap"><button class="init-move" data-idx="${idx}" data-dir="-1" title="Move up in the order"${idx === 0 ? ' disabled' : ''}>▲</button><button class="init-move" data-idx="${idx}" data-dir="1" title="Move down in the order"${idx === STATE.initiative.entries.length - 1 ? ' disabled' : ''}>▼</button></span>` : ''}
         ${STATE.isHost ? `<button class="init-row-del" data-idx="${idx}" title="Remove from order">×</button>` : ''}
       `;
@@ -5331,6 +5351,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         btn.addEventListener('click', (ev) => {
           ev.stopPropagation();
           moveInitiativeEntry(parseInt(btn.dataset.idx), parseInt(btn.dataset.dir));
+        });
+      });
+      row.querySelectorAll('.econ-dot').forEach(btn => {
+        btn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          toggleActionEconomy(parseInt(btn.dataset.idx), btn.dataset.econ);
         });
       });
       list.appendChild(row);
@@ -20714,6 +20740,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "A combatant": "Ein Kämpfer",
   "down at 0 HP": "bei 0 TP kampfunfähig",
   "Round": "Runde",
+  "Action": "Aktion",
+  "Bonus action": "Bonusaktion",
+  "Reaction": "Reaktion",
   "joined combat": "dem Kampf beigetreten",
   "Add Selected to Combat": "Ausgewählte zum Kampf hinzufügen",
   "DM Guide": "SL-Leitfaden",
