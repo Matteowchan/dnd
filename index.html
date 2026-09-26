@@ -547,7 +547,12 @@
   .sc-row .sc-add { margin-left: auto; flex-shrink: 0; background: var(--gold-soft); border: none; color: #2a1c0e; border-radius: 4px; padding: 5px 14px; font-size: calc(11px * var(--app-scale, 1)); cursor: pointer; font-weight: 700; }
   .sc-row .sc-add:hover { filter: brightness(1.08); }
   .sc-row .sc-add.added { background: transparent; border: 1px solid var(--border); color: var(--muted); cursor: default; }
-  .sc-desc { margin-top: 6px; flex-basis: 100%; width: 100%; padding: 7px 9px; background: rgba(0,0,0,0.22); border-left: 2px solid var(--gold-soft); border-radius: 4px; color: var(--cream); font-size: calc(12px * var(--app-scale, 1)); line-height: 1.5; white-space: pre-wrap; }
+  .sc-desc { margin-top: 6px; flex-basis: 100%; width: 100%; padding: 8px 10px; background: rgba(0,0,0,0.22); border-left: 2px solid var(--gold-soft); border-radius: 4px; color: var(--cream); font-size: calc(12px * var(--app-scale, 1)); line-height: 1.5; white-space: pre-wrap; }
+  .sc-desc .sc-desc-stats { color: var(--gold); font-size: calc(11px * var(--app-scale, 1)); letter-spacing: 0.02em; margin-bottom: 5px; }
+  .sc-desc .sc-desc-dmg { color: var(--ember); font-size: calc(11px * var(--app-scale, 1)); font-weight: 600; margin-bottom: 5px; }
+  .sc-desc .sc-desc-body { color: var(--cream); }
+  .sc-exp { display: inline-block; margin-left: 4px; color: var(--gold-soft); font-size: calc(10px * var(--app-scale, 1)); transition: transform 0.18s; cursor: pointer; }
+  .sc-row.expanded .sc-exp { transform: rotate(180deg); }
   #rest-popup.active, #grant-rest-popup.active { display: flex; }
   .rest-intro { font-size: calc(13px * var(--app-scale, 1)); color: var(--cream); line-height: 1.55; margin-bottom: 12px; font-family: 'Crimson Pro', serif; }
   .rest-intro b { color: var(--gold); }
@@ -8550,8 +8555,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         const i = SRD_SPELLS.indexOf(s);
         const isAdded = added.has(s.n.toLowerCase());
         html += `<div class="sc-row" data-i="${i}">
-          <div style="flex:1; min-width:0;">
-            <div class="sc-name" data-i="${i}">${escapeHtml(s.n)}</div>
+          <div class="sc-main" style="flex:1; min-width:0;">
+            <div class="sc-name" data-i="${i}">${escapeHtml(s.n)}${s.d ? ' <span class="sc-exp" data-i="' + i + '" title="' + t('Show details') + '">▾</span>' : ''}</div>
             <div class="sc-meta">${escapeHtml(t(s.e))}${s.r ? ' · ' + escapeHtml(t(s.r)) : ''}${s.ct ? ' · ' + escapeHtml(t(s.ct)) : ''}${s.dur ? ' · ' + escapeHtml(t(s.dur)) : ''}</div>
           </div>
           <button class="sc-add${isAdded ? ' added' : ''}" data-i="${i}">${isAdded ? t('Added') : t('Add')}</button>
@@ -10195,17 +10200,36 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         addBtn.textContent = 'Added';
         return;
       }
-      const nameEl = e.target.closest('.sc-name');
+      const nameEl = e.target.closest('.sc-name') || e.target.closest('.sc-exp');
       if (nameEl) {
         const row = nameEl.closest('.sc-row');
         let desc = row.querySelector('.sc-desc');
-        if (desc) { desc.remove(); return; }
-        const sp = nameEl.dataset.name ? getCatalogSpellByName(nameEl.dataset.name) : SRD_SPELLS[parseInt(nameEl.dataset.i)];
-        if (sp && sp.d) {
+        if (desc) { desc.remove(); row.classList.remove('expanded'); return; }
+        const key = nameEl.dataset.name || (nameEl.closest('.sc-name') && nameEl.closest('.sc-name').dataset.name);
+        const idx = nameEl.dataset.i != null ? nameEl.dataset.i : (nameEl.closest('.sc-name') && nameEl.closest('.sc-name').dataset.i);
+        const sp = key ? getCatalogSpellByName(key) : SRD_SPELLS[parseInt(idx)];
+        if (sp && (sp.d || sp.ct || sp.dmg)) {
           desc = document.createElement('div');
           desc.className = 'sc-desc';
-          desc.textContent = sp.d;
+          const stat = [];
+          if (sp.ct) stat.push(t('Casting') + ': ' + t(sp.ct));
+          if (sp.r) stat.push(t('Range') + ': ' + t(sp.r));
+          if (sp.dur) stat.push(t('Duration') + ': ' + t(sp.dur));
+          let dmgStr = '';
+          if (sp.dmg && sp.dmg.sl) {
+            const lvls = Object.keys(sp.dmg.sl).sort((a, b) => Number(a) - Number(b));
+            if (lvls.length) {
+              const base = sp.dmg.sl[lvls[0]];
+              dmgStr = `${base}${sp.dmg.t ? ' ' + t(sp.dmg.t) : ''}${lvls.length > 1 ? ' (' + t('scales with slot level') + ')' : ''}`;
+            }
+          }
+          let html = '';
+          if (stat.length) html += `<div class="sc-desc-stats">${escapeHtml(stat.join('  ·  '))}</div>`;
+          if (dmgStr) html += `<div class="sc-desc-dmg">${t('Damage')}: ${escapeHtml(dmgStr)}</div>`;
+          if (sp.d) html += `<div class="sc-desc-body">${escapeHtml(t(sp.d))}</div>`;
+          desc.innerHTML = html;
           row.appendChild(desc);
+          row.classList.add('expanded');
         }
         return;
       }
@@ -21211,6 +21235,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Intelligence — Arcana, History, Investigation, Nature, Religion; wizard spellcasting.": "Intelligenz — Arkane Kunde, Geschichte, Nachforschung, Naturkunde, Religion; Zauberei des Magiers.",
   "Wisdom — Perception, Insight, Medicine, Survival, Animal Handling; cleric/druid casting.": "Weisheit — Wahrnehmung, Einsicht, Medizin, Überleben, Umgang mit Tieren; Zauberei von Kleriker/Druide.",
   "Charisma — Persuasion, Deception, Intimidation, Performance; bard/sorcerer/warlock casting.": "Charisma — Überzeugen, Täuschung, Einschüchtern, Auftreten; Zauberei von Barde/Hexenmeister/Zauberer.",
+  "Show details": "Details anzeigen",
+  "scales with slot level": "skaliert mit Slot-Grad",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
