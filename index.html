@@ -461,6 +461,17 @@
     50% { box-shadow: 0 0 0 3px var(--gold), 0 0 26px 10px rgba(255,216,122,0.7); }
   }
 
+  /* Map ping - Alt+click to draw everyone's eyes to a spot */
+  .map-ping { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 40; }
+  .map-ping .ping-ring { position: absolute; left: 0; top: 0; width: 90px; height: 90px; margin: -45px 0 0 -45px; border-radius: 50%; border: 4px solid var(--ping-color, #ffd87a); box-shadow: 0 0 14px 2px var(--ping-color, #ffd87a); opacity: 0; animation: ping-ring 2.4s ease-out forwards; }
+  .map-ping .ping-ring.r2 { animation-delay: 0.35s; }
+  .map-ping .ping-ring.r3 { animation-delay: 0.7s; }
+  .map-ping .ping-dot { position: absolute; left: 0; top: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--ping-color, #ffd87a); box-shadow: 0 0 10px 2px var(--ping-color, #ffd87a); opacity: 0; animation: ping-dot 2.4s ease-out forwards; }
+  .map-ping .ping-name { position: absolute; left: 0; top: 26px; transform: translateX(-50%); white-space: nowrap; font-family: 'Cinzel', serif; font-size: calc(11px * var(--app-scale, 1)); font-weight: 700; color: var(--ping-color, #ffd87a); text-shadow: 0 1px 3px #000, 0 0 6px #000; opacity: 0; animation: ping-name 2.4s ease-out forwards; }
+  @keyframes ping-ring { 0% { transform: scale(0.25); opacity: 0.95; } 70% { opacity: 0.55; } 100% { transform: scale(1); opacity: 0; } }
+  @keyframes ping-dot { 0% { transform: scale(0.4); opacity: 0; } 12% { opacity: 1; } 75% { opacity: 0.9; } 100% { opacity: 0; } }
+  @keyframes ping-name { 0% { opacity: 0; } 15% { opacity: 1; } 78% { opacity: 1; } 100% { opacity: 0; } }
+
   /* Short/Long Rest popup */
   #rest-popup, #grant-rest-popup { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); width: 460px; max-width: 92vw; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); z-index: 1500; display: none; flex-direction: column; }
   .grant-member { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-size: calc(13px * var(--app-scale, 1)); color: var(--cream); }
@@ -4879,6 +4890,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     renderInitiative();
     // Whisper bar (DM only, but the function checks for that itself)
     setupWhisperBar();
+
+    // One-time nudge so players discover the Alt+click ping gesture.
+    try {
+      if (!localStorage.getItem('vtt_ping_tip_seen')) {
+        setTimeout(() => { try { toast(t('Tip: Alt+click the map to ping a spot for everyone')); } catch (e) {} }, 3500);
+        localStorage.setItem('vtt_ping_tip_seen', '1');
+      }
+    } catch (e) {}
   }
 
   // Silent read-only observer. No character row is created and presence is never
@@ -5904,6 +5923,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       .on('broadcast', { event: 'handout-reveal' }, ({ payload }) => handleHandoutReveal(payload))
       .on('broadcast', { event: 'scene-title' }, ({ payload }) => handleSceneTitle(payload))
       .on('broadcast', { event: 'quest-event' }, ({ payload }) => handleQuestEvent(payload))
+      .on('broadcast', { event: 'ping' }, ({ payload }) => handleRemotePing(payload))
       .on('presence', { event: 'sync' }, handlePresenceSync)
       .subscribe(async (status) => {
         const ind = document.getElementById('conn-indicator');
@@ -13375,6 +13395,50 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     renderRemoteMeasurements();
   }
 
+  // ============ MAP PING (Alt+click) ============
+  // A transient "look here" marker broadcast to the whole table. No DB row —
+  // it lives ~2.5s and then removes itself. Coordinates are offset-less map
+  // space (same as tokens), so the ping stays anchored if the DM moves the map.
+  function pingColor() {
+    if (STATE.isHost) return '#ffd87a';
+    const id = String(STATE.userId || '');
+    let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 360;
+    return `hsl(${h}, 80%, 66%)`;
+  }
+  function showPing(mx, my, name, color) {
+    const layer = document.getElementById('tokenlayer');
+    if (!layer) return;
+    const ox = (STATE.map && STATE.map.offset_x) || 0;
+    const oy = (STATE.map && STATE.map.offset_y) || 0;
+    const el = document.createElement('div');
+    el.className = 'map-ping';
+    el.style.left = (mx + ox) + 'px';
+    el.style.top = (my + oy) + 'px';
+    el.style.setProperty('--ping-color', color || '#ffd87a');
+    el.innerHTML = '<span class="ping-ring"></span><span class="ping-ring r2"></span>' +
+      '<span class="ping-ring r3"></span><span class="ping-dot"></span>' +
+      '<span class="ping-name">' + escapeHtml(name || '') + '</span>';
+    layer.appendChild(el);
+    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 2600);
+  }
+  function broadcastPing(x, y, color) {
+    if (!STATE.channel) return;
+    try {
+      STATE.channel.send({ type: 'broadcast', event: 'ping',
+        payload: { userId: STATE.userId, name: STATE.username, x, y, color } });
+    } catch (e) {}
+  }
+  function handleRemotePing(payload) {
+    if (!payload || payload.userId === STATE.userId) return;
+    showPing(payload.x, payload.y, payload.name || 'Someone', payload.color || '#ffd87a');
+  }
+  function pingHere(clientX, clientY) {
+    const mc = getMapCoords(clientX, clientY);
+    const color = pingColor();
+    showPing(mc.x, mc.y, STATE.username || '', color);
+    broadcastPing(mc.x, mc.y, color);
+  }
+
   // Realtime DELETE events on vtt_effects can be unreliable for batch deletes,
   // so we additionally broadcast effect-clear events. Every client removes the
   // matching effects from its local state immediately.
@@ -14084,6 +14148,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (e.target.closest('.map-token') || e.target.closest('#chatbox') ||
         e.target.closest('#zoom-controls') || e.target.closest('#dm-toolbar') ||
         e.target.closest('.resizer') || e.target.closest('.rb-resizer')) return;
+
+    // Alt+click anywhere on the map drops a "look here" ping for the whole table.
+    if (e.altKey) { e.preventDefault(); pingHere(e.clientX, e.clientY); return; }
 
     // While drawing on the map, the draw layer handles the pointer, not panning.
     if (document.body.classList.contains('draw-mode')) return;
@@ -20997,6 +21064,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Cone (area of effect). Drag from the caster toward the target.": "Kegel (Wirkungsbereich). Vom Zaubernden zum Ziel ziehen.",
   "In area: ": "Im Bereich: ",
   "Area placed — no tokens caught": "Bereich platziert – keine Figuren erfasst",
+  "Tip: Alt+click the map to ping a spot for everyone": "Tipp: Alt+Klick auf die Karte markiert eine Stelle für alle",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
