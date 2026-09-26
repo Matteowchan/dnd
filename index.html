@@ -1676,6 +1676,10 @@
 
   .dice-result-summary { position: absolute; bottom: 14%; left: 50%; transform: translateX(-50%); background: var(--panel); border: 2px solid var(--gold); padding: 14px 28px; border-radius: 4px; font-family: 'Cinzel', serif; color: var(--cream); font-size: calc(22px * var(--app-scale, 1)); text-align: center; opacity: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
   .dice-result-summary .total { color: var(--gold); font-size: calc(32px * var(--app-scale, 1)); font-weight: 700; }
+  .dice-result-summary.revealed .total { animation: diceTotalPop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  @keyframes diceTotalPop { 0% { transform: scale(0.55); opacity: 0; } 55% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+  .dice-result-summary.revealed.nat20 .total { text-shadow: 0 0 18px gold, 0 0 34px gold; }
+  @media (prefers-reduced-motion: reduce) { .dice-result-summary.revealed .total { animation: none; } }
   .dice-result-summary .breakdown { font-size: calc(13px * var(--app-scale, 1)); color: var(--muted); margin-top: 4px; font-family: 'Crimson Pro', serif; }
   .dice-result-summary .breakdown .roll-pick { color: var(--gold); font-weight: 700; }
   .dice-result-summary .breakdown .roll-drop { color: var(--muted); text-decoration: line-through; opacity: 0.6; }
@@ -15284,6 +15288,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     scheduleDice(() => {
       result.style.transition = 'opacity 0.6s ease';
       result.style.opacity = '1';
+      result.classList.add('revealed');
       if (hasNat20) triggerNat20();
       if (hasNat1) triggerNat1();
       if (typeof onSettle === 'function') {
