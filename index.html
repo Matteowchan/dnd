@@ -1794,14 +1794,15 @@
   #rtc-bar { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 80; display: none; flex-direction: column; align-items: center; gap: 6px; --rtc-tile-h: 120px; }
   #rtc-launch { padding: 8px 16px; background: var(--panel-light); border: 1px solid var(--gold-soft); color: var(--gold); border-radius: 6px; font-family: 'Cinzel', serif; font-size: calc(12px * var(--app-scale, 1)); letter-spacing: 0.05em; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
   #rtc-launch:hover { background: var(--gold); color: #1a1612; }
-  #rtc-panel { display: none; flex-direction: column; align-items: center; gap: 3px; background: rgba(20,17,14,0.82); border: 1px solid var(--border); border-radius: 8px; padding: 5px; box-shadow: 0 4px 14px rgba(0,0,0,0.4); backdrop-filter: blur(4px); transform: scale(var(--rtc-pscale, 1)); transform-origin: bottom center; }
+  #rtc-panel { display: none; flex-direction: column; align-items: center; gap: 3px; background: linear-gradient(180deg, rgba(30,24,18,0.9), rgba(16,13,10,0.86)); border: 1px solid var(--gold-soft); border-radius: 10px; padding: 6px; box-shadow: 0 12px 34px rgba(0,0,0,0.6), inset 0 1px 0 rgba(212,165,116,0.14); backdrop-filter: blur(6px); transform: scale(var(--rtc-pscale, 1)); transform-origin: bottom center; }
   #rtc-bar.in-call #rtc-panel { display: flex; }
   #rtc-bar.in-call #rtc-launch { display: none; }
   #rtc-resize { align-self: stretch; height: 9px; cursor: ns-resize; display: flex; align-items: center; justify-content: center; }
   #rtc-resize::before { content: ''; width: 26px; height: 3px; border-radius: 2px; background: var(--gold-soft); opacity: 0.5; }
   #rtc-topbar { align-self: stretch; display: flex; align-items: center; gap: 6px; }
   #rtc-move { flex: 1; height: 11px; cursor: move; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
-  #rtc-move::before { content: ''; width: 30px; height: 3px; border-radius: 2px; background: var(--gold-soft); opacity: 0.45; }
+  #rtc-move::before { content: ''; width: 30px; height: 3px; border-radius: 2px; background: var(--gold-soft); opacity: 0.45; transition: opacity 0.15s, width 0.15s; }
+  #rtc-bar:not(.locked) #rtc-move:hover::before { opacity: 0.9; width: 40px; }
   #rtc-bar.locked #rtc-move { cursor: default; }
   #rtc-bar.locked #rtc-move::before { opacity: 0.18; }
   #rtc-lock { padding: 3px 9px; font-size: calc(11px * var(--app-scale, 1)); border-radius: 5px; border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); cursor: pointer; white-space: nowrap; }
@@ -1813,6 +1814,7 @@
   #rtc-bar.locked #rtc-tiles { flex-wrap: wrap; justify-content: center; }
   #rtc-tiles { display: flex; gap: 4px; align-items: flex-end; max-width: 86vw; overflow-x: auto; padding-bottom: 0; }
   .rtc-tile { position: relative; height: var(--rtc-tile-h); aspect-ratio: 4 / 3; background: #0b0907; border: 2px solid var(--tile-frame, var(--border)); border-radius: 4px; overflow: hidden; flex: 0 0 auto; transition: border-color 0.15s, box-shadow 0.15s; }
+  .rtc-tile:hover { border-color: var(--gold-soft); box-shadow: 0 4px 14px rgba(0,0,0,0.5); }
   .rtc-tile video { width: 100%; height: 100%; object-fit: cover; display: block; background: #0b0907; }
   .rtc-tile.local video { transform: scaleX(-1); }
   .rtc-tile .rtc-name { position: absolute; left: 4px; bottom: 3px; font-size: calc(11px * var(--app-scale, 1)); color: var(--cream); background: rgba(0,0,0,0.55); padding: 1px 6px; border-radius: 3px; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2698,9 +2700,9 @@
   <button id="rtc-launch" title="Start camera and microphone with the table">Join Voice / Video</button>
   <div id="rtc-panel">
     <div id="rtc-topbar">
-      <div id="rtc-move" title="Drag to move (unlock first)"></div>
-      <button id="rtc-lock" title="Lock position and tidy the tiles">Lock: On</button>
-      <button id="rtc-min" title="Minimize the camera tiles">Hide</button>
+      <div id="rtc-move" title="Unlock, then drag to move. Double-click to reset to the bottom. Snaps to edges."></div>
+      <button id="rtc-lock" title="Freeze the window where it is (and tidy the tiles into rows)">Lock: On</button>
+      <button id="rtc-min" title="Hide or show the camera tiles">Hide</button>
     </div>
     <div id="rtc-resize" title="Drag up or down to resize the whole window"></div>
     <div id="rtc-tiles"></div>
@@ -15704,6 +15706,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     micOn: true,
     camOn: true,
     locked: true,
+    panelScale: 1, hidden: false, freePos: false, posLeft: null, posTop: null,
     peers: new Map(),       // peerId -> { pc, name, tile }
     pendingIce: new Map(),  // peerId -> [candidate, ...] buffered until remote desc set
     sharing: false,         // host is sharing their screen
@@ -16325,16 +16328,52 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const btn = document.getElementById('rtc-lock');
     btn.textContent = 'Lock: ' + (locked ? 'On' : 'Off');
     btn.classList.toggle('off', !locked);
-    if (locked) {
-      // Snap back to a tidy, centered, bottom-pinned arrangement
-      bar.classList.add('locked');
-      bar.style.left = '50%';
-      bar.style.top = 'auto';
-      bar.style.bottom = '10px';
-      bar.style.transform = 'translateX(-50%)';
-    } else {
-      bar.classList.remove('locked');
-    }
+    // Locking now only freezes dragging and tidies the tiles into rows — it keeps
+    // wherever the window currently is instead of yanking it back to the centre.
+    bar.classList.toggle('locked', locked);
+    rtcSaveLayout();
+  }
+
+  // ---- Camera window layout: remember position, size and state across reloads ----
+  const RTC_LAYOUT_KEY = 'vtt_rtc_layout_v1';
+  function rtcSaveLayout() {
+    try {
+      localStorage.setItem(RTC_LAYOUT_KEY, JSON.stringify({
+        scale: RTC.panelScale || 1, hidden: !!RTC.hidden, locked: !!RTC.locked,
+        free: !!RTC.freePos, left: RTC.posLeft, top: RTC.posTop,
+      }));
+    } catch (e) {}
+  }
+  function rtcLoadLayout() {
+    try { return JSON.parse(localStorage.getItem(RTC_LAYOUT_KEY) || 'null'); } catch (e) { return null; }
+  }
+  function rtcPlaceDefault() {
+    const bar = document.getElementById('rtc-bar');
+    bar.style.left = '50%'; bar.style.top = 'auto'; bar.style.bottom = '10px'; bar.style.transform = 'translateX(-50%)';
+  }
+  function rtcPlaceFree(left, top) {
+    const bar = document.getElementById('rtc-bar');
+    // Re-clamp to the current viewport in case the window shrank since last time.
+    const w = bar.offsetWidth || 200, h = bar.offsetHeight || 120;
+    const nx = Math.max(0, Math.min(window.innerWidth - w, left));
+    const ny = Math.max(56, Math.min(window.innerHeight - h, top));
+    bar.style.transform = 'none'; bar.style.left = nx + 'px'; bar.style.top = ny + 'px'; bar.style.bottom = 'auto';
+    RTC.posLeft = nx; RTC.posTop = ny;
+  }
+  function rtcApplyLayout() {
+    const bar = document.getElementById('rtc-bar');
+    if (!bar) return;
+    const L = rtcLoadLayout();
+    RTC.panelScale = (L && L.scale) ? L.scale : 1;
+    bar.style.setProperty('--rtc-pscale', RTC.panelScale);
+    RTC.hidden = !!(L && L.hidden);
+    bar.classList.toggle('tiles-hidden', RTC.hidden);
+    // Plain strings only here: rtcApplyLayout runs during initial setup, before
+    // LANG/I18N_DE are initialized (TDZ). The language walker localizes later.
+    const minBtn = document.getElementById('rtc-min'); if (minBtn) minBtn.textContent = RTC.hidden ? 'Show' : 'Hide';
+    if (L && L.free && L.left != null && L.top != null) { RTC.freePos = true; rtcPlaceFree(L.left, L.top); }
+    else { RTC.freePos = false; rtcPlaceDefault(); }
+    rtcSetLocked(L ? !!L.locked : true);
   }
 
   // ============ JITSI VIDEO (replaces the custom mesh WebRTC) ============
@@ -16633,7 +16672,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     document.getElementById('rtc-lock').addEventListener('click', () => rtcSetLocked(!RTC.locked));
     document.getElementById('rtc-min').addEventListener('click', () => {
       const hidden = document.getElementById('rtc-bar').classList.toggle('tiles-hidden');
-      document.getElementById('rtc-min').textContent = hidden ? 'Show' : 'Hide';
+      RTC.hidden = hidden;
+      document.getElementById('rtc-min').textContent = hidden ? t('Show') : t('Hide');
+      rtcSaveLayout();
     });
 
     document.getElementById('rtc-bg-mode').addEventListener('change', (e) => {
@@ -16672,7 +16713,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       RTC.panelScale = Math.max(0.55, Math.min(2.4, startScale + (startY - e.clientY) / 220));
       bar.style.setProperty('--rtc-pscale', RTC.panelScale);
     });
-    const endResize = (e) => { if (resizing) { resizing = false; try { grip.releasePointerCapture(e.pointerId); } catch (err) {} } };
+    const endResize = (e) => { if (resizing) { resizing = false; try { grip.releasePointerCapture(e.pointerId); } catch (err) {} rtcSaveLayout(); } };
     grip.addEventListener('pointerup', endResize);
     grip.addEventListener('pointercancel', endResize);
 
@@ -16698,11 +16739,31 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       bar.style.left = nx + 'px';
       bar.style.top = ny + 'px';
     });
-    const endMove = (e) => { if (moving) { moving = false; try { move.releasePointerCapture(e.pointerId); } catch (err) {} } };
+    const endMove = (e) => {
+      if (!moving) return;
+      moving = false; try { move.releasePointerCapture(e.pointerId); } catch (err) {}
+      // Magnetic edges: if the window ends up near a side, snap it flush so it
+      // docks cleanly into a corner/edge instead of floating a few px off.
+      const w = bar.offsetWidth, h = bar.offsetHeight;
+      const M = 12, TH = 52;
+      let nx = parseFloat(bar.style.left) || 0, ny = parseFloat(bar.style.top) || 0;
+      if (nx < TH) nx = M; else if (nx > window.innerWidth - w - TH) nx = window.innerWidth - w - M;
+      if (ny < 56 + TH) ny = 56; else if (ny > window.innerHeight - h - TH) ny = window.innerHeight - h - M;
+      bar.style.left = nx + 'px'; bar.style.top = ny + 'px';
+      RTC.freePos = true; RTC.posLeft = nx; RTC.posTop = ny;
+      rtcSaveLayout();
+    };
     move.addEventListener('pointerup', endMove);
     move.addEventListener('pointercancel', endMove);
+    // Double-click the handle to snap back to the default bottom-centre dock.
+    move.addEventListener('dblclick', () => {
+      if (RTC.locked) return;
+      RTC.freePos = false; RTC.posLeft = null; RTC.posTop = null;
+      rtcPlaceDefault(); rtcSaveLayout();
+      toast(t('Camera window reset to the bottom'));
+    });
 
-    rtcSetLocked(true);
+    rtcApplyLayout();
   }
   setupRtcUi();
   setupDrawing();
@@ -21291,6 +21352,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Shield: +2 AC while held in one hand.": "Schild: +2 RK, wenn in einer Hand gehalten.",
   "Stealth: disadvantage on Dexterity (Stealth) checks.": "Heimlichkeit: Nachteil auf Geschicklichkeitswürfe (Heimlichkeit).",
   "Requires Strength": "Erfordert Stärke",
+  "Camera window reset to the bottom": "Kamerafenster nach unten zurückgesetzt",
+  "Unlock, then drag to move. Double-click to reset to the bottom. Snaps to edges.": "Entsperren, dann ziehen zum Verschieben. Doppelklick setzt nach unten zurück. Rastet an Rändern ein.",
+  "Freeze the window where it is (and tidy the tiles into rows)": "Fenster an seiner Position fixieren (und Kacheln in Reihen ordnen)",
+  "Hide or show the camera tiles": "Kamerakacheln aus- oder einblenden",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
