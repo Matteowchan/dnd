@@ -499,7 +499,12 @@
   .catalog-tab.on { background: var(--gold-soft); color: var(--bg); border-color: var(--gold); }
   .catalog-search { margin: 10px 0; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 4px; font-family: inherit; font-size: calc(13px * var(--app-scale, 1)); }
   .catalog-list { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 5px; padding-right: 4px; }
-  .cat-row { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; }
+  .cat-row { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; flex-wrap: wrap; }
+  .cat-exp { display: inline-block; margin-left: 3px; color: var(--gold-soft); font-size: calc(10px * var(--app-scale, 1)); cursor: pointer; transition: transform 0.18s; }
+  .cat-row.expanded .cat-exp { transform: rotate(180deg); }
+  .cat-desc { flex-basis: 100%; width: 100%; margin-top: 7px; padding: 8px 10px; background: rgba(0,0,0,0.22); border-left: 2px solid var(--gold-soft); border-radius: 4px; }
+  .cat-desc .cat-desc-stats { color: var(--gold); font-size: calc(11px * var(--app-scale, 1)); margin-bottom: 5px; }
+  .cat-desc .cat-desc-prop { color: var(--cream); font-size: calc(12px * var(--app-scale, 1)); line-height: 1.5; }
   .cat-custom-row { display: flex; gap: 5px; margin: 0 0 8px; }
   .cat-custom-row input { padding: 6px 8px; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 4px; font-family: inherit; font-size: calc(12px * var(--app-scale, 1)); }
   .cat-custom-row #cat-custom-name { flex: 2; min-width: 0; }
@@ -11130,6 +11135,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       monk: 'Monk: counts as a monk weapon (Dex + Martial Arts die).',
       special: 'Special: has its own unique rules.',
     };
+    const ARMOR_TIP = {
+      light: 'Light armor: AC = base + your full Dexterity modifier. No Strength needed.',
+      medium: 'Medium armor: AC = base + Dexterity modifier (capped at +2).',
+      heavy: 'Heavy armor: fixed AC, Dexterity does not apply. May need a minimum Strength.',
+      shield: 'Shield: +2 AC while held in one hand.',
+    };
     function weaponTip(w) {
       const cat = w.cat === 'simple' ? t('Simple weapon') : t('Martial weapon');
       const parts = [`${cat} — ${deDmg(w.d) || t('no damage')}.`];
@@ -11163,14 +11174,14 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         SRD_WEAPONS.filter(w => w.n.toLowerCase().includes(q)).forEach(w => {
           const idx = SRD_WEAPONS.indexOf(w);
           const sub = `${deDmg(w.d) || '—'} · ${deTok(w.cat)}${w.p ? ' · ' + deProps(w.p) : ''}`;
-          rows += `<div class="cat-row" title="${escapeHtml(weaponTip(w))}"><div class="cat-info"><div class="cat-name">${escapeHtml(w.n)}</div><div class="cat-sub">${escapeHtml(sub)}</div></div><div class="cat-actions"><button class="cat-btn primary" data-act="add-weapon" data-i="${idx}">Add</button></div></div>`;
+          rows += `<div class="cat-row" title="${escapeHtml(weaponTip(w))}"><div class="cat-info"><div class="cat-name">${escapeHtml(w.n)} <span class="cat-exp" data-exp="weapon" data-i="${idx}" title="${t('Show details')}">▾</span></div><div class="cat-sub">${escapeHtml(sub)}</div></div><div class="cat-actions"><button class="cat-btn primary" data-act="add-weapon" data-i="${idx}">Add</button></div></div>`;
         });
       } else if (CATALOG.tab === 'armor') {
         SRD_ARMOR.filter(a => a.n.toLowerCase().includes(q)).forEach(a => {
           const idx = SRD_ARMOR.indexOf(a);
           const acTxt = a.type === 'shield' ? ('+2 ' + AC) : `${AC} ${a.base}${a.type === 'light' ? DEXL : a.type === 'medium' ? DEXL + ' (max 2)' : ''}`;
           const sub = `${deTok(a.type)} · ${acTxt}${a.stealth ? ' · ' + (LANG === 'de' ? 'Heimlichkeit Nachteil' : 'stealth disadv') : ''}${a.str ? ' · ' + (LANG === 'de' ? 'STÄ ' : 'Str ') + a.str : ''}`;
-          rows += `<div class="cat-row"><div class="cat-info"><div class="cat-name">${escapeHtml(a.n)}</div><div class="cat-sub">${escapeHtml(sub)}</div></div><div class="cat-actions"><button class="cat-btn" data-act="add-armor" data-i="${idx}">Add</button><button class="cat-btn primary" data-act="equip-armor" data-i="${idx}">Equip</button></div></div>`;
+          rows += `<div class="cat-row"><div class="cat-info"><div class="cat-name">${escapeHtml(a.n)} <span class="cat-exp" data-exp="armor" data-i="${idx}" title="${t('Show details')}">▾</span></div><div class="cat-sub">${escapeHtml(sub)}</div></div><div class="cat-actions"><button class="cat-btn" data-act="add-armor" data-i="${idx}">Add</button><button class="cat-btn primary" data-act="equip-armor" data-i="${idx}">Equip</button></div></div>`;
         });
       } else if (CATALOG.tab === 'gear') {
         SRD_GEAR.filter(g => g.n.toLowerCase().includes(q)).forEach(g => {
@@ -11262,6 +11273,36 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       renderCatalog();
     }));
     document.getElementById('catalog-list').addEventListener('click', (e) => {
+      // Expand a weapon/armor row to explain its stats and properties in plain words.
+      const exp = e.target.closest('.cat-exp');
+      if (exp) {
+        const row = exp.closest('.cat-row');
+        const open = row.querySelector('.cat-desc');
+        if (open) { open.remove(); row.classList.remove('expanded'); return; }
+        const i = parseInt(exp.dataset.i);
+        let html = '';
+        if (exp.dataset.exp === 'weapon') {
+          const w = SRD_WEAPONS[i]; if (!w) return;
+          html += `<div class="cat-desc-stats">${escapeHtml((w.cat === 'simple' ? t('Simple weapon') : t('Martial weapon')) + ' · ' + (deDmg(w.d) || t('no damage')))}</div>`;
+          (w.p || '').split(',').map(s => s.trim()).filter(Boolean).forEach(p => {
+            if (WEAPON_PROP_TIP[p]) html += `<div class="cat-desc-prop">${escapeHtml(t(WEAPON_PROP_TIP[p]))}</div>`;
+          });
+        } else if (exp.dataset.exp === 'armor') {
+          const a = SRD_ARMOR[i]; if (!a) return;
+          const key = a.type === 'shield' ? 'shield' : a.type;
+          if (ARMOR_TIP[key]) html += `<div class="cat-desc-stats">${escapeHtml(t(ARMOR_TIP[key]))}</div>`;
+          if (a.stealth) html += `<div class="cat-desc-prop">${escapeHtml(t('Stealth: disadvantage on Dexterity (Stealth) checks.'))}</div>`;
+          if (a.str) html += `<div class="cat-desc-prop">${escapeHtml(t('Requires Strength') + ' ' + a.str + '.')}</div>`;
+        }
+        if (html) {
+          const desc = document.createElement('div');
+          desc.className = 'cat-desc';
+          desc.innerHTML = html;
+          row.appendChild(desc);
+          row.classList.add('expanded');
+        }
+        return;
+      }
       const btn = e.target.closest('.cat-btn'); if (!btn) return;
       const i = parseInt(btn.dataset.i); const act = btn.dataset.act;
       if (act === 'add-weapon') { const w = SRD_WEAPONS[i]; catAddInventory(w.n, `${w.d || ''}${w.p ? ' (' + w.p + ')' : ''}`.trim(), 'weapon'); }
@@ -21242,6 +21283,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Charisma — Persuasion, Deception, Intimidation, Performance; bard/sorcerer/warlock casting.": "Charisma — Überzeugen, Täuschung, Einschüchtern, Auftreten; Zauberei von Barde/Hexenmeister/Zauberer.",
   "Show details": "Details anzeigen",
   "scales with slot level": "skaliert mit Slot-Grad",
+  "Light armor: AC = base + your full Dexterity modifier. No Strength needed.": "Leichte Rüstung: RK = Basis + voller Geschicklichkeitsmodifikator. Keine Stärke nötig.",
+  "Medium armor: AC = base + Dexterity modifier (capped at +2).": "Mittlere Rüstung: RK = Basis + Geschicklichkeitsmodifikator (max. +2).",
+  "Heavy armor: fixed AC, Dexterity does not apply. May need a minimum Strength.": "Schwere Rüstung: feste RK, Geschicklichkeit zählt nicht. Kann eine Mindeststärke erfordern.",
+  "Shield: +2 AC while held in one hand.": "Schild: +2 RK, wenn in einer Hand gehalten.",
+  "Stealth: disadvantage on Dexterity (Stealth) checks.": "Heimlichkeit: Nachteil auf Geschicklichkeitswürfe (Heimlichkeit).",
+  "Requires Strength": "Erfordert Stärke",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
