@@ -1799,7 +1799,19 @@
   #rtc-bar.in-call #rtc-launch { display: none; }
   #rtc-resize { align-self: stretch; height: 9px; cursor: ns-resize; display: flex; align-items: center; justify-content: center; }
   #rtc-resize::before { content: ''; width: 26px; height: 3px; border-radius: 2px; background: var(--gold-soft); opacity: 0.5; }
-  #rtc-topbar { align-self: stretch; display: flex; align-items: center; gap: 6px; }
+  #rtc-topbar { align-self: stretch; display: flex; align-items: center; gap: 6px; position: relative; }
+  #rtc-dock { padding: 3px 9px; font-size: calc(11px * var(--app-scale, 1)); border-radius: 5px; border: 1px solid var(--border); background: var(--panel-light); color: var(--cream); cursor: pointer; white-space: nowrap; }
+  #rtc-dock:hover { border-color: var(--gold-soft); }
+  #rtc-dock.open { border-color: var(--gold); color: var(--gold); }
+  #rtc-dock-picker { position: absolute; top: calc(100% + 5px); right: 0; z-index: 5; display: grid; grid-template-columns: repeat(3, 30px); grid-template-rows: 30px 30px; gap: 4px; padding: 7px; background: rgba(20,17,14,0.96); border: 1px solid var(--gold-soft); border-radius: 8px; box-shadow: 0 10px 28px rgba(0,0,0,0.6); }
+  #rtc-dock-picker[hidden] { display: none; }
+  #rtc-dock-picker button { width: 30px; height: 30px; padding: 0; font-size: calc(15px * var(--app-scale, 1)); line-height: 1; border: 1px solid var(--border); background: var(--bg); color: var(--gold-soft); border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.12s, color 0.12s, background 0.12s; }
+  #rtc-dock-picker button:hover { border-color: var(--gold); color: var(--gold); background: var(--panel-light); }
+  #rtc-dock-picker button[data-pos="tl"] { grid-area: 1 / 1; }
+  #rtc-dock-picker button[data-pos="tr"] { grid-area: 1 / 3; }
+  #rtc-dock-picker button[data-pos="bc"] { grid-area: 2 / 2; }
+  #rtc-dock-picker button[data-pos="bl"] { grid-area: 2 / 1; }
+  #rtc-dock-picker button[data-pos="br"] { grid-area: 2 / 3; }
   #rtc-move { flex: 1; height: 11px; cursor: move; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
   #rtc-move::before { content: ''; width: 30px; height: 3px; border-radius: 2px; background: var(--gold-soft); opacity: 0.45; transition: opacity 0.15s, width 0.15s; }
   #rtc-bar:not(.locked) #rtc-move:hover::before { opacity: 0.9; width: 40px; }
@@ -2701,8 +2713,16 @@
   <div id="rtc-panel">
     <div id="rtc-topbar">
       <div id="rtc-move" title="Unlock, then drag to move. Double-click to reset to the bottom. Snaps to edges."></div>
+      <button id="rtc-dock" title="Snap the window to a corner">Dock</button>
       <button id="rtc-lock" title="Freeze the window where it is (and tidy the tiles into rows)">Lock: On</button>
       <button id="rtc-min" title="Hide or show the camera tiles">Hide</button>
+      <div id="rtc-dock-picker" hidden>
+        <button data-pos="tl" title="Top left">⌜</button>
+        <button data-pos="tr" title="Top right">⌝</button>
+        <button data-pos="bc" title="Bottom centre">▾</button>
+        <button data-pos="bl" title="Bottom left">⌞</button>
+        <button data-pos="br" title="Bottom right">⌟</button>
+      </div>
     </div>
     <div id="rtc-resize" title="Drag up or down to resize the whole window"></div>
     <div id="rtc-tiles"></div>
@@ -16375,6 +16395,21 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     else { RTC.freePos = false; rtcPlaceDefault(); }
     rtcSetLocked(L ? !!L.locked : true);
   }
+  // Snap the camera window to a named corner (or the default bottom-centre dock).
+  function rtcDockTo(pos) {
+    const bar = document.getElementById('rtc-bar');
+    if (!bar) return;
+    if (pos === 'bc') { RTC.freePos = false; RTC.posLeft = RTC.posTop = null; rtcPlaceDefault(); rtcSaveLayout(); return; }
+    const r = bar.getBoundingClientRect();
+    const w = r.width || bar.offsetWidth || 200, h = r.height || bar.offsetHeight || 120;
+    const M = 12, TOPMIN = 56;
+    let left = M, top = TOPMIN;
+    if (pos === 'tr' || pos === 'br') left = window.innerWidth - w - M;
+    if (pos === 'bl' || pos === 'br') top = window.innerHeight - h - M;
+    RTC.freePos = true;
+    rtcPlaceFree(left, top);
+    rtcSaveLayout();
+  }
 
   // ============ JITSI VIDEO (replaces the custom mesh WebRTC) ============
   // The old peer-to-peer mesh had no TURN server, so players behind symmetric
@@ -16755,6 +16790,28 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     };
     move.addEventListener('pointerup', endMove);
     move.addEventListener('pointercancel', endMove);
+    // Dock button: open a small corner picker; each target snaps + persists.
+    const dockBtn = document.getElementById('rtc-dock');
+    const dockPicker = document.getElementById('rtc-dock-picker');
+    if (dockBtn && dockPicker) {
+      dockBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const willOpen = dockPicker.hidden;
+        dockPicker.hidden = !willOpen;
+        dockBtn.classList.toggle('open', willOpen);
+      });
+      dockPicker.addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-pos]'); if (!b) return;
+        rtcDockTo(b.dataset.pos);
+        dockPicker.hidden = true; dockBtn.classList.remove('open');
+      });
+      document.addEventListener('click', (e) => {
+        if (dockPicker.hidden) return;
+        if (e.target.closest('#rtc-dock-picker') || e.target.closest('#rtc-dock')) return;
+        dockPicker.hidden = true; dockBtn.classList.remove('open');
+      });
+    }
+
     // Double-click the handle to snap back to the default bottom-centre dock.
     move.addEventListener('dblclick', () => {
       if (RTC.locked) return;
@@ -21356,6 +21413,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Unlock, then drag to move. Double-click to reset to the bottom. Snaps to edges.": "Entsperren, dann ziehen zum Verschieben. Doppelklick setzt nach unten zurück. Rastet an Rändern ein.",
   "Freeze the window where it is (and tidy the tiles into rows)": "Fenster an seiner Position fixieren (und Kacheln in Reihen ordnen)",
   "Hide or show the camera tiles": "Kamerakacheln aus- oder einblenden",
+  "Dock": "Andocken",
+  "Snap the window to a corner": "Fenster an eine Ecke andocken",
+  "Top left": "Oben links",
+  "Top right": "Oben rechts",
+  "Bottom centre": "Unten mittig",
+  "Bottom left": "Unten links",
+  "Bottom right": "Unten rechts",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
