@@ -1247,7 +1247,9 @@
   .magic-row.is-prepared .name > b { color: var(--gold); }
   .magic-row .mr-head { display: flex; gap: 6px; align-items: center; }
   .magic-row.has-info .mr-head { cursor: pointer; }
-  .magic-row.has-info .name::after { content: ' ▸'; color: var(--muted); font-size: calc(9px * var(--app-scale, 1)); }
+  .magic-row.has-info .name::after { content: ' ▸'; color: var(--muted); font-size: calc(9px * var(--app-scale, 1)); display: inline-block; transition: transform 0.18s; }
+  .magic-row.has-info.mr-open .name::after { transform: rotate(90deg); }
+  .magic-row.has-info:hover .name::after { color: var(--gold-soft); }
   .magic-row .name { flex: 1; color: var(--cream); }
   .magic-row .name b { color: var(--gold); margin-right: 6px; font-family: 'Cinzel', serif; font-size: calc(10px * var(--app-scale, 1)); }
   .magic-row .meta { color: var(--muted); font-size: calc(11px * var(--app-scale, 1)); }
@@ -10884,7 +10886,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         if (head && !e.target.closest('button') && !e.target.closest('input')) {
           const row = head.closest('.magic-row');
           const desc = row && row.querySelector('.mr-desc');
-          if (desc) desc.hidden = !desc.hidden;
+          if (desc) { desc.hidden = !desc.hidden; row.classList.toggle('mr-open', !desc.hidden); }
         }
       });
     });
