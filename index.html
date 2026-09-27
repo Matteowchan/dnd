@@ -1812,6 +1812,15 @@
   #rtc-dock-picker button[data-pos="bc"] { grid-area: 2 / 2; }
   #rtc-dock-picker button[data-pos="bl"] { grid-area: 2 / 1; }
   #rtc-dock-picker button[data-pos="br"] { grid-area: 2 / 3; }
+  #rtc-dock-picker button[data-pos="strip"] { grid-area: 3 / 1 / 4 / 4; width: auto; height: 26px; font-size: calc(11px * var(--app-scale, 1)); font-family: 'Cinzel', serif; letter-spacing: 0.03em; gap: 5px; }
+  #rtc-dock-picker button[data-pos="strip"].active { border-color: var(--gold); color: var(--gold); background: rgba(212,165,116,0.14); }
+  /* Bottom dock strip: the camera panel spans the width and the map yields room,
+     mirroring how the right bar reserves space, so it never covers the board. */
+  body.rtc-docked-bottom #main { padding-bottom: var(--rtc-dock-h, 150px); }
+  #rtc-bar.docked-strip { left: 0; right: 0; width: 100vw; bottom: 0; transform: none; }
+  #rtc-bar.docked-strip #rtc-panel { width: 100vw; border-radius: 0; border-left: none; border-right: none; border-bottom: none; transform: none; box-shadow: 0 -10px 28px rgba(0,0,0,0.55); }
+  #rtc-bar.docked-strip #rtc-tiles { justify-content: center; }
+  #rtc-bar.docked-strip #rtc-resize { display: none; }
   #rtc-move { flex: 1; height: 11px; cursor: move; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
   #rtc-move::before { content: ''; width: 30px; height: 3px; border-radius: 2px; background: var(--gold-soft); opacity: 0.45; transition: opacity 0.15s, width 0.15s; }
   #rtc-bar:not(.locked) #rtc-move:hover::before { opacity: 0.9; width: 40px; }
@@ -2722,6 +2731,7 @@
         <button data-pos="bc" title="Bottom centre">▾</button>
         <button data-pos="bl" title="Bottom left">⌞</button>
         <button data-pos="br" title="Bottom right">⌟</button>
+        <button data-pos="strip" title="Dock to the bottom edge and shrink the map so cameras never cover the board">⬓ Strip</button>
       </div>
     </div>
     <div id="rtc-resize" title="Drag up or down to resize the whole window"></div>
@@ -15726,7 +15736,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     micOn: true,
     camOn: true,
     locked: true,
-    panelScale: 1, hidden: false, freePos: false, posLeft: null, posTop: null,
+    panelScale: 1, hidden: false, freePos: false, posLeft: null, posTop: null, strip: false,
     peers: new Map(),       // peerId -> { pc, name, tile }
     pendingIce: new Map(),  // peerId -> [candidate, ...] buffered until remote desc set
     sharing: false,         // host is sharing their screen
@@ -16360,9 +16370,42 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     try {
       localStorage.setItem(RTC_LAYOUT_KEY, JSON.stringify({
         scale: RTC.panelScale || 1, hidden: !!RTC.hidden, locked: !!RTC.locked,
-        free: !!RTC.freePos, left: RTC.posLeft, top: RTC.posTop,
+        free: !!RTC.freePos, left: RTC.posLeft, top: RTC.posTop, strip: !!RTC.strip,
       }));
     } catch (e) {}
+  }
+  // Bottom-dock "strip" mode: the camera panel spans the width along the bottom
+  // and the map area shrinks to make room (like the right bar), so cameras never
+  // cover the board. The reserved space only applies while actually in a call.
+  let _rtcRO = null, _rtcRefreshing = false;
+  function rtcRefreshDock() {
+    if (_rtcRefreshing) return;
+    _rtcRefreshing = true;
+    const bar = document.getElementById('rtc-bar');
+    const panel = document.getElementById('rtc-panel');
+    if (bar) {
+      if (bar.classList.contains('docked-strip') !== !!RTC.strip) bar.classList.toggle('docked-strip', !!RTC.strip);
+      const active = !!RTC.strip && bar.classList.contains('in-call');
+      if (document.body.classList.contains('rtc-docked-bottom') !== active) document.body.classList.toggle('rtc-docked-bottom', active);
+      if (active && panel) {
+        const sync = () => { document.body.style.setProperty('--rtc-dock-h', (panel.offsetHeight + 6) + 'px'); };
+        sync();
+        if (window.ResizeObserver) {
+          if (!_rtcRO) _rtcRO = new ResizeObserver(() => { const b = document.getElementById('rtc-bar'); if (RTC.strip && b && b.classList.contains('in-call')) document.body.style.setProperty('--rtc-dock-h', (panel.offsetHeight + 6) + 'px'); });
+          try { _rtcRO.observe(panel); } catch (e) {}
+        }
+      } else {
+        if (_rtcRO) { try { _rtcRO.disconnect(); } catch (e) {} }
+        document.body.style.removeProperty('--rtc-dock-h');
+      }
+    }
+    _rtcRefreshing = false;
+  }
+  function rtcSetStrip(on) {
+    RTC.strip = !!on;
+    if (RTC.strip) { RTC.freePos = false; RTC.posLeft = RTC.posTop = null; rtcPlaceDefault(); }
+    rtcRefreshDock();
+    rtcSaveLayout();
   }
   function rtcLoadLayout() {
     try { return JSON.parse(localStorage.getItem(RTC_LAYOUT_KEY) || 'null'); } catch (e) { return null; }
@@ -16391,9 +16434,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     // Plain strings only here: rtcApplyLayout runs during initial setup, before
     // LANG/I18N_DE are initialized (TDZ). The language walker localizes later.
     const minBtn = document.getElementById('rtc-min'); if (minBtn) minBtn.textContent = RTC.hidden ? 'Show' : 'Hide';
-    if (L && L.free && L.left != null && L.top != null) { RTC.freePos = true; rtcPlaceFree(L.left, L.top); }
+    RTC.strip = !!(L && L.strip);
+    if (RTC.strip) { RTC.freePos = false; rtcPlaceDefault(); }
+    else if (L && L.free && L.left != null && L.top != null) { RTC.freePos = true; rtcPlaceFree(L.left, L.top); }
     else { RTC.freePos = false; rtcPlaceDefault(); }
     rtcSetLocked(L ? !!L.locked : true);
+    rtcRefreshDock();
   }
   // Snap the camera window to a named corner (or the default bottom-centre dock).
   function rtcDockTo(pos) {
@@ -16756,7 +16802,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const move = document.getElementById('rtc-move');
     let moving = false, mx = 0, my = 0, baseLeft = 0, baseTop = 0;
     move.addEventListener('pointerdown', (e) => {
-      if (RTC.locked) return;
+      if (RTC.locked || RTC.strip) return;
       const r = bar.getBoundingClientRect();
       bar.style.transform = 'none';
       bar.style.left = r.left + 'px';
@@ -16793,16 +16839,23 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     // Dock button: open a small corner picker; each target snaps + persists.
     const dockBtn = document.getElementById('rtc-dock');
     const dockPicker = document.getElementById('rtc-dock-picker');
+    const updateStripBtn = () => {
+      const sb = dockPicker && dockPicker.querySelector('button[data-pos="strip"]');
+      if (sb) sb.classList.toggle('active', !!RTC.strip);
+    };
     if (dockBtn && dockPicker) {
       dockBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         const willOpen = dockPicker.hidden;
+        updateStripBtn();
         dockPicker.hidden = !willOpen;
         dockBtn.classList.toggle('open', willOpen);
       });
       dockPicker.addEventListener('click', (e) => {
         const b = e.target.closest('button[data-pos]'); if (!b) return;
-        rtcDockTo(b.dataset.pos);
+        if (b.dataset.pos === 'strip') { rtcSetStrip(!RTC.strip); }
+        else { if (RTC.strip) rtcSetStrip(false); rtcDockTo(b.dataset.pos); }
+        updateStripBtn();
         dockPicker.hidden = true; dockBtn.classList.remove('open');
       });
       document.addEventListener('click', (e) => {
@@ -16811,10 +16864,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         dockPicker.hidden = true; dockBtn.classList.remove('open');
       });
     }
+    // Keep the reserved map space in sync when the call starts/ends (in-call class).
+    try {
+      const barClassObs = new MutationObserver(() => rtcRefreshDock());
+      barClassObs.observe(bar, { attributes: true, attributeFilter: ['class'] });
+    } catch (e) {}
 
     // Double-click the handle to snap back to the default bottom-centre dock.
     move.addEventListener('dblclick', () => {
       if (RTC.locked) return;
+      if (RTC.strip) rtcSetStrip(false);
       RTC.freePos = false; RTC.posLeft = null; RTC.posTop = null;
       rtcPlaceDefault(); rtcSaveLayout();
       toast(t('Camera window reset to the bottom'));
@@ -21420,6 +21479,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Bottom centre": "Unten mittig",
   "Bottom left": "Unten links",
   "Bottom right": "Unten rechts",
+  "⬓ Strip": "⬓ Leiste",
+  "Dock to the bottom edge and shrink the map so cameras never cover the board": "Am unteren Rand andocken und die Karte verkleinern, damit Kameras das Spielfeld nie verdecken",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
