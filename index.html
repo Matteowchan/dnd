@@ -12830,12 +12830,56 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     return hits;
   }
 
-  function reportAoeHits(stroke) {
+  async function reportAoeHits(stroke) {
     try {
-      const names = aoeHitTokens(stroke).map(tk => tk.name).filter(Boolean);
-      if (names.length) toast(t('In area: ') + names.join(', ') + ' (' + names.length + ')');
-      else toast(t('Area placed — no tokens caught'));
-    } catch (e) {}
+      const hits = aoeHitTokens(stroke).filter(tk => tk.name);
+      if (!hits.length) { toast(t('Area placed — no tokens caught')); return; }
+      const names = hits.map(tk => tk.name);
+      // Players just get the read-out; the DM can turn the area into damage in
+      // one step (full, or half for those who saved) — the natural end of an AoE.
+      if (!STATE.isHost) { toast(t('In area: ') + names.join(', ') + ' (' + names.length + ')'); return; }
+      const res = await askAoeDamage(names);
+      if (!res) { toast(t('In area: ') + names.join(', ') + ' (' + names.length + ')'); return; }
+      const dmg = res.half ? Math.floor(res.amount / 2) : res.amount;
+      if (dmg <= 0) { toast(t('In area: ') + names.join(', ') + ' (' + names.length + ')'); return; }
+      let applied = 0;
+      for (const tk of hits) { await applyHpChange(tk.id, -dmg); applied++; }
+      toast(dmg + ' ' + t('damage to') + ' ' + applied + ' ' + t('in the area'));
+    } catch (e) { console.error('AoE damage failed', e); }
+  }
+
+  // Damage prompt for a placed area template: amount + Full / Half (saved).
+  function askAoeDamage(names) {
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.className = 'recovery-overlay';
+      const card = document.createElement('div');
+      card.className = 'recovery-card';
+      const h = document.createElement('h3'); h.textContent = t('Area of effect'); card.appendChild(h);
+      const sub = document.createElement('div'); sub.className = 'recovery-sub';
+      sub.textContent = names.length + ' ' + t('in the area') + ': ' + names.join(', ');
+      card.appendChild(sub);
+      const input = document.createElement('input');
+      input.type = 'number'; input.className = 'recovery-input'; input.min = '0';
+      input.placeholder = t('Damage amount'); card.appendChild(input);
+      const actions = document.createElement('div'); actions.className = 'recovery-actions';
+      const cancel = document.createElement('button'); cancel.className = 'recovery-btn';
+      cancel.textContent = t('Cancel'); cancel.addEventListener('click', () => { cleanup(); resolve(null); });
+      const half = document.createElement('button'); half.className = 'recovery-btn';
+      half.textContent = t('Half (saved)'); half.addEventListener('click', () => submit(true));
+      const full = document.createElement('button'); full.className = 'recovery-btn primary';
+      full.textContent = t('Full damage'); full.addEventListener('click', () => submit(false));
+      actions.appendChild(cancel); actions.appendChild(half); actions.appendChild(full);
+      card.appendChild(actions);
+      overlay.appendChild(card);
+      overlay.addEventListener('click', e => { if (e.target === overlay) { cleanup(); resolve(null); } });
+      document.addEventListener('keydown', onKey);
+      document.body.appendChild(overlay);
+      input.focus();
+      function submit(isHalf) { const v = parseInt(input.value, 10); cleanup(); resolve(isNaN(v) || v < 0 ? null : { amount: v, half: isHalf }); }
+      function onKey(e) { if (e.key === 'Escape') { cleanup(); resolve(null); } else if (e.key === 'Enter') { submit(false); } }
+      function cleanup() { document.removeEventListener('keydown', onKey); if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
+    });
   }
 
   async function saveStroke(stroke) {
@@ -21520,6 +21564,12 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Filter by name…": "Nach Name filtern…",
   "Hide downed": "Besiegte ausblenden",
   "No matching tokens": "Keine passenden Figuren",
+  "Area of effect": "Wirkungsbereich",
+  "in the area": "im Bereich",
+  "Damage amount": "Schadensmenge",
+  "Half (saved)": "Hälfte (gerettet)",
+  "Full damage": "Voller Schaden",
+  "damage to": "Schaden an",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
