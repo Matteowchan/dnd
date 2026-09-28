@@ -435,7 +435,9 @@
   .init-list { flex: 1; min-height: 0; overflow-y: auto; padding: 4px; }
   .init-empty { padding: 14px 10px; text-align: center; font-style: italic; color: var(--muted); font-size: calc(11px * var(--app-scale, 1)); }
   .init-empty-hint { display: block; color: var(--gold-soft); margin-top: 4px; font-style: normal; font-size: calc(10px * var(--app-scale, 1)); }
-  .init-row { display: flex; align-items: center; gap: 6px; padding: 5px 8px; margin: 2px 0; background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--border); border-radius: 3px; font-size: calc(12px * var(--app-scale, 1)); cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+  .init-row { position: relative; display: flex; align-items: center; gap: 6px; padding: 5px 8px 6px; margin: 2px 0; background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--border); border-radius: 3px; font-size: calc(12px * var(--app-scale, 1)); cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+  .init-row .init-hpbar { position: absolute; left: 3px; right: 1px; bottom: 0; height: 3px; background: rgba(0,0,0,0.4); border-radius: 0 0 2px 2px; overflow: hidden; pointer-events: none; }
+  .init-row .init-hpbar > i { display: block; height: 100%; transition: width 0.3s ease, background 0.3s; }
   .init-row:hover { background: var(--panel-light); border-color: var(--gold-soft); }
   .init-row.active { background: rgba(212,165,116,0.15); border-color: var(--gold); border-left-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold-soft); }
   .init-row.active .init-name { color: var(--gold); font-weight: 700; }
@@ -5484,6 +5486,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
           toggleActionEconomy(parseInt(btn.dataset.idx), btn.dataset.econ);
         });
       });
+      // Thin colour-shifting HP strip along the row's bottom edge, so the table
+      // can read who's hurt at a glance (only for combatants whose HP is visible).
+      if (showHp && hp != null && maxHp != null && maxHp > 0) {
+        const pct = Math.max(0, Math.min(100, Math.round(hp / maxHp * 100)));
+        const col = pct > 50 ? '#6fbf73' : (pct > 25 ? '#e0a83a' : '#d05a4a');
+        const bar = document.createElement('div');
+        bar.className = 'init-hpbar';
+        bar.innerHTML = `<i style="width:${pct}%;background:${col};"></i>`;
+        row.appendChild(bar);
+      }
       list.appendChild(row);
     });
     maybeAnnounceTurn();
