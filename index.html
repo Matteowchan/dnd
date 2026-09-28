@@ -1625,6 +1625,8 @@
   .chat-msg .roll-result { display: inline-block; background: var(--panel-light); border: 1px solid var(--gold-soft); padding: 2px 8px; border-radius: 3px; font-family: monospace; margin: 2px 4px 2px 0; }
   .chat-msg .roll-total { color: var(--gold); font-weight: 700; font-size: calc(16px * var(--app-scale, 1)); }
   .chat-msg .roll-buffs { font-size: calc(10px * var(--app-scale, 1)); color: var(--gold); opacity: 0.75; margin-top: 2px; font-style: italic; letter-spacing: 0.03em; }
+  .chat-msg.is-roll:not(.private) { border-left: 2px solid var(--gold-soft); background: rgba(212,165,116,0.05); padding: 3px 8px; border-radius: 3px; }
+  .chat-msg.is-system:not(.private) { padding-left: 8px; border-left: 2px solid rgba(120,105,85,0.35); }
   .chat-msg.private { background: rgba(160,72,72,0.1); border-left: 2px solid var(--danger); padding: 6px 10px; border-radius: 3px; }
   .chat-msg.private .priv-tag { color: var(--danger); font-size: calc(11px * var(--app-scale, 1)); text-transform: uppercase; letter-spacing: 0.1em; }
   .chat-msg .ts { color: var(--muted); font-size: calc(11px * var(--app-scale, 1)); margin-left: 6px; }
@@ -6704,7 +6706,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
     const isWhisper = !!(msg.is_private && msg.target_user_id);
     const div = document.createElement('div');
-    div.className = 'chat-msg' + (msg.is_private ? ' private' : '') + (isWhisper ? ' whisper' : '');
+    div.className = 'chat-msg' + (msg.is_private ? ' private' : '') + (isWhisper ? ' whisper' : '') + (msg.msg_type === 'roll' ? ' is-roll' : '') + (msg.msg_type === 'system' ? ' is-system' : '');
     div.dataset.id = msg.id;
 
     // For whispers, show a "to X" or "from X" badge based on who's viewing
