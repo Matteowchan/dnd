@@ -5807,7 +5807,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const C = (0.299 * r + 0.587 * g + 0.114 * b) > 140 ? '#16110b' : '#f1e8d7';
     const sil = (MONSTER_SIL[arch[preset.id]] || MONSTER_SIL.humanoid)(C, bg);
     const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='${bg}'/>${sil}</svg>`;
-    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    // encodeURIComponent leaves single quotes intact, which would break the
+    // url('…') wrapper in the inline style and drop the image entirely — encode
+    // them (and any double quotes) so the SVG data URI always loads.
+    return 'data:image/svg+xml,' + encodeURIComponent(svg).replace(/'/g, '%27').replace(/"/g, '%22');
   }
 
   // ============ INITIAL STATE LOAD ============
