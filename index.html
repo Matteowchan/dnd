@@ -1757,6 +1757,11 @@
   .token-hp-fill { height: 100%; transition: width 0.3s ease, background 0.3s; }
 
   /* HP TRACKER PANEL */
+  .hp-track-filter { display: flex; align-items: center; gap: 8px; padding: 6px 8px 2px; }
+  .hp-track-filter #hp-filter { flex: 1; min-width: 0; padding: 5px 8px; font-size: calc(11.5px * var(--app-scale, 1)); background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 5px; font-family: inherit; }
+  .hp-track-filter #hp-filter:focus { border-color: var(--gold-soft); outline: none; }
+  .hp-track-filter .hp-hidedown { display: flex; align-items: center; gap: 4px; font-size: calc(10.5px * var(--app-scale, 1)); color: var(--muted); cursor: pointer; white-space: nowrap; }
+  .hp-track-filter .hp-hidedown input { accent-color: var(--gold); cursor: pointer; }
   .hp-row { padding: 8px; border: 1px solid var(--border); border-radius: 3px; margin-bottom: 8px; background: rgba(0,0,0,0.25); }
   .hp-row-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
   .hp-thumb { width: 32px; height: 32px; border-radius: 50%; background-size: cover; background-position: center; border: 1px solid var(--border); flex-shrink: 0; }
@@ -4806,6 +4811,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       hpSec.className = 'rb-section rb-hpwrap';
       hpSec.innerHTML = `
         <div class="rb-section-head"><span>HP Tracker</span> <span class="hint">(click a row to view character)</span></div>
+        <div class="hp-track-filter">
+          <input type="text" id="hp-filter" placeholder="Filter by name…" autocomplete="off" spellcheck="false">
+          <label class="hp-hidedown"><input type="checkbox" id="hp-hide-downed"><span>Hide downed</span></label>
+        </div>
         <div id="hp-tracker-list-right"></div>
       `;
       rb.appendChild(hpSec);
@@ -6872,17 +6881,32 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const rightList = document.getElementById('hp-tracker-list-right');
     if (!rightList) return;
 
-    const visible = Array.from(STATE.tokens.values())
+    let visible = Array.from(STATE.tokens.values())
       .sort((a, b) => {
         const aOn = a.x != null ? 0 : 1;
         const bOn = b.x != null ? 0 : 1;
         if (aOn !== bOn) return aOn - bOn;
         return (a.name || '').localeCompare(b.name || '');
       });
+    const total = visible.length;
+
+    // Filter controls (handy when a bulk spawn fills the list with monsters).
+    const filterInp = document.getElementById('hp-filter');
+    const hideDownedBox = document.getElementById('hp-hide-downed');
+    if (filterInp && !filterInp._wired) { filterInp._wired = true; filterInp.oninput = renderHpTracker; }
+    if (hideDownedBox && !hideDownedBox._wired) { hideDownedBox._wired = true; hideDownedBox.onchange = renderHpTracker; }
+    const q = (filterInp && filterInp.value || '').trim().toLowerCase();
+    const hideDowned = !!(hideDownedBox && hideDownedBox.checked);
+    if (q) visible = visible.filter(t => (t.name || '').toLowerCase().includes(q));
+    if (hideDowned) visible = visible.filter(t => (t.current_hp ?? 10) > 0);
 
     rightList.innerHTML = '';
-    if (visible.length === 0) {
+    if (total === 0) {
       rightList.innerHTML = '<div style="font-size:calc(11px * var(--app-scale, 1));color:var(--muted);padding:6px;text-align:center;">No tokens yet</div>';
+      return;
+    }
+    if (visible.length === 0) {
+      rightList.innerHTML = '<div style="font-size:calc(11px * var(--app-scale, 1));color:var(--muted);padding:6px;text-align:center;">' + t('No matching tokens') + '</div>';
       return;
     }
     visible.forEach(tok => {
@@ -21493,6 +21517,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Bottom right": "Unten rechts",
   "⬓ Strip": "⬓ Leiste",
   "Dock to the bottom edge and shrink the map so cameras never cover the board": "Am unteren Rand andocken und die Karte verkleinern, damit Kameras das Spielfeld nie verdecken",
+  "Filter by name…": "Nach Name filtern…",
+  "Hide downed": "Besiegte ausblenden",
+  "No matching tokens": "Keine passenden Figuren",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
