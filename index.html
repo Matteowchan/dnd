@@ -6560,15 +6560,64 @@
     renderFog();
   }
 
+  // Signature of everything buildTokenEl renders for a token (position excluded —
+  // that is applied on every render). Used to decide, DOM-vs-STATE, whether a token's
+  // element can be reused or must be rebuilt.
+  function tokenSig(tok, playersById) {
+    const ownerP = playersById.get(tok.owner_id);
+    const isPC = ownerP && !ownerP.is_host;
+    const border = isPC ? getPlayerClassColor(tok.owner_id)
+      : ((tok.disposition === 'friendly') ? '#3b82f6' : '#c0392b');
+    const buffs = getActiveBuffsForToken(tok).map(b => b.name + ':' + b.color).join('|');
+    const conds = getConditionsForToken(tok).map(c => c.key + (c.level || '')).join('|');
+    return [tok.image_url || '', tok.owner_id || '', isPC ? 'pc' : 'npc', border,
+      tok.disposition || '', tok.name || '', tok.dm_note || '',
+      (tok.current_hp ?? ''), (tok.max_hp ?? ''), (tok.temp_hp ?? ''),
+      buffs, conds].join('§');
+  }
+
+  // Keyed/signature diff instead of innerHTML teardown: unchanged tokens keep their
+  // existing DOM element (no listener churn, no flicker, and a concurrent re-render
+  // no longer destroys an in-progress drag). Only tokens whose rendered state actually
+  // changed are rebuilt. The comparison is DOM-vs-STATE (element's stamped sig vs the
+  // sig STATE implies now) — not prev-vs-new payload, which local-first optimistic
+  // mutation makes equal. (audit: full-layer rebuild on single-token change)
   function renderTokens() {
     const layer = document.getElementById('tokenlayer');
-    layer.innerHTML = '';
     const ox = (STATE.map && STATE.map.offset_x) || 0;
     const oy = (STATE.map && STATE.map.offset_y) || 0;
     // Index players once per render instead of a linear scan per token (O(n·m)→O(n)).
     const playersById = new Map(STATE.persistedPlayers.map(p => [p.id, p]));
+    const dragId = (STATE.dragging && STATE.dragging.token) ? STATE.dragging.token.id : null;
+    const existing = new Map();
+    Array.from(layer.children).forEach(ch => { if (ch.dataset && ch.dataset.id) existing.set(ch.dataset.id, ch); });
+    const ordered = [];
     STATE.tokens.forEach(tok => {
       if (tok.x == null || tok.y == null) return;
+      let el = existing.get(tok.id);
+      // Mid-drag on this token: leave its element untouched so the drag survives.
+      if (el && tok.id === dragId) { ordered.push(el); return; }
+      const sig = tokenSig(tok, playersById);
+      if (el && el.dataset.sig === sig) {
+        // Reuse: only the position may have moved.
+        el.style.left = (tok.x + ox - 25) + 'px';
+        el.style.top = (tok.y + oy - 25) + 'px';
+      } else {
+        el = buildTokenEl(tok, ox, oy, playersById);
+      }
+      ordered.push(el);
+    });
+    // Remove every current child not in the new ordered set: old elements of
+    // rebuilt tokens, tokens no longer on the map, and any stray duplicates.
+    const orderedSet = new Set(ordered);
+    Array.from(layer.children).forEach(el => { if (!orderedSet.has(el)) el.remove(); });
+    // Re-attach in STATE order; appendChild moves existing nodes and inserts new ones.
+    ordered.forEach(el => layer.appendChild(el));
+    // Apply the active-turn highlight to the current combatant's token
+    highlightActiveInitToken();
+  }
+
+  function buildTokenEl(tok, ox, oy, playersById) {
       const el = document.createElement('div');
       el.className = 'map-token';
       el.dataset.id = tok.id;
@@ -6706,10 +6755,8 @@
       }
       el.addEventListener('mousedown', (e) => { if (e.button === 0) startTokenDrag(e, tok); });
       el.addEventListener('touchstart', (e) => startTokenDrag(e, tok), { passive: false });
-      layer.appendChild(el);
-    });
-    // Apply the active-turn highlight to the current combatant's token
-    highlightActiveInitToken();
+      el.dataset.sig = tokenSig(tok, playersById);
+      return el;
   }
 
   function renderTokenTray() {
