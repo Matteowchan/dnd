@@ -1790,9 +1790,10 @@
   ::-webkit-scrollbar-thumb:hover { background: var(--gold-soft); }
 
   /* TOAST */
-  #toast { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--gold); padding: 10px 18px; border-radius: 4px; color: var(--cream); font-size: calc(14px * var(--app-scale, 1)); z-index: 2000; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
-  #toast.show { opacity: 1; }
-  #toast.error { border-color: var(--danger); color: #e8a0a0; }
+  #toast { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+  .toast-item { background: var(--panel); border: 1px solid var(--gold); padding: 10px 18px; border-radius: 4px; color: var(--cream); font-size: calc(14px * var(--app-scale, 1)); opacity: 0; transform: translateY(-6px); transition: opacity 0.2s, transform 0.2s; box-shadow: 0 8px 24px rgba(0,0,0,0.5); max-width: 80vw; text-align: center; }
+  .toast-item.show { opacity: 1; transform: none; }
+  .toast-item.error { border-color: var(--danger); color: #e8a0a0; }
 
   /* CONNECTION INDICATOR */
   #conn-indicator { padding: 3px 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 3px; font-size: calc(11px * var(--app-scale, 1)); color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
@@ -3529,11 +3530,22 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   // A session code is 4-12 chars of the uppercase code alphabet (old games used 4).
   function isValidSessionCode(c) { return /^[A-Z0-9]{4,12}$/.test(c || ''); }
   function toast(msg, type = 'info', duration = 2500) {
-    const t = document.getElementById('toast');
+    const stack = document.getElementById('toast');
+    if (!stack) return;
     try { if (typeof LANG !== 'undefined' && LANG === 'de' && typeof I18N_DE !== 'undefined' && I18N_DE[msg]) msg = I18N_DE[msg]; } catch (e) {}
-    t.textContent = msg;
-    t.className = 'show' + (type === 'error' ? ' error' : '');
-    setTimeout(() => t.classList.remove('show'), duration);
+    // Stack toasts (each with its own timer) instead of overwriting one element,
+    // so near-simultaneous messages (downed, concentration check, rolls) don't
+    // clobber each other and vanish.
+    const item = document.createElement('div');
+    item.className = 'toast-item' + (type === 'error' ? ' error' : '');
+    item.textContent = msg;
+    stack.appendChild(item);
+    while (stack.children.length > 5) stack.removeChild(stack.firstChild);
+    requestAnimationFrame(() => item.classList.add('show'));
+    setTimeout(() => {
+      item.classList.remove('show');
+      setTimeout(() => { if (item.parentNode) item.parentNode.removeChild(item); }, 220);
+    }, duration);
   }
   function nowTs() {
     const d = new Date();
