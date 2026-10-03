@@ -6495,6 +6495,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     layer.innerHTML = '';
     const ox = (STATE.map && STATE.map.offset_x) || 0;
     const oy = (STATE.map && STATE.map.offset_y) || 0;
+    // Index players once per render instead of a linear scan per token (O(n·m)→O(n)).
+    const playersById = new Map(STATE.persistedPlayers.map(p => [p.id, p]));
     STATE.tokens.forEach(tok => {
       if (tok.x == null || tok.y == null) return;
       const el = document.createElement('div');
@@ -6504,7 +6506,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       el.style.left = (tok.x + ox - 25) + 'px';
       el.style.top = (tok.y + oy - 25) + 'px';
       // Border color: player characters use their class color; NPCs are red (enemy) or blue (friendly)
-      const ownerP = STATE.persistedPlayers.find(p => p.id === tok.owner_id);
+      const ownerP = playersById.get(tok.owner_id);
       const isPlayerChar = ownerP && !ownerP.is_host;
       if (isPlayerChar) {
         el.style.borderColor = getPlayerClassColor(tok.owner_id);
@@ -6703,6 +6705,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     });
   }
 
+  // Track our own just-sent message ids to dedupe the realtime echo. Cap the set
+  // so a long session doesn't grow it without bound (Sets keep insertion order).
+  function rememberMyMsg(id) {
+    STATE.myMsgIds.add(id);
+    while (STATE.myMsgIds.size > 300) STATE.myMsgIds.delete(STATE.myMsgIds.values().next().value);
+  }
+
   function updateChatEmpty() {
     const log = document.getElementById('chatlog');
     const hint = document.getElementById('chat-empty');
@@ -6764,6 +6773,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       div.innerHTML = `${whisperBadge}<span class="${userCls}"${nameStyle}>${escapeHtml(msg.user_name)}:</span> ${escapeHtml(msg.text)} <span class="ts">${escapeHtml(msg.ts || '')}</span>`;
     }
     log.appendChild(div);
+    // Cap the roll/chat log so a multi-hour session doesn't accumulate thousands
+    // of permanent DOM nodes (unbounded memory growth). Keep the most recent lines.
+    while (log.children.length > 400) log.removeChild(log.firstChild);
     // Briefly highlight genuinely new lines (not the initial history bulk-load) so
     // the table notices incoming rolls and messages.
     if (!opts.skipAnimate) { div.classList.add('flash-new'); setTimeout(() => div.classList.remove('flash-new'), 1500); }
@@ -13743,6 +13755,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   function renderRemoteMeasurements() {
     const svg = document.getElementById('remote-measurements');
     if (!svg) return;
+    // Fast path: nobody is dragging/measuring — skip the rect read + rebuild that
+    // would otherwise run on every pan/zoom frame. Clear once if needed.
+    if (!STATE.remoteDrags || STATE.remoteDrags.size === 0) { if (svg.childNodes.length) svg.innerHTML = ''; return; }
     const rect = document.getElementById('mapcontainer').getBoundingClientRect();
     svg.setAttribute('width', rect.width);
     svg.setAttribute('height', rect.height);
@@ -13942,6 +13957,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       imgGenState.type = 'item';
       imgGenState.prompt = icon.label;
       imgGenState.url = `icon:${icon.a}/${icon.n}`;
+      if (imgGenState.objectUrl && imgGenState.objectUrl.startsWith('blob:')) { try { URL.revokeObjectURL(imgGenState.objectUrl); } catch (e) {} }
       imgGenState.objectUrl = previewUrl;
       imgGenState.iconBlob = tokenBlob;
       // Show preview
@@ -14985,7 +15001,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }
 
     const id = genId();
-    STATE.myMsgIds.add(id);
+    rememberMyMsg(id);
 
     const msg = {
       id,
@@ -15075,7 +15091,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       }
     });
     const id = genId();
-    STATE.myMsgIds.add(id);
+    rememberMyMsg(id);
     const msg = {
       id, session_id: STATE.sessionId, msg_type: 'roll',
       user_id: STATE.userId, user_name: STATE.username, is_host: STATE.isHost,
@@ -15747,7 +15763,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     if (!text) return;
     inp.value = '';
     const id = genId();
-    STATE.myMsgIds.add(id);
+    rememberMyMsg(id);
     // Whisper target: the DM can pick any player; a player can only pick "Whisper
     // to DM". Honor whatever the (role-appropriate) dropdown offers — previously a
     // player's whisper was forced public while the UI said "private", leaking it to
@@ -16882,13 +16898,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       e.target.value = '';
       if (!f) { document.getElementById('rtc-bg-mode').value = RTC_BG.mode; return; }
       const img = new Image();
+      const bgObjUrl = URL.createObjectURL(f);
       img.onload = () => {
         RTC_BG.image = img;
         document.getElementById('rtc-bg-mode').value = 'image';
         livekitApplyBg('image');
+        try { URL.revokeObjectURL(bgObjUrl); } catch (e) {}
       };
-      img.onerror = () => toast('Could not load image', 'error');
-      img.src = URL.createObjectURL(f);
+      img.onerror = () => { toast('Could not load image', 'error'); try { URL.revokeObjectURL(bgObjUrl); } catch (e) {} };
+      img.src = bgObjUrl;
     });
 
     const bar = document.getElementById('rtc-bar');
@@ -21607,7 +21625,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
-  function t(s) { return (LANG === 'de' && I18N_DE[s]) ? I18N_DE[s] : s; } // for JS-built strings / toasts
+  // try/catch defuses the TDZ trap: LANG/I18N_DE are declared late, so any t()
+  // call that runs during early setup would otherwise throw a ReferenceError and
+  // kill the whole inline script. On error it safely returns the English string.
+  function t(s) { try { return (LANG === 'de' && I18N_DE[s]) ? I18N_DE[s] : s; } catch (e) { return s; } } // for JS-built strings / toasts
   function toggleLabel(enFull) { return t(enFull).replace(/(\S+)\s*$/, '<b>$1</b>'); } // "Fog of War: On" -> localized with last word bold
   function i18nEl(el) {
     if (!el || el.nodeType !== 1) return;
