@@ -4213,6 +4213,43 @@
       function cleanup() { document.removeEventListener('keydown', onKey); if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
     });
   }
+  // Accessibility for the shared .recovery-overlay modals (confirm/askNumber/
+  // askText/recovery/picker/AoE): mark the card as a dialog, trap Tab inside the
+  // top-most overlay, and return focus to the trigger when it closes. One global
+  // hook so every modal benefits without changing each builder.
+  (function setupModalA11y() {
+    let savedFocus = null;
+    const topOverlay = () => { const o = document.querySelectorAll('.recovery-overlay'); return o.length ? o[o.length - 1] : null; };
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const ov = topOverlay(); if (!ov) return;
+      const list = Array.from(ov.querySelectorAll('button, input, select, textarea, [href], [tabindex]:not([tabindex="-1"])'))
+        .filter(el => !el.disabled && el.offsetParent !== null);
+      if (!list.length) return;
+      const first = list[0], last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+    try {
+      new MutationObserver((muts) => {
+        muts.forEach(m => {
+          m.addedNodes.forEach(n => {
+            if (n.nodeType === 1 && n.classList && n.classList.contains('recovery-overlay')) {
+              savedFocus = document.activeElement;
+              const card = n.querySelector('.recovery-card');
+              if (card) { card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true'); }
+            }
+          });
+          m.removedNodes.forEach(n => {
+            if (n.nodeType === 1 && n.classList && n.classList.contains('recovery-overlay')) {
+              if (savedFocus && savedFocus.focus) { try { savedFocus.focus(); } catch (e) {} }
+              savedFocus = null;
+            }
+          });
+        });
+      }).observe(document.body, { childList: true });
+    } catch (e) {}
+  })();
   // Promise modal that lists recoverable characters. Resolves with
   // { action: 'restore', row } | { action: 'fresh' } | { action: 'cancel' }.
   function showRecoveryModal(orphans, opts) {
