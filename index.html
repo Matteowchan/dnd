@@ -12355,12 +12355,31 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     STATE.fog.on = true;
     STATE.fog.reveals = STATE.fog.reveals || [];
     if (erase) {
+      // Removing reveals requires a full rebuild (can't "un-punch" a hole).
       STATE.fog.reveals = STATE.fog.reveals.filter(c => Math.hypot(c.x - x, c.y - y) > c.r * 0.6);
+      renderFog();
     } else {
-      STATE.fog.reveals.push({ x, y, r });
+      const c = { x, y, r };
+      STATE.fog.reveals.push(c);
       if (STATE.fog.reveals.length > 5000) STATE.fog.reveals.splice(0, STATE.fog.reveals.length - 5000);
+      // Incremental: punch only the new circle onto the already-drawn canvas
+      // instead of clearing and re-filling all reveals every brush frame. Fall
+      // back to a full render if the canvas isn't set up yet.
+      const cvs = document.getElementById('fogcanvas');
+      const fl = document.getElementById('foglayer');
+      const ready = cvs && fl && fl.style.display !== 'none' && cvs.width === Math.round(STATE.map.width || 0) && STATE.fog.on;
+      if (ready) fogPunch(c); else renderFog();
     }
-    renderFog();
+  }
+  function fogPunch(c) {
+    const cvs = document.getElementById('fogcanvas'); if (!cvs) return;
+    const ctx = cvs.getContext('2d');
+    ctx.globalCompositeOperation = 'destination-out';
+    const g = ctx.createRadialGradient(c.x, c.y, Math.max(1, c.r * 0.55), c.x, c.y, c.r);
+    g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
   }
   (function setupFog() {
     const mc = document.getElementById('mapcontainer');
@@ -17061,6 +17080,21 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   setupRtcUi();
   setupDrawing();
   setupTokenHpMenu();
+
+  // Give icon-only buttons (×, carets, glyph controls) an accessible name for
+  // screen readers: prefer an existing title, else label bare close buttons.
+  (function applyA11yLabels() {
+    try {
+      document.querySelectorAll('button').forEach(b => {
+        if (b.getAttribute('aria-label')) return;
+        const txt = (b.textContent || '').trim();
+        const iconOnly = txt.length <= 2 && !/[a-z0-9]/i.test(txt);
+        if (!iconOnly) return;
+        if (b.title) b.setAttribute('aria-label', b.title);
+        else if (txt === '×' || txt === '✕') b.setAttribute('aria-label', 'Close');
+      });
+    } catch (e) {}
+  })();
 
   // Combat-loop hotkey: N advances the turn (host, while combat is active) without
   // reaching for the Next button. Ignored while typing in a field.
