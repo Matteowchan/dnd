@@ -6404,31 +6404,34 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   let _playerRefetchSeq = 0;
   function handlePlayerChange(payload) {
-    // Refetch persisted players. Guard against out-of-order responses: a slower
-    // earlier refetch must not overwrite the result of a newer one.
-    const seq = ++_playerRefetchSeq;
-    sb.from('vtt_players').select('*').eq('session_id', STATE.sessionId).then(({ data }) => {
-      if (seq !== _playerRefetchSeq) return;
-      if (data) {
-        STATE.persistedPlayers = data;
-        renderPlayers();
-        // Re-render tokens so border colors reflect updated classes
-        renderTokens();
-        rtcApplyFrameColors();
-        // If the open character popup is showing a player that just changed, refresh it —
-        // but never while an input is focused OR an edit is still pending an unsaved
-        // debounce, or we'd overwrite the in-progress local edit with an older remote
-        // value (which the diff-save would then never persist). The pending save runs
-        // and the sheet re-syncs on next open.
-        if (CHAR_POPUP.targetPlayerId) {
-          const inputsFocused = document.activeElement && document.activeElement.closest('#char-popup');
-          const dirty = !!CHAR_POPUP.saveTimeout || !!_profileTimer;
-          if (!inputsFocused && !dirty) {
-            openCharPopup(CHAR_POPUP.targetPlayerId, CHAR_POPUP.targetTokenId);
-          }
-        }
+    // Apply the delta directly from the realtime payload instead of refetching the
+    // whole vtt_players table (with its large profile/magic/buffs JSON) on every
+    // single-row change. Reconnect resync reconciles any gaps.
+    if (payload.eventType === 'DELETE') {
+      const id = payload.old && payload.old.id;
+      if (id == null) return;
+      STATE.persistedPlayers = STATE.persistedPlayers.filter(p => p.id !== id);
+    } else if (payload.new) {
+      const row = payload.new;
+      const i = STATE.persistedPlayers.findIndex(p => p.id === row.id);
+      if (i >= 0) STATE.persistedPlayers[i] = row; else STATE.persistedPlayers.push(row);
+    } else {
+      return;
+    }
+    renderPlayers();
+    // Re-render tokens so border colors reflect updated classes
+    renderTokens();
+    rtcApplyFrameColors();
+    // If the open character popup is showing a player that just changed, refresh it —
+    // but never while an input is focused OR an edit is still pending an unsaved
+    // debounce, or we'd overwrite the in-progress local edit with an older remote value.
+    if (CHAR_POPUP.targetPlayerId) {
+      const inputsFocused = document.activeElement && document.activeElement.closest('#char-popup');
+      const dirty = !!CHAR_POPUP.saveTimeout || !!_profileTimer;
+      if (!inputsFocused && !dirty) {
+        openCharPopup(CHAR_POPUP.targetPlayerId, CHAR_POPUP.targetTokenId);
       }
-    });
+    }
   }
 
   function handlePresenceSync() {
