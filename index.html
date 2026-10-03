@@ -1794,6 +1794,17 @@
   .toast-item { background: var(--panel); border: 1px solid var(--gold); padding: 10px 18px; border-radius: 4px; color: var(--cream); font-size: calc(14px * var(--app-scale, 1)); opacity: 0; transform: translateY(-6px); transition: opacity 0.2s, transform 0.2s; box-shadow: 0 8px 24px rgba(0,0,0,0.5); max-width: 80vw; text-align: center; }
   .toast-item.show { opacity: 1; transform: none; }
   .toast-item.error { border-color: var(--danger); color: #e8a0a0; }
+  /* Right-click token quick Damage/Heal popover */
+  #token-hp-menu { position: fixed; z-index: 2100; background: linear-gradient(180deg, rgba(30,24,18,0.98), rgba(16,13,10,0.98)); border: 1px solid var(--gold); border-radius: 8px; box-shadow: 0 14px 36px rgba(0,0,0,0.6); padding: 8px; display: none; flex-direction: column; gap: 6px; min-width: 150px; }
+  #token-hp-menu.open { display: flex; }
+  #token-hp-menu .thm-name { font-family: 'Cinzel', serif; color: var(--gold); font-size: calc(12px * var(--app-scale, 1)); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #token-hp-menu .thm-row { display: flex; gap: 6px; }
+  #token-hp-menu input { width: 100%; text-align: center; background: var(--bg); border: 1px solid var(--border); color: var(--cream); border-radius: 5px; padding: 6px; font-size: calc(14px * var(--app-scale, 1)); }
+  #token-hp-menu button { flex: 1; padding: 6px 8px; border-radius: 5px; border: 1px solid var(--border); cursor: pointer; font-family: 'Cinzel', serif; font-size: calc(11px * var(--app-scale, 1)); }
+  #token-hp-menu .thm-dmg { background: rgba(160,40,40,0.25); border-color: var(--danger); color: #f0c9c9; }
+  #token-hp-menu .thm-dmg:hover { background: rgba(160,40,40,0.4); }
+  #token-hp-menu .thm-heal { background: rgba(111,191,115,0.2); border-color: #6fbf73; color: #bdf0c0; }
+  #token-hp-menu .thm-heal:hover { background: rgba(111,191,115,0.34); }
 
   /* CONNECTION INDICATOR */
   #conn-indicator { padding: 3px 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 3px; font-size: calc(11px * var(--app-scale, 1)); color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
@@ -17047,6 +17058,60 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   }
   setupRtcUi();
   setupDrawing();
+  setupTokenHpMenu();
+
+  // Right-click a token (DM) for a quick Damage/Heal popover — the biggest combat
+  // time-saver: no more hunting the side-list to apply a hit to a specific token.
+  let _thmTokenId = null, _thmLastAmt = 1;
+  function setupTokenHpMenu() {
+    const layer = document.getElementById('tokenlayer');
+    if (!layer) return;
+    layer.addEventListener('contextmenu', (e) => {
+      const el = e.target.closest && e.target.closest('.map-token');
+      if (!el || !STATE.isHost) return;
+      e.preventDefault();
+      openTokenHpMenu(el.dataset.id, e.clientX, e.clientY);
+    });
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('token-hp-menu');
+      if (menu && menu.classList.contains('open') && !e.target.closest('#token-hp-menu')) closeTokenHpMenu();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeTokenHpMenu(); });
+  }
+  function closeTokenHpMenu() { const m = document.getElementById('token-hp-menu'); if (m) m.classList.remove('open'); _thmTokenId = null; }
+  function openTokenHpMenu(tokenId, x, y) {
+    const tok = STATE.tokens.get(tokenId); if (!tok) return;
+    _thmTokenId = tokenId;
+    let m = document.getElementById('token-hp-menu');
+    if (!m) {
+      m = document.createElement('div'); m.id = 'token-hp-menu';
+      m.innerHTML = '<div class="thm-name"></div><input type="number" min="0" class="thm-amt"><div class="thm-row"><button class="thm-dmg"></button><button class="thm-heal"></button></div>';
+      document.body.appendChild(m);
+      const amt = m.querySelector('.thm-amt');
+      m.querySelector('.thm-dmg').addEventListener('click', () => thmApply(-1));
+      m.querySelector('.thm-heal').addEventListener('click', () => thmApply(1));
+      amt.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') thmApply(-1); });
+    }
+    const cur = tok.current_hp ?? 0, max = tok.max_hp ?? 0;
+    m.querySelector('.thm-name').textContent = `${tok.name} (${cur}/${max})`;
+    m.querySelector('.thm-dmg').textContent = t('Damage');
+    m.querySelector('.thm-heal').textContent = t('Heal');
+    const amt = m.querySelector('.thm-amt'); amt.value = _thmLastAmt;
+    // Position within the viewport near the cursor.
+    m.classList.add('open');
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const mw = m.offsetWidth || 160, mh = m.offsetHeight || 110;
+    m.style.left = Math.min(x, vw - mw - 8) + 'px';
+    m.style.top = Math.min(y, vh - mh - 8) + 'px';
+    amt.focus(); amt.select();
+  }
+  function thmApply(sign) {
+    const m = document.getElementById('token-hp-menu'); if (!m || !_thmTokenId) return;
+    const amt = Math.max(0, parseInt(m.querySelector('.thm-amt').value) || 0);
+    _thmLastAmt = amt || 1;
+    if (amt > 0) applyHpChange(_thmTokenId, sign * amt);
+    closeTokenHpMenu();
+  }
 
   // Clean up presence on unload
   // ============ COMPENDIUM (in-app rules & reference) ============
