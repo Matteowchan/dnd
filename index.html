@@ -3256,7 +3256,7 @@
 <div id="nat1-fx"></div>
 <div id="turn-banner" class="turn-banner"></div>
 
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite" aria-atomic="false"></div>
 
 <script>
 // ===== Bundled SRD reference data (open license) =====
@@ -7092,6 +7092,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const action = delta < 0 ? 'took' : 'healed';
       const amount = Math.abs(delta);
       const text = `${tok.name} ${action} ${amount} ${delta < 0 ? 'damage' : 'HP'} (${newHp}/${max}${newTemp > 0 ? ' +' + newTemp + ' temp' : ''})`;
+      // Immediate on-screen confirmation (the chat line alone is easy to miss).
+      toast(`${tok.name}: ${delta < 0 ? '−' : '+'}${amount} → ${newHp}/${max}`);
       await sb.from('vtt_chat').insert({
         id: genId(),
         session_id: STATE.sessionId,
@@ -17059,6 +17061,18 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   setupRtcUi();
   setupDrawing();
   setupTokenHpMenu();
+
+  // Combat-loop hotkey: N advances the turn (host, while combat is active) without
+  // reaching for the Next button. Ignored while typing in a field.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'n' && e.key !== 'N') return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable)) return;
+    if (!STATE.isHost || !STATE.initiative || !STATE.initiative.active) return;
+    e.preventDefault();
+    nextTurn();
+  });
 
   // Right-click a token (DM) for a quick Damage/Heal popover — the biggest combat
   // time-saver: no more hunting the side-list to apply a hit to a specific token.
