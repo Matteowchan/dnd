@@ -17,7 +17,7 @@
     --gold: #d4a574;
     --gold-soft: #a8845a;
     --cream: #e8dcc4;
-    --muted: #8a7c66;
+    --muted: #9a8c74;
     --danger: #a04848;
     --success: #6b8a4a;
     --ember: #e08c3a;
@@ -5756,6 +5756,7 @@
       if (!(await insertTokenRow(tok))) { STATE.tokens.delete(tokenId); toast('Token could not be saved', 'error'); }
       renderTokens();
       renderTokenTray();
+      renderHpTracker();
     }
 
     const init = Math.floor(Math.random() * 20) + 1 + preset.init;
@@ -5808,6 +5809,7 @@
       if (!(await insertTokenRow(tok))) { STATE.tokens.delete(tokenId); toast('Token could not be saved', 'error'); }
       renderTokens();
       renderTokenTray();
+      renderHpTracker();
     }
     const init = (cr.ini || 0) + 1 + Math.floor(Math.random() * 6); // DSA: INI + 1d6
     STATE.initiative.entries.push({ tokenId, name: label, init, dex: cr.ini || 0, hp: cr.lp, maxHp: cr.lp, ac: cr.rs, portrait: img, isNpc: true, downed: false });
