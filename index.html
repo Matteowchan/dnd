@@ -1987,7 +1987,7 @@
   <div id="topbar">
     <div class="topbar-left">
       <div class="brand">Rollenspieler</div>
-      <div class="session-info"><span>Session:</span> <b id="session-code-display" title="Click to copy"></b></div>
+      <div class="session-info"><span>Session:</span> <b id="session-code-display" role="button" tabindex="0" data-kbd-click="1" aria-label="Copy session code" title="Click to copy"></b></div>
       <span class="role-badge" id="role-badge"></span>
       <span style="font-size: calc(13px * var(--app-scale, 1)); color: var(--muted)">|</span>
       <span style="font-size: calc(13px * var(--app-scale, 1));" id="username-display"></span>
@@ -5494,6 +5494,7 @@
     STATE.initiative.entries.forEach((e, idx) => {
       const row = document.createElement('div');
       row.className = 'init-row';
+      row.tabIndex = 0; row.dataset.kbdClick = '1'; row.setAttribute('aria-label', (e.name || 'combatant'));
       if (idx === STATE.initiative.turn) row.classList.add('active');
       if (e.isNpc) row.classList.add('npc');
       if (e.downed) row.classList.add('downed');
@@ -7031,6 +7032,7 @@
 
     const row = document.createElement('div');
     row.className = 'hp-row' + (downed ? ' downed' : '');
+    row.tabIndex = 0; row.dataset.kbdClick = '1'; row.setAttribute('aria-label', (tok.name || 'token') + ' — ' + t('press Enter to open'));
     row.innerHTML = `
       <div class="hp-row-head">
         <div class="hp-thumb" style="background-image:url(${tok.image_url})"></div>
@@ -7939,6 +7941,7 @@
       const row = document.createElement('div');
       row.className = 'save-row state-' + state + (extra !== 0 ? ' overridden' : '');
       row.dataset.stat = stat;
+      row.tabIndex = 0; row.dataset.kbdClick = '1'; row.setAttribute('aria-label', stat.toUpperCase() + ' ' + t('save') + ' — ' + t('press Enter to roll'));
       row.innerHTML = `
         <button class="prof-toggle" data-kind="save" data-key="${stat}" title="None → Proficient → Expertise">${state === 'exp' ? '★' : (state === 'prof' ? '✓' : '')}</button>
         <span class="save-stat">${stat.toUpperCase()}</span>
@@ -7968,6 +7971,7 @@
       const row = document.createElement('div');
       row.className = 'skill-row state-' + state + (extra !== 0 ? ' overridden' : '');
       row.dataset.skill = s.key;
+      row.tabIndex = 0; row.dataset.kbdClick = '1'; row.setAttribute('aria-label', s.name + ' — ' + t('press Enter to roll'));
       row.innerHTML = `
         <button class="prof-toggle" data-kind="skill" data-key="${s.key}" title="None → Proficient → Expertise">${state === 'exp' ? '★' : (state === 'prof' ? '✓' : '')}</button>
         <span class="skill-name" title="${escapeHtml(SKILL_DESC[s.key] || '')}">${s.name}</span>
@@ -17136,6 +17140,18 @@
       });
     } catch (e) {}
   })();
+
+  // Keyboard activation for non-button interactive elements (session code, the
+  // click-to-roll save/skill rows, initiative and HP rows): Enter/Space triggers
+  // their click when the element itself is focused. A focused child control keeps
+  // its own behaviour because activeElement wouldn't carry data-kbd-click.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    const ae = document.activeElement;
+    if (!ae || !ae.matches || !ae.matches('[data-kbd-click]')) return;
+    e.preventDefault();
+    ae.click();
+  });
 
   // Combat-loop hotkey: N advances the turn (host, while combat is active) without
   // reaching for the Next button. Ignored while typing in a field.
