@@ -14433,6 +14433,21 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   }, { passive: false });
 
   let panStart = null;
+  let _mapMoveRaf = null;
+  // Live map-reposition: move the EXISTING media + token elements instead of
+  // rebuilding the map layer (which recreated the <img>/<video> every frame →
+  // re-decode + flicker + heavy CPU). rAF-coalesced; offset already updated.
+  function applyMapOffsetLive() {
+    if (!STATE.map) return;
+    const ox = STATE.map.offset_x || 0, oy = STATE.map.offset_y || 0;
+    const media = document.querySelector('#maplayer img, #maplayer video');
+    if (media) { media.style.left = ox + 'px'; media.style.top = oy + 'px'; }
+    document.querySelectorAll('.map-token').forEach(el => {
+      const tk = STATE.tokens.get(el.dataset.id);
+      if (tk && tk.x != null && tk.y != null) { el.style.left = (tk.x + ox - 25) + 'px'; el.style.top = (tk.y + oy - 25) + 'px'; }
+    });
+    renderEffects(); renderDrawings(); renderFog();
+  }
   document.getElementById('mapcontainer').addEventListener('mousedown', (e) => {
     // Ignore clicks that are on UI overlays inside the map container itself.
     // The right-bar is a sibling element, so clicks on it never bubble here.
@@ -14526,9 +14541,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       const dy = (e.clientY - STATE.movingMap.startMouseY) / STATE.view.zoom;
       STATE.map.offset_x = STATE.movingMap.startOffsetX + dx;
       STATE.map.offset_y = STATE.movingMap.startOffsetY + dy;
-      renderMap();
-      renderTokens();
-      renderEffects();
+      if (!_mapMoveRaf) _mapMoveRaf = requestAnimationFrame(() => { _mapMoveRaf = null; applyMapOffsetLive(); });
       return;
     }
     if (panStart && !STATE.dragging) {
@@ -14595,6 +14608,9 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     }
 
     if (STATE.movingMap && STATE.map) {
+      // Finalize position (flush any pending rAF frame) before persisting.
+      if (_mapMoveRaf) { cancelAnimationFrame(_mapMoveRaf); _mapMoveRaf = null; }
+      applyMapOffsetLive();
       // Persist new map offset
       await sb.from('vtt_maps').update({
         offset_x: STATE.map.offset_x,
@@ -14662,9 +14678,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
       initMouseX: pos.x,
       initMouseY: pos.y,
       moved: false,
+      // Cache the container rect once — it doesn't change mid-drag, so the
+      // per-frame measurement update avoids a forced layout read every move.
+      containerRect: document.getElementById('mapcontainer').getBoundingClientRect(),
     };
     document.querySelector(`.map-token[data-id="${tok.id}"]`)?.classList.add('dragging');
-    document.getElementById('measurement').style.display = 'block';
+    const _m = document.getElementById('measurement');
+    _m.style.display = 'block';
+    const _r = STATE.dragging.containerRect;
+    _m.setAttribute('width', _r.width); _m.setAttribute('height', _r.height);
+    _m.style.position = 'absolute'; _m.style.top = '0'; _m.style.left = '0';
   }
 
   // Snap a coordinate (in grid space) to the nearest grid cell CENTER, so a token
@@ -14727,13 +14750,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const distFt = squares * STATE.gridFt;
 
     const svg = document.getElementById('measurement');
-    const rect = document.getElementById('mapcontainer').getBoundingClientRect();
-    svg.setAttribute('width', rect.width);
-    svg.setAttribute('height', rect.height);
-    svg.style.position = 'absolute';
-    svg.style.top = '0';
-    svg.style.left = '0';
-
+    // Rect/size were set once at drag-start (cached) — no per-frame layout read.
     const ox = (STATE.map && STATE.map.offset_x) || 0;
     const oy = (STATE.map && STATE.map.offset_y) || 0;
     const sxScreen = (sx + ox) * STATE.view.zoom + STATE.view.offsetX;
