@@ -83,7 +83,7 @@
   button.primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 15px rgba(138,101,53,0.42); }
   button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+    *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
     button:active:not(:disabled), button.primary:hover:not(:disabled) { transform: none; }
   }
   input[type="text"], input[type="number"], select { background: var(--bg); border: 1px solid var(--border); color: var(--cream); padding: 8px 10px; border-radius: 3px; font-family: inherit; font-size: calc(14px * var(--app-scale, 1)); outline: none; }
@@ -1732,7 +1732,7 @@
     25% { opacity: 1; }
     100% { opacity: 0; }
   }
-  #app.shake { animation: shake 0.4s ease-in-out; }
+  #mapcontainer.shake { animation: shake 0.4s ease-in-out; }
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
     20% { transform: translateX(-6px); }
@@ -15555,7 +15555,8 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   function triggerNat1() {
     const fx = document.getElementById('nat1-fx');
-    const app = document.getElementById('app');
+    // Shake only the board, not #app (which holds fixed overlays + all panels).
+    const app = document.getElementById('mapcontainer') || document.getElementById('app');
     fx.classList.remove('active');
     app.classList.remove('shake');
     void fx.offsetWidth;
