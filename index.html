@@ -5392,8 +5392,10 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   async function toggleActionEconomy(idx, key) {
     const e = STATE.initiative.entries[idx];
     if (!e) return;
-    const tok = e.tokenId ? STATE.tokens.get(e.tokenId) : null;
-    if (!(STATE.isHost || (tok && tok.owner_id === STATE.userId))) return;
+    // Initiative lives in the host-owned vtt_sessions row, so only the host can
+    // persist it. Gating here (and on the econ buttons) to host-only avoids a
+    // non-host owner toggling a pip that silently reverts on the next sync.
+    if (!STATE.isHost) return;
     if (!e.used) e.used = {};
     e.used[key] = !e.used[key];
     renderInitiative();
@@ -5455,7 +5457,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
         <span class="init-value">${e.init}</span>
         <span class="init-name">${escapeHtml(e.name)}</span>
         ${showHp && hpText ? `<span class="init-hp">${hpText}</span>` : ''}
-        ${(idx === STATE.initiative.turn && (STATE.isHost || ownsThis)) ? `<span class="init-econ"><button class="econ-dot${(e.used && e.used.a) ? ' on' : ''}" data-econ="a" data-idx="${idx}" title="${t('Action')}">A</button><button class="econ-dot${(e.used && e.used.b) ? ' on' : ''}" data-econ="b" data-idx="${idx}" title="${t('Bonus action')}">B</button><button class="econ-dot${(e.used && e.used.r) ? ' on' : ''}" data-econ="r" data-idx="${idx}" title="${t('Reaction')}">R</button></span>` : ''}
+        ${(idx === STATE.initiative.turn && STATE.isHost) ? `<span class="init-econ"><button class="econ-dot${(e.used && e.used.a) ? ' on' : ''}" data-econ="a" data-idx="${idx}" title="${t('Action')}">A</button><button class="econ-dot${(e.used && e.used.b) ? ' on' : ''}" data-econ="b" data-idx="${idx}" title="${t('Bonus action')}">B</button><button class="econ-dot${(e.used && e.used.r) ? ' on' : ''}" data-econ="r" data-idx="${idx}" title="${t('Reaction')}">R</button></span>` : ''}
         ${STATE.isHost ? `<span class="init-move-wrap"><button class="init-move" data-idx="${idx}" data-dir="-1" title="Move up in the order"${idx === 0 ? ' disabled' : ''}>▲</button><button class="init-move" data-idx="${idx}" data-dir="1" title="Move down in the order"${idx === STATE.initiative.entries.length - 1 ? ' disabled' : ''}>▼</button></span>` : ''}
         ${STATE.isHost ? `<button class="init-row-del" data-idx="${idx}" title="Remove from order">×</button>` : ''}
       `;
@@ -6054,7 +6056,15 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
 
   function handleMapChange(payload) {
     if (payload.eventType === 'DELETE') {
-      const slot = (payload.old && payload.old.slot) || 1;
+      // DELETE payloads only carry REPLICA IDENTITY columns. vtt_maps is set to
+      // REPLICA IDENTITY FULL so slot is present; but if it ever comes back null,
+      // don't assume slot 1 (that would wrongly wipe the active map for everyone) —
+      // match by the PK id against our cache instead.
+      let slot = (payload.old && payload.old.slot);
+      if (slot == null && payload.old && payload.old.id != null) {
+        for (const [s, mm] of STATE.maps) { if (mm && mm.id === payload.old.id) { slot = s; break; } }
+      }
+      if (slot == null) return; // can't identify which slot — leave state intact
       STATE.maps.delete(slot);
       if (slot === STATE.activeMapSlot) {
         STATE.map = null;
@@ -6963,8 +6973,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     const curInp = row.querySelector('.hp-cur');
     const maxInp = row.querySelector('.hp-max');
     const amtInp = row.querySelector('.hp-amount');
-    curInp.addEventListener('change', () => setTokenHp(tok.id, { current_hp: parseInt(curInp.value) || 0 }));
-    maxInp.addEventListener('change', () => setTokenHp(tok.id, { max_hp: Math.max(1, parseInt(maxInp.value) || 1) }));
+    const commitHp = async (field, val) => {
+      const t2 = STATE.tokens.get(tok.id); if (!t2) return;
+      const prev = t2[field];
+      t2[field] = val;                       // optimistic
+      const { error } = await setTokenHp(tok.id, { [field]: val });
+      if (error) { t2[field] = prev; renderHpTracker(); refreshCharPopupHp(); console.error('HP save failed', error); toast(t('HP change not saved'), 'error'); }
+      else refreshCharPopupHp();
+    };
+    curInp.addEventListener('change', () => commitHp('current_hp', parseInt(curInp.value) || 0));
+    maxInp.addEventListener('change', () => commitHp('max_hp', Math.max(1, parseInt(maxInp.value) || 1)));
     row.querySelector('.hp-dmg-btn').addEventListener('click', () => applyHpChange(tok.id, -(parseInt(amtInp.value) || 0)));
     row.querySelector('.hp-heal-btn').addEventListener('click', () => applyHpChange(tok.id, +(parseInt(amtInp.value) || 0)));
 
@@ -6975,12 +6993,13 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   async function setTokenHp(tokenId, patch) {
     let p = { ...patch };
     if (!TEMP_HP_OK && ('temp_hp' in p)) delete p.temp_hp;
-    const { error } = await sb.from('vtt_tokens').update({ ...p, updated_at: new Date().toISOString() }).eq('id', tokenId);
+    let { error } = await sb.from('vtt_tokens').update({ ...p, updated_at: new Date().toISOString() }).eq('id', tokenId);
     if (error && ('temp_hp' in p) && /temp_hp/i.test(error.message || '')) {
       TEMP_HP_OK = false;
       const { temp_hp, ...rest } = p;
-      await sb.from('vtt_tokens').update({ ...rest, updated_at: new Date().toISOString() }).eq('id', tokenId);
+      ({ error } = await sb.from('vtt_tokens').update({ ...rest, updated_at: new Date().toISOString() }).eq('id', tokenId));
     }
+    return { error };
   }
 
   async function setTempHp(tokenId, val) {
@@ -7012,7 +7031,16 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
     tok.current_hp = newHp; tok.temp_hp = newTemp;
     const patch = { current_hp: newHp };
     if (newTemp !== temp) patch.temp_hp = newTemp;
-    await setTokenHp(tokenId, patch);
+    const { error } = await setTokenHp(tokenId, patch);
+    if (error) {
+      // Roll back the optimistic change so the bar, state and other clients don't
+      // disagree — and skip the chat line / auto-down that would otherwise lie.
+      tok.current_hp = cur; tok.temp_hp = temp;
+      refreshCharPopupHp(); renderTokens(); renderHpTracker();
+      console.error('HP change failed', error);
+      toast(t('HP change not saved'), 'error');
+      return;
+    }
     refreshCharPopupHp();
     // Concentration: taking damage forces a CON save (DC 10 or half the damage).
     if (delta < 0 && tok.owner_id === STATE.userId && STATE.myConcentration) {
@@ -21575,6 +21603,7 @@ const SUBCLASSES={"artificer":[{"n":"Armorer","s":"TC","f":"Fuse powerful magic 
   "Half (saved)": "Hälfte (gerettet)",
   "Full damage": "Voller Schaden",
   "damage to": "Schaden an",
+  "HP change not saved": "TP-Änderung nicht gespeichert",
 }; // en -> de
   let LANG = 'en';
   try { const s = localStorage.getItem('vtt_lang'); if (s === 'de') LANG = 'de'; } catch (e) {}
