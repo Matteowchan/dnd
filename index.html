@@ -6576,6 +6576,16 @@
       buffs, conds].join('§');
   }
 
+  // Place `ordered` as parent's children in that exact order, moving a node only when
+  // its slot actually differs. Re-appending an unchanged node is not free: moving a
+  // node that contains document.activeElement blurs it, so a needless move would drop
+  // an in-progress input edit. Stale nodes must already have been removed by the caller.
+  function reconcileChildren(parent, ordered) {
+    for (let i = 0; i < ordered.length; i++) {
+      if (parent.children[i] !== ordered[i]) parent.insertBefore(ordered[i], parent.children[i] || null);
+    }
+  }
+
   // Keyed/signature diff instead of innerHTML teardown: unchanged tokens keep their
   // existing DOM element (no listener churn, no flicker, and a concurrent re-render
   // no longer destroys an in-progress drag). Only tokens whose rendered state actually
@@ -6611,8 +6621,8 @@
     // rebuilt tokens, tokens no longer on the map, and any stray duplicates.
     const orderedSet = new Set(ordered);
     Array.from(layer.children).forEach(el => { if (!orderedSet.has(el)) el.remove(); });
-    // Re-attach in STATE order; appendChild moves existing nodes and inserts new ones.
-    ordered.forEach(el => layer.appendChild(el));
+    // Place in STATE order, moving only nodes whose slot changed.
+    reconcileChildren(layer, ordered);
     // Apply the active-turn highlight to the current combatant's token
     highlightActiveInitToken();
   }
@@ -7044,7 +7054,6 @@
     if (q) visible = visible.filter(t => (t.name || '').toLowerCase().includes(q));
     if (hideDowned) visible = visible.filter(t => (t.current_hp ?? 10) > 0);
 
-    rightList.innerHTML = '';
     if (total === 0) {
       rightList.innerHTML = '<div style="font-size:calc(11px * var(--app-scale, 1));color:var(--muted);padding:6px;text-align:center;">No tokens yet</div>';
       return;
@@ -7053,24 +7062,53 @@
       rightList.innerHTML = '<div style="font-size:calc(11px * var(--app-scale, 1));color:var(--muted);padding:6px;text-align:center;">' + t('No matching tokens') + '</div>';
       return;
     }
+    // Keyed diff by token id: reuse unchanged rows so the DM's in-progress HP edit
+    // isn't blurred when an unrelated token's HP changes (realtime echo re-renders
+    // the whole tracker). Rebuild a row only when its rendered state changed, and
+    // never while it holds focus. Row handlers re-fetch by id, so reuse is safe even
+    // after STATE replaces the token object.
+    const existing = new Map();
+    Array.from(rightList.children).forEach(ch => { if (ch.dataset && ch.dataset.tokenId) existing.set(ch.dataset.tokenId, ch); });
+    const ordered = [];
     visible.forEach(tok => {
-      const row = buildHpRow(tok);
-      row.dataset.ownerId = tok.owner_id || '';
-      row.dataset.tokenId = tok.id;
-      if (CHAR_POPUP.targetPlayerId && tok.owner_id === CHAR_POPUP.targetPlayerId) {
-        row.classList.add('viewing');
+      const sig = hpRowSig(tok);
+      let row = existing.get(tok.id);
+      const hasFocus = row && row.contains(document.activeElement);
+      if (!row || (!hasFocus && row.dataset.sig !== sig)) {
+        row = buildHpRowFull(tok);
       }
-      // Click anywhere on the row that isn't an input/button opens the character sheet
-      row.addEventListener('click', (e) => {
-        if (e.target.closest('input, button')) return;
-        if (!tok.owner_id) {
-          toast('This token has no character', 'error');
-          return;
-        }
-        openCharPopup(tok.owner_id, tok.id);
-      });
-      rightList.appendChild(row);
+      ordered.push(row);
     });
+    const orderedSet = new Set(ordered);
+    Array.from(rightList.children).forEach(el => { if (!orderedSet.has(el)) el.remove(); });
+    reconcileChildren(rightList, ordered);
+  }
+
+  // Signature of everything buildHpRowFull renders for a token (DOM-vs-STATE).
+  function hpRowSig(tok) {
+    const cur = tok.current_hp ?? 10, max = tok.max_hp ?? 10;
+    const viewing = !!(CHAR_POPUP.targetPlayerId && tok.owner_id === CHAR_POPUP.targetPlayerId);
+    return [cur, max, tok.name || '', tok.image_url || '', (cur <= 0) ? 'd' : '', viewing ? 'v' : ''].join('§');
+  }
+
+  function buildHpRowFull(tok) {
+    const row = buildHpRow(tok);
+    row.dataset.ownerId = tok.owner_id || '';
+    row.dataset.tokenId = tok.id;
+    if (CHAR_POPUP.targetPlayerId && tok.owner_id === CHAR_POPUP.targetPlayerId) {
+      row.classList.add('viewing');
+    }
+    // Click anywhere on the row that isn't an input/button opens the character sheet
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('input, button')) return;
+      if (!tok.owner_id) {
+        toast('This token has no character', 'error');
+        return;
+      }
+      openCharPopup(tok.owner_id, tok.id);
+    });
+    row.dataset.sig = hpRowSig(tok);
+    return row;
   }
 
   function buildHpRow(tok) {
