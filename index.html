@@ -12699,6 +12699,17 @@
   document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
     btn.addEventListener('click', () => setActiveTool(btn.dataset.tool));
   });
+  // Escape leaves draw mode (back to Select) so a DM is never stuck unable to
+  // drag tokens. Only acts when no modal is open (those handle Escape themselves)
+  // and focus isn't in a text field.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (!document.body.classList.contains('draw-mode')) return;
+    if (document.querySelector('.recovery-overlay')) return;
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
+    setActiveTool('select');
+  });
   // fx-btn and fx-color elements have been removed; the Spells popup is the
   // single interface for picking spell shape and element.
 
@@ -12951,7 +12962,10 @@
     const t = document.getElementById('draw-toggle');
     const bar = document.getElementById('draw-bar');
     const pen = document.getElementById('pen-btn');
-    if (t) t.classList.toggle('active', on);
+    // Make the active state unmistakable: in draw mode the whole board captures
+    // the pen, so tokens can't be dragged until you leave it. Spell out the exit
+    // so a DM mid-session isn't left wondering why tokens won't move.
+    if (t) { t.classList.toggle('active', on); t.textContent = on ? 'Drawing — Esc to exit' : 'Draw'; }
     if (bar) bar.classList.toggle('open', on);
     if (pen) pen.classList.toggle('active', on);
     if (!on) STATE.drawErase = false;
