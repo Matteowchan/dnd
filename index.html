@@ -327,6 +327,17 @@
   .adv-btn { flex: 1; padding: 6px 4px; font-size: calc(11px * var(--app-scale, 1)); background: var(--panel-light); border: 1px solid var(--border); color: var(--cream); cursor: pointer; border-radius: 3px; }
   .adv-btn:hover { background: var(--bg); border-color: var(--gold-soft); }
   .adv-btn.active { background: var(--gold); border-color: var(--gold); color: #1a1612; font-weight: 700; }
+  /* Dice favorites: one-click saved roll macros */
+  .dice-fav-row { display: flex; align-items: flex-start; gap: 8px; margin-top: 2px; }
+  .dice-fav-save { flex: 0 0 auto; padding: 5px 9px; font-size: calc(11px * var(--app-scale, 1)); font-family: 'Cinzel', serif; background: var(--panel-light); border: 1px solid var(--border); color: var(--gold); cursor: pointer; border-radius: 4px; white-space: nowrap; transition: border-color 0.15s, box-shadow 0.15s; }
+  .dice-fav-save:hover { border-color: var(--gold); box-shadow: 0 2px 8px rgba(var(--gold-rgb),0.15); }
+  .dice-fav-list { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+  .dice-fav-empty { font-size: calc(10.5px * var(--app-scale, 1)); color: var(--muted); align-self: center; }
+  .dice-fav { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px 4px 9px; font-size: calc(11px * var(--app-scale, 1)); background: linear-gradient(180deg, var(--panel-light), var(--bg)); border: 1px solid var(--border); color: var(--cream); border-radius: 12px; cursor: pointer; transition: border-color 0.12s, box-shadow 0.12s; }
+  .dice-fav:hover { border-color: var(--gold-soft); box-shadow: 0 2px 8px rgba(var(--gold-rgb),0.14); }
+  .dice-fav .dice-fav-label { font-family: 'Cinzel', serif; letter-spacing: 0.03em; }
+  .dice-fav .dice-fav-x { font-size: calc(13px * var(--app-scale, 1)); line-height: 1; color: var(--muted); opacity: 0.7; padding: 0 2px; border-radius: 50%; }
+  .dice-fav .dice-fav-x:hover { color: var(--danger); opacity: 1; }
 
   /* MAP AREA */
   #mapcontainer { flex: 1; position: relative; overflow: hidden; background: var(--map-bg); cursor: grab; }
@@ -2139,6 +2150,10 @@
         <div class="dice-row" style="margin-top:10px;">
           <input type="text" id="dice-formula" placeholder="e.g. 1d20+2d6+3" autocomplete="off" spellcheck="false" style="width:auto;flex:1;">
           <button id="dice-formula-btn" class="dice-btn" style="flex:0 0 auto;padding:9px 14px;" title="Roll a mixed formula, e.g. an attack plus Sneak Attack or a smite">Roll</button>
+        </div>
+        <div class="dice-fav-row" id="dice-fav-row">
+          <button id="dice-fav-save" class="dice-fav-save" title="Save the formula above as a one-click favorite">★ Save</button>
+          <div class="dice-fav-list" id="dice-fav-list"></div>
         </div>
       </div>
 
@@ -15098,6 +15113,59 @@
     const fInp = document.getElementById('dice-formula');
     if (fBtn) fBtn.addEventListener('click', rollFormula);
     if (fInp) fInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); rollFormula(); } });
+    const fSave = document.getElementById('dice-fav-save');
+    if (fSave) fSave.addEventListener('click', saveDiceFav);
+    renderDiceFavs();
+  }
+
+  // One-click dice favorites (saved roll macros). Stored per browser; a favorite
+  // just fills the formula input and reuses rollFormula(), so parsing, the GM-roll
+  // toggle, the animation and chat sync are all identical to a typed roll.
+  const DICE_FAV_KEY = 'vtt_dice_favs_v1';
+  function loadDiceFavs() {
+    try { const a = JSON.parse(localStorage.getItem(DICE_FAV_KEY) || 'null'); if (Array.isArray(a)) return a; } catch (e) {}
+    // First-run seeds that show simple and composite rolls; all editable/removable.
+    return [ { label: 'd20', formula: '1d20' }, { label: 'd20+5', formula: '1d20+5' }, { label: 'Sneak', formula: '1d20+5+3d6' }, { label: 'Fireball', formula: '8d6' } ];
+  }
+  function persistDiceFavs(favs) { try { localStorage.setItem(DICE_FAV_KEY, JSON.stringify(favs)); } catch (e) {} }
+  function renderDiceFavs() {
+    const list = document.getElementById('dice-fav-list');
+    if (!list) return;
+    const favs = loadDiceFavs();
+    list.innerHTML = '';
+    if (!favs.length) { list.innerHTML = '<span class="dice-fav-empty">' + t('Save a formula for one-click rolls') + '</span>'; return; }
+    favs.forEach((f, idx) => {
+      const chip = document.createElement('button');
+      chip.className = 'dice-fav';
+      chip.title = f.formula + ' — ' + t('click to roll');
+      const lbl = document.createElement('span');
+      lbl.className = 'dice-fav-label';
+      lbl.textContent = f.label || f.formula;
+      const x = document.createElement('span');
+      x.className = 'dice-fav-x';
+      x.textContent = '×';
+      x.title = t('Remove favorite');
+      chip.appendChild(lbl); chip.appendChild(x);
+      chip.addEventListener('click', (e) => {
+        if (e.target === x) { e.stopPropagation(); const cur = loadDiceFavs(); cur.splice(idx, 1); persistDiceFavs(cur); renderDiceFavs(); return; }
+        const inp = document.getElementById('dice-formula');
+        if (inp) { inp.value = f.formula; rollFormula(); }
+      });
+      list.appendChild(chip);
+    });
+  }
+  async function saveDiceFav() {
+    const inp = document.getElementById('dice-formula');
+    const raw = inp ? inp.value.trim() : '';
+    if (!raw) { toast(t('Type a dice formula above first, then Save'), 'error'); return; }
+    if (!parseDiceFormula(raw)) { toast(t('Enter a dice formula like 1d20+2d6+3'), 'error'); return; }
+    const label = await askText(t('Give this roll a short name (e.g. Longsword, Fireball).'), { title: t('Save favorite'), value: raw, okText: t('Save'), cancelText: t('Cancel') });
+    if (label === null) return;
+    const favs = loadDiceFavs();
+    favs.push({ label: (label || raw).slice(0, 18), formula: raw });
+    persistDiceFavs(favs);
+    renderDiceFavs();
+    toast(t('Favorite saved'));
   }
 
   // Adv/Dis pill buttons - applies to d20 only, single die
