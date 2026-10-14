@@ -4916,6 +4916,7 @@
         <div class="init-controls" id="init-controls" style="display:none">
           <button id="init-roll-all" class="init-mini-btn" title="Roll initiative for every token on the map and start combat">Roll Init</button>
           <button id="init-add-npc" class="init-mini-btn" title="Add a custom NPC entry">+ NPC</button>
+          <button id="init-prev-turn" class="init-mini-btn" title="Go back one turn (undo an accidental Next)">◂ Prev</button>
           <button id="init-next-turn" class="init-mini-btn primary" title="Advance to next turn">Next ▸</button>
           <button id="init-clear" class="init-mini-btn danger" title="End combat / clear initiative">End</button>
         </div>
@@ -5401,6 +5402,27 @@
     await saveInitiative();
   }
 
+  // Step the turn marker back one (undo an accidental Next). Mirrors nextTurn,
+  // wrapping to the end of the previous round (round never goes below 1).
+  async function prevTurn() {
+    if (!STATE.isHost) return;
+    if (!STATE.initiative.active || STATE.initiative.entries.length === 0) return;
+    let turn = STATE.initiative.turn - 1;
+    let round = STATE.initiative.round;
+    if (turn < 0) {
+      turn = STATE.initiative.entries.length - 1;
+      round = Math.max(1, round - 1);
+    }
+    STATE.initiative.turn = turn;
+    STATE.initiative.round = round;
+    const ae = STATE.initiative.entries[turn]; if (ae) ae.used = {};
+    renderInitiative();
+    renderTokens();
+    try { if (CHAR_POPUP && Array.isArray(CHAR_POPUP.buffs)) renderBuffs(CHAR_POPUP.buffs); } catch (e) {}
+    try { renderConditionsStrip(); } catch (e) {}
+    await saveInitiative();
+  }
+
   async function endInitiative() {
     if (!STATE.isHost) return;
     if (!(await confirmModal('End combat and clear the initiative order?', { title: 'End combat', okText: 'End combat' }))) return;
@@ -5674,6 +5696,7 @@
     const rollAll = document.getElementById('init-roll-all');
     const addNpc = document.getElementById('init-add-npc');
     const next = document.getElementById('init-next-turn');
+    const prev = document.getElementById('init-prev-turn');
     const clear = document.getElementById('init-clear');
     const toggleBtn = document.getElementById('init-toggle-btn');
     if (rollAll) rollAll.addEventListener('click', startInitiative);
@@ -5681,6 +5704,7 @@
       document.getElementById('init-npc-popup').classList.add('active');
     });
     if (next) next.addEventListener('click', nextTurn);
+    if (prev) prev.addEventListener('click', prevTurn);
     if (clear) clear.addEventListener('click', endInitiative);
     if (toggleBtn) toggleBtn.addEventListener('click', () => {
       const wrap = document.querySelector('.rb-initwrap');
