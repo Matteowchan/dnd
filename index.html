@@ -1818,6 +1818,8 @@
   #token-hp-menu .thm-dmg:hover { background: rgba(160,40,40,0.4); }
   #token-hp-menu .thm-heal { background: rgba(111,191,115,0.2); border-color: #6fbf73; color: #bdf0c0; }
   #token-hp-menu .thm-heal:hover { background: rgba(111,191,115,0.34); }
+  #token-hp-menu .thm-quick button { background: rgba(var(--gold-rgb),0.12); border-color: var(--gold-soft); color: var(--cream); }
+  #token-hp-menu .thm-quick button:hover { background: rgba(var(--gold-rgb),0.24); border-color: var(--gold); }
 
   /* CONNECTION INDICATOR */
   #conn-indicator { padding: 3px 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 3px; font-size: calc(11px * var(--app-scale, 1)); color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
@@ -17345,17 +17347,21 @@
     let m = document.getElementById('token-hp-menu');
     if (!m) {
       m = document.createElement('div'); m.id = 'token-hp-menu';
-      m.innerHTML = '<div class="thm-name"></div><input type="number" min="0" class="thm-amt"><div class="thm-row"><button class="thm-dmg"></button><button class="thm-heal"></button></div>';
+      m.innerHTML = '<div class="thm-name"></div><input type="number" min="0" class="thm-amt"><div class="thm-row"><button class="thm-dmg"></button><button class="thm-heal"></button></div><div class="thm-row thm-quick"><button class="thm-full"></button><button class="thm-half"></button></div>';
       document.body.appendChild(m);
       const amt = m.querySelector('.thm-amt');
       m.querySelector('.thm-dmg').addEventListener('click', () => thmApply(-1));
       m.querySelector('.thm-heal').addEventListener('click', () => thmApply(1));
+      m.querySelector('.thm-full').addEventListener('click', () => thmSet('full'));
+      m.querySelector('.thm-half').addEventListener('click', () => thmSet('half'));
       amt.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') thmApply(-1); });
     }
     const cur = tok.current_hp ?? 0, max = tok.max_hp ?? 0;
     m.querySelector('.thm-name').textContent = `${tok.name} (${cur}/${max})`;
     m.querySelector('.thm-dmg').textContent = t('Damage');
     m.querySelector('.thm-heal').textContent = t('Heal');
+    m.querySelector('.thm-full').textContent = t('Full') + ' (' + max + ')';
+    m.querySelector('.thm-half').textContent = '½ (' + Math.floor(max / 2) + ')';
     const amt = m.querySelector('.thm-amt'); amt.value = _thmLastAmt;
     // Position within the viewport near the cursor.
     m.classList.add('open');
@@ -17370,6 +17376,17 @@
     const amt = Math.max(0, parseInt(m.querySelector('.thm-amt').value) || 0);
     _thmLastAmt = amt || 1;
     if (amt > 0) applyHpChange(_thmTokenId, sign * amt);
+    closeTokenHpMenu();
+  }
+  // Quick absolute HP sets: Full = to max (one-click after a rest), ½ = to half.
+  // Routed through applyHpChange so the HP tracker, downed state and sync all update.
+  function thmSet(kind) {
+    const m = document.getElementById('token-hp-menu'); if (!m || !_thmTokenId) { closeTokenHpMenu(); return; }
+    const tok = STATE.tokens.get(_thmTokenId); if (!tok) { closeTokenHpMenu(); return; }
+    const max = tok.max_hp ?? 0, cur = tok.current_hp ?? 0;
+    const target = kind === 'full' ? max : Math.floor(max / 2);
+    const delta = target - cur;
+    if (delta !== 0) applyHpChange(_thmTokenId, delta);
     closeTokenHpMenu();
   }
 
